@@ -104,6 +104,9 @@ func fetchSourceNodesWhenReady(ctx context.Context, apiAddr string, allowed map[
 
 func sourceNodesHealthObserved(nodes []*proxyruntimev1.ProxySourceNode) bool {
 	for _, node := range nodes {
+		if node.GetCheckedAt() == nil {
+			return false
+		}
 		switch node.GetStatus() {
 		case proxyruntimev1.ProxySourceNodeStatus_PROXY_SOURCE_NODE_STATUS_AVAILABLE,
 			proxyruntimev1.ProxySourceNodeStatus_PROXY_SOURCE_NODE_STATUS_UNAVAILABLE:

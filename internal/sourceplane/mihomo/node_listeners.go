@@ -44,6 +44,9 @@ func (d *Driver) nodeListenersLocked(ctx context.Context, endpoint sourceplane.E
 			return nil, err
 		}
 		for _, node := range nodes {
+			if node.GetStatus() == proxyruntimev1.ProxySourceNodeStatus_PROXY_SOURCE_NODE_STATUS_UNAVAILABLE {
+				continue
+			}
 			proxyName := strings.TrimSpace(node.GetDisplayName())
 			if proxyName == "" {
 				continue

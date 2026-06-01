@@ -65,17 +65,20 @@ func (r *Runtime) planProxyChain(ctx context.Context, req *proxyruntimev1.Acquir
 	if lineErr != nil {
 		r.logger.Warn("proxy line candidate discovery failed", "error", lineErr)
 	}
-	selectedLine := chooseLineCandidate(lines, policy, req.GetAccountId(), attempt)
 	pool := r.currentPool()
-	lineNode := r.sourceRuntimeNodeForLine(pool, selectedLineProto(selectedLine))
+	var lineNode *provider.Node
+	selectedLine := chooseAvailableLineCandidate(lines, policy, req.GetAccountId(), attempt, func(line *proxyruntimev1.ProxyLineCandidate) bool {
+		lineNode = r.sourceRuntimeNodeForLine(pool, line)
+		return lineNode != nil
+	})
 	reasons := []string{fmt.Sprintf("dynamic_gateway=%s/%s/%s", selectedGateway.proto.GetProviderAccountId(), selectedGateway.proto.GetProviderId(), selectedGateway.proto.GetGatewayId())}
 	if selectedLine != nil && lineNode != nil {
 		reasons = append(reasons, fmt.Sprintf("line=%s/%s", selectedLine.proto.GetSourceId(), selectedLine.proto.GetNodeId()))
 	} else {
-		if selectedLine != nil {
-			return chainPlanResult{}, fmt.Errorf("selected line proxy listener is not available: %s/%s", selectedLine.proto.GetSourceId(), selectedLine.proto.GetNodeId())
-		}
 		if !policy.GetAllowDirectDynamicGateway() {
+			if len(lines) > 0 {
+				return chainPlanResult{}, errors.New("no available line proxy listener and direct dynamic gateway is disabled")
+			}
 			return chainPlanResult{}, errors.New("no line proxy candidate and direct dynamic gateway is disabled")
 		}
 		selectedLine = nil

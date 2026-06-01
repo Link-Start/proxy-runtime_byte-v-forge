@@ -53,21 +53,48 @@ func (r *Runtime) lineCandidates(ctx context.Context, policy *proxyruntimev1.Pro
 }
 
 func chooseLineCandidate(candidates []scoredLineCandidate, policy *proxyruntimev1.ProxyChainPolicy, key string, attempt int) *scoredLineCandidate {
+	candidates = orderedLineCandidates(candidates, policy)
 	if len(candidates) == 0 {
 		return nil
 	}
-	sort.SliceStable(candidates, func(i, j int) bool {
-		if candidates[i].score != candidates[j].score {
-			return candidates[i].score > candidates[j].score
+	return &candidates[lineCandidateSelectionIndex(candidates, policy, key, attempt)]
+}
+
+func chooseAvailableLineCandidate(candidates []scoredLineCandidate, policy *proxyruntimev1.ProxyChainPolicy, key string, attempt int, available func(*proxyruntimev1.ProxyLineCandidate) bool) *scoredLineCandidate {
+	candidates = orderedLineCandidates(candidates, policy)
+	if len(candidates) == 0 {
+		return nil
+	}
+	start := lineCandidateSelectionIndex(candidates, policy, key, attempt)
+	for offset := range candidates {
+		index := (start + offset) % len(candidates)
+		if available == nil || available(candidates[index].proto) {
+			return &candidates[index]
 		}
-		if policy.GetStrategy() == proxyruntimev1.ProxyChainStrategy_PROXY_CHAIN_STRATEGY_LOWEST_LATENCY && candidates[i].proto.GetDelayMs() != candidates[j].proto.GetDelayMs() {
-			return candidates[i].proto.GetDelayMs() < candidates[j].proto.GetDelayMs()
+	}
+	return nil
+}
+
+func orderedLineCandidates(candidates []scoredLineCandidate, policy *proxyruntimev1.ProxyChainPolicy) []scoredLineCandidate {
+	if len(candidates) == 0 {
+		return nil
+	}
+	out := append([]scoredLineCandidate(nil), candidates...)
+	sort.SliceStable(out, func(i, j int) bool {
+		if out[i].score != out[j].score {
+			return out[i].score > out[j].score
 		}
-		return candidates[i].proto.GetPriority() < candidates[j].proto.GetPriority()
+		if policy.GetStrategy() == proxyruntimev1.ProxyChainStrategy_PROXY_CHAIN_STRATEGY_LOWEST_LATENCY && out[i].proto.GetDelayMs() != out[j].proto.GetDelayMs() {
+			return out[i].proto.GetDelayMs() < out[j].proto.GetDelayMs()
+		}
+		return out[i].proto.GetPriority() < out[j].proto.GetPriority()
 	})
-	candidates = regionScopedLineCandidates(candidates, policy)
+	return regionScopedLineCandidates(out, policy)
+}
+
+func lineCandidateSelectionIndex(candidates []scoredLineCandidate, policy *proxyruntimev1.ProxyChainPolicy, key string, attempt int) int {
 	if attempt > 1 && len(candidates) > 1 {
-		return &candidates[(attempt-1)%len(candidates)]
+		return (attempt - 1) % len(candidates)
 	}
 	if policy.GetStrategy() == proxyruntimev1.ProxyChainStrategy_PROXY_CHAIN_STRATEGY_STABLE_HASH && len(candidates) > 1 {
 		best := candidates[0].score
@@ -75,9 +102,9 @@ func chooseLineCandidate(candidates []scoredLineCandidate, policy *proxyruntimev
 		for count < len(candidates) && candidates[count].score == best {
 			count++
 		}
-		return &candidates[int(hashModulo(key, uint32(count)))]
+		return int(hashModulo(key, uint32(count)))
 	}
-	return &candidates[0]
+	return 0
 }
 
 func regionScopedLineCandidates(candidates []scoredLineCandidate, policy *proxyruntimev1.ProxyChainPolicy) []scoredLineCandidate {

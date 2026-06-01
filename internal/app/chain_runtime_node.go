@@ -1,7 +1,9 @@
 package app
 
 import (
+	"net"
 	"net/url"
+	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
@@ -23,12 +25,27 @@ func (r *Runtime) sourceRuntimeNodeForLine(pool []provider.Node, line *proxyrunt
 		if node.ProviderID == sourceRuntimeProviderID && node.URL != nil &&
 			node.Labels["line_source_id"] == line.GetSourceId() &&
 			node.Labels["line_node_id"] == line.GetNodeId() {
+			if !proxyEndpointAvailable(node.URL) {
+				continue
+			}
 			copy := node
 			copy.Labels = cloneStringMap(copy.Labels)
 			return &copy
 		}
 	}
 	return nil
+}
+
+func proxyEndpointAvailable(proxyURL *url.URL) bool {
+	if proxyURL == nil || proxyURL.Host == "" {
+		return false
+	}
+	conn, err := net.DialTimeout("tcp", proxyURL.Host, 200*time.Millisecond)
+	if err != nil {
+		return false
+	}
+	_ = conn.Close()
+	return true
 }
 
 func lineNodeForPlan(plan *proxyruntimev1.ProxyChainPlan, node *provider.Node) *provider.Node {

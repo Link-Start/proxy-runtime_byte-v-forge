@@ -73,12 +73,12 @@ func (d *Driver) nodeListenersLocked(ctx context.Context, endpoint sourceplane.E
 }
 
 func fetchSourceNodesWhenReady(ctx context.Context, apiAddr string, allowed map[string]struct{}) ([]*proxyruntimev1.ProxySourceNode, error) {
-	deadline := time.Now().Add(5 * time.Second)
+	deadline := time.Now().Add(12 * time.Second)
 	var out []*proxyruntimev1.ProxySourceNode
 	var lastErr error
 	for {
 		nodes, err := fetchSourceNodes(ctx, apiAddr, "", allowed)
-		if err == nil && len(nodes) > 0 && sourceNodeHealthObserved(nodes) {
+		if err == nil && len(nodes) > 0 && sourceNodesHealthObserved(nodes) {
 			return nodes, nil
 		}
 		if err != nil {
@@ -102,13 +102,17 @@ func fetchSourceNodesWhenReady(ctx context.Context, apiAddr string, allowed map[
 	}
 }
 
-func sourceNodeHealthObserved(nodes []*proxyruntimev1.ProxySourceNode) bool {
+func sourceNodesHealthObserved(nodes []*proxyruntimev1.ProxySourceNode) bool {
 	for _, node := range nodes {
-		if node.GetStatus() != proxyruntimev1.ProxySourceNodeStatus_PROXY_SOURCE_NODE_STATUS_UNKNOWN {
-			return true
+		switch node.GetStatus() {
+		case proxyruntimev1.ProxySourceNodeStatus_PROXY_SOURCE_NODE_STATUS_AVAILABLE,
+			proxyruntimev1.ProxySourceNodeStatus_PROXY_SOURCE_NODE_STATUS_UNAVAILABLE:
+			continue
+		default:
+			return false
 		}
 	}
-	return false
+	return true
 }
 
 func assignNodeListenerPorts(bindings []nodeListener, host string, basePort int) error {

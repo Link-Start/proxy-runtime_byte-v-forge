@@ -9,7 +9,9 @@ import (
 	"net"
 	"sort"
 	"strings"
+	"time"
 
+	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 )
 
@@ -37,7 +39,7 @@ func (d *Driver) nodeListenersLocked(ctx context.Context, endpoint sourceplane.E
 		if apiAddr == "" {
 			return nil, errors.New("mihomo api address is required")
 		}
-		nodes, err := fetchSourceNodes(ctx, apiAddr, "", subscriptionIDs(providers))
+		nodes, err := fetchSourceNodesWhenReady(ctx, apiAddr, subscriptionIDs(providers))
 		if err != nil {
 			return nil, err
 		}
@@ -65,6 +67,36 @@ func (d *Driver) nodeListenersLocked(ctx context.Context, endpoint sourceplane.E
 		return nil, err
 	}
 	return bindings, nil
+}
+
+func fetchSourceNodesWhenReady(ctx context.Context, apiAddr string, allowed map[string]struct{}) ([]*proxyruntimev1.ProxySourceNode, error) {
+	deadline := time.Now().Add(5 * time.Second)
+	var out []*proxyruntimev1.ProxySourceNode
+	var lastErr error
+	for {
+		nodes, err := fetchSourceNodes(ctx, apiAddr, "", allowed)
+		if err == nil && len(nodes) > 0 {
+			return nodes, nil
+		}
+		if err != nil {
+			lastErr = err
+		} else {
+			out = nodes
+		}
+		if time.Now().After(deadline) {
+			if lastErr != nil {
+				return nil, lastErr
+			}
+			return out, nil
+		}
+		timer := time.NewTimer(250 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		case <-timer.C:
+		}
+	}
 }
 
 func assignNodeListenerPorts(bindings []nodeListener, host string, basePort int) error {

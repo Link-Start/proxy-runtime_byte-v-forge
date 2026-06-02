@@ -4,13 +4,10 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"github.com/byte-v-forge/common-lib/httpclient"
-	"github.com/byte-v-forge/common-lib/proxyurl"
 	"github.com/byte-v-forge/proxy-runtime/internal/app"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
@@ -129,22 +126,7 @@ func providerPlugins() []providerPlugin {
 		{key: config.ProviderNone, build: func(config.Config) (provider.Provider, error) { return provider.Empty{}, nil }},
 		{key: config.ProviderStatic, build: func(cfg config.Config) (provider.Provider, error) { return provider.NewStatic(cfg.SimpleProxies) }},
 		{key: config.ProviderTen24, build: func(cfg config.Config) (provider.Provider, error) {
-			return ten24.New(cfg.Ten24, buildHTTPClient(cfg)), nil
+			return ten24.New(cfg.Ten24, app.BuildProviderHTTPClient(cfg)), nil
 		}},
 	}
-}
-
-func buildHTTPClient(cfg config.Config) *http.Client {
-	proxyURL := ""
-	if cfg.ProviderHTTPProxy != "" {
-		parsed, err := proxyurl.Parse(cfg.ProviderHTTPProxy, "http")
-		if err == nil {
-			proxyURL = parsed.String()
-		}
-	}
-	client, err := httpclient.NewWithSchemes(cfg.RequestTimeout, proxyURL, httpclient.HTTPProxySchemes...)
-	if err != nil {
-		return &http.Client{Timeout: cfg.RequestTimeout}
-	}
-	return client
 }

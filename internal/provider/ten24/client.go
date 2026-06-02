@@ -1,6 +1,9 @@
 package ten24
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+)
 
 const providerID = "1024proxy"
 
@@ -11,7 +14,7 @@ type Provider struct {
 
 func New(cfg Config, httpClient *http.Client) *Provider {
 	if httpClient == nil {
-		httpClient = http.DefaultClient
+		httpClient = &http.Client{Timeout: 10 * time.Second}
 	}
 	return &Provider{cfg: cfg, httpClient: httpClient}
 }

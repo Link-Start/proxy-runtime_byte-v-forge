@@ -12,9 +12,12 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
-func (r *Runtime) checkIPListener(listenerID string) (config.EgressListener, error) {
+func (r *Runtime) checkIPListener(ctx context.Context, listenerID string) (config.EgressListener, error) {
 	configs := r.baseListenerConfigs()
-	leases, _ := r.leases.ListLeases(context.Background(), false)
+	leases, err := r.leases.ListLeases(ctx, false)
+	if err != nil {
+		return config.EgressListener{}, err
+	}
 	for _, lease := range leases {
 		if lease.GetListener() != nil {
 			configs = append(configs, listenerFromProto(lease.GetListener()))

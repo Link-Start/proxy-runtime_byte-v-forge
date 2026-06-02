@@ -29,6 +29,44 @@ func (s *redisLeaseStore) saveIndex(ctx context.Context, ids []string) error {
 	return s.store.SaveTTL(ctx, leaseIndexKey, string(data), 0)
 }
 
+func (s *redisLeaseStore) updateIndex(ctx context.Context, update func([]string) []string) error {
+	lock, err := s.locker.Lock(ctx, "index")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = lock.Unlock(ctx) }()
+	return s.saveIndex(ctx, update(s.loadIndex(ctx)))
+}
+
+func (s *redisLeaseStore) pruneStaleIndex(ctx context.Context, staleIDs []string) error {
+	staleIndex := leaseIDIndex(staleIDs)
+	if len(staleIndex) == 0 {
+		return nil
+	}
+	lock, err := s.locker.Lock(ctx, "index")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = lock.Unlock(ctx) }()
+	now := time.Now().UTC()
+	out := make([]string, 0)
+	for _, id := range s.loadIndex(ctx) {
+		if _, stale := staleIndex[id]; !stale {
+			out = append(out, id)
+			continue
+		}
+		lease, err := s.loadLease(ctx, id)
+		if err == nil && leaseActive(lease, now) {
+			out = append(out, id)
+			continue
+		}
+		if err != nil && !errors.Is(err, errLeaseNotFound) {
+			out = append(out, id)
+		}
+	}
+	return s.saveIndex(ctx, out)
+}
+
 var errLeaseNotFound = errors.New("active proxy lease not found")
 
 func leaseKey(accountID string) string { return "lease:" + strings.TrimSpace(accountID) }
@@ -58,6 +96,17 @@ func removeLeaseIndex(ids []string, id string) []string {
 		}
 	}
 	return cleanIDs(out)
+}
+
+func leaseIDIndex(ids []string) map[string]struct{} {
+	index := map[string]struct{}{}
+	for _, id := range ids {
+		id = strings.TrimSpace(id)
+		if id != "" {
+			index[id] = struct{}{}
+		}
+	}
+	return index
 }
 
 func cleanIDs(ids []string) []string {

@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+
+	"github.com/byte-v-forge/common-lib/proxyurl"
 )
 
 func (c Config) validate() error {
@@ -38,6 +40,11 @@ func (c Config) validate() error {
 	}
 	if !isLocalProtocol(c.LocalProtocol) {
 		return fmt.Errorf("unsupported local protocol %q", c.LocalProtocol)
+	}
+	if strings.TrimSpace(c.ProviderHTTPProxy) != "" {
+		if _, err := proxyurl.Parse(c.ProviderHTTPProxy, "http"); err != nil {
+			return errors.New("PROXY_RUNTIME_PROVIDER_HTTP_PROXY is invalid")
+		}
 	}
 	if err := c.SessionListener.validate(); err != nil {
 		return err

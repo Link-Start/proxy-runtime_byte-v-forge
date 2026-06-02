@@ -26,30 +26,33 @@ func (s *redisLeaseStore) SaveLease(ctx context.Context, lease *proxyruntimev1.P
 	if err := s.store.SaveTTL(ctx, leaseKey(accountID), string(data), leaseTTL(lease)); err != nil {
 		return err
 	}
-	return s.saveIndex(ctx, appendLeaseIndex(s.loadIndex(ctx), accountID))
+	return s.updateIndex(ctx, func(ids []string) []string {
+		return appendLeaseIndex(ids, accountID)
+	})
 }
 
 func (s *redisLeaseStore) ListLeases(ctx context.Context, _ bool) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	ids := s.loadIndex(ctx)
 	out := make([]*proxyruntimev1.ProxyDynamicLease, 0, len(ids))
-	activeIDs := make([]string, 0, len(ids))
+	staleIDs := make([]string, 0, len(ids))
 	now := time.Now().UTC()
 	for _, id := range ids {
 		lease, err := s.loadLease(ctx, id)
 		if errors.Is(err, errLeaseNotFound) {
+			staleIDs = append(staleIDs, id)
 			continue
 		}
 		if err != nil {
 			return nil, err
 		}
 		if !leaseActive(lease, now) {
+			staleIDs = append(staleIDs, id)
 			continue
 		}
 		out = append(out, lease)
-		activeIDs = append(activeIDs, id)
 	}
-	if len(activeIDs) != len(ids) {
-		_ = s.saveIndex(ctx, activeIDs)
+	if len(staleIDs) > 0 {
+		_ = s.pruneStaleIndex(ctx, staleIDs)
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].GetAcquiredAt().AsTime().After(out[j].GetAcquiredAt().AsTime()) })
 	return out, nil
@@ -75,7 +78,9 @@ func (s *redisLeaseStore) DeleteLease(ctx context.Context, accountID string) err
 	if err := s.store.Delete(ctx, leaseKey(accountID)); err != nil {
 		return err
 	}
-	return s.saveIndex(ctx, removeLeaseIndex(s.loadIndex(ctx), accountID))
+	return s.updateIndex(ctx, func(ids []string) []string {
+		return removeLeaseIndex(ids, accountID)
+	})
 }
 
 func (s *redisLeaseStore) loadLease(ctx context.Context, accountID string) (*proxyruntimev1.ProxyDynamicLease, error) {

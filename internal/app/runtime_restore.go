@@ -10,7 +10,6 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
 func (r *Runtime) restoreActiveLeases(ctx context.Context, staticChain []*url.URL, poolNodes []provider.Node) {
@@ -50,7 +49,7 @@ func (r *Runtime) restoreLeaseRoute(ctx context.Context, lease *proxyruntimev1.P
 		return err
 	}
 	providerCfg.Gateways = gatewaysForPlan(settings, lease.GetChainPlan(), providerCfg.ProviderID)
-	providerClient, err := r.accountProviders.NewProvider(providerCfg, buildRuntimeHTTPClient(r.cfg))
+	providerClient, err := r.accountProviders.NewProvider(providerCfg, BuildProviderHTTPClient(r.cfg))
 	if err != nil {
 		return err
 	}

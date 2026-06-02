@@ -11,6 +11,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"google.golang.org/protobuf/proto"
 )
 
 type Service struct {
@@ -123,7 +124,5 @@ func cloneCheck(in *proxyruntimev1.ProxyIPFraudCheck) *proxyruntimev1.ProxyIPFra
 	if in == nil {
 		return nil
 	}
-	out := *in
-	out.RiskSignals = append([]proxyruntimev1.ProxyIPFraudSignal(nil), in.GetRiskSignals()...)
-	return &out
+	return proto.Clone(in).(*proxyruntimev1.ProxyIPFraudCheck)
 }

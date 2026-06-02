@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/byte-v-forge/common-lib/httpclient"
 	"github.com/byte-v-forge/common-lib/proxyurl"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
@@ -27,14 +28,19 @@ func hashModulo(value string, modulo uint32) uint32 {
 }
 
 func providerHTTPProxyRef(raw string) string {
-	if raw == "" {
-		return ""
-	}
 	parsed, err := proxyurl.Parse(raw, "http")
 	if err != nil {
-		return "configured"
+		return ""
 	}
 	return parsed.Scheme + "://" + parsed.Host
+}
+
+func providerHTTPProxyURL(raw string) string {
+	parsed, err := proxyurl.Parse(raw, "http")
+	if err != nil {
+		return ""
+	}
+	return parsed.String()
 }
 
 func cloneLabels(labels map[string]string) map[string]string {
@@ -59,6 +65,10 @@ func cloneNodes(in []provider.Node) []provider.Node {
 	return out
 }
 
-func buildRuntimeHTTPClient(cfg config.Config) *http.Client {
-	return &http.Client{Timeout: cfg.RequestTimeout}
+func BuildProviderHTTPClient(cfg config.Config) *http.Client {
+	client, err := httpclient.NewWithSchemes(cfg.RequestTimeout, providerHTTPProxyURL(cfg.ProviderHTTPProxy), httpclient.HTTPProxySchemes...)
+	if err != nil {
+		return &http.Client{Timeout: cfg.RequestTimeout}
+	}
+	return client
 }

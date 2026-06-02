@@ -8,6 +8,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"google.golang.org/protobuf/proto"
 )
 
 const chainHopEnrichmentTimeout = 2 * time.Second
@@ -57,15 +58,15 @@ func (r *Runtime) enrichChainHop(ctx context.Context, hop *proxyruntimev1.ProxyC
 	defer cancel()
 	results := make(chan *proxyruntimev1.ProxyChainHop, 1)
 	go func() {
-		enriched := *hop
+		enriched := proto.Clone(hop).(*proxyruntimev1.ProxyChainHop)
 		ip, err := resolve(enrichCtx)
 		if err != nil {
 			r.logger.Warn("resolve proxy chain hop public ip failed", "hop_id", hop.GetHopId(), "error", err)
-			results <- &enriched
+			results <- enriched
 			return
 		}
-		r.fillChainHopGeo(enrichCtx, &enriched, ip)
-		results <- &enriched
+		r.fillChainHopGeo(enrichCtx, enriched, ip)
+		results <- enriched
 	}()
 	select {
 	case <-ctx.Done():

@@ -51,7 +51,7 @@ func (r *Runtime) acquireLease(ctx context.Context, httpReq *http.Request, req *
 		return nil, err
 	}
 	providerCfg.Gateways = []accountproxy.Gateway{planResult.gateway}
-	providerClient, err := r.accountProviders.NewProvider(providerCfg, buildRuntimeHTTPClient(r.cfg))
+	providerClient, err := r.accountProviders.NewProvider(providerCfg, BuildProviderHTTPClient(r.cfg))
 	if err != nil {
 		return nil, err
 	}

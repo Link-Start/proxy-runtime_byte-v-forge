@@ -19,7 +19,7 @@ func (r *Runtime) getProxyExitIP(ctx context.Context, req *proxyruntimev1.GetPro
 		return nil, err
 	}
 	timeout := proxyExitIPTimeout(settings)
-	client, err := r.checkProxyHTTPClient(req.GetPoolId(), req.GetProviderId(), req.GetListenerId(), timeout)
+	client, err := r.checkProxyHTTPClient(ctx, req.GetPoolId(), req.GetProviderId(), req.GetListenerId(), timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -66,7 +66,7 @@ func (r *Runtime) checkProxyEdgeAccess(ctx context.Context, req *proxyruntimev1.
 		return nil, err
 	}
 	timeout := proxyExitIPTimeout(settings)
-	client, err := r.checkProxyHTTPClient(req.GetPoolId(), req.GetProviderId(), req.GetListenerId(), timeout)
+	client, err := r.checkProxyHTTPClient(ctx, req.GetPoolId(), req.GetProviderId(), req.GetListenerId(), timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (r *Runtime) checkTargetConnectivity(ctx context.Context, req *proxyruntime
 	if err != nil {
 		return nil, err
 	}
-	client, err := r.checkProxyHTTPClient(req.GetPoolId(), req.GetProviderId(), req.GetListenerId(), proxyExitIPTimeout(settings))
+	client, err := r.checkProxyHTTPClient(ctx, req.GetPoolId(), req.GetProviderId(), req.GetListenerId(), proxyExitIPTimeout(settings))
 	if err != nil {
 		return nil, err
 	}

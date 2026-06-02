@@ -42,7 +42,7 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 		accountID = generated
 	}
 	providerID := firstNonEmpty(req.GetProviderId(), accountproxy.ProviderTen24)
-	if !accountproxy.IsSupported(providerID) {
+	if !s.accountProviders.IsSupported(providerID) {
 		return nil, fmt.Errorf("unsupported provider_id %q", providerID)
 	}
 	existing, _ := s.providerAccountRecord(ctx, accountID)
@@ -71,7 +71,7 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 			cfg.Username = plain.Username
 			cfg.Password = plain.Password
 		}
-		if err := cfg.Validate(); err != nil {
+		if err := s.accountProviders.Validate(cfg); err != nil {
 			return nil, fmt.Errorf("enabled provider account invalid: %w", err)
 		}
 	}
@@ -129,7 +129,7 @@ func (s *PostgresStore) ProviderConfig(ctx context.Context, accountID string) (a
 		_ = json.Unmarshal(plain, &credential)
 	}
 	cfg := accountproxy.Config{ProviderID: record.ProviderID, Username: credential.Username, Password: credential.Password}
-	return cfg, record.AccountID, cfg.Validate()
+	return cfg, record.AccountID, s.accountProviders.Validate(cfg)
 }
 
 func (s *PostgresStore) DefaultProviderAccountID(ctx context.Context) (string, error) {

@@ -9,19 +9,23 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 )
 
 type Runtime struct {
-	cfg         config.Config
-	provider    provider.Provider
-	routePlane  dataplane.Driver
-	sourcePlane sourceplane.Driver
-	store       *PostgresStore
-	leases      leaseStore
-	settings    *runtimeSettingsStore
-	logger      *slog.Logger
+	cfg              config.Config
+	provider         provider.Provider
+	accountProviders *accountproxy.Registry
+	ipFraudProviders *ipfraud.Registry
+	routePlane       dataplane.Driver
+	sourcePlane      sourceplane.Driver
+	store            *PostgresStore
+	leases           leaseStore
+	settings         *runtimeSettingsStore
+	logger           *slog.Logger
 
 	mu          sync.RWMutex
 	pool        []provider.Node
@@ -41,14 +45,14 @@ type Runtime struct {
 	geoCache map[string]cachedIPGeo
 }
 
-func NewRuntime(cfg config.Config, proxyProvider provider.Provider, routePlane dataplane.Driver, sourcePlane sourceplane.Driver, store *PostgresStore, leases leaseStore, logger *slog.Logger) *Runtime {
+func NewRuntime(cfg config.Config, proxyProvider provider.Provider, accountProviders *accountproxy.Registry, ipFraudProviders *ipfraud.Registry, routePlane dataplane.Driver, sourcePlane sourceplane.Driver, store *PostgresStore, leases leaseStore, logger *slog.Logger) *Runtime {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	if sourcePlane == nil {
 		sourcePlane = sourceplane.Empty{}
 	}
-	return &Runtime{cfg: cfg, provider: proxyProvider, routePlane: routePlane, sourcePlane: sourcePlane, store: store, leases: leases, settings: newRuntimeSettingsStore(store, logger), logger: logger}
+	return &Runtime{cfg: cfg, provider: proxyProvider, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, routePlane: routePlane, sourcePlane: sourcePlane, store: store, leases: leases, settings: newRuntimeSettingsStore(store, accountProviders, ipFraudProviders, logger), logger: logger}
 }
 
 func (r *Runtime) Run(ctx context.Context) error {

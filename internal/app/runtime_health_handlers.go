@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
 func (r *Runtime) handleHealth(w http.ResponseWriter, req *http.Request) {
@@ -39,7 +38,7 @@ func (r *Runtime) handleProviders(w http.ResponseWriter, req *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	r.writeProto(w, &proxyruntimev1.ListProxyProvidersResponse{Providers: accountproxy.Descriptors(dynamicIPGatewayMap(settings))})
+	r.writeProto(w, &proxyruntimev1.ListProxyProvidersResponse{Providers: r.accountProviders.Descriptors(dynamicIPGatewayMap(settings))})
 }
 
 func (r *Runtime) handleGateway(w http.ResponseWriter, req *http.Request) {

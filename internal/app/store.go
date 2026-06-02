@@ -6,14 +6,16 @@ import (
 	"time"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretbox"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type PostgresStore struct {
-	pool   *pgxpool.Pool
-	box    secretbox.Box
-	logger *slog.Logger
+	pool             *pgxpool.Pool
+	box              secretbox.Box
+	accountProviders *accountproxy.Registry
+	logger           *slog.Logger
 }
 
 type providerCredential struct {
@@ -31,7 +33,7 @@ type providerAccountRecord struct {
 	UpdatedAt        time.Time
 }
 
-func NewPostgresStore(ctx context.Context, cfg config.Config, logger *slog.Logger) (*PostgresStore, error) {
+func NewPostgresStore(ctx context.Context, cfg config.Config, accountProviders *accountproxy.Registry, logger *slog.Logger) (*PostgresStore, error) {
 	box, err := secretbox.New(cfg.EncryptionKey)
 	if err != nil {
 		return nil, err
@@ -40,7 +42,7 @@ func NewPostgresStore(ctx context.Context, cfg config.Config, logger *slog.Logge
 	if err != nil {
 		return nil, err
 	}
-	store := &PostgresStore{pool: pool, box: box, logger: logger}
+	store := &PostgresStore{pool: pool, box: box, accountProviders: accountProviders, logger: logger}
 	if cfg.ApplyMigrations {
 		if err := store.applyMigrations(ctx); err != nil {
 			pool.Close()

@@ -28,8 +28,8 @@ type cachedIPGeo struct {
 
 const ipGeoCacheTTL = 24 * time.Hour
 
-func newIPFraudChecker(cfg config.IPFraudConfig, providers []ipfraud.ProviderConfig, logger *slog.Logger) ipFraudChecker {
-	return ipfraud.NewService(ipfraud.Config{
+func newIPFraudChecker(registry *ipfraud.Registry, cfg config.IPFraudConfig, providers []ipfraud.ProviderConfig, logger *slog.Logger) ipFraudChecker {
+	return ipfraud.NewService(registry, ipfraud.Config{
 		Providers:   providers,
 		Timeout:     cfg.Timeout,
 		CacheTTL:    cfg.CacheTTL,

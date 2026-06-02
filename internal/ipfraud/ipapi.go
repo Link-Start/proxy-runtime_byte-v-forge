@@ -16,8 +16,6 @@ const ipapiEndpoint = "https://api.ipapi.is?q={ip}"
 
 type ipapiPlugin struct{}
 
-func init() { Register(ipapiPlugin{}) }
-
 func (ipapiPlugin) Kind() proxyruntimev1.ProxyIPFraudProviderKind {
 	return proxyruntimev1.ProxyIPFraudProviderKind_PROXY_IP_FRAUD_PROVIDER_KIND_IPAPI
 }

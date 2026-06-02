@@ -2,8 +2,8 @@ package accountproxy
 
 import proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 
-func init() {
-	RegisterDefinition(Definition{
+func CliproxyPlugin() Plugin {
+	return NewDefinitionPlugin(Definition{
 		ProviderID:               ProviderCliproxy,
 		DisplayName:              "Cliproxy",
 		DefaultProtocol:          "socks5",

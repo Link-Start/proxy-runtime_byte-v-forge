@@ -36,14 +36,6 @@ func validateConfig(cfg Config, definition Definition) error {
 	return nil
 }
 
-func (c Config) Validate() error {
-	plugin, ok := Get(c.ProviderID)
-	if !ok {
-		return fmt.Errorf("unsupported provider_id %q", c.ProviderID)
-	}
-	return plugin.Validate(c)
-}
-
 func validateProtocol(protocol string) error {
 	switch strings.ToLower(strings.TrimSpace(protocol)) {
 	case "", "http", "socks5":

@@ -16,7 +16,9 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane/gostplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/gost"
+	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/ten24"
 	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 	mihomosource "github.com/byte-v-forge/proxy-runtime/internal/sourceplane/mihomo"
@@ -28,6 +30,17 @@ func main() {
 	cfg, err := config.LoadFromEnv()
 	if err != nil {
 		logger.Error("load config failed", "error", err)
+		os.Exit(1)
+	}
+
+	accountProviders, err := accountproxy.NewDefaultRegistry()
+	if err != nil {
+		logger.Error("create account provider registry failed", "error", err)
+		os.Exit(1)
+	}
+	ipFraudProviders, err := ipfraud.NewDefaultRegistry()
+	if err != nil {
+		logger.Error("create IP fraud provider registry failed", "error", err)
 		os.Exit(1)
 	}
 
@@ -47,7 +60,7 @@ func main() {
 		logger.Error("create source runtime failed", "error", err)
 		os.Exit(1)
 	}
-	store, err := app.NewPostgresStore(context.Background(), cfg, logger)
+	store, err := app.NewPostgresStore(context.Background(), cfg, accountProviders, logger)
 	if err != nil {
 		logger.Error("create store failed", "error", err)
 		os.Exit(1)
@@ -59,7 +72,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer leaseStore.Close()
-	runtime := app.NewRuntime(cfg, proxyProvider, routePlane, sourcePlane, store, leaseStore, logger)
+	runtime := app.NewRuntime(cfg, proxyProvider, accountProviders, ipFraudProviders, routePlane, sourcePlane, store, leaseStore, logger)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()

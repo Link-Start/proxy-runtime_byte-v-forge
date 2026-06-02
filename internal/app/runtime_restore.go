@@ -50,7 +50,7 @@ func (r *Runtime) restoreLeaseRoute(ctx context.Context, lease *proxyruntimev1.P
 		return err
 	}
 	providerCfg.Gateways = gatewaysForPlan(settings, lease.GetChainPlan(), providerCfg.ProviderID)
-	providerClient, err := accountproxy.New(providerCfg, buildRuntimeHTTPClient(r.cfg))
+	providerClient, err := r.accountProviders.NewProvider(providerCfg, buildRuntimeHTTPClient(r.cfg))
 	if err != nil {
 		return err
 	}

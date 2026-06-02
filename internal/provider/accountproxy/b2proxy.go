@@ -8,8 +8,8 @@ import (
 	"github.com/byte-v-forge/common-lib/geox"
 )
 
-func init() {
-	RegisterDefinition(Definition{
+func B2ProxyPlugin() Plugin {
+	return NewDefinitionPlugin(Definition{
 		ProviderID:               ProviderB2Proxy,
 		DisplayName:              "B2Proxy",
 		DefaultProtocol:          "socks5",

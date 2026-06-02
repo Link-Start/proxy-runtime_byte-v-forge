@@ -9,7 +9,7 @@ import (
 )
 
 func (r *Runtime) checkIPFraud(ctx context.Context, ip string, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyIPFraudCheck, error) {
-	providers := ipFraudProviders(settings)
+	providers := ipFraudProviders(settings, r.ipFraudProviders)
 	if len(providers) == 0 {
 		return unsupportedIPFraudCheck(ip), nil
 	}
@@ -18,13 +18,13 @@ func (r *Runtime) checkIPFraud(ctx context.Context, ip string, settings *runtime
 }
 
 func (r *Runtime) ipFraudChecker(settings *runtimeSettingsFile, providers []ipfraud.ProviderConfig) ipFraudChecker {
-	signature := runtimeSettingsSignature(settings)
+	signature := runtimeSettingsSignature(settings, r.ipFraudProviders)
 	r.fraudMu.Lock()
 	defer r.fraudMu.Unlock()
 	if r.fraud != nil && r.fraudSignature == signature {
 		return r.fraud
 	}
-	r.fraud = newIPFraudChecker(r.cfg.IPFraud, providers, r.logger)
+	r.fraud = newIPFraudChecker(r.ipFraudProviders, r.cfg.IPFraud, providers, r.logger)
 	r.fraudSignature = signature
 	return r.fraud
 }

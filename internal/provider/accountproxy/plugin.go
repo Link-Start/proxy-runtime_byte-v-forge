@@ -2,6 +2,7 @@ package accountproxy
 
 import (
 	"net/http"
+	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
@@ -9,8 +10,11 @@ import (
 
 type definitionPlugin struct{ definition Definition }
 
-func RegisterDefinition(definition Definition) {
-	Register(definitionPlugin{definition: definition})
+func NewDefinitionPlugin(definition Definition) Plugin {
+	definition.ProviderID = normalizeProviderID(definition.ProviderID)
+	definition.DisplayName = strings.TrimSpace(definition.DisplayName)
+	definition.DefaultProtocol = strings.TrimSpace(definition.DefaultProtocol)
+	return definitionPlugin{definition: definition}
 }
 
 func (p definitionPlugin) ID() string { return p.definition.ProviderID }

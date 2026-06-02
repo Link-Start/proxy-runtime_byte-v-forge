@@ -14,8 +14,6 @@ const ipQualityScoreEndpoint = "https://www.ipqualityscore.com/api/json/ip/{key}
 
 type ipQualityScorePlugin struct{}
 
-func init() { Register(ipQualityScorePlugin{}) }
-
 func (ipQualityScorePlugin) Kind() proxyruntimev1.ProxyIPFraudProviderKind {
 	return proxyruntimev1.ProxyIPFraudProviderKind_PROXY_IP_FRAUD_PROVIDER_KIND_IPQUALITYSCORE
 }

@@ -17,8 +17,6 @@ const ip2LocationEndpoint = "https://api.ip2location.io/?ip={ip}"
 
 type ip2LocationPlugin struct{}
 
-func init() { Register(ip2LocationPlugin{}) }
-
 func (ip2LocationPlugin) Kind() proxyruntimev1.ProxyIPFraudProviderKind {
 	return proxyruntimev1.ProxyIPFraudProviderKind_PROXY_IP_FRAUD_PROVIDER_KIND_IP2LOCATION
 }

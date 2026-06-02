@@ -20,8 +20,6 @@ const (
 
 type ipinfoPlugin struct{}
 
-func init() { Register(ipinfoPlugin{}) }
-
 func (ipinfoPlugin) Kind() proxyruntimev1.ProxyIPFraudProviderKind {
 	return proxyruntimev1.ProxyIPFraudProviderKind_PROXY_IP_FRAUD_PROVIDER_KIND_IPINFO
 }

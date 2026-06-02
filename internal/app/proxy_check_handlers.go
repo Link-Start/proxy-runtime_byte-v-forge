@@ -5,7 +5,6 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/common-lib/protojsonx"
-	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 )
 
 func (r *Runtime) handleGetProxyExitIP(w http.ResponseWriter, req *http.Request) {
@@ -144,7 +143,7 @@ func (r *Runtime) handleIPFraudProviders(w http.ResponseWriter, req *http.Reques
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	r.writeProto(w, &proxyruntimev1.ListProxyIPFraudProvidersResponse{Providers: ipfraud.ProviderDescriptors()})
+	r.writeProto(w, &proxyruntimev1.ListProxyIPFraudProvidersResponse{Providers: r.ipFraudProviders.ProviderDescriptors()})
 }
 
 func (r *Runtime) handleRuntimeSettings(w http.ResponseWriter, req *http.Request) {

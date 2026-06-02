@@ -1,15 +1,8 @@
 package ten24
 
-import (
-	"net/http"
-)
+import "net/http"
 
-const (
-	providerID           = "1024proxy"
-	defaultStickyMinutes = 30
-	minStickyMinutes     = 1
-	maxStickyMinutes     = 120
-)
+const providerID = "1024proxy"
 
 type Provider struct {
 	cfg        Config
@@ -28,9 +21,5 @@ func (p *Provider) Name() string {
 }
 
 func (p *Provider) RequiresSessionLease() bool {
-	return true
-}
-
-func (p *Provider) supportsCredentialSession() bool {
-	return p.cfg.ProxyAddr != "" && p.cfg.Username != "" && p.cfg.Password != ""
+	return false
 }

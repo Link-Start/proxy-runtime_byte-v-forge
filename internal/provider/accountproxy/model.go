@@ -48,13 +48,6 @@ func dynamicSource(definition Definition, accountID string, displayName string, 
 	}
 }
 
-func DynamicSource(providerID string, displayName string, accountID string, gateways []Gateway) *proxyruntimev1.ProxySourceDescriptor {
-	if plugin, ok := Get(providerID); ok {
-		return plugin.DynamicSource(accountID, displayName, gateways)
-	}
-	return dynamicSource(Definition{ProviderID: providerID, DisplayName: displayName}, accountID, displayName, gateways)
-}
-
 func capabilities(definition Definition) []proxyruntimev1.ProxyCapability {
 	out := []proxyruntimev1.ProxyCapability{proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_CHAINING}
 	if len(definition.Gateways) == 0 {

@@ -57,8 +57,8 @@ func normalizeDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderS
 	}
 }
 
-func validateDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderSettings, index int) error {
-	if !accountproxy.IsSupported(provider.GetProviderId()) {
+func validateDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderSettings, index int, accountProviders *accountproxy.Registry) error {
+	if !accountProviders.IsSupported(provider.GetProviderId()) {
 		return fmt.Errorf("dynamic_ip_providers[%d].provider_id is unsupported", index)
 	}
 	seen := map[string]struct{}{}

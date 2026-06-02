@@ -15,8 +15,6 @@ const abuseIPDBEndpoint = "https://api.abuseipdb.com/api/v2/check?ipAddress={ip}
 
 type abuseIPDBPlugin struct{}
 
-func init() { Register(abuseIPDBPlugin{}) }
-
 func (abuseIPDBPlugin) Kind() proxyruntimev1.ProxyIPFraudProviderKind {
 	return proxyruntimev1.ProxyIPFraudProviderKind_PROXY_IP_FRAUD_PROVIDER_KIND_ABUSEIPDB
 }

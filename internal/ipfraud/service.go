@@ -33,7 +33,7 @@ type providerEntry struct {
 	checker     provider
 }
 
-func NewService(cfg Config, logger *slog.Logger) *Service {
+func NewService(registry *Registry, cfg Config, logger *slog.Logger) *Service {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -49,7 +49,7 @@ func NewService(cfg Config, logger *slog.Logger) *Service {
 	client := &http.Client{Timeout: cfg.Timeout}
 	providers := make([]providerEntry, 0, len(cfg.Providers))
 	for _, item := range cfg.Providers {
-		plugin, ok := PluginForKind(item.Kind)
+		plugin, ok := registry.PluginForKind(item.Kind)
 		if !ok {
 			continue
 		}

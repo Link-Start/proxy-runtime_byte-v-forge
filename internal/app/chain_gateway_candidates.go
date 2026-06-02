@@ -22,7 +22,10 @@ func (r *Runtime) dynamicGatewayCandidates(ctx context.Context, settings *runtim
 		if account.GetStatus() != proxyruntimev1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED || !account.GetCredentialConfigured() {
 			continue
 		}
-		if requiresDynamicGeoTargeting(policy) && !accountproxy.SupportsRuntimeGeoTargeting(account.GetProviderId()) {
+		if !r.accountProviders.IsSupported(account.GetProviderId()) {
+			continue
+		}
+		if requiresDynamicGeoTargeting(policy) && !r.accountProviders.SupportsRuntimeGeoTargeting(account.GetProviderId()) {
 			continue
 		}
 		if r.providerAccountBusy(ctx, account.GetAccountId()) {
@@ -39,7 +42,7 @@ func (r *Runtime) dynamicGatewayCandidates(ctx context.Context, settings *runtim
 				GatewayId:         gateway.ID,
 				DisplayName:       firstNonEmpty(gateway.DisplayName, gateway.ID),
 				RegionCodes:       cleanRegionCodes(regions),
-				Protocol:          protocolEnum(accountproxy.GatewayProtocolForProvider(account.GetProviderId(), gateway)),
+				Protocol:          protocolEnum(r.gatewayProtocolForProvider(account.GetProviderId(), gateway)),
 				Priority:          uint32(accountIndex*100 + gatewayIndex),
 			}
 			out = append(out, scoredGatewayCandidate{proto: candidate, gateway: gateway, score: gatewayScore(gateway, policy)})

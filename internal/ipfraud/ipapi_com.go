@@ -17,8 +17,6 @@ const ipAPIComEndpoint = "http://ip-api.com/json/{ip}?fields=status,message,quer
 
 type ipAPIComPlugin struct{}
 
-func init() { Register(ipAPIComPlugin{}) }
-
 func (ipAPIComPlugin) Kind() proxyruntimev1.ProxyIPFraudProviderKind {
 	return proxyruntimev1.ProxyIPFraudProviderKind_PROXY_IP_FRAUD_PROVIDER_KIND_IP_API_COM
 }

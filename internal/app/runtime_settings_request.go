@@ -6,10 +6,12 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
+	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
-func settingsFromRequest(req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, current *runtimeSettingsFile) (*runtimeSettingsFile, error) {
-	current = normalizeRuntimeSettings(current)
+func settingsFromRequest(req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, current *runtimeSettingsFile, accountProviders *accountproxy.Registry, ipFraudProviders *ipfraud.Registry) (*runtimeSettingsFile, error) {
+	current = normalizeRuntimeSettingsWithProviders(current, ipFraudProviders)
 	settings := &proxyruntimev1.ProxyRuntimePersistentSettings{
 		EdgeCanary:         edgeCanaryFromRequest(req.GetEdgeCanary(), current.GetEdgeCanary()),
 		IpFraudProviders:   make([]*proxyruntimev1.ProxyIPFraudProviderSettings, 0, len(req.GetIpFraudProviders())),
@@ -19,11 +21,11 @@ func settingsFromRequest(req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, 
 	if edgeCanaryEnabled(settings.GetEdgeCanary()) && strings.TrimSpace(settings.GetEdgeCanary().GetUrl()) == "" {
 		return nil, errors.New("edge canary url is required when enabled")
 	}
-	currentProviders := providerSecrets(current)
+	currentProviders := providerSecrets(current, ipFraudProviders)
 	seenProviders := map[string]struct{}{}
 	for index, provider := range req.GetIpFraudProviders() {
-		item := ipFraudProviderFromRequest(provider, currentProviders, index)
-		if err := validateIPFraudProvider(item, index); err != nil {
+		item := ipFraudProviderFromRequest(provider, currentProviders, index, ipFraudProviders)
+		if err := validateIPFraudProvider(item, index, ipFraudProviders); err != nil {
 			return nil, err
 		}
 		key := providerSecretKey(item.GetKind(), item.GetProviderId())
@@ -36,7 +38,7 @@ func settingsFromRequest(req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, 
 	seenDynamicProviders := map[string]struct{}{}
 	for index, provider := range req.GetDynamicIpProviders() {
 		item := dynamicIPProviderFromProto(provider)
-		if err := validateDynamicIPProvider(item, index); err != nil {
+		if err := validateDynamicIPProvider(item, index, accountProviders); err != nil {
 			return nil, err
 		}
 		if _, exists := seenDynamicProviders[item.GetProviderId()]; exists {
@@ -45,5 +47,5 @@ func settingsFromRequest(req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, 
 		seenDynamicProviders[item.GetProviderId()] = struct{}{}
 		settings.DynamicIpProviders = append(settings.DynamicIpProviders, item)
 	}
-	return normalizeRuntimeSettings(settings), nil
+	return normalizeRuntimeSettingsWithProviders(settings, ipFraudProviders), nil
 }

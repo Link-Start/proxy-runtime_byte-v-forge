@@ -8,9 +8,9 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 )
 
-func providerSecrets(settings *runtimeSettingsFile) map[string][]string {
+func providerSecrets(settings *runtimeSettingsFile, providers *ipfraud.Registry) map[string][]string {
 	secrets := map[string][]string{}
-	for _, item := range normalizeRuntimeSettings(settings).GetIpFraudProviders() {
+	for _, item := range normalizeRuntimeSettingsWithProviders(settings, providers).GetIpFraudProviders() {
 		secrets[providerSecretKey(item.GetKind(), item.GetProviderId())] = append([]string(nil), item.GetApiKeys()...)
 	}
 	return secrets
@@ -20,27 +20,27 @@ func providerSecretKey(kind proxyruntimev1.ProxyIPFraudProviderKind, id string) 
 	return fmt.Sprintf("%d:%s", kind, strings.TrimSpace(id))
 }
 
-func ipFraudProviders(settings *runtimeSettingsFile) []ipfraud.ProviderConfig {
-	items := normalizeRuntimeSettings(settings).GetIpFraudProviders()
+func ipFraudProviders(settings *runtimeSettingsFile, registry *ipfraud.Registry) []ipfraud.ProviderConfig {
+	items := normalizeRuntimeSettingsWithProviders(settings, registry).GetIpFraudProviders()
 	providers := make([]ipfraud.ProviderConfig, 0, len(items))
 	for _, item := range items {
 		providers = append(providers, ipfraud.ProviderConfig{
 			ID:     item.GetProviderId(),
 			Kind:   item.GetKind(),
 			Weight: int(item.GetWeight()),
-			Auth:   ipFraudAuth(item),
+			Auth:   ipFraudAuth(item, registry),
 		})
 	}
 	return providers
 }
 
-func ipFraudProviderFromRequest(in *proxyruntimev1.ProxyIPFraudProviderSettings, current map[string][]string, index int) *proxyruntimev1.ProxyIPFraudProviderSettings {
+func ipFraudProviderFromRequest(in *proxyruntimev1.ProxyIPFraudProviderSettings, current map[string][]string, index int, registry *ipfraud.Registry) *proxyruntimev1.ProxyIPFraudProviderSettings {
 	if in == nil {
 		return &proxyruntimev1.ProxyIPFraudProviderSettings{}
 	}
 	id := strings.TrimSpace(in.GetProviderId())
 	if id == "" {
-		id = ipfraud.DefaultProviderID(in.GetKind())
+		id = registry.DefaultProviderID(in.GetKind())
 	}
 	apiKeys := cleanList(in.GetApiKeys())
 	if len(apiKeys) == 0 && !in.GetClearApiKeys() && !in.GetAnonymous() {
@@ -48,27 +48,27 @@ func ipFraudProviderFromRequest(in *proxyruntimev1.ProxyIPFraudProviderSettings,
 	}
 	weight := in.GetWeight()
 	if weight == 0 {
-		weight = providerDefaultWeight(in.GetKind(), index)
+		weight = providerDefaultWeight(in.GetKind(), index, registry)
 	}
 	return &proxyruntimev1.ProxyIPFraudProviderSettings{ProviderId: id, Weight: weight, Kind: in.GetKind(), Anonymous: in.GetAnonymous(), ApiKeys: apiKeys}
 }
 
-func normalizeIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettings, index int) {
+func normalizeIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettings, index int, registry *ipfraud.Registry) {
 	if provider == nil {
 		return
 	}
 	provider.ProviderId = strings.TrimSpace(provider.GetProviderId())
 	provider.ApiKeys = cleanList(provider.GetApiKeys())
 	if provider.ProviderId == "" {
-		provider.ProviderId = ipfraud.DefaultProviderID(provider.GetKind())
+		provider.ProviderId = registry.DefaultProviderID(provider.GetKind())
 	}
 	if provider.Weight == 0 {
-		provider.Weight = providerDefaultWeight(provider.GetKind(), index)
+		provider.Weight = providerDefaultWeight(provider.GetKind(), index, registry)
 	}
 }
 
-func validateIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettings, index int) error {
-	plugin, ok := ipfraud.PluginForKind(provider.GetKind())
+func validateIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettings, index int, registry *ipfraud.Registry) error {
+	plugin, ok := registry.PluginForKind(provider.GetKind())
 	if !ok {
 		return fmt.Errorf("ip_fraud_providers[%d].kind is required", index)
 	}
@@ -87,21 +87,21 @@ func validateIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettin
 	return nil
 }
 
-func supportedIPFraudProviders(providers []*proxyruntimev1.ProxyIPFraudProviderSettings) []*proxyruntimev1.ProxyIPFraudProviderSettings {
+func supportedIPFraudProviders(providers []*proxyruntimev1.ProxyIPFraudProviderSettings, registry *ipfraud.Registry) []*proxyruntimev1.ProxyIPFraudProviderSettings {
 	out := make([]*proxyruntimev1.ProxyIPFraudProviderSettings, 0, len(providers))
 	for _, provider := range providers {
-		if ipfraud.IsProviderKindSupported(provider.GetKind()) {
+		if registry.IsProviderKindSupported(provider.GetKind()) {
 			out = append(out, provider)
 		}
 	}
 	return out
 }
 
-func ipFraudAuth(provider *proxyruntimev1.ProxyIPFraudProviderSettings) ipfraud.AuthConfig {
+func ipFraudAuth(provider *proxyruntimev1.ProxyIPFraudProviderSettings, registry *ipfraud.Registry) ipfraud.AuthConfig {
 	if provider.GetAnonymous() {
 		return ipfraud.AuthConfig{Anonymous: &ipfraud.AnonymousAuthConfig{}}
 	}
-	plugin, ok := ipfraud.PluginForKind(provider.GetKind())
+	plugin, ok := registry.PluginForKind(provider.GetKind())
 	if !ok {
 		return ipfraud.AuthConfig{}
 	}
@@ -118,8 +118,8 @@ func defaultProviderWeight(index int) uint32 {
 	return uint32(100 - index*10)
 }
 
-func providerDefaultWeight(kind proxyruntimev1.ProxyIPFraudProviderKind, index int) uint32 {
-	if plugin, ok := ipfraud.PluginForKind(kind); ok {
+func providerDefaultWeight(kind proxyruntimev1.ProxyIPFraudProviderKind, index int, registry *ipfraud.Registry) uint32 {
+	if plugin, ok := registry.PluginForKind(kind); ok {
 		return plugin.DefaultWeight()
 	}
 	return defaultProviderWeight(index)

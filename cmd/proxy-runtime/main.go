@@ -14,9 +14,8 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane/gostplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/gost"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/ten24"
+	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 	mihomosource "github.com/byte-v-forge/proxy-runtime/internal/sourceplane/mihomo"
 )
@@ -40,8 +39,12 @@ func main() {
 		logger.Error("create IP fraud provider registry failed", "error", err)
 		os.Exit(1)
 	}
-
-	proxyProvider, err := buildProvider(cfg)
+	proxyProviders, err := providerregistry.NewDefaultRegistry()
+	if err != nil {
+		logger.Error("create provider registry failed", "error", err)
+		os.Exit(1)
+	}
+	proxyProvider, err := proxyProviders.NewProvider(cfg, app.BuildProviderHTTPClient(cfg))
 	if err != nil {
 		logger.Error("create provider failed", "error", err)
 		os.Exit(1)
@@ -104,29 +107,5 @@ func buildSourcePlane(cfg config.Config, logger *slog.Logger) (sourceplane.Drive
 		}, logger), nil
 	default:
 		return nil, fmt.Errorf("unsupported source runtime %q", cfg.SourceRuntime)
-	}
-}
-
-func buildProvider(cfg config.Config) (provider.Provider, error) {
-	for _, plugin := range providerPlugins() {
-		if plugin.key == cfg.Provider {
-			return plugin.build(cfg)
-		}
-	}
-	return nil, config.ErrUnsupportedProvider
-}
-
-type providerPlugin struct {
-	key   string
-	build func(config.Config) (provider.Provider, error)
-}
-
-func providerPlugins() []providerPlugin {
-	return []providerPlugin{
-		{key: config.ProviderNone, build: func(config.Config) (provider.Provider, error) { return provider.Empty{}, nil }},
-		{key: config.ProviderStatic, build: func(cfg config.Config) (provider.Provider, error) { return provider.NewStatic(cfg.SimpleProxies) }},
-		{key: config.ProviderTen24, build: func(cfg config.Config) (provider.Provider, error) {
-			return ten24.New(cfg.Ten24, app.BuildProviderHTTPClient(cfg)), nil
-		}},
 	}
 }

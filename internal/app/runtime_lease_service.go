@@ -33,7 +33,7 @@ func (r *Runtime) acquireLease(ctx context.Context, httpReq *http.Request, req *
 			return nil, err
 		}
 	}
-	planResult, err := r.planProxyChain(ctx, req)
+	planResult, err := r.planEgressRoute(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -56,13 +56,14 @@ func (r *Runtime) acquireLease(ctx context.Context, httpReq *http.Request, req *
 		return nil, err
 	}
 	normalizeLeasePolicy(req)
-	req.Policy.Labels["chain_id"] = planResult.plan.GetChainId()
+	req.Policy.Labels["route_id"] = planResult.plan.GetRouteId()
+	req.Policy.Labels["chain_id"] = planResult.plan.GetRouteId()
 	req.Policy.Labels["dynamic_gateway_id"] = planResult.plan.GetDynamicGateway().GetGatewayId()
 	if planResult.plan.GetLine() != nil {
 		req.Policy.Labels["line_source_id"] = planResult.plan.GetLine().GetSourceId()
 		req.Policy.Labels["line_node_id"] = planResult.plan.GetLine().GetNodeId()
-		if hop := chainHopByRole(planResult.plan, proxyruntimev1.ProxyChainHopRole_PROXY_CHAIN_HOP_ROLE_LINE_PROXY); hop != nil {
-			req.Policy.Labels["line_observed_ip"] = hop.GetObservedIp()
+		if hop := routeHopByRole(planResult.plan, proxyruntimev1.EgressHopRole_EGRESS_HOP_ROLE_FORWARD); hop != nil {
+			req.Policy.Labels["line_observed_ip"] = routeHopLabel(hop, "observed_ip")
 		}
 	}
 	session, err := providerClient.CreateSession(ctx, req)
@@ -88,13 +89,14 @@ func (r *Runtime) acquireLease(ctx context.Context, httpReq *http.Request, req *
 	egress.Labels["account_id"] = req.GetAccountId()
 	egress.Labels["purpose"] = req.GetPurpose()
 	egress.Labels["provider_account_id"] = providerAccountID
-	egress.Labels["chain_id"] = planResult.plan.GetChainId()
+	egress.Labels["route_id"] = planResult.plan.GetRouteId()
+	egress.Labels["chain_id"] = planResult.plan.GetRouteId()
 	egress.Labels["dynamic_gateway_id"] = planResult.plan.GetDynamicGateway().GetGatewayId()
 	if planResult.plan.GetLine() != nil {
 		egress.Labels["line_source_id"] = planResult.plan.GetLine().GetSourceId()
 		egress.Labels["line_node_id"] = planResult.plan.GetLine().GetNodeId()
-		if hop := chainHopByRole(planResult.plan, proxyruntimev1.ProxyChainHopRole_PROXY_CHAIN_HOP_ROLE_LINE_PROXY); hop != nil {
-			egress.Labels["line_observed_ip"] = hop.GetObservedIp()
+		if hop := routeHopByRole(planResult.plan, proxyruntimev1.EgressHopRole_EGRESS_HOP_ROLE_FORWARD); hop != nil {
+			egress.Labels["line_observed_ip"] = routeHopLabel(hop, "observed_ip")
 		}
 	}
 	session.Egress = egress
@@ -110,7 +112,7 @@ func (r *Runtime) acquireLease(ctx context.Context, httpReq *http.Request, req *
 	}
 	leaseID, _ := randx.Hex(12)
 	now := time.Now().UTC()
-	lease := &proxyruntimev1.ProxyDynamicLease{LeaseId: leaseID, AccountId: req.GetAccountId(), Purpose: req.GetPurpose(), ProviderAccountId: providerAccountID, Status: proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE, Session: session, Egress: egress, Listener: protoListener(listener, true), AcquiredAt: timestamppb.New(now), ExpiresAt: session.GetExpiresAt(), ChainPlan: planResult.plan}
+	lease := &proxyruntimev1.ProxyDynamicLease{LeaseId: leaseID, AccountId: req.GetAccountId(), Purpose: req.GetPurpose(), ProviderAccountId: providerAccountID, Status: proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE, Session: session, Egress: egress, Listener: protoListener(listener, true), AcquiredAt: timestamppb.New(now), ExpiresAt: session.GetExpiresAt(), RoutePlan: planResult.plan}
 	if err := r.leases.SaveLease(ctx, lease); err != nil {
 		_ = r.routePlane.DeleteSessionRoute(ctx, route)
 		return nil, err
@@ -118,24 +120,52 @@ func (r *Runtime) acquireLease(ctx context.Context, httpReq *http.Request, req *
 	return lease, nil
 }
 
-func (r *Runtime) releaseLease(ctx context.Context, accountID string) (*proxyruntimev1.ProxyDynamicLease, error) {
-	accountID = strings.TrimSpace(accountID)
-	if accountID == "" {
-		return nil, errors.New("account_id is required")
+func (r *Runtime) releaseLease(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
+	lease, err := r.leaseByReleaseRequest(ctx, req)
+	if err != nil {
+		return nil, err
 	}
+	accountID := strings.TrimSpace(lease.GetAccountId())
 	lock, err := r.leases.LockAccount(ctx, accountID)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = lock.Unlock(ctx) }()
-	lease, err := r.leases.ActiveLease(ctx, accountID)
+	active, err := r.leases.ActiveLease(ctx, accountID)
 	if err != nil {
 		return nil, err
 	}
-	if err := r.retireLeaseRoute(ctx, lease); err != nil {
+	if active.GetLeaseId() != lease.GetLeaseId() {
+		return nil, errors.New("lease_id is not active")
+	}
+	if err := r.retireLeaseRoute(ctx, active); err != nil {
 		return nil, err
 	}
-	return lease, nil
+	return active, nil
+}
+
+func (r *Runtime) leaseByReleaseRequest(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
+	leaseID := strings.TrimSpace(req.GetLeaseId())
+	if leaseID == "" {
+		return nil, errors.New("lease_id is required")
+	}
+	leases, err := r.leases.ListLeases(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	for _, lease := range leases {
+		if lease.GetLeaseId() != leaseID {
+			continue
+		}
+		if accountID := strings.TrimSpace(req.GetAccountId()); accountID != "" && accountID != lease.GetAccountId() {
+			return nil, errors.New("lease account_id mismatch")
+		}
+		if purpose := strings.TrimSpace(req.GetPurpose()); purpose != "" && purpose != lease.GetPurpose() {
+			return nil, errors.New("lease purpose mismatch")
+		}
+		return lease, nil
+	}
+	return nil, errors.New("lease_id not found")
 }
 
 func (r *Runtime) retireLeaseRoute(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {

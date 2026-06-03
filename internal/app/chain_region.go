@@ -13,19 +13,19 @@ const sameContinentCountryMatchScore = 450
 
 const sameContinentRegionMatchScore = 350
 
-func hasRequestedRegion(policy *proxyruntimev1.ProxyChainPolicy) bool {
+func hasRequestedRegion(policy *proxyruntimev1.EgressRoutePolicy) bool {
 	return geox.NormalizeCountryAlpha2(policy.GetCountryCode()) != "" || strings.TrimSpace(policy.GetRegion()) != ""
 }
 
-func regionScore(regions []string, policy *proxyruntimev1.ProxyChainPolicy) int {
+func regionScore(regions []string, policy *proxyruntimev1.EgressRoutePolicy) int {
 	return regionScoreWithFallback(regions, policy, true)
 }
 
-func regionSpecificScore(regions []string, policy *proxyruntimev1.ProxyChainPolicy) int {
+func regionSpecificScore(regions []string, policy *proxyruntimev1.EgressRoutePolicy) int {
 	return regionScoreWithFallback(regions, policy, false)
 }
 
-func regionScoreWithFallback(regions []string, policy *proxyruntimev1.ProxyChainPolicy, includeFallback bool) int {
+func regionScoreWithFallback(regions []string, policy *proxyruntimev1.EgressRoutePolicy, includeFallback bool) int {
 	regions = cleanRegionCodes(regions)
 	if len(regions) == 0 {
 		return 0

@@ -48,7 +48,7 @@ func proxyEndpointAvailable(proxyURL *url.URL) bool {
 	return true
 }
 
-func lineNodeForPlan(plan *proxyruntimev1.ProxyChainPlan, node *provider.Node) *provider.Node {
+func lineNodeForPlan(plan *proxyruntimev1.EgressRoutePlan, node *provider.Node) *provider.Node {
 	if plan.GetLine() == nil || node == nil || node.URL == nil {
 		return nil
 	}
@@ -59,10 +59,11 @@ func lineNodeForPlan(plan *proxyruntimev1.ProxyChainPlan, node *provider.Node) *
 	}
 	copy.Labels["line_source_id"] = plan.GetLine().GetSourceId()
 	copy.Labels["line_node_id"] = plan.GetLine().GetNodeId()
-	if hop := chainHopByRole(plan, proxyruntimev1.ProxyChainHopRole_PROXY_CHAIN_HOP_ROLE_LINE_PROXY); hop != nil {
-		copy.Labels["line_observed_ip"] = hop.GetObservedIp()
+	if hop := routeHopByRole(plan, proxyruntimev1.EgressHopRole_EGRESS_HOP_ROLE_FORWARD); hop != nil {
+		copy.Labels["line_observed_ip"] = routeHopLabel(hop, "observed_ip")
 	}
-	copy.Labels["chain_id"] = plan.GetChainId()
+	copy.Labels["route_id"] = plan.GetRouteId()
+	copy.Labels["chain_id"] = plan.GetRouteId()
 	return &copy
 }
 

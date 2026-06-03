@@ -14,7 +14,7 @@ import (
 )
 
 type chainPlanResult struct {
-	plan              *proxyruntimev1.ProxyChainPlan
+	plan              *proxyruntimev1.EgressRoutePlan
 	gateway           accountproxy.Gateway
 	lineNode          *provider.Node
 	lineCandidates    []*proxyruntimev1.ProxyLineCandidate
@@ -32,26 +32,26 @@ type scoredLineCandidate struct {
 	score int
 }
 
-func (r *Runtime) resolveProxyChain(ctx context.Context, req *proxyruntimev1.ResolveProxyChainRequest) (*proxyruntimev1.ResolveProxyChainResponse, error) {
+func (r *Runtime) resolveEgressRoute(ctx context.Context, req *proxyruntimev1.ResolveEgressRouteRequest) (*proxyruntimev1.ResolveEgressRouteResponse, error) {
 	acquire := &proxyruntimev1.AcquireProxyLeaseRequest{
 		AccountId:   strings.TrimSpace(req.GetAccountId()),
 		Policy:      req.GetSessionPolicy(),
-		ChainPolicy: req.GetChainPolicy(),
-		Purpose:     req.GetChainPolicy().GetPurpose(),
+		RoutePolicy: req.GetRoutePolicy(),
+		Purpose:     req.GetRoutePolicy().GetPurpose(),
 	}
-	result, err := r.planProxyChain(ctx, acquire)
+	result, err := r.planEgressRoute(ctx, acquire)
 	if err != nil {
 		return nil, err
 	}
-	return &proxyruntimev1.ResolveProxyChainResponse{Plan: result.plan, LineCandidates: result.lineCandidates, DynamicGatewayCandidates: result.gatewayCandidates}, nil
+	return &proxyruntimev1.ResolveEgressRouteResponse{Plan: result.plan, LineCandidates: result.lineCandidates, DynamicGatewayCandidates: result.gatewayCandidates}, nil
 }
 
-func (r *Runtime) planProxyChain(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (chainPlanResult, error) {
+func (r *Runtime) planEgressRoute(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (chainPlanResult, error) {
 	settings, err := r.settings.load()
 	if err != nil {
 		return chainPlanResult{}, err
 	}
-	policy := normalizeChainPolicy(req)
+	policy := normalizeRoutePolicy(req)
 	gateways, err := r.dynamicGatewayCandidates(ctx, settings, policy)
 	if err != nil {
 		return chainPlanResult{}, err
@@ -84,8 +84,8 @@ func (r *Runtime) planProxyChain(ctx context.Context, req *proxyruntimev1.Acquir
 		selectedLine = nil
 		reasons = append(reasons, "line=direct_dynamic_gateway")
 	}
-	plan := &proxyruntimev1.ProxyChainPlan{
-		ChainId:          "chain-" + shortHash(req.GetAccountId()+":"+policy.GetPurpose()),
+	plan := &proxyruntimev1.EgressRoutePlan{
+		RouteId:          "route-" + shortHash(req.GetAccountId()+":"+policy.GetPurpose()),
 		Policy:           policy,
 		DynamicGateway:   selectedGateway.proto,
 		SelectionReasons: reasons,
@@ -94,7 +94,10 @@ func (r *Runtime) planProxyChain(ctx context.Context, req *proxyruntimev1.Acquir
 	if selectedLine != nil {
 		plan.Line = selectedLine.proto
 	}
-	plan.Hops = r.chainPlanHops(ctx, selectedLine, selectedGateway)
+	plan.Route = &proxyruntimev1.EgressRoute{
+		RouteId: plan.GetRouteId(),
+		Hops:    r.routePlanHops(ctx, selectedLine, selectedGateway),
+	}
 	return chainPlanResult{plan: plan, gateway: selectedGateway.gateway, lineNode: lineNodeForPlan(plan, lineNode), lineCandidates: lineCandidateProtos(lines), gatewayCandidates: gatewayCandidateProtos(gateways)}, nil
 }
 

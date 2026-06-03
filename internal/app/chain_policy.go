@@ -8,9 +8,9 @@ import (
 	"github.com/byte-v-forge/common-lib/geox"
 )
 
-func normalizeChainPolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) *proxyruntimev1.ProxyChainPolicy {
-	in := req.GetChainPolicy()
-	policy := &proxyruntimev1.ProxyChainPolicy{}
+func normalizeRoutePolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) *proxyruntimev1.EgressRoutePolicy {
+	in := req.GetRoutePolicy()
+	policy := &proxyruntimev1.EgressRoutePolicy{}
 	if in != nil {
 		policy.CountryCode = strings.TrimSpace(in.GetCountryCode())
 		policy.Region = strings.TrimSpace(in.GetRegion())
@@ -32,8 +32,8 @@ func normalizeChainPolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) *proxyru
 	}
 	policy.CountryCode = geox.NormalizeCountryAlpha2(policy.CountryCode)
 	policy.Region = strings.ToUpper(strings.TrimSpace(policy.Region))
-	if policy.Strategy == proxyruntimev1.ProxyChainStrategy_PROXY_CHAIN_STRATEGY_UNSPECIFIED {
-		policy.Strategy = proxyruntimev1.ProxyChainStrategy_PROXY_CHAIN_STRATEGY_REGION_AWARE
+	if policy.Strategy == proxyruntimev1.ProxySelectorStrategy_PROXY_SELECTOR_STRATEGY_UNSPECIFIED {
+		policy.Strategy = proxyruntimev1.ProxySelectorStrategy_PROXY_SELECTOR_STRATEGY_HASH_TARGET_HOST
 	}
 	if policy.MaxAttempts == 0 {
 		policy.MaxAttempts = 10
@@ -44,6 +44,16 @@ func normalizeChainPolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) *proxyru
 		policy.PreferLineProxy = true
 	}
 	return policy
+}
+
+func stableRouteStrategy(policy *proxyruntimev1.EgressRoutePolicy) bool {
+	switch policy.GetStrategy() {
+	case proxyruntimev1.ProxySelectorStrategy_PROXY_SELECTOR_STRATEGY_HASH_CLIENT_IP,
+		proxyruntimev1.ProxySelectorStrategy_PROXY_SELECTOR_STRATEGY_HASH_TARGET_HOST:
+		return true
+	default:
+		return false
+	}
 }
 
 func chainAttempt(req *proxyruntimev1.AcquireProxyLeaseRequest) int {

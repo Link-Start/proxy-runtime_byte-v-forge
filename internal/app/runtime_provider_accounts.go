@@ -58,7 +58,7 @@ func (r *Runtime) releaseLeasesForProviderAccount(ctx context.Context, providerA
 		if lease.GetProviderAccountId() != providerAccountID {
 			continue
 		}
-		if _, err := r.releaseLease(ctx, lease.GetAccountId()); err != nil {
+		if _, err := r.releaseLease(ctx, &proxyruntimev1.ReleaseProxyLeaseRequest{LeaseId: lease.GetLeaseId(), AccountId: lease.GetAccountId(), Purpose: lease.GetPurpose()}); err != nil {
 			r.logger.Warn("release proxy lease for deleted provider account failed", "provider_account_id", providerAccountID, "account_id", lease.GetAccountId(), "error", err)
 		}
 	}

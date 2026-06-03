@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"strings"
 
+	commonv1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/common/v1"
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 )
 
-func providerSecrets(settings *runtimeSettingsFile, providers *ipfraud.Registry) map[string][]string {
-	secrets := map[string][]string{}
+func providerSecrets(settings *runtimeSettingsFile, providers *ipfraud.Registry) map[string][]*commonv1.SecretRef {
+	secrets := map[string][]*commonv1.SecretRef{}
 	for _, item := range normalizeRuntimeSettingsWithProviders(settings, providers).GetIpFraudProviders() {
-		secrets[providerSecretKey(item.GetKind(), item.GetProviderId())] = append([]string(nil), item.GetApiKeys()...)
+		secrets[providerSecretKey(item.GetKind(), item.GetProviderId())] = cleanIPFraudSecretRefs(item.GetApiKeySecretRefs())
 	}
 	return secrets
 }
@@ -34,7 +35,7 @@ func ipFraudProviders(settings *runtimeSettingsFile, registry *ipfraud.Registry)
 	return providers
 }
 
-func ipFraudProviderFromRequest(in *proxyruntimev1.ProxyIPFraudProviderSettings, current map[string][]string, index int, registry *ipfraud.Registry) *proxyruntimev1.ProxyIPFraudProviderSettings {
+func ipFraudProviderFromRequest(in *proxyruntimev1.ProxyIPFraudProviderSettings, current map[string][]*commonv1.SecretRef, index int, registry *ipfraud.Registry) *proxyruntimev1.ProxyIPFraudProviderSettings {
 	if in == nil {
 		return &proxyruntimev1.ProxyIPFraudProviderSettings{}
 	}
@@ -42,15 +43,15 @@ func ipFraudProviderFromRequest(in *proxyruntimev1.ProxyIPFraudProviderSettings,
 	if id == "" {
 		id = registry.DefaultProviderID(in.GetKind())
 	}
-	apiKeys := cleanList(in.GetApiKeys())
-	if len(apiKeys) == 0 && !in.GetClearApiKeys() && !in.GetAnonymous() {
-		apiKeys = current[providerSecretKey(in.GetKind(), id)]
+	apiKeySecretRefs := cleanIPFraudSecretRefs(in.GetApiKeySecretRefs())
+	if len(apiKeySecretRefs) == 0 && !in.GetClearApiKeys() && !in.GetAnonymous() {
+		apiKeySecretRefs = current[providerSecretKey(in.GetKind(), id)]
 	}
 	weight := in.GetWeight()
 	if weight == 0 {
 		weight = providerDefaultWeight(in.GetKind(), index, registry)
 	}
-	return &proxyruntimev1.ProxyIPFraudProviderSettings{ProviderId: id, Weight: weight, Kind: in.GetKind(), Anonymous: in.GetAnonymous(), ApiKeys: apiKeys}
+	return &proxyruntimev1.ProxyIPFraudProviderSettings{ProviderId: id, Weight: weight, Kind: in.GetKind(), Anonymous: in.GetAnonymous(), ApiKeySecretRefs: apiKeySecretRefs}
 }
 
 func normalizeIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettings, index int, registry *ipfraud.Registry) {
@@ -58,7 +59,7 @@ func normalizeIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSetti
 		return
 	}
 	provider.ProviderId = strings.TrimSpace(provider.GetProviderId())
-	provider.ApiKeys = cleanList(provider.GetApiKeys())
+	provider.ApiKeySecretRefs = cleanIPFraudSecretRefs(provider.GetApiKeySecretRefs())
 	if provider.ProviderId == "" {
 		provider.ProviderId = registry.DefaultProviderID(provider.GetKind())
 	}
@@ -72,8 +73,8 @@ func validateIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettin
 	if !ok {
 		return fmt.Errorf("ip_fraud_providers[%d].kind is required", index)
 	}
-	if provider.GetAnonymous() && len(provider.GetApiKeys()) > 0 {
-		return fmt.Errorf("ip_fraud_providers[%d] must use anonymous or api_keys, not both", index)
+	if provider.GetAnonymous() && len(provider.GetApiKeySecretRefs()) > 0 {
+		return fmt.Errorf("ip_fraud_providers[%d] must use anonymous or api_key_secret_refs, not both", index)
 	}
 	if provider.GetAnonymous() && !plugin.SupportsAnonymous() {
 		return fmt.Errorf("ip_fraud_providers[%d] does not support anonymous mode", index)
@@ -81,8 +82,8 @@ func validateIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettin
 	if !provider.GetAnonymous() && !plugin.SupportsAPIKey() {
 		return fmt.Errorf("ip_fraud_providers[%d] does not support api key mode", index)
 	}
-	if !provider.GetAnonymous() && len(provider.GetApiKeys()) == 0 {
-		return fmt.Errorf("ip_fraud_providers[%d].api_keys is required when anonymous is false", index)
+	if !provider.GetAnonymous() && len(provider.GetApiKeySecretRefs()) == 0 {
+		return fmt.Errorf("ip_fraud_providers[%d].api_key_secret_refs is required when anonymous is false", index)
 	}
 	return nil
 }
@@ -105,7 +106,11 @@ func ipFraudAuth(provider *proxyruntimev1.ProxyIPFraudProviderSettings, registry
 	if !ok {
 		return ipfraud.AuthConfig{}
 	}
-	return plugin.Auth(provider.GetApiKeys(), false)
+	return plugin.Auth(secretRefValues(provider.GetApiKeySecretRefs()), false)
+}
+
+func cleanIPFraudSecretRefs(values []*commonv1.SecretRef) []*commonv1.SecretRef {
+	return cleanSecretRefs(values, "proxy-runtime", "ip_fraud_api_key")
 }
 
 func defaultProviderWeight(index int) uint32 {

@@ -7,7 +7,7 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
-func (r *Runtime) lineCandidates(ctx context.Context, policy *proxyruntimev1.ProxyChainPolicy) ([]scoredLineCandidate, error) {
+func (r *Runtime) lineCandidates(ctx context.Context, policy *proxyruntimev1.EgressRoutePolicy) ([]scoredLineCandidate, error) {
 	if !policy.GetPreferLineProxy() {
 		return nil, nil
 	}
@@ -52,7 +52,7 @@ func (r *Runtime) lineCandidates(ctx context.Context, policy *proxyruntimev1.Pro
 	return out, nodeErr
 }
 
-func chooseLineCandidate(candidates []scoredLineCandidate, policy *proxyruntimev1.ProxyChainPolicy, key string, attempt int) *scoredLineCandidate {
+func chooseLineCandidate(candidates []scoredLineCandidate, policy *proxyruntimev1.EgressRoutePolicy, key string, attempt int) *scoredLineCandidate {
 	candidates = orderedLineCandidates(candidates, policy)
 	if len(candidates) == 0 {
 		return nil
@@ -60,7 +60,7 @@ func chooseLineCandidate(candidates []scoredLineCandidate, policy *proxyruntimev
 	return &candidates[lineCandidateSelectionIndex(candidates, policy, key, attempt)]
 }
 
-func chooseAvailableLineCandidate(candidates []scoredLineCandidate, policy *proxyruntimev1.ProxyChainPolicy, key string, attempt int, available func(*proxyruntimev1.ProxyLineCandidate) bool) *scoredLineCandidate {
+func chooseAvailableLineCandidate(candidates []scoredLineCandidate, policy *proxyruntimev1.EgressRoutePolicy, key string, attempt int, available func(*proxyruntimev1.ProxyLineCandidate) bool) *scoredLineCandidate {
 	candidates = orderedLineCandidates(candidates, policy)
 	if len(candidates) == 0 {
 		return nil
@@ -75,7 +75,7 @@ func chooseAvailableLineCandidate(candidates []scoredLineCandidate, policy *prox
 	return nil
 }
 
-func orderedLineCandidates(candidates []scoredLineCandidate, policy *proxyruntimev1.ProxyChainPolicy) []scoredLineCandidate {
+func orderedLineCandidates(candidates []scoredLineCandidate, policy *proxyruntimev1.EgressRoutePolicy) []scoredLineCandidate {
 	if len(candidates) == 0 {
 		return nil
 	}
@@ -84,19 +84,16 @@ func orderedLineCandidates(candidates []scoredLineCandidate, policy *proxyruntim
 		if out[i].score != out[j].score {
 			return out[i].score > out[j].score
 		}
-		if policy.GetStrategy() == proxyruntimev1.ProxyChainStrategy_PROXY_CHAIN_STRATEGY_LOWEST_LATENCY && out[i].proto.GetDelayMs() != out[j].proto.GetDelayMs() {
-			return out[i].proto.GetDelayMs() < out[j].proto.GetDelayMs()
-		}
 		return out[i].proto.GetPriority() < out[j].proto.GetPriority()
 	})
 	return regionScopedLineCandidates(out, policy)
 }
 
-func lineCandidateSelectionIndex(candidates []scoredLineCandidate, policy *proxyruntimev1.ProxyChainPolicy, key string, attempt int) int {
+func lineCandidateSelectionIndex(candidates []scoredLineCandidate, policy *proxyruntimev1.EgressRoutePolicy, key string, attempt int) int {
 	if attempt > 1 && len(candidates) > 1 {
 		return (attempt - 1) % len(candidates)
 	}
-	if policy.GetStrategy() == proxyruntimev1.ProxyChainStrategy_PROXY_CHAIN_STRATEGY_STABLE_HASH && len(candidates) > 1 {
+	if stableRouteStrategy(policy) && len(candidates) > 1 {
 		best := candidates[0].score
 		count := 0
 		for count < len(candidates) && candidates[count].score == best {
@@ -107,7 +104,7 @@ func lineCandidateSelectionIndex(candidates []scoredLineCandidate, policy *proxy
 	return 0
 }
 
-func regionScopedLineCandidates(candidates []scoredLineCandidate, policy *proxyruntimev1.ProxyChainPolicy) []scoredLineCandidate {
+func regionScopedLineCandidates(candidates []scoredLineCandidate, policy *proxyruntimev1.EgressRoutePolicy) []scoredLineCandidate {
 	if !hasRequestedRegion(policy) {
 		return candidates
 	}
@@ -128,7 +125,7 @@ func regionScopedLineCandidates(candidates []scoredLineCandidate, policy *proxyr
 	return candidates
 }
 
-func lineScore(candidate *proxyruntimev1.ProxyLineCandidate, policy *proxyruntimev1.ProxyChainPolicy) int {
+func lineScore(candidate *proxyruntimev1.ProxyLineCandidate, policy *proxyruntimev1.EgressRoutePolicy) int {
 	score := 500
 	if candidate.GetStatus() == proxyruntimev1.ProxySourceNodeStatus_PROXY_SOURCE_NODE_STATUS_AVAILABLE {
 		score += 200

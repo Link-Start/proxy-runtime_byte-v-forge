@@ -155,12 +155,12 @@ IP 欺诈 provider、Cloudflare canary 与代理出口 IP 探测超时通过 das
   "edge_canary": {
     "enabled": true,
     "url": "https://byte-v-forge-edge-canary.example.workers.dev/edge-canary",
-    "token": "change-me"
+    "token_secret_ref": {"secret_id":"proxy-runtime/edge-canary","provider":"proxy-runtime","purpose":"edge_canary_token"}
   },
   "ip_fraud_providers": [
-    {"provider_id":"ipqualityscore","weight":95,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_IPQUALITYSCORE","api_keys":["key-a","key-b"]},
-    {"provider_id":"ipapi","weight":100,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_IPAPI","api_keys":["key-a","key-b"]},
-    {"provider_id":"abuseipdb","weight":85,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_ABUSEIPDB","api_keys":["key-a","key-b"]},
+    {"provider_id":"ipqualityscore","weight":95,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_IPQUALITYSCORE","api_key_secret_refs":[{"secret_id":"proxy-runtime/ipqualityscore/key-a","provider":"proxy-runtime","purpose":"ip_fraud_api_key"}]},
+    {"provider_id":"ipapi","weight":100,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_IPAPI","api_key_secret_refs":[{"secret_id":"proxy-runtime/ipapi/key-a","provider":"proxy-runtime","purpose":"ip_fraud_api_key"}]},
+    {"provider_id":"abuseipdb","weight":85,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_ABUSEIPDB","api_key_secret_refs":[{"secret_id":"proxy-runtime/abuseipdb/key-a","provider":"proxy-runtime","purpose":"ip_fraud_api_key"}]},
     {"provider_id":"ip2location","weight":80,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_IP2LOCATION","anonymous":true},
     {"provider_id":"ip-api-com","weight":40,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_IP_API_COM","anonymous":true}
   ],
@@ -193,7 +193,7 @@ IP 欺诈 provider、Cloudflare canary 与代理出口 IP 探测超时通过 das
 - `GET /proxy/sources` / `PUT /proxy/sources` / `DELETE /proxy/sources`：管理固定、订阅、动态 IP source 元数据。
 - `GET /proxy/leases`：查看账号级动态 IP lease。
 - `POST /proxy/leases/acquire`：为业务账号创建或替换动态 IP lease；只增量更新该账号对应的 GOST service/chain。
-- `POST /proxy/leases/release`：释放业务账号动态 IP lease。
+- `POST /proxy/leases/release`：按 `lease_id` 释放业务账号动态 IP lease，可附带 `account_id` / `purpose` 做一致性校验。
 - `POST /proxy/proxy_exit_ip`：通过指定 listener 访问固定探测端点，返回当前代理出口 IP。
 - `POST /proxy/proxy_exit_geo`：输入 `ip`，通过固定 IP 信息 API 查询国家、地区和城市；不经过代理出口。
 - `POST /proxy/ip_fraud_check`：输入 `ip`，返回抽象后的欺诈风险枚举结果；不经过代理出口。

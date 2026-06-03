@@ -48,7 +48,7 @@ func (r *Runtime) restoreLeaseRoute(ctx context.Context, lease *proxyruntimev1.P
 	if err != nil {
 		return err
 	}
-	providerCfg.Gateways = gatewaysForPlan(settings, lease.GetChainPlan(), providerCfg.ProviderID)
+	providerCfg.Gateways = gatewaysForPlan(settings, lease.GetRoutePlan(), providerCfg.ProviderID)
 	providerClient, err := r.accountProviders.NewProvider(providerCfg, BuildProviderHTTPClient(r.cfg))
 	if err != nil {
 		return err
@@ -57,11 +57,11 @@ func (r *Runtime) restoreLeaseRoute(ctx context.Context, lease *proxyruntimev1.P
 	if err != nil {
 		return err
 	}
-	rawLineNode := r.sourceRuntimeNodeForLine(poolNodes, lease.GetChainPlan().GetLine())
-	if lease.GetChainPlan().GetLine() != nil && rawLineNode == nil {
-		return fmt.Errorf("selected line proxy listener is not available: %s/%s", lease.GetChainPlan().GetLine().GetSourceId(), lease.GetChainPlan().GetLine().GetNodeId())
+	rawLineNode := r.sourceRuntimeNodeForLine(poolNodes, lease.GetRoutePlan().GetLine())
+	if lease.GetRoutePlan().GetLine() != nil && rawLineNode == nil {
+		return fmt.Errorf("selected line proxy listener is not available: %s/%s", lease.GetRoutePlan().GetLine().GetSourceId(), lease.GetRoutePlan().GetLine().GetNodeId())
 	}
-	lineNode := lineNodeForPlan(lease.GetChainPlan(), rawLineNode)
+	lineNode := lineNodeForPlan(lease.GetRoutePlan(), rawLineNode)
 	route := dataplane.SessionRoute{
 		SessionID:   lease.GetSession().GetSessionId(),
 		ChainID:     leaseChainID(lease.GetAccountId()),

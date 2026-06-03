@@ -13,14 +13,14 @@ func normalizeRuntimeSettings(settings *runtimeSettingsFile) *runtimeSettingsFil
 	}
 	if settings.EdgeCanary != nil {
 		settings.EdgeCanary.Url = strings.TrimSpace(settings.EdgeCanary.GetUrl())
-		settings.EdgeCanary.Token = strings.TrimSpace(settings.EdgeCanary.GetToken())
+		settings.EdgeCanary.TokenSecretRef = cloneSecretRef(settings.EdgeCanary.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token")
 	}
 	for _, provider := range settings.IpFraudProviders {
 		if provider == nil {
 			continue
 		}
 		provider.ProviderId = strings.TrimSpace(provider.GetProviderId())
-		provider.ApiKeys = cleanList(provider.GetApiKeys())
+		provider.ApiKeySecretRefs = cleanIPFraudSecretRefs(provider.GetApiKeySecretRefs())
 	}
 	for index := range settings.DynamicIpProviders {
 		normalizeDynamicIPProvider(settings.DynamicIpProviders[index])

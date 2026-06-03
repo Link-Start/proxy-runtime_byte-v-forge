@@ -1,26 +1,22 @@
 package app
 
-import (
-	"strings"
-
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-)
+import proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 
 func edgeCanaryFromRequest(req *proxyruntimev1.ProxyEdgeCanarySettings, current *proxyruntimev1.ProxyEdgeCanarySettings) *proxyruntimev1.ProxyEdgeCanarySettings {
 	if req == nil {
 		return cloneEdgeCanary(current)
 	}
 	settings := &proxyruntimev1.ProxyEdgeCanarySettings{
-		Enabled: req.GetEnabled(),
-		Url:     firstNonEmpty(req.GetUrl(), current.GetUrl()),
-		Token:   strings.TrimSpace(req.GetToken()),
+		Enabled:        req.GetEnabled(),
+		Url:            firstNonEmpty(req.GetUrl(), current.GetUrl()),
+		TokenSecretRef: cloneSecretRef(req.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token"),
 	}
 	switch {
-	case settings.Token != "":
+	case secretRefValue(settings.GetTokenSecretRef()) != "":
 	case req.GetClearToken():
-		settings.Token = ""
+		settings.TokenSecretRef = nil
 	default:
-		settings.Token = strings.TrimSpace(current.GetToken())
+		settings.TokenSecretRef = cloneSecretRef(current.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token")
 	}
 	return settings
 }
@@ -33,5 +29,10 @@ func cloneEdgeCanary(in *proxyruntimev1.ProxyEdgeCanarySettings) *proxyruntimev1
 	if in == nil {
 		return nil
 	}
-	return &proxyruntimev1.ProxyEdgeCanarySettings{Url: in.GetUrl(), Token: in.GetToken(), ClearToken: in.GetClearToken(), Enabled: in.GetEnabled()}
+	return &proxyruntimev1.ProxyEdgeCanarySettings{
+		Url:            in.GetUrl(),
+		TokenSecretRef: cloneSecretRef(in.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token"),
+		ClearToken:     in.GetClearToken(),
+		Enabled:        in.GetEnabled(),
+	}
 }

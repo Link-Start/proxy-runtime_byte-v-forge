@@ -34,7 +34,7 @@ func (r *Runtime) handleAcquireLease(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	pool, _ := r.snapshot(req.Context())
-	r.writeProto(w, &proxyruntimev1.AcquireProxyLeaseResponse{Lease: lease, Pool: pool, Egress: lease.GetEgress(), ChainPlan: lease.GetChainPlan()})
+	r.writeProto(w, &proxyruntimev1.AcquireProxyLeaseResponse{Lease: lease, Pool: pool, Egress: lease.GetEgress(), RoutePlan: lease.GetRoutePlan()})
 }
 
 func (r *Runtime) handleReleaseLease(w http.ResponseWriter, req *http.Request) {
@@ -46,7 +46,7 @@ func (r *Runtime) handleReleaseLease(w http.ResponseWriter, req *http.Request) {
 	if !r.readProto(w, req, &body) {
 		return
 	}
-	lease, err := r.releaseLease(req.Context(), body.GetAccountId())
+	lease, err := r.releaseLease(req.Context(), &body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return

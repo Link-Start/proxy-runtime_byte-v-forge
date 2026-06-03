@@ -23,7 +23,7 @@ func (r *Runtime) serveHTTP(ctx context.Context, errCh chan<- error) {
 		mux.HandleFunc(prefix+"/sources", r.handleSources)
 		mux.HandleFunc(prefix+"/sources/fixed", r.handleFixedSources)
 		mux.HandleFunc(prefix+"/sources/nodes", r.handleSourceNodes)
-		mux.HandleFunc(prefix+"/chains/resolve", r.handleResolveChain)
+		mux.HandleFunc(prefix+"/routes/resolve", r.handleResolveRoute)
 		mux.HandleFunc(prefix+"/leases", r.handleLeases)
 		mux.HandleFunc(prefix+"/leases/acquire", r.handleAcquireLease)
 		mux.HandleFunc(prefix+"/leases/release", r.handleReleaseLease)

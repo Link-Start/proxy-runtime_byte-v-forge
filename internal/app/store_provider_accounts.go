@@ -53,8 +53,9 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 	if req.GetClearPassword() {
 		secret = ""
 	}
-	if strings.TrimSpace(req.GetUsername()) != "" || strings.TrimSpace(req.GetPassword()) != "" {
-		payload, err := json.Marshal(providerCredential{Username: strings.TrimSpace(req.GetUsername()), Password: strings.TrimSpace(req.GetPassword())})
+	password := secretRefValue(req.GetPasswordSecretRef())
+	if strings.TrimSpace(req.GetUsername()) != "" || password != "" {
+		payload, err := json.Marshal(providerCredential{Username: strings.TrimSpace(req.GetUsername()), Password: password})
 		if err != nil {
 			return nil, err
 		}

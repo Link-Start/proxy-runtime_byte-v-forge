@@ -34,7 +34,7 @@ func protocolEnum(value string) proxyruntimev1.ProxyProtocol {
 	}
 }
 
-func gatewaysForPlan(settings *runtimeSettingsFile, plan *proxyruntimev1.ProxyChainPlan, providerID string) []accountproxy.Gateway {
+func gatewaysForPlan(settings *runtimeSettingsFile, plan *proxyruntimev1.EgressRoutePlan, providerID string) []accountproxy.Gateway {
 	gateways := dynamicIPGateways(settings, providerID)
 	gatewayID := strings.TrimSpace(plan.GetDynamicGateway().GetGatewayId())
 	if gatewayID == "" {

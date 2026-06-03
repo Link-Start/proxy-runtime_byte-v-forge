@@ -28,8 +28,8 @@ import type {
   RefreshProxyPoolResponse,
   ReleaseProxyLeaseRequest,
   ReleaseProxyLeaseResponse,
-  ResolveProxyChainRequest,
-  ResolveProxyChainResponse,
+  ResolveEgressRouteRequest,
+  ResolveEgressRouteResponse,
   UpsertProxyFixedSourceRequest,
   UpsertProxyFixedSourceResponse,
   UpsertProxyProviderAccountRequest,
@@ -68,7 +68,7 @@ export const listProxySourceNodes = (sourceId = '') => api<ListProxySourceNodesR
 export const upsertSubscriptionSource = (req: UpsertProxySubscriptionSourceRequest) => api<UpsertProxySubscriptionSourceResponse>(`${base}/sources`, { method: 'PUT', body: JSON.stringify(req) });
 export const upsertFixedSource = (req: UpsertProxyFixedSourceRequest) => api<UpsertProxyFixedSourceResponse>(`${base}/sources/fixed`, { method: 'PUT', body: JSON.stringify(req) });
 export const deleteProxySource = (req: DeleteProxySourceRequest) => api<DeleteProxySourceResponse>(`${base}/sources`, { method: 'DELETE', body: JSON.stringify(req) });
-export const resolveProxyChain = (req: ResolveProxyChainRequest) => api<ResolveProxyChainResponse>(`${base}/chains/resolve`, { method: 'POST', body: JSON.stringify(req) });
+export const resolveEgressRoute = (req: ResolveEgressRouteRequest) => api<ResolveEgressRouteResponse>(`${base}/routes/resolve`, { method: 'POST', body: JSON.stringify(req) });
 export const listDynamicLeases = () => api<ListProxyDynamicLeasesResponse>(`${base}/leases`);
 export const acquireProxyLease = (req: AcquireProxyLeaseRequest) => api<AcquireProxyLeaseResponse>(`${base}/leases/acquire`, { method: 'POST', body: JSON.stringify(req) });
 export const releaseProxyLease = (req: ReleaseProxyLeaseRequest) => api<ReleaseProxyLeaseResponse>(`${base}/leases/release`, { method: 'POST', body: JSON.stringify(req) });

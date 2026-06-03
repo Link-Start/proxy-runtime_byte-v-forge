@@ -10,7 +10,7 @@ func runtimeSettingsView(settings *runtimeSettingsFile) *proxyruntimev1.ProxyRun
 	out := &proxyruntimev1.ProxyRuntimeSettings{
 		EdgeCanary: &proxyruntimev1.ProxyEdgeCanarySettingsView{
 			Url:             edge.GetUrl(),
-			TokenConfigured: edge.GetToken() != "",
+			TokenConfigured: secretRefValue(edge.GetTokenSecretRef()) != "",
 			Enabled:         edgeCanaryEnabled(edge),
 		},
 		CheckSettings: cloneCheckSettings(settings.GetCheckSettings()),
@@ -21,8 +21,8 @@ func runtimeSettingsView(settings *runtimeSettingsFile) *proxyruntimev1.ProxyRun
 			Weight:           provider.GetWeight(),
 			Kind:             provider.GetKind(),
 			Anonymous:        provider.GetAnonymous(),
-			ApiKeyConfigured: len(provider.GetApiKeys()) > 0,
-			ApiKeyCount:      uint32(len(provider.GetApiKeys())),
+			ApiKeyConfigured: len(provider.GetApiKeySecretRefs()) > 0,
+			ApiKeyCount:      uint32(len(provider.GetApiKeySecretRefs())),
 		})
 	}
 	for _, provider := range settings.GetDynamicIpProviders() {

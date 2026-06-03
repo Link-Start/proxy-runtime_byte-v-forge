@@ -11,7 +11,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
-func (r *Runtime) dynamicGatewayCandidates(ctx context.Context, settings *runtimeSettingsFile, policy *proxyruntimev1.ProxyChainPolicy) ([]scoredGatewayCandidate, error) {
+func (r *Runtime) dynamicGatewayCandidates(ctx context.Context, settings *runtimeSettingsFile, policy *proxyruntimev1.EgressRoutePolicy) ([]scoredGatewayCandidate, error) {
 	accounts, err := r.store.ListProviderAccounts(ctx)
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (r *Runtime) providerAccountBusy(ctx context.Context, providerAccountID str
 	return false
 }
 
-func chooseGatewayCandidate(candidates []scoredGatewayCandidate, policy *proxyruntimev1.ProxyChainPolicy, key string, attempt int) scoredGatewayCandidate {
+func chooseGatewayCandidate(candidates []scoredGatewayCandidate, policy *proxyruntimev1.EgressRoutePolicy, key string, attempt int) scoredGatewayCandidate {
 	candidates = regionScopedGatewayCandidates(candidates, policy)
 	groups := gatewayCandidateGroups(candidates, key)
 	if len(groups) == 0 {
@@ -78,7 +78,7 @@ func chooseGatewayCandidate(candidates []scoredGatewayCandidate, policy *proxyru
 	}
 	groupIndex := 0
 	if len(groups) > 1 {
-		if policy.GetStrategy() == proxyruntimev1.ProxyChainStrategy_PROXY_CHAIN_STRATEGY_STABLE_HASH {
+		if stableRouteStrategy(policy) {
 			groupIndex = int(hashModulo(key, uint32(len(groups))))
 		} else {
 			if attempt < 1 {
@@ -134,7 +134,7 @@ func gatewayCandidateGroups(candidates []scoredGatewayCandidate, key string) []g
 	return out
 }
 
-func chooseGatewayWithinAccount(candidates []scoredGatewayCandidate, policy *proxyruntimev1.ProxyChainPolicy, key string, attempt int) scoredGatewayCandidate {
+func chooseGatewayWithinAccount(candidates []scoredGatewayCandidate, policy *proxyruntimev1.EgressRoutePolicy, key string, attempt int) scoredGatewayCandidate {
 	if len(candidates) == 0 {
 		return scoredGatewayCandidate{}
 	}
@@ -144,7 +144,7 @@ func chooseGatewayWithinAccount(candidates []scoredGatewayCandidate, policy *pro
 		}
 		return candidates[i].proto.GetPriority() < candidates[j].proto.GetPriority()
 	})
-	if policy.GetStrategy() == proxyruntimev1.ProxyChainStrategy_PROXY_CHAIN_STRATEGY_STABLE_HASH && len(candidates) > 1 {
+	if stableRouteStrategy(policy) && len(candidates) > 1 {
 		return candidates[int(hashModulo(key, uint32(len(candidates))))]
 	}
 	if attempt > 1 && len(candidates) > 1 {
@@ -160,7 +160,7 @@ func chooseGatewayWithinAccount(candidates []scoredGatewayCandidate, policy *pro
 	return candidates[0]
 }
 
-func regionScopedGatewayCandidates(candidates []scoredGatewayCandidate, policy *proxyruntimev1.ProxyChainPolicy) []scoredGatewayCandidate {
+func regionScopedGatewayCandidates(candidates []scoredGatewayCandidate, policy *proxyruntimev1.EgressRoutePolicy) []scoredGatewayCandidate {
 	if !hasRequestedRegion(policy) {
 		return candidates
 	}
@@ -185,11 +185,11 @@ func regionScopedGatewayCandidates(candidates []scoredGatewayCandidate, policy *
 	return candidates
 }
 
-func requiresDynamicGeoTargeting(policy *proxyruntimev1.ProxyChainPolicy) bool {
+func requiresDynamicGeoTargeting(policy *proxyruntimev1.EgressRoutePolicy) bool {
 	return geox.NormalizeCountryAlpha2(policy.GetCountryCode()) != ""
 }
 
-func gatewayScore(gateway accountproxy.Gateway, policy *proxyruntimev1.ProxyChainPolicy) int {
+func gatewayScore(gateway accountproxy.Gateway, policy *proxyruntimev1.EgressRoutePolicy) int {
 	score := 1000
 	if accountproxy.GatewayIsFallback(gateway) {
 		score -= 300

@@ -76,16 +76,16 @@ func (r *Runtime) handleSourceNodes(w http.ResponseWriter, req *http.Request) {
 	r.writeProto(w, &proxyruntimev1.ListProxySourceNodesResponse{Nodes: nodes})
 }
 
-func (r *Runtime) handleResolveChain(w http.ResponseWriter, req *http.Request) {
+func (r *Runtime) handleResolveRoute(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		methodNotAllowed(w, http.MethodPost)
 		return
 	}
-	var body proxyruntimev1.ResolveProxyChainRequest
+	var body proxyruntimev1.ResolveEgressRouteRequest
 	if !r.readProto(w, req, &body) {
 		return
 	}
-	response, err := r.resolveProxyChain(req.Context(), &body)
+	response, err := r.resolveEgressRoute(req.Context(), &body)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadGateway)
 		return

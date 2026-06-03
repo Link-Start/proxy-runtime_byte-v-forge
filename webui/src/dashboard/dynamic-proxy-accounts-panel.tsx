@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button, Controller, DashboardField, Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, EmptyBlock, Input, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, useForm } from '@byte-v-forge/common-ui';
+import type { SecretRef } from '@byte-v-forge/common-ui/proto/byte/v/forge/contracts/common/v1/common';
 import { ProxyUpstreamKind, type ProxyProviderAccount, type ProxyProviderDescriptor, type UpsertProxyProviderAccountRequest } from '@byte-v-forge/common-ui/proto/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime';
 
 type AccountForm = { provider_id: string; display_name: string; username: string; password: string };
@@ -40,7 +41,12 @@ function AccountDialog({ open, providers, busy, onOpenChange, onSubmit }: { open
 }
 
 function toAccount(v: AccountForm): UpsertProxyProviderAccountRequest {
-  return { account_id: '', provider_id: v.provider_id, display_name: v.display_name, enabled: true, username: v.username, password: v.password, clear_password: false };
+  return { account_id: '', provider_id: v.provider_id, display_name: v.display_name, enabled: true, username: v.username, password_secret_ref: secretRef(v.password), clear_password: false };
+}
+
+function secretRef(value: string): SecretRef | undefined {
+  const secret_id = value.trim();
+  return secret_id ? { secret_id, provider: 'proxy-runtime', purpose: 'dynamic_ip_provider_password', expires_at: undefined } : undefined;
 }
 
 const fallbackProviders: ProxyProviderDescriptor[] = [

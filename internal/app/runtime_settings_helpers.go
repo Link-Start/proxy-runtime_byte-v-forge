@@ -3,6 +3,7 @@ package app
 import (
 	"strings"
 
+	commonv1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/common/v1"
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
@@ -19,6 +20,50 @@ func cleanList(values []string) []string {
 		}
 		seen[value] = struct{}{}
 		out = append(out, value)
+	}
+	return out
+}
+
+func cleanSecretRefs(values []*commonv1.SecretRef, provider string, purpose string) []*commonv1.SecretRef {
+	out := make([]*commonv1.SecretRef, 0, len(values))
+	seen := map[string]struct{}{}
+	for _, value := range values {
+		secretID := strings.TrimSpace(value.GetSecretId())
+		if secretID == "" {
+			continue
+		}
+		if _, exists := seen[secretID]; exists {
+			continue
+		}
+		seen[secretID] = struct{}{}
+		out = append(out, &commonv1.SecretRef{
+			SecretId:  secretID,
+			Provider:  firstNonEmpty(value.GetProvider(), provider),
+			Purpose:   firstNonEmpty(value.GetPurpose(), purpose),
+			ExpiresAt: value.GetExpiresAt(),
+		})
+	}
+	return out
+}
+
+func cloneSecretRef(value *commonv1.SecretRef, provider string, purpose string) *commonv1.SecretRef {
+	refs := cleanSecretRefs([]*commonv1.SecretRef{value}, provider, purpose)
+	if len(refs) == 0 {
+		return nil
+	}
+	return refs[0]
+}
+
+func secretRefValue(value *commonv1.SecretRef) string {
+	return strings.TrimSpace(value.GetSecretId())
+}
+
+func secretRefValues(values []*commonv1.SecretRef) []string {
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		if secretID := secretRefValue(value); secretID != "" {
+			out = append(out, secretID)
+		}
 	}
 	return out
 }

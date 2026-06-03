@@ -8,6 +8,7 @@ import {
   type ProxyRuntimeSettings,
   type UpdateProxyRuntimeSettingsRequest
 } from '@byte-v-forge/common-ui/proto/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime';
+import type { SecretRef } from '@byte-v-forge/common-ui/proto/byte/v/forge/contracts/common/v1/common';
 
 export type ProviderMode = 'anonymous' | 'api_keys';
 export type ProviderForm = { id: string; kind: ProxyIPFraudProviderKind; mode: ProviderMode; weight: number; keys: string };
@@ -56,11 +57,11 @@ export function formFromSettings(settings: ProxyRuntimeSettings | undefined, cat
 }
 
 export function requestFromSettingsForm(values: RuntimeSettingsForm): UpdateProxyRuntimeSettingsRequest {
-  return { edge_canary: { enabled: values.edgeEnabled, url: values.edgeUrl.trim(), token: values.edgeToken.trim(), clear_token: false }, ip_fraud_providers: values.providers.map(providerRequest), dynamic_ip_providers: values.dynamicProviders.map(dynamicProviderRequest), check_settings: { proxy_exit_ip_timeout: `${positiveSeconds(values.proxyExitIpTimeoutSeconds)}s` } };
+  return { edge_canary: { enabled: values.edgeEnabled, url: values.edgeUrl.trim(), token_secret_ref: secretRef(values.edgeToken, 'edge_canary_token'), clear_token: false }, ip_fraud_providers: values.providers.map(providerRequest), dynamic_ip_providers: values.dynamicProviders.map(dynamicProviderRequest), check_settings: { proxy_exit_ip_timeout: `${positiveSeconds(values.proxyExitIpTimeoutSeconds)}s` } };
 }
 
 function providerRequest(provider: ProviderForm): ProxyIPFraudProviderSettings {
-  return { provider_id: provider.id, weight: Number(provider.weight) || 100, kind: provider.kind, anonymous: provider.mode === 'anonymous', api_keys: provider.mode === 'api_keys' ? splitKeys(provider.keys) : [], clear_api_keys: provider.mode !== 'api_keys' };
+  return { provider_id: provider.id, weight: Number(provider.weight) || 100, kind: provider.kind, anonymous: provider.mode === 'anonymous', api_key_secret_refs: provider.mode === 'api_keys' ? splitKeys(provider.keys).map((key) => requiredSecretRef(key, 'ip_fraud_api_key')) : [], clear_api_keys: provider.mode !== 'api_keys' };
 }
 
 function providerDescriptor(provider_id: string, display_name: string, kind: ProxyIPFraudProviderKind, default_weight: number, supports_anonymous: boolean, supports_api_key: boolean): ProxyIPFraudProviderDescriptor {
@@ -69,6 +70,15 @@ function providerDescriptor(provider_id: string, display_name: string, kind: Pro
 
 function splitKeys(value: string) {
   return value.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean);
+}
+
+function secretRef(value: string, purpose: string): SecretRef | undefined {
+  const secret_id = value.trim();
+  return secret_id ? requiredSecretRef(secret_id, purpose) : undefined;
+}
+
+function requiredSecretRef(secret_id: string, purpose: string): SecretRef {
+  return { secret_id, provider: 'proxy-runtime', purpose, expires_at: undefined };
 }
 
 function durationSeconds(value: string | undefined) {

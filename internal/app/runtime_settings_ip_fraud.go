@@ -1,11 +1,13 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
 	commonv1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/common/v1"
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/common-lib/secretref"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 )
 
@@ -21,29 +23,36 @@ func providerSecretKey(kind proxyruntimev1.ProxyIPFraudProviderKind, id string) 
 	return fmt.Sprintf("%d:%s", kind, strings.TrimSpace(id))
 }
 
-func ipFraudProviders(settings *runtimeSettingsFile, registry *ipfraud.Registry) []ipfraud.ProviderConfig {
+func ipFraudProviders(ctx context.Context, resolver secretref.Resolver, settings *runtimeSettingsFile, registry *ipfraud.Registry) ([]ipfraud.ProviderConfig, error) {
 	items := normalizeRuntimeSettingsWithProviders(settings, registry).GetIpFraudProviders()
 	providers := make([]ipfraud.ProviderConfig, 0, len(items))
 	for _, item := range items {
+		auth, err := ipFraudAuth(ctx, resolver, item, registry)
+		if err != nil {
+			return nil, err
+		}
 		providers = append(providers, ipfraud.ProviderConfig{
 			ID:     item.GetProviderId(),
 			Kind:   item.GetKind(),
 			Weight: int(item.GetWeight()),
-			Auth:   ipFraudAuth(item, registry),
+			Auth:   auth,
 		})
 	}
-	return providers
+	return providers, nil
 }
 
-func ipFraudProviderFromRequest(in *proxyruntimev1.ProxyIPFraudProviderSettings, current map[string][]*commonv1.SecretRef, index int, registry *ipfraud.Registry) *proxyruntimev1.ProxyIPFraudProviderSettings {
+func ipFraudProviderFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPFraudProviderSettings, current map[string][]*commonv1.SecretRef, index int, registry *ipfraud.Registry) (*proxyruntimev1.ProxyIPFraudProviderSettings, error) {
 	if in == nil {
-		return &proxyruntimev1.ProxyIPFraudProviderSettings{}
+		return &proxyruntimev1.ProxyIPFraudProviderSettings{}, nil
 	}
 	id := strings.TrimSpace(in.GetProviderId())
 	if id == "" {
 		id = registry.DefaultProviderID(in.GetKind())
 	}
-	apiKeySecretRefs := cleanIPFraudSecretRefs(in.GetApiKeySecretRefs())
+	apiKeySecretRefs, err := ipFraudSecretRefsFromRequest(ctx, writer, in, id)
+	if err != nil {
+		return nil, err
+	}
 	if len(apiKeySecretRefs) == 0 && !in.GetClearApiKeys() && !in.GetAnonymous() {
 		apiKeySecretRefs = current[providerSecretKey(in.GetKind(), id)]
 	}
@@ -51,7 +60,7 @@ func ipFraudProviderFromRequest(in *proxyruntimev1.ProxyIPFraudProviderSettings,
 	if weight == 0 {
 		weight = providerDefaultWeight(in.GetKind(), index, registry)
 	}
-	return &proxyruntimev1.ProxyIPFraudProviderSettings{ProviderId: id, Weight: weight, Kind: in.GetKind(), Anonymous: in.GetAnonymous(), ApiKeySecretRefs: apiKeySecretRefs}
+	return &proxyruntimev1.ProxyIPFraudProviderSettings{ProviderId: id, Weight: weight, Kind: in.GetKind(), Anonymous: in.GetAnonymous(), ApiKeySecretRefs: apiKeySecretRefs}, nil
 }
 
 func normalizeIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettings, index int, registry *ipfraud.Registry) {
@@ -98,19 +107,64 @@ func supportedIPFraudProviders(providers []*proxyruntimev1.ProxyIPFraudProviderS
 	return out
 }
 
-func ipFraudAuth(provider *proxyruntimev1.ProxyIPFraudProviderSettings, registry *ipfraud.Registry) ipfraud.AuthConfig {
+func ipFraudAuth(ctx context.Context, resolver secretref.Resolver, provider *proxyruntimev1.ProxyIPFraudProviderSettings, registry *ipfraud.Registry) (ipfraud.AuthConfig, error) {
 	if provider.GetAnonymous() {
-		return ipfraud.AuthConfig{Anonymous: &ipfraud.AnonymousAuthConfig{}}
+		return ipfraud.AuthConfig{Anonymous: &ipfraud.AnonymousAuthConfig{}}, nil
 	}
 	plugin, ok := registry.PluginForKind(provider.GetKind())
 	if !ok {
-		return ipfraud.AuthConfig{}
+		return ipfraud.AuthConfig{}, nil
 	}
-	return plugin.Auth(secretRefValues(provider.GetApiKeySecretRefs()), false)
+	values, err := resolveSecretRefs(ctx, resolver, provider.GetApiKeySecretRefs())
+	if err != nil {
+		return ipfraud.AuthConfig{}, err
+	}
+	return plugin.Auth(values, false), nil
 }
 
 func cleanIPFraudSecretRefs(values []*commonv1.SecretRef) []*commonv1.SecretRef {
 	return cleanSecretRefs(values, "proxy-runtime", "ip_fraud_api_key")
+}
+
+func ipFraudSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPFraudProviderSettings, providerID string) ([]*commonv1.SecretRef, error) {
+	rawRefs := in.GetApiKeySecretRefs()
+	if len(rawRefs) == 0 {
+		return nil, nil
+	}
+	out := make([]*commonv1.SecretRef, 0, len(rawRefs))
+	for index, ref := range rawRefs {
+		raw := strings.TrimSpace(ref.GetSecretId())
+		if raw == "" {
+			continue
+		}
+		secretID := secretref.StableID("proxy-runtime-ip-fraud-api-key", fmt.Sprintf("%d", in.GetKind()), providerID, fmt.Sprintf("%d", index))
+		saved, err := writeRuntimeSecret(ctx, writer, raw, secretID, "ip_fraud_api_key")
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, saved)
+	}
+	return cleanIPFraudSecretRefs(out), nil
+}
+
+func resolveSecretRefs(ctx context.Context, resolver secretref.Resolver, refs []*commonv1.SecretRef) ([]string, error) {
+	if len(refs) == 0 {
+		return nil, nil
+	}
+	if resolver == nil {
+		return nil, fmt.Errorf("secret resolver is required")
+	}
+	out := make([]string, 0, len(refs))
+	for _, ref := range cleanIPFraudSecretRefs(refs) {
+		value, err := resolver.ResolveSecret(ctx, ref)
+		if err != nil {
+			return nil, err
+		}
+		if strings.TrimSpace(value) != "" {
+			out = append(out, value)
+		}
+	}
+	return out, nil
 }
 
 func defaultProviderWeight(index int) uint32 {

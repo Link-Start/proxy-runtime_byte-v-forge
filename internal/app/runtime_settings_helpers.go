@@ -5,6 +5,7 @@ import (
 
 	commonv1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/common/v1"
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/common-lib/secretref"
 )
 
 func cleanList(values []string) []string {
@@ -28,20 +29,16 @@ func cleanSecretRefs(values []*commonv1.SecretRef, provider string, purpose stri
 	out := make([]*commonv1.SecretRef, 0, len(values))
 	seen := map[string]struct{}{}
 	for _, value := range values {
-		secretID := strings.TrimSpace(value.GetSecretId())
-		if secretID == "" {
+		ref := secretref.Clone(value, provider, purpose)
+		if ref == nil {
 			continue
 		}
+		secretID := ref.GetSecretId()
 		if _, exists := seen[secretID]; exists {
 			continue
 		}
 		seen[secretID] = struct{}{}
-		out = append(out, &commonv1.SecretRef{
-			SecretId:  secretID,
-			Provider:  firstNonEmpty(value.GetProvider(), provider),
-			Purpose:   firstNonEmpty(value.GetPurpose(), purpose),
-			ExpiresAt: value.GetExpiresAt(),
-		})
+		out = append(out, ref)
 	}
 	return out
 }
@@ -54,18 +51,8 @@ func cloneSecretRef(value *commonv1.SecretRef, provider string, purpose string) 
 	return refs[0]
 }
 
-func secretRefValue(value *commonv1.SecretRef) string {
-	return strings.TrimSpace(value.GetSecretId())
-}
-
-func secretRefValues(values []*commonv1.SecretRef) []string {
-	out := make([]string, 0, len(values))
-	for _, value := range values {
-		if secretID := secretRefValue(value); secretID != "" {
-			out = append(out, secretID)
-		}
-	}
-	return out
+func secretRefConfigured(value *commonv1.SecretRef) bool {
+	return secretref.Configured(value)
 }
 
 func cleanRegionCodes(values []string) []string {

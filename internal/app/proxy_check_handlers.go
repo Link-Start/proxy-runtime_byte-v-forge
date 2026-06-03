@@ -149,7 +149,7 @@ func (r *Runtime) handleIPFraudProviders(w http.ResponseWriter, req *http.Reques
 func (r *Runtime) handleRuntimeSettings(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		settings, err := r.settings.view()
+		settings, err := r.settings.view(req.Context())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -170,7 +170,7 @@ func (r *Runtime) handleRuntimeSettings(w http.ResponseWriter, req *http.Request
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return
 		}
-		settings, err := r.settings.update(&updateReq)
+		settings, err := r.settings.update(req.Context(), &updateReq)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusBadRequest)
 			return

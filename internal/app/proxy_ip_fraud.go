@@ -9,7 +9,10 @@ import (
 )
 
 func (r *Runtime) checkIPFraud(ctx context.Context, ip string, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyIPFraudCheck, error) {
-	providers := ipFraudProviders(settings, r.ipFraudProviders)
+	providers, err := ipFraudProviders(ctx, r.store, settings, r.ipFraudProviders)
+	if err != nil {
+		return unsupportedIPFraudCheck(ip), nil
+	}
 	if len(providers) == 0 {
 		return unsupportedIPFraudCheck(ip), nil
 	}

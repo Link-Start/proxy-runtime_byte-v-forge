@@ -9,6 +9,7 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/common-lib/randx"
+	"github.com/byte-v-forge/common-lib/secretref"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretbox"
 	"github.com/jackc/pgx/v5"
@@ -50,12 +51,30 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 	if existing != nil {
 		secret = existing.CredentialSecret
 	}
-	if req.GetClearPassword() {
-		secret = ""
+	credential := providerCredential{}
+	if current := credentialFromSecret(s.box, secret); current != nil {
+		credential = *current
 	}
-	password := secretRefValue(req.GetPasswordSecretRef())
-	if strings.TrimSpace(req.GetUsername()) != "" || password != "" {
-		payload, err := json.Marshal(providerCredential{Username: strings.TrimSpace(req.GetUsername()), Password: password})
+	if req.GetClearPassword() {
+		credential.PasswordSecretRef = nil
+	}
+	if username := strings.TrimSpace(req.GetUsername()); username != "" {
+		credential.Username = username
+	}
+	if rawPassword := strings.TrimSpace(req.GetPasswordSecretRef().GetSecretId()); rawPassword != "" {
+		ref, err := s.WriteSecret(ctx, secretref.WriteRequest{
+			SecretID: secretref.StableID("proxy-runtime-provider-account-password", accountID),
+			Provider: "proxy-runtime",
+			Purpose:  "dynamic_ip_provider_password",
+			Value:    rawPassword,
+		})
+		if err != nil {
+			return nil, err
+		}
+		credential.PasswordSecretRef = ref
+	}
+	if credential.Username != "" || credential.PasswordSecretRef != nil {
+		payload, err := json.Marshal(credential)
 		if err != nil {
 			return nil, err
 		}
@@ -63,14 +82,15 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		secret = ""
 	}
 	enabled := req.GetEnabled()
 	displayName := firstNonEmpty(req.GetDisplayName(), accountID)
 	if enabled {
-		cfg := accountproxy.Config{ProviderID: providerID}
-		if plain := credentialFromSecret(s.box, secret); plain != nil {
-			cfg.Username = plain.Username
-			cfg.Password = plain.Password
+		cfg, err := s.providerConfigFromCredentialSecret(ctx, providerID, secret)
+		if err != nil {
+			return nil, fmt.Errorf("enabled provider account invalid: %w", err)
 		}
 		if err := s.accountProviders.Validate(cfg); err != nil {
 			return nil, fmt.Errorf("enabled provider account invalid: %w", err)
@@ -121,16 +141,28 @@ func (s *PostgresStore) ProviderConfig(ctx context.Context, accountID string) (a
 	if !record.Enabled {
 		return accountproxy.Config{}, "", errors.New("provider account is disabled")
 	}
-	plain, err := s.box.Open(record.CredentialSecret)
+	cfg, err := s.providerConfigFromCredentialSecret(ctx, record.ProviderID, record.CredentialSecret)
 	if err != nil {
 		return accountproxy.Config{}, "", err
 	}
-	var credential providerCredential
-	if len(plain) > 0 {
-		_ = json.Unmarshal(plain, &credential)
-	}
-	cfg := accountproxy.Config{ProviderID: record.ProviderID, Username: credential.Username, Password: credential.Password}
 	return cfg, record.AccountID, s.accountProviders.Validate(cfg)
+}
+
+func (s *PostgresStore) providerConfigFromCredentialSecret(ctx context.Context, providerID string, secret string) (accountproxy.Config, error) {
+	credential := credentialFromSecret(s.box, secret)
+	cfg := accountproxy.Config{ProviderID: providerID}
+	if credential == nil {
+		return cfg, nil
+	}
+	cfg.Username = credential.Username
+	if secretRefConfigured(credential.PasswordSecretRef) {
+		password, err := s.ResolveSecret(ctx, credential.PasswordSecretRef)
+		if err != nil {
+			return accountproxy.Config{}, err
+		}
+		cfg.Password = password
+	}
+	return cfg, nil
 }
 
 func (s *PostgresStore) DefaultProviderAccountID(ctx context.Context) (string, error) {

@@ -146,7 +146,7 @@ curl -X POST http://127.0.0.1:8080/proxy/leases/acquire \
 - `PROXY_RUNTIME_PROXY_EXIT_GEO_URLS`：代理出口 IP 探测端点列表，默认使用多个公开出口 IP 探测服务并取最快成功结果。
 - `PROXY_RUNTIME_IP_FRAUD_CACHE_TTL_SECONDS` / `PROXY_RUNTIME_IP_FRAUD_KEY_COOLDOWN_SECONDS`：IP 欺诈结果缓存和额度耗尽 key 冷却时间。
 
-IP 欺诈 provider、Cloudflare canary 与代理出口 IP 探测超时通过 dashboard「配置」页或 `GET/PUT /proxy/settings` 管理，持久化到 proxy-runtime 控制面 PG；查询接口只返回密钥是否已配置。IP 欺诈 provider 采用添加式配置，只暴露 provider、API Key/匿名模式和权重；provider URL 属于 adapter 内部实现细节，不进入公共配置。Cloudflare canary 使用显式 `enabled` 开关；关闭只停用检测，不删除已保存 URL/token。代理出口 IP 探测超时默认 `5s`。未启用 canary、未配置 canary token 或未配置 IP 欺诈 provider 时，对应检查返回 `unsupported`。
+IP 欺诈 provider、Cloudflare canary 与代理出口 IP 探测超时通过 dashboard「配置」页或 `GET/PUT /proxy/settings` 管理，持久化到 proxy-runtime 控制面 PG；查询接口只返回密钥是否已配置。dashboard/API 更新请求中的 token/API key 是 write-only 输入，服务会写入 proxy-runtime 自有加密 secret store，persistent settings 只保存生成后的 `SecretRef`，运行时检查前再解析。IP 欺诈 provider 采用添加式配置，只暴露 provider、API Key/匿名模式和权重；provider URL 属于 adapter 内部实现细节，不进入公共配置。Cloudflare canary 使用显式 `enabled` 开关；关闭只停用检测，不删除已保存 URL/token。代理出口 IP 探测超时默认 `5s`。未启用 canary、未配置 canary token 或未配置 IP 欺诈 provider 时，对应检查返回 `unsupported`。
 
 `PUT /proxy/settings` 示例：
 
@@ -155,12 +155,12 @@ IP 欺诈 provider、Cloudflare canary 与代理出口 IP 探测超时通过 das
   "edge_canary": {
     "enabled": true,
     "url": "https://byte-v-forge-edge-canary.example.workers.dev/edge-canary",
-    "token_secret_ref": {"secret_id":"proxy-runtime/edge-canary","provider":"proxy-runtime","purpose":"edge_canary_token"}
+    "token_secret_ref": {"secret_id":"write-only-edge-canary-token","provider":"proxy-runtime","purpose":"edge_canary_token"}
   },
   "ip_fraud_providers": [
-    {"provider_id":"ipqualityscore","weight":95,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_IPQUALITYSCORE","api_key_secret_refs":[{"secret_id":"proxy-runtime/ipqualityscore/key-a","provider":"proxy-runtime","purpose":"ip_fraud_api_key"}]},
-    {"provider_id":"ipapi","weight":100,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_IPAPI","api_key_secret_refs":[{"secret_id":"proxy-runtime/ipapi/key-a","provider":"proxy-runtime","purpose":"ip_fraud_api_key"}]},
-    {"provider_id":"abuseipdb","weight":85,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_ABUSEIPDB","api_key_secret_refs":[{"secret_id":"proxy-runtime/abuseipdb/key-a","provider":"proxy-runtime","purpose":"ip_fraud_api_key"}]},
+    {"provider_id":"ipqualityscore","weight":95,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_IPQUALITYSCORE","api_key_secret_refs":[{"secret_id":"write-only-ipqualityscore-api-key","provider":"proxy-runtime","purpose":"ip_fraud_api_key"}]},
+    {"provider_id":"ipapi","weight":100,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_IPAPI","api_key_secret_refs":[{"secret_id":"write-only-ipapi-api-key","provider":"proxy-runtime","purpose":"ip_fraud_api_key"}]},
+    {"provider_id":"abuseipdb","weight":85,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_ABUSEIPDB","api_key_secret_refs":[{"secret_id":"write-only-abuseipdb-api-key","provider":"proxy-runtime","purpose":"ip_fraud_api_key"}]},
     {"provider_id":"ip2location","weight":80,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_IP2LOCATION","anonymous":true},
     {"provider_id":"ip-api-com","weight":40,"kind":"PROXY_IP_FRAUD_PROVIDER_KIND_IP_API_COM","anonymous":true}
   ],

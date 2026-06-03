@@ -19,7 +19,13 @@ type edgeCanaryOutcome struct {
 func (r *Runtime) runEdgeCanary(ctx context.Context, client *http.Client, settings *runtimeSettingsFile) edgeCanaryOutcome {
 	edgeCanary := settings.GetEdgeCanary()
 	target := strings.TrimSpace(edgeCanary.GetUrl())
-	token := secretRefValue(edgeCanary.GetTokenSecretRef())
+	token := ""
+	if r.store != nil && secretRefConfigured(edgeCanary.GetTokenSecretRef()) {
+		resolved, err := r.store.ResolveSecret(ctx, edgeCanary.GetTokenSecretRef())
+		if err == nil {
+			token = strings.TrimSpace(resolved)
+		}
+	}
 	if !edgeCanaryEnabled(edgeCanary) || target == "" || token == "" {
 		return edgeCanaryOutcome{
 			level:        proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_UNSUPPORTED,

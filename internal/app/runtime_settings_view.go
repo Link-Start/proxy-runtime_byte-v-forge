@@ -10,7 +10,7 @@ func runtimeSettingsView(settings *runtimeSettingsFile) *proxyruntimev1.ProxyRun
 	out := &proxyruntimev1.ProxyRuntimeSettings{
 		EdgeCanary: &proxyruntimev1.ProxyEdgeCanarySettingsView{
 			Url:             edge.GetUrl(),
-			TokenConfigured: secretRefValue(edge.GetTokenSecretRef()) != "",
+			TokenConfigured: secretRefConfigured(edge.GetTokenSecretRef()),
 			Enabled:         edgeCanaryEnabled(edge),
 		},
 		CheckSettings: cloneCheckSettings(settings.GetCheckSettings()),

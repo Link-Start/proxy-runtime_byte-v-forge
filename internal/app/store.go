@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"time"
 
+	commonv1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/common/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretbox"
@@ -19,8 +20,8 @@ type PostgresStore struct {
 }
 
 type providerCredential struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	Username          string              `json:"username"`
+	PasswordSecretRef *commonv1.SecretRef `json:"password_secret_ref,omitempty"`
 }
 
 type providerAccountRecord struct {

@@ -14,6 +14,8 @@ CREATE TABLE IF NOT EXISTS proxy_runtime_provider_accounts (account_id text PRIM
 ALTER TABLE proxy_runtime_provider_accounts DROP COLUMN IF EXISTS proxy_addr, DROP COLUMN IF EXISTS protocol, DROP COLUMN IF EXISTS default_sticky_seconds, DROP COLUMN IF EXISTS default_region, DROP COLUMN IF EXISTS default_state, DROP COLUMN IF EXISTS default_city, DROP COLUMN IF EXISTS default_asn;
 DROP TABLE IF EXISTS proxy_runtime_subscription_sources;
 DROP TABLE IF EXISTS proxy_runtime_dynamic_leases;
+CREATE TABLE IF NOT EXISTS proxy_runtime_secrets (secret_id text PRIMARY KEY, provider text NOT NULL, purpose text NOT NULL, secret_payload text NOT NULL, expires_at timestamptz NULL, created_at timestamptz NOT NULL DEFAULT now(), updated_at timestamptz NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS idx_proxy_runtime_secrets_expires_at ON proxy_runtime_secrets(expires_at);
 CREATE TABLE IF NOT EXISTS proxy_runtime_settings (setting_key text PRIMARY KEY, setting_json jsonb NOT NULL DEFAULT '{}'::jsonb, updated_at timestamptz NOT NULL DEFAULT now());
 UPDATE proxy_runtime_settings
 SET setting_json = jsonb_set(

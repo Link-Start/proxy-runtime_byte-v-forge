@@ -49,13 +49,18 @@ func (n Node) Endpoint() *proxyruntimev1.ProxyEndpoint {
 	}
 }
 
-type Provider interface {
+type PoolProvider interface {
 	Name() string
 	Descriptor() *proxyruntimev1.ProxyProviderDescriptor
 	Sources() []*proxyruntimev1.ProxySourceDescriptor
-	RequiresSessionLease() bool
-	Fetch(ctx context.Context, session *proxyruntimev1.ProxySession) ([]Node, error)
+	Fetch(ctx context.Context) ([]Node, error)
+}
+
+type SessionProvider interface {
+	Name() string
 	CreateSession(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxySession, error)
+	FetchSession(ctx context.Context, session *proxyruntimev1.ProxySession) ([]Node, error)
+	ReleaseSession(ctx context.Context, session *proxyruntimev1.ProxySession) error
 }
 
 type Empty struct{}
@@ -74,7 +79,6 @@ func (Empty) Descriptor() *proxyruntimev1.ProxyProviderDescriptor {
 		ProviderId:  EmptyProviderID,
 		DisplayName: "No provider",
 		Capabilities: []proxyruntimev1.ProxyCapability{
-			proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_CHAINING,
 			proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_UNIFIED_EGRESS_GATEWAY,
 		},
 		RotationModes: []proxyruntimev1.ProxyRotationMode{
@@ -87,16 +91,8 @@ func (Empty) Sources() []*proxyruntimev1.ProxySourceDescriptor {
 	return nil
 }
 
-func (Empty) RequiresSessionLease() bool {
-	return false
-}
-
-func (Empty) Fetch(context.Context, *proxyruntimev1.ProxySession) ([]Node, error) {
+func (Empty) Fetch(context.Context) ([]Node, error) {
 	return nil, nil
-}
-
-func (Empty) CreateSession(context.Context, *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxySession, error) {
-	return nil, ErrUnsupportedCapability
 }
 
 func splitHostPort(proxyURL *url.URL) (string, uint32) {

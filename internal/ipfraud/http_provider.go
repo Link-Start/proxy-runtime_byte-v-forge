@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
 )
 
 type httpProvider struct {
@@ -22,7 +24,7 @@ type httpProvider struct {
 
 func newHTTPProvider(client *http.Client, template string, auth AuthConfig, cooldown time.Duration) httpProvider {
 	if client == nil {
-		client = &http.Client{Timeout: 10 * time.Second}
+		client = runtimehttp.New(10 * time.Second)
 	}
 	if cooldown <= 0 {
 		cooldown = 24 * time.Hour

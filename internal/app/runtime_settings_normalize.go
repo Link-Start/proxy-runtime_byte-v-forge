@@ -25,6 +25,12 @@ func normalizeRuntimeSettings(settings *runtimeSettingsFile) *runtimeSettingsFil
 	for index := range settings.DynamicIpProviders {
 		normalizeDynamicIPProvider(settings.DynamicIpProviders[index])
 	}
+	for index := range settings.EgressProfiles {
+		normalizeEgressProfile(settings.EgressProfiles[index])
+	}
+	for index := range settings.IngressRules {
+		settings.IngressRules[index] = ingressRuleFromProto(settings.IngressRules[index], index)
+	}
 	settings.CheckSettings = normalizeCheckSettings(settings.GetCheckSettings())
 	return settings
 }

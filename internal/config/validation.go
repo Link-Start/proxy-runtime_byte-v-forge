@@ -21,22 +21,8 @@ func (c Config) validate() error {
 	if strings.TrimSpace(c.RedisURL) == "" {
 		return errors.New("PLATFORM_REDIS_URL is required")
 	}
-	switch c.RouteRuntime {
-	case RouteRuntimeGOST:
-	default:
-		return fmt.Errorf("unsupported route runtime %q", c.RouteRuntime)
-	}
-	if c.RouteRuntime == RouteRuntimeGOST && c.GostPath == "" {
-		return errors.New("PROXY_RUNTIME_GOST_PATH is required")
-	}
-	switch c.SourceRuntime {
-	case SourceRuntimeNone:
-	case SourceRuntimeMihomo:
-		if err := c.Mihomo.validate(); err != nil {
-			return err
-		}
-	default:
-		return fmt.Errorf("unsupported source runtime %q", c.SourceRuntime)
+	if err := c.Mihomo.validate(); err != nil {
+		return err
 	}
 	if !isLocalProtocol(c.LocalProtocol) {
 		return fmt.Errorf("unsupported local protocol %q", c.LocalProtocol)
@@ -46,10 +32,7 @@ func (c Config) validate() error {
 			return errors.New("PROXY_RUNTIME_PROVIDER_HTTP_PROXY is invalid")
 		}
 	}
-	if err := c.SessionListener.validate(); err != nil {
-		return err
-	}
-	if err := validateListeners(c.Listeners); err != nil {
+	if err := validateProxyUsers(c.ProxyUsers); err != nil {
 		return err
 	}
 	if c.Provider != ProviderTen24 && c.Provider != ProviderNone && c.Provider != ProviderStatic {

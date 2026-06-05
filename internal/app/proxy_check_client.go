@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/byte-v-forge/common-lib/httpclient"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
 )
 
 func (r *Runtime) checkProxyHTTPClient(ctx context.Context, poolID string, providerID string, listenerID string, timeout time.Duration) (*http.Client, error) {
@@ -27,7 +27,7 @@ func (r *Runtime) checkProxyHTTPClient(ctx context.Context, poolID string, provi
 	if err != nil {
 		return nil, err
 	}
-	client, err := httpclient.NewWithSchemes(timeout, proxyURL, httpclient.CommonProxySchemes...)
+	client, err := runtimehttp.NewWithProxy(timeout, proxyURL, runtimehttp.CommonProxySchemes...)
 	if err != nil {
 		return nil, errors.New("build IP check client")
 	}

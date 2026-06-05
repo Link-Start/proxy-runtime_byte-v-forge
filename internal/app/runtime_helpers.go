@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/byte-v-forge/common-lib/httpclient"
 	"github.com/byte-v-forge/common-lib/proxyurl"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
 )
 
 func shortHash(value string) string {
@@ -66,9 +66,9 @@ func cloneNodes(in []provider.Node) []provider.Node {
 }
 
 func BuildProviderHTTPClient(cfg config.Config) *http.Client {
-	client, err := httpclient.NewWithSchemes(cfg.RequestTimeout, providerHTTPProxyURL(cfg.ProviderHTTPProxy), httpclient.HTTPProxySchemes...)
+	client, err := runtimehttp.NewWithProxy(cfg.RequestTimeout, providerHTTPProxyURL(cfg.ProviderHTTPProxy), runtimehttp.HTTPProxySchemes...)
 	if err != nil {
-		return &http.Client{Timeout: cfg.RequestTimeout}
+		return runtimehttp.New(cfg.RequestTimeout)
 	}
 	return client
 }

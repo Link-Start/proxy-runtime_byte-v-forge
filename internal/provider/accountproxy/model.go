@@ -49,7 +49,7 @@ func dynamicSource(definition Definition, accountID string, displayName string, 
 }
 
 func capabilities(definition Definition) []proxyruntimev1.ProxyCapability {
-	out := []proxyruntimev1.ProxyCapability{proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_CHAINING}
+	out := []proxyruntimev1.ProxyCapability{}
 	if len(definition.Gateways) == 0 {
 		return out
 	}
@@ -100,12 +100,7 @@ func protocols(definition Definition) []proxyruntimev1.ProxyProtocol {
 
 func defaultGateway(definition Definition) (Gateway, bool) {
 	for _, gateway := range definition.Gateways {
-		if strings.TrimSpace(gateway.Addr) != "" && gatewayIsFallback(gateway) {
-			return gateway, true
-		}
-	}
-	for _, gateway := range definition.Gateways {
-		if strings.TrimSpace(gateway.Addr) != "" {
+		if strings.TrimSpace(gateway.EndpointURL) != "" {
 			return gateway, true
 		}
 	}

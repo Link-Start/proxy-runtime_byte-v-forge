@@ -4,7 +4,6 @@ import proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/co
 
 func (p *Provider) Descriptor() *proxyruntimev1.ProxyProviderDescriptor {
 	capabilities := []proxyruntimev1.ProxyCapability{
-		proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_CHAINING,
 		proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_UNIFIED_EGRESS_GATEWAY,
 	}
 	upstreamKinds := []proxyruntimev1.ProxyUpstreamKind{}

@@ -30,14 +30,14 @@ func (p definitionPlugin) DynamicSource(accountID string, displayName string, ga
 }
 
 func (p definitionPlugin) GatewayProtocol(gateway Gateway) string {
-	return gatewayProtocol(gateway, p.definition.DefaultProtocol)
+	return GatewayProtocol(gateway, p.definition.DefaultProtocol)
 }
 
 func (p definitionPlugin) SupportsRuntimeGeoTargeting() bool {
 	return p.definition.RuntimeGeoTargeting
 }
 
-func (p definitionPlugin) NewProvider(cfg Config, client *http.Client) (provider.Provider, error) {
+func (p definitionPlugin) NewSessionProvider(cfg Config, client *http.Client) (provider.SessionProvider, error) {
 	cfg.ProviderID = p.definition.ProviderID
 	if err := p.Validate(cfg); err != nil {
 		return nil, err

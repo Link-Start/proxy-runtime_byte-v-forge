@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"os"
 	"os/signal"
@@ -10,13 +9,8 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane/gostplane"
-	"github.com/byte-v-forge/proxy-runtime/internal/gost"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 	mihomosource "github.com/byte-v-forge/proxy-runtime/internal/sourceplane/mihomo"
 )
 
@@ -29,11 +23,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	accountProviders, err := accountproxy.NewDefaultRegistry()
-	if err != nil {
-		logger.Error("create account provider registry failed", "error", err)
-		os.Exit(1)
-	}
 	ipFraudProviders, err := ipfraud.NewDefaultRegistry()
 	if err != nil {
 		logger.Error("create IP fraud provider registry failed", "error", err)
@@ -44,35 +33,36 @@ func main() {
 		logger.Error("create provider registry failed", "error", err)
 		os.Exit(1)
 	}
-	proxyProvider, err := proxyProviders.NewProvider(cfg, app.BuildProviderHTTPClient(cfg))
+	proxyProvider, err := proxyProviders.NewPoolProvider(cfg, app.BuildProviderHTTPClient(cfg))
 	if err != nil {
 		logger.Error("create provider failed", "error", err)
 		os.Exit(1)
 	}
 
-	routePlane, err := buildRoutePlane(cfg, logger)
-	if err != nil {
-		logger.Error("create route runtime failed", "error", err)
-		os.Exit(1)
-	}
-	sourcePlane, err := buildSourcePlane(cfg, logger)
-	if err != nil {
-		logger.Error("create source runtime failed", "error", err)
-		os.Exit(1)
-	}
-	store, err := app.NewPostgresStore(context.Background(), cfg, accountProviders, logger)
+	dataPlane := mihomosource.New(mihomosource.Config{
+		Path:         cfg.Mihomo.Path,
+		ConfigDir:    cfg.Mihomo.ConfigDir,
+		APIAddr:      cfg.Mihomo.APIAddr,
+		DashboardDir: cfg.Mihomo.DashboardDir,
+		DashboardURL: cfg.Mihomo.DashboardURL,
+	}, logger)
+	store, err := app.NewPostgresStore(context.Background(), cfg, proxyProviders, logger)
 	if err != nil {
 		logger.Error("create store failed", "error", err)
 		os.Exit(1)
 	}
 	defer store.Close()
-	leaseStore, err := app.NewLeaseStore(context.Background(), cfg)
+	leaseRuntimeLocks, err := app.NewLeaseRuntimeLocks(context.Background(), cfg)
 	if err != nil {
-		logger.Error("create lease cache failed", "error", err)
+		logger.Error("create lease runtime locks failed", "error", err)
 		os.Exit(1)
 	}
-	defer leaseStore.Close()
-	runtime := app.NewRuntime(cfg, proxyProvider, accountProviders, ipFraudProviders, routePlane, sourcePlane, store, leaseStore, logger)
+	defer leaseRuntimeLocks.Close()
+	runtime, err := app.NewRuntime(cfg, proxyProvider, proxyProviders, ipFraudProviders, dataPlane, store, leaseRuntimeLocks, logger)
+	if err != nil {
+		logger.Error("create runtime failed", "error", err)
+		os.Exit(1)
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -80,32 +70,5 @@ func main() {
 	if err := runtime.Run(ctx); err != nil {
 		logger.Error("proxy runtime stopped", "error", err)
 		os.Exit(1)
-	}
-}
-
-func buildRoutePlane(cfg config.Config, logger *slog.Logger) (dataplane.Driver, error) {
-	if cfg.RouteRuntime != config.RouteRuntimeGOST {
-		return nil, fmt.Errorf("unsupported route runtime %q", cfg.RouteRuntime)
-	}
-	return gostplane.New(gost.ManagerConfig{
-		GostPath:    cfg.GostPath,
-		ConfigDir:   cfg.GostConfigDir,
-		APIAddr:     cfg.GostAPIAddr,
-		MetricsAddr: cfg.GostMetricsAddr,
-	}, logger), nil
-}
-
-func buildSourcePlane(cfg config.Config, logger *slog.Logger) (sourceplane.Driver, error) {
-	switch cfg.SourceRuntime {
-	case config.SourceRuntimeNone:
-		return sourceplane.Empty{}, nil
-	case config.SourceRuntimeMihomo:
-		return mihomosource.New(mihomosource.Config{
-			Path:      cfg.Mihomo.Path,
-			ConfigDir: cfg.Mihomo.ConfigDir,
-			APIAddr:   cfg.Mihomo.APIAddr,
-		}, logger), nil
-	default:
-		return nil, fmt.Errorf("unsupported source runtime %q", cfg.SourceRuntime)
 	}
 }

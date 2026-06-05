@@ -28,7 +28,11 @@ func (s *PostgresStore) ListProviderAccounts(ctx context.Context) ([]*proxyrunti
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, record.toProto())
+		account, err := s.providerAccountToProto(ctx, record)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, account)
 	}
 	return out, rows.Err()
 }
@@ -42,11 +46,21 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 		}
 		accountID = generated
 	}
-	providerID := firstNonEmpty(req.GetProviderId(), accountproxy.ProviderTen24)
+	existing, err := s.providerAccountRecord(ctx, accountID)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, err
+		}
+		existing = nil
+	}
+	providerID := strings.TrimSpace(req.GetProviderId())
+	if providerID == "" && existing != nil {
+		providerID = existing.ProviderID
+	}
+	providerID = firstNonEmpty(providerID, accountproxy.ProviderTen24)
 	if !s.accountProviders.IsSupported(providerID) {
 		return nil, fmt.Errorf("unsupported provider_id %q", providerID)
 	}
-	existing, _ := s.providerAccountRecord(ctx, accountID)
 	secret := ""
 	if existing != nil {
 		secret = existing.CredentialSecret
@@ -61,7 +75,10 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 	if username := strings.TrimSpace(req.GetUsername()); username != "" {
 		credential.Username = username
 	}
-	if rawPassword := strings.TrimSpace(req.GetPasswordSecretRef().GetSecretId()); rawPassword != "" {
+	if ref := cloneSecretRef(req.GetPasswordSecretRef(), "proxy-runtime", "dynamic_ip_provider_password"); ref != nil {
+		credential.PasswordSecretRef = ref
+	}
+	if rawPassword := strings.TrimSpace(req.GetPasswordValue()); rawPassword != "" {
 		ref, err := s.WriteSecret(ctx, secretref.WriteRequest{
 			SecretID: secretref.StableID("proxy-runtime-provider-account-password", accountID),
 			Provider: "proxy-runtime",
@@ -105,7 +122,7 @@ RETURNING `+providerAccountColumns(), accountID, providerID, displayName, enable
 	if err != nil {
 		return nil, err
 	}
-	return record.toProto(), nil
+	return s.providerAccountToProto(ctx, record)
 }
 
 func credentialFromSecret(box secretbox.Box, secret string) *providerCredential {
@@ -155,8 +172,12 @@ func (s *PostgresStore) providerConfigFromCredentialSecret(ctx context.Context, 
 		return cfg, nil
 	}
 	cfg.Username = credential.Username
-	if secretRefConfigured(credential.PasswordSecretRef) {
-		password, err := s.ResolveSecret(ctx, credential.PasswordSecretRef)
+	if password := credentialRawPassword(credential); password != "" {
+		cfg.Password = password
+		return cfg, nil
+	}
+	if ref := cloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password"); ref != nil {
+		password, err := s.ResolveSecret(ctx, ref)
 		if err != nil {
 			return accountproxy.Config{}, err
 		}
@@ -186,10 +207,44 @@ func scanProviderAccount(row pgx.Row) (*providerAccountRecord, error) {
 	return &record, err
 }
 
-func (r providerAccountRecord) toProto() *proxyruntimev1.ProxyProviderAccount {
+func (s *PostgresStore) providerAccountToProto(ctx context.Context, record *providerAccountRecord) (*proxyruntimev1.ProxyProviderAccount, error) {
+	account := record.toProto(s.box)
+	credential := credentialFromSecret(s.box, record.CredentialSecret)
+	if password := credentialRawPassword(credential); password != "" {
+		account.PasswordValue = password
+		return account, nil
+	}
+	if credential == nil || !secretRefConfigured(credential.PasswordSecretRef) {
+		return account, nil
+	}
+	ref := cloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password")
+	if ref == nil {
+		return account, nil
+	}
+	password, err := s.ResolveSecret(ctx, ref)
+	if err != nil {
+		return account, nil
+	}
+	account.PasswordValue = password
+	return account, nil
+}
+
+func credentialRawPassword(credential *providerCredential) string {
+	if credential == nil {
+		return ""
+	}
+	return firstNonEmpty(credential.PasswordValue, credential.Password)
+}
+
+func (r providerAccountRecord) toProto(box secretbox.Box) *proxyruntimev1.ProxyProviderAccount {
 	status := proxyruntimev1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_DISABLED
 	if r.Enabled {
 		status = proxyruntimev1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED
+	}
+	credential := credentialFromSecret(box, r.CredentialSecret)
+	username := ""
+	if credential != nil {
+		username = credential.Username
 	}
 	return &proxyruntimev1.ProxyProviderAccount{
 		AccountId:            r.AccountID,
@@ -199,6 +254,7 @@ func (r providerAccountRecord) toProto() *proxyruntimev1.ProxyProviderAccount {
 		CredentialConfigured: r.CredentialSecret != "",
 		CreatedAt:            timestamppb.New(r.CreatedAt),
 		UpdatedAt:            timestamppb.New(r.UpdatedAt),
+		Username:             username,
 	}
 }
 

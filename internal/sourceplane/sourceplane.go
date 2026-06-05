@@ -2,7 +2,6 @@ package sourceplane
 
 import (
 	"context"
-	"errors"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -12,12 +11,8 @@ import (
 type Driver interface {
 	Name() string
 	Reconcile(ctx context.Context, cfg Config) ([]provider.Node, error)
-	Sources(ctx context.Context) ([]*proxyruntimev1.ProxySourceDescriptor, error)
 	SourceNodes(ctx context.Context, sourceID string) ([]*proxyruntimev1.ProxySourceNode, error)
 	ResolveNodePublicIP(ctx context.Context, sourceID string, nodeID string, nodeDisplayName string) (string, error)
-	UpsertSubscriptionSource(ctx context.Context, req *proxyruntimev1.UpsertProxySubscriptionSourceRequest) (*proxyruntimev1.ProxySourceDescriptor, error)
-	UpsertFixedSource(ctx context.Context, req *proxyruntimev1.UpsertProxyFixedSourceRequest) (*proxyruntimev1.ProxySourceDescriptor, error)
-	DeleteSource(ctx context.Context, sourceID string) error
 	Stop()
 	Status() Status
 }
@@ -30,6 +25,8 @@ type Status struct {
 
 type Config struct {
 	Providers           []SubscriptionProvider
+	FixedProxies        []FixedProxy
+	EgressProfiles      []EgressProfile
 	Endpoint            Endpoint
 	GroupStrategy       string
 	HealthCheckURL      string
@@ -66,27 +63,38 @@ type SubscriptionProvider struct {
 	Headers        map[string][]string
 }
 
+type EgressProfile struct {
+	ID          string
+	DisplayName string
+	Enabled     bool
+	Line        EgressProfileLine
+	Exit        EgressProfileExit
+}
+
+type EgressProfileLayer struct {
+	Kind           string
+	ProviderID     string
+	SourceID       string
+	NodeID         string
+	HealthCheckURL string
+	HealthInterval time.Duration
+	HealthTimeout  time.Duration
+	ExpectedStatus uint32
+}
+
+type EgressProfileLine = EgressProfileLayer
+
+type EgressProfileExit = EgressProfileLayer
+
 type Empty struct{}
 
 func (Empty) Name() string                                               { return "none" }
 func (Empty) Reconcile(context.Context, Config) ([]provider.Node, error) { return nil, nil }
-func (Empty) Sources(context.Context) ([]*proxyruntimev1.ProxySourceDescriptor, error) {
-	return nil, nil
-}
 func (Empty) SourceNodes(context.Context, string) ([]*proxyruntimev1.ProxySourceNode, error) {
 	return nil, nil
 }
 func (Empty) ResolveNodePublicIP(context.Context, string, string, string) (string, error) {
 	return "", nil
-}
-func (Empty) UpsertSubscriptionSource(context.Context, *proxyruntimev1.UpsertProxySubscriptionSourceRequest) (*proxyruntimev1.ProxySourceDescriptor, error) {
-	return nil, errors.New("source runtime is disabled")
-}
-func (Empty) UpsertFixedSource(context.Context, *proxyruntimev1.UpsertProxyFixedSourceRequest) (*proxyruntimev1.ProxySourceDescriptor, error) {
-	return nil, errors.New("source runtime is disabled")
-}
-func (Empty) DeleteSource(context.Context, string) error {
-	return errors.New("source runtime is disabled")
 }
 func (Empty) Stop()          {}
 func (Empty) Status() Status { return Status{LastError: "disabled"} }

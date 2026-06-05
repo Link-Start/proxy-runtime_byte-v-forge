@@ -6,50 +6,50 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
-func (r *Runtime) handleLeases(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleLeases(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		methodNotAllowed(w, http.MethodGet)
 		return
 	}
-	leases, err := r.leases.ListLeases(req.Context(), false)
+	includeInactive := req.URL.Query().Get("include_inactive") == "true"
+	response, err := api.service.listProxyDynamicLeases(req.Context(), includeInactive)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeHTTPError(w, err, http.StatusInternalServerError)
 		return
 	}
-	r.writeProto(w, &proxyruntimev1.ListProxyDynamicLeasesResponse{Leases: leases})
+	api.writeProto(w, response)
 }
 
-func (r *Runtime) handleAcquireLease(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleAcquireLease(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		methodNotAllowed(w, http.MethodPost)
 		return
 	}
 	var body proxyruntimev1.AcquireProxyLeaseRequest
-	if !r.readProto(w, req, &body) {
+	if !api.readProto(w, req, &body) {
 		return
 	}
-	lease, err := r.acquireLease(req.Context(), req, &body)
+	response, err := api.service.acquireProxyLease(req.Context(), req, &body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		writeHTTPError(w, err, http.StatusBadGateway)
 		return
 	}
-	pool, _ := r.snapshot(req.Context())
-	r.writeProto(w, &proxyruntimev1.AcquireProxyLeaseResponse{Lease: lease, Pool: pool, Egress: lease.GetEgress(), RoutePlan: lease.GetRoutePlan()})
+	api.writeProto(w, response)
 }
 
-func (r *Runtime) handleReleaseLease(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleReleaseLease(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		methodNotAllowed(w, http.MethodPost)
 		return
 	}
 	var body proxyruntimev1.ReleaseProxyLeaseRequest
-	if !r.readProto(w, req, &body) {
+	if !api.readProto(w, req, &body) {
 		return
 	}
-	lease, err := r.releaseLease(req.Context(), &body)
+	response, err := api.service.ReleaseProxyLease(req.Context(), &body)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		writeHTTPError(w, err, http.StatusBadGateway)
 		return
 	}
-	r.writeProto(w, &proxyruntimev1.ReleaseProxyLeaseResponse{Lease: lease})
+	api.writeProto(w, response)
 }

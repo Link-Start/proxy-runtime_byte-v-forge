@@ -7,7 +7,7 @@ import (
 
 	commonv1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/common/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretbox"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -15,12 +15,14 @@ import (
 type PostgresStore struct {
 	pool             *pgxpool.Pool
 	box              secretbox.Box
-	accountProviders *accountproxy.Registry
+	accountProviders *providerregistry.Registry
 	logger           *slog.Logger
 }
 
 type providerCredential struct {
 	Username          string              `json:"username"`
+	Password          string              `json:"password,omitempty"`
+	PasswordValue     string              `json:"password_value,omitempty"`
 	PasswordSecretRef *commonv1.SecretRef `json:"password_secret_ref,omitempty"`
 }
 
@@ -34,7 +36,7 @@ type providerAccountRecord struct {
 	UpdatedAt        time.Time
 }
 
-func NewPostgresStore(ctx context.Context, cfg config.Config, accountProviders *accountproxy.Registry, logger *slog.Logger) (*PostgresStore, error) {
+func NewPostgresStore(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger) (*PostgresStore, error) {
 	box, err := secretbox.New(cfg.EncryptionKey)
 	if err != nil {
 		return nil, err
@@ -44,11 +46,9 @@ func NewPostgresStore(ctx context.Context, cfg config.Config, accountProviders *
 		return nil, err
 	}
 	store := &PostgresStore{pool: pool, box: box, accountProviders: accountProviders, logger: logger}
-	if cfg.ApplyMigrations {
-		if err := store.applyMigrations(ctx); err != nil {
-			pool.Close()
-			return nil, err
-		}
+	if err := store.applySchema(ctx); err != nil {
+		pool.Close()
+		return nil, err
 	}
 	if err := store.seedFromConfig(ctx, cfg); err != nil {
 		pool.Close()

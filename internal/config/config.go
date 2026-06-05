@@ -15,21 +15,12 @@ const (
 	ProviderStatic = "static"
 )
 
-const (
-	RouteRuntimeGOST = "gost"
-)
-
-const (
-	SourceRuntimeNone   = "none"
-	SourceRuntimeMihomo = "mihomo"
-)
-
 var ErrUnsupportedProvider = errors.New("unsupported proxy provider")
 
 const (
 	ListenerRouteDirect   = "direct"
 	ListenerRouteProvider = "provider"
-	ListenerRouteUpstream = "upstream"
+	ListenerRouteProfile  = "profile"
 )
 
 type EgressListener struct {
@@ -37,24 +28,31 @@ type EgressListener struct {
 	Addr     string            `json:"addr"`
 	Protocol string            `json:"protocol"`
 	Route    string            `json:"route"`
-	Upstream string            `json:"upstream"`
 	Username string            `json:"username"`
 	Password string            `json:"password"`
 	Labels   map[string]string `json:"labels"`
 }
 
+type ProxyUserRoute struct {
+	ID        string `json:"id"`
+	Username  string `json:"username"`
+	Password  string `json:"password"`
+	Route     string `json:"route"`
+	SourceID  string `json:"source_id"`
+	NodeID    string `json:"node_id"`
+	ProfileID string `json:"profile_id"`
+}
+
 type SessionListenerConfig struct {
-	Host           string
 	AdvertisedHost string
-	PortStart      int
-	PortEnd        int
 }
 
 type MihomoConfig struct {
 	Path                string
 	ConfigDir           string
-	MixedAddr           string
 	APIAddr             string
+	DashboardDir        string
+	DashboardURL        string
 	GroupStrategy       string
 	HealthCheckURL      string
 	HealthCheckInterval time.Duration
@@ -68,34 +66,25 @@ type IPFraudConfig struct {
 }
 
 type Config struct {
-	RuntimeAddr        string
-	RouteRuntime       string
-	SourceRuntime      string
-	PostgresDSN        string
-	RedisURL           string
-	ApplyMigrations    bool
-	EncryptionKey      string
-	GostPath           string
-	GostConfigDir      string
-	GostAPIAddr        string
-	GostMetricsAddr    string
-	Mihomo             MihomoConfig
-	CommonEgressAddr   string
-	LocalAddr          string
-	LocalProtocol      string
-	LocalUsername      string
-	LocalPassword      string
-	SessionListener    SessionListenerConfig
-	StaticChain        []string
-	SimpleProxies      []string
-	ProviderHTTPProxy  string
-	Provider           string
-	Listeners          []EgressListener
-	RefreshInterval    time.Duration
-	RequestTimeout     time.Duration
-	ProxyExitGeoURLs   []string
-	IPFraud            IPFraudConfig
-	EdgeCanaryTimeout  time.Duration
-	DashboardStaticDir string
-	Ten24              ten24.Config
+	RuntimeAddr       string
+	PostgresDSN       string
+	RedisURL          string
+	EncryptionKey     string
+	Mihomo            MihomoConfig
+	CommonEgressAddr  string
+	LocalAddr         string
+	LocalProtocol     string
+	LocalUsername     string
+	LocalPassword     string
+	SessionListener   SessionListenerConfig
+	ProxyUsers        []ProxyUserRoute
+	SimpleProxies     []string
+	ProviderHTTPProxy string
+	Provider          string
+	RefreshInterval   time.Duration
+	RequestTimeout    time.Duration
+	ProxyExitGeoURLs  []string
+	IPFraud           IPFraudConfig
+	EdgeCanaryTimeout time.Duration
+	Ten24             ten24.Config
 }

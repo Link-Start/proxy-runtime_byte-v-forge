@@ -21,16 +21,8 @@ func validateConfig(cfg Config, definition Definition) error {
 		}
 	}
 	for index, gateway := range cfg.Gateways {
-		if strings.TrimSpace(gateway.Addr) == "" {
-			return fmt.Errorf("gateways[%d].addr is required", index)
-		}
-		if err := validateProtocol(gateway.DefaultProtocol); err != nil {
-			return err
-		}
-		for _, protocol := range gateway.Protocols {
-			if err := validateProtocol(protocol); err != nil {
-				return err
-			}
+		if strings.TrimSpace(gateway.EndpointURL) == "" {
+			return fmt.Errorf("gateways[%d].endpoint_url is required", index)
 		}
 	}
 	return nil

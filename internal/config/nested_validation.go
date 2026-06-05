@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 )
 
@@ -19,31 +20,15 @@ func (c IPFraudConfig) validate() error {
 	return nil
 }
 
-func (c SessionListenerConfig) validate() error {
-	if strings.TrimSpace(c.Host) == "" {
-		return errors.New("PROXY_RUNTIME_SESSION_LISTEN_HOST is required")
-	}
-	if c.PortStart <= 0 || c.PortStart > 65535 {
-		return errors.New("PROXY_RUNTIME_SESSION_PORT_START must be between 1 and 65535")
-	}
-	if c.PortEnd <= 0 || c.PortEnd > 65535 {
-		return errors.New("PROXY_RUNTIME_SESSION_PORT_END must be between 1 and 65535")
-	}
-	if c.PortEnd < c.PortStart {
-		return errors.New("PROXY_RUNTIME_SESSION_PORT_END must be >= PROXY_RUNTIME_SESSION_PORT_START")
-	}
-	return nil
-}
-
 func (c MihomoConfig) validate() error {
 	if strings.TrimSpace(c.Path) == "" {
 		return errors.New("PROXY_RUNTIME_MIHOMO_PATH is required")
 	}
-	if strings.TrimSpace(c.MixedAddr) == "" {
-		return errors.New("PROXY_RUNTIME_MIHOMO_MIXED_ADDR is required")
-	}
 	if strings.TrimSpace(c.APIAddr) == "" {
 		return errors.New("PROXY_RUNTIME_MIHOMO_API_ADDR is required")
+	}
+	if err := validateLoopbackHostPort("PROXY_RUNTIME_MIHOMO_API_ADDR", c.APIAddr); err != nil {
+		return err
 	}
 	switch strings.TrimSpace(c.GroupStrategy) {
 	case "", "select", "url-test", "fallback", "load-balance":
@@ -55,6 +40,22 @@ func (c MihomoConfig) validate() error {
 	}
 	if c.HealthCheckTimeout < 0 {
 		return errors.New("PROXY_RUNTIME_MIHOMO_HEALTH_CHECK_TIMEOUT_SECONDS must be >= 0")
+	}
+	return nil
+}
+
+func validateLoopbackHostPort(name string, addr string) error {
+	host, _, err := net.SplitHostPort(strings.TrimSpace(addr))
+	if err != nil {
+		return fmt.Errorf("%s must be loopback host:port", name)
+	}
+	host = strings.TrimSpace(host)
+	if strings.EqualFold(host, "localhost") {
+		return nil
+	}
+	ip := net.ParseIP(host)
+	if ip == nil || !ip.IsLoopback() {
+		return fmt.Errorf("%s must listen on localhost or loopback IP", name)
 	}
 	return nil
 }

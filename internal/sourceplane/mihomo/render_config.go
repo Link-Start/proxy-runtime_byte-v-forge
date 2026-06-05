@@ -1,39 +1,19 @@
 package mihomo
 
 import (
-	"errors"
-	"regexp"
 	"strings"
 	"time"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 )
 
 func renderConfig(opts renderOptions) (mihomoConfig, error) {
-	host, port, err := splitEndpoint(opts.Endpoint.Addr)
-	if err != nil {
-		return mihomoConfig{}, err
-	}
 	providerMap := make(map[string]mihomoProvider, len(opts.Providers))
 	providerIDs := make([]string, 0, len(opts.Providers))
 	for _, item := range opts.Providers {
 		id := safeID(item.ID)
 		providerIDs = append(providerIDs, id)
-		providerMap[id] = mihomoProvider{
-			Type:     "http",
-			URL:      item.URL,
-			Path:     providerConfigPath(opts.ConfigDir, item, id),
-			Interval: seconds(item.Interval, 3600),
-			Filter:   item.Filter,
-			Exclude:  item.ExcludeFilter,
-			Header:   item.Headers,
-			HealthCheck: &mihomoHealthCheck{
-				Enable:         true,
-				URL:            firstNonEmpty(item.HealthCheckURL, opts.HealthCheckURL, "https://www.gstatic.com/generate_204"),
-				Interval:       seconds(item.HealthInterval, secondsDuration(opts.HealthCheckInterval, 300)),
-				Timeout:        milliseconds(item.HealthTimeout, millisecondsDuration(opts.HealthCheckTimeout, 5000)),
-				Lazy:           item.HealthLazy,
-				ExpectedStatus: defaultExpectedStatus(item.ExpectedStatus),
-			},
-		}
+		providerMap[id] = renderSubscriptionProvider(opts, item, id, "")
 	}
 	fixedConfigs := make([]map[string]any, 0, len(opts.FixedProxies))
 	fixedIDs := make([]string, 0, len(opts.FixedProxies))
@@ -45,83 +25,86 @@ func renderConfig(opts renderOptions) (mihomoConfig, error) {
 		fixedConfigs = append(fixedConfigs, proxyConfig)
 		fixedIDs = append(fixedIDs, safeID(item.ID))
 	}
-	nodeGroups := renderNodeProxyGroups(opts.NodeListeners)
-	listeners, err := renderNodeListeners(opts.NodeListeners)
+	poolConfigs, poolIDs, err := renderProviderNodes("provider-pool", opts.BasePool)
 	if err != nil {
 		return mihomoConfig{}, err
 	}
+	fixedConfigs = append(fixedConfigs, poolConfigs...)
+	fixedIDs = append(fixedIDs, poolIDs...)
+	defaultProxies := append([]string(nil), fixedIDs...)
+	if len(defaultProxies) == 0 && len(providerIDs) == 0 {
+		defaultProxies = []string{"DIRECT"}
+	}
+	sessionConfigs, err := renderSessionRoutes(opts.SessionRoutes)
+	if err != nil {
+		return mihomoConfig{}, err
+	}
+	fixedConfigs = append(fixedConfigs, sessionConfigs...)
+	profileConfigs, profileProviders, profileGroups, err := renderEgressProfiles(opts)
+	if err != nil {
+		return mihomoConfig{}, err
+	}
+	fixedConfigs = append(fixedConfigs, profileConfigs...)
+	for id, provider := range profileProviders {
+		providerMap[id] = provider
+	}
+	gateway, userGroups, userRules, err := renderGateway(opts.Endpoint, opts.ProxyUsers, opts.SessionRoutes)
+	if err != nil {
+		return mihomoConfig{}, err
+	}
+	rules := append(userRules, "MATCH,"+groupName)
 	return mihomoConfig{
-		MixedPort:          port,
-		BindAddress:        host,
-		AllowLAN:           false,
+		MixedPort:          gateway.Port,
+		BindAddress:        gateway.Listen,
+		AllowLAN:           true,
 		Mode:               "rule",
 		LogLevel:           "warning",
 		ExternalController: strings.TrimSpace(opts.APIAddr),
+		ExternalUI:         strings.TrimSpace(opts.DashboardDir),
+		ExternalUIURL:      strings.TrimSpace(opts.DashboardURL),
+		Authentication:     renderAuthentication(gateway.Users),
 		Proxies:            fixedConfigs,
 		ProxyProviders:     providerMap,
-		Listeners:          listeners,
 		ProxyGroups: append([]mihomoGroup{{
 			Name:           groupName,
 			Type:           groupStrategy(opts.GroupStrategy),
-			Proxies:        fixedIDs,
+			Proxies:        defaultProxies,
 			Use:            providerIDs,
 			URL:            firstNonEmpty(opts.HealthCheckURL, "https://www.gstatic.com/generate_204"),
 			Interval:       secondsDuration(opts.HealthCheckInterval, 300),
 			Timeout:        millisecondsDuration(opts.HealthCheckTimeout, 5000),
 			Lazy:           true,
 			ExpectedStatus: 204,
-		}}, nodeGroups...),
-		Rules: []string{"MATCH," + groupName},
+		}}, append(profileGroups, userGroups...)...),
+		Rules: rules,
 	}, nil
 }
 
-func renderNodeProxyGroups(bindings []nodeListener) []mihomoGroup {
-	out := make([]mihomoGroup, 0, len(bindings))
-	for _, binding := range bindings {
-		group := mihomoGroup{
-			Name:           lineGroupName(binding.SourceID, binding.NodeID),
-			Type:           "select",
-			URL:            "https://www.gstatic.com/generate_204",
-			Interval:       300,
-			Timeout:        5000,
-			Lazy:           true,
-			ExpectedStatus: 204,
-		}
-		if binding.ProviderBacked {
-			group.Use = []string{binding.SourceID}
-			group.Filter = exactProxyNameFilter(binding.ProxyName)
-		} else {
-			group.Proxies = []string{binding.ProxyName}
-		}
-		out = append(out, group)
+func renderSubscriptionProvider(opts renderOptions, item sourceplane.SubscriptionProvider, id string, dialerProxy string) mihomoProvider {
+	provider := mihomoProvider{
+		Type:     "http",
+		URL:      item.URL,
+		Path:     providerConfigPath(opts.ConfigDir, item, id),
+		Interval: seconds(item.Interval, 3600),
+		Filter:   item.Filter,
+		Exclude:  item.ExcludeFilter,
+		Header:   item.Headers,
+		HealthCheck: &mihomoHealthCheck{
+			Enable:         true,
+			URL:            firstNonEmpty(item.HealthCheckURL, opts.HealthCheckURL, "https://www.gstatic.com/generate_204"),
+			Interval:       seconds(item.HealthInterval, secondsDuration(opts.HealthCheckInterval, 300)),
+			Timeout:        milliseconds(item.HealthTimeout, millisecondsDuration(opts.HealthCheckTimeout, 5000)),
+			Lazy:           item.HealthLazy,
+			ExpectedStatus: defaultExpectedStatus(item.ExpectedStatus),
+		},
 	}
-	return out
-}
-
-func renderNodeListeners(bindings []nodeListener) ([]mihomoListener, error) {
-	out := make([]mihomoListener, 0, len(bindings))
-	for _, binding := range bindings {
-		host, port, err := splitEndpoint(binding.Endpoint.Addr)
-		if err != nil {
-			return nil, err
+	if strings.TrimSpace(dialerProxy) != "" {
+		provider.Override = map[string]any{
+			"additional-prefix": safeID(id) + "-",
+			"dialer-proxy":      strings.TrimSpace(dialerProxy),
 		}
-		if strings.TrimSpace(binding.ProxyName) == "" {
-			return nil, errors.New("mihomo node listener proxy is required")
-		}
-		out = append(out, mihomoListener{
-			Name:   lineListenerName(binding.SourceID, binding.NodeID),
-			Type:   "mixed",
-			Listen: host,
-			Port:   port,
-			Proxy:  lineGroupName(binding.SourceID, binding.NodeID),
-			UDP:    true,
-		})
 	}
-	return out, nil
-}
-
-func exactProxyNameFilter(name string) string {
-	return "^" + regexp.QuoteMeta(strings.TrimSpace(name)) + "$"
+	return provider
 }
 
 func groupStrategy(value string) string {
@@ -131,6 +114,13 @@ func groupStrategy(value string) string {
 	default:
 		return "fallback"
 	}
+}
+
+func defaultExpectedStatus(value uint32) uint32 {
+	if value == 0 {
+		return 204
+	}
+	return value
 }
 
 func seconds(value time.Duration, fallback int) int {

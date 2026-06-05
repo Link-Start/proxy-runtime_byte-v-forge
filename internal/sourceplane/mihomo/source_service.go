@@ -3,44 +3,31 @@ package mihomo
 import (
 	"context"
 	"errors"
+	"sort"
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 )
-
-func (d *Driver) Sources(ctx context.Context) ([]*proxyruntimev1.ProxySourceDescriptor, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	file, err := d.loadSourceFileLocked(nil)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]*proxyruntimev1.ProxySourceDescriptor, 0, len(file.Subscriptions)+len(file.FixedProxies))
-	for _, item := range file.Subscriptions {
-		out = append(out, subscriptionSourceDescriptor(item))
-	}
-	for _, item := range file.FixedProxies {
-		out = append(out, fixedSourceDescriptor(item))
-	}
-	return out, nil
-}
 
 func (d *Driver) SourceNodes(ctx context.Context, sourceID string) ([]*proxyruntimev1.ProxySourceNode, error) {
 	d.mu.Lock()
 	running := d.running
 	apiAddr := strings.TrimSpace(d.cfg.APIAddr)
-	file, err := d.loadSourceFileLocked(nil)
+	file := cloneSourceFile(d.sources)
 	d.mu.Unlock()
-	if err != nil {
-		return nil, err
-	}
+
+	fixedNodes := fixedProxySourceNodes(file.FixedProxies, sourceID)
 	allowed := subscriptionIDs(file.Subscriptions)
 	if len(allowed) == 0 {
-		return nil, nil
+		return fixedNodes, nil
 	}
 	if id := safeID(sourceID); id != "" {
-		if _, exists := allowed[id]; !exists {
+		if _, exists := allowed[id]; !exists && !fixedSourceExists(file.FixedProxies, id) {
 			return nil, nil
+		}
+		if fixedSourceExists(file.FixedProxies, id) {
+			return fixedNodes, nil
 		}
 	}
 	if !running {
@@ -49,16 +36,16 @@ func (d *Driver) SourceNodes(ctx context.Context, sourceID string) ([]*proxyrunt
 	if apiAddr == "" {
 		return nil, errors.New("mihomo api address is required")
 	}
-	return fetchSourceNodes(ctx, apiAddr, sourceID, allowed)
+	nodes, err := fetchSourceNodes(ctx, d.apiClient, apiAddr, sourceID, allowed)
+	if err != nil {
+		return nil, err
+	}
+	return append(fixedNodes, nodes...), nil
 }
 
 func (d *Driver) ResolveNodePublicIP(ctx context.Context, sourceID string, nodeID string, nodeDisplayName string) (string, error) {
 	d.mu.Lock()
-	file, err := d.loadSourceFileLocked(nil)
-	if err != nil {
-		d.mu.Unlock()
-		return "", err
-	}
+	file := cloneSourceFile(d.sources)
 	fixed := fixedProxyByID(file.FixedProxies, sourceID)
 	if fixed != nil {
 		uri := fixed.URI
@@ -71,56 +58,37 @@ func (d *Driver) ResolveNodePublicIP(ctx context.Context, sourceID string, nodeI
 	return publicIP(ctx, host)
 }
 
-func (d *Driver) UpsertSubscriptionSource(ctx context.Context, req *proxyruntimev1.UpsertProxySubscriptionSourceRequest) (*proxyruntimev1.ProxySourceDescriptor, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	file, err := d.loadSourceFileLocked(nil)
-	if err != nil {
-		return nil, err
+func fixedProxySourceNodes(items []sourceplane.FixedProxy, sourceID string) []*proxyruntimev1.ProxySourceNode {
+	filterID := safeID(sourceID)
+	out := make([]*proxyruntimev1.ProxySourceNode, 0, len(items))
+	for _, item := range items {
+		id := safeID(item.ID)
+		if id == "" || filterID != "" && id != filterID {
+			continue
+		}
+		out = append(out, &proxyruntimev1.ProxySourceNode{
+			SourceId:    id,
+			NodeId:      id,
+			DisplayName: firstNonEmpty(item.DisplayName, id),
+			NodeType:    "vless",
+			Status:      proxyruntimev1.ProxySourceNodeStatus_PROXY_SOURCE_NODE_STATUS_UNKNOWN,
+		})
 	}
-	item, providers, err := upsertProvider(file.Subscriptions, req)
-	if err != nil {
-		return nil, err
-	}
-	file.Subscriptions = providers
-	if err := d.saveSourceFileLocked(file); err != nil {
-		return nil, err
-	}
-	if !req.GetEnabled() {
-		return disabledSubscriptionDescriptor(item.ID, item.DisplayName), nil
-	}
-	return subscriptionSourceDescriptor(item), nil
+	sort.Slice(out, func(i, j int) bool {
+		return out[i].GetSourceId() < out[j].GetSourceId()
+	})
+	return out
 }
 
-func (d *Driver) UpsertFixedSource(ctx context.Context, req *proxyruntimev1.UpsertProxyFixedSourceRequest) (*proxyruntimev1.ProxySourceDescriptor, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	file, err := d.loadSourceFileLocked(nil)
-	if err != nil {
-		return nil, err
+func fixedSourceExists(items []sourceplane.FixedProxy, sourceID string) bool {
+	sourceID = safeID(sourceID)
+	if sourceID == "" {
+		return false
 	}
-	item, fixedProxies, err := upsertFixedProxy(file.FixedProxies, req)
-	if err != nil {
-		return nil, err
+	for _, item := range items {
+		if safeID(item.ID) == sourceID {
+			return true
+		}
 	}
-	file.FixedProxies = fixedProxies
-	if err := d.saveSourceFileLocked(file); err != nil {
-		return nil, err
-	}
-	if !req.GetEnabled() {
-		return disabledFixedDescriptor(item.ID, item.DisplayName), nil
-	}
-	return fixedSourceDescriptor(item), nil
-}
-
-func (d *Driver) DeleteSource(ctx context.Context, sourceID string) error {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	file, err := d.loadSourceFileLocked(nil)
-	if err != nil {
-		return err
-	}
-	file.Subscriptions = deleteProvider(file.Subscriptions, sourceID)
-	file.FixedProxies = deleteFixedProxy(file.FixedProxies, sourceID)
-	return d.saveSourceFileLocked(file)
+	return false
 }

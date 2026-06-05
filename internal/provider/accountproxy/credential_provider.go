@@ -24,17 +24,7 @@ func NewCredentialProvider(cfg Config, definition Definition) *CredentialProvide
 
 func (p *CredentialProvider) Name() string { return p.definition.ProviderID }
 
-func (p *CredentialProvider) Descriptor() *proxyruntimev1.ProxyProviderDescriptor {
-	return descriptor(p.definition, p.definition.Gateways)
-}
-
-func (p *CredentialProvider) Sources() []*proxyruntimev1.ProxySourceDescriptor {
-	return []*proxyruntimev1.ProxySourceDescriptor{dynamicSource(p.definition, "", p.definition.DisplayName, p.definition.Gateways)}
-}
-
-func (p *CredentialProvider) RequiresSessionLease() bool { return true }
-
-func (p *CredentialProvider) Fetch(_ context.Context, session *proxyruntimev1.ProxySession) ([]provider.Node, error) {
+func (p *CredentialProvider) FetchSession(_ context.Context, session *proxyruntimev1.ProxySession) ([]provider.Node, error) {
 	node, err := p.node(session)
 	if err != nil {
 		return nil, err
@@ -60,6 +50,10 @@ func (p *CredentialProvider) CreateSession(_ context.Context, req *proxyruntimev
 	return &proxyruntimev1.ProxySession{SessionId: sessionID, ProviderId: p.Name(), Policy: policy, CreatedAt: timestamppb.New(now), ExpiresAt: timestamppb.New(now.Add(policyStickyTTL(policy))), AccountId: strings.TrimSpace(req.GetAccountId()), Purpose: strings.TrimSpace(req.GetPurpose()), Labels: sessionLabels(p.definition)}, nil
 }
 
+func (p *CredentialProvider) ReleaseSession(context.Context, *proxyruntimev1.ProxySession) error {
+	return nil
+}
+
 func (p *CredentialProvider) sessionID() (string, error) {
 	if p.definition.GenerateSessionID != nil {
 		return p.definition.GenerateSessionID()
@@ -72,8 +66,8 @@ func (p *CredentialProvider) node(session *proxyruntimev1.ProxySession) (provide
 	if !ok {
 		return provider.Node{}, provider.ErrUnsupportedCapability
 	}
-	protocol := gatewayProtocol(gateway, p.definition.DefaultProtocol)
-	proxyURL := url.URL{Scheme: protocol, Host: gateway.Addr, User: url.UserPassword(p.username(session), p.cfg.Password)}
+	protocol := GatewayProtocol(gateway, p.definition.DefaultProtocol)
+	proxyURL := url.URL{Scheme: protocol, Host: gatewayEndpointHost(gateway.EndpointURL), User: url.UserPassword(p.username(session), p.cfg.Password)}
 	sessionID := ""
 	if session != nil {
 		sessionID = session.GetSessionId()

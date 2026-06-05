@@ -83,7 +83,7 @@ func validateIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettin
 		return fmt.Errorf("ip_fraud_providers[%d].kind is required", index)
 	}
 	if provider.GetAnonymous() && len(provider.GetApiKeySecretRefs()) > 0 {
-		return fmt.Errorf("ip_fraud_providers[%d] must use anonymous or api_key_secret_refs, not both", index)
+		return fmt.Errorf("ip_fraud_providers[%d] must use anonymous or api key mode, not both", index)
 	}
 	if provider.GetAnonymous() && !plugin.SupportsAnonymous() {
 		return fmt.Errorf("ip_fraud_providers[%d] does not support anonymous mode", index)
@@ -92,7 +92,7 @@ func validateIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettin
 		return fmt.Errorf("ip_fraud_providers[%d] does not support api key mode", index)
 	}
 	if !provider.GetAnonymous() && len(provider.GetApiKeySecretRefs()) == 0 {
-		return fmt.Errorf("ip_fraud_providers[%d].api_key_secret_refs is required when anonymous is false", index)
+		return fmt.Errorf("ip_fraud_providers[%d] api key is required when anonymous is false", index)
 	}
 	return nil
 }
@@ -127,16 +127,15 @@ func cleanIPFraudSecretRefs(values []*commonv1.SecretRef) []*commonv1.SecretRef 
 }
 
 func ipFraudSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPFraudProviderSettings, providerID string) ([]*commonv1.SecretRef, error) {
-	rawRefs := in.GetApiKeySecretRefs()
-	if len(rawRefs) == 0 {
+	if refs := cleanIPFraudSecretRefs(in.GetApiKeySecretRefs()); len(refs) > 0 {
+		return refs, nil
+	}
+	rawValues := cleanList(in.GetApiKeyValues())
+	if len(rawValues) == 0 {
 		return nil, nil
 	}
-	out := make([]*commonv1.SecretRef, 0, len(rawRefs))
-	for index, ref := range rawRefs {
-		raw := strings.TrimSpace(ref.GetSecretId())
-		if raw == "" {
-			continue
-		}
+	out := make([]*commonv1.SecretRef, 0, len(rawValues))
+	for index, raw := range rawValues {
 		secretID := secretref.StableID("proxy-runtime-ip-fraud-api-key", fmt.Sprintf("%d", in.GetKind()), providerID, fmt.Sprintf("%d", index))
 		saved, err := writeRuntimeSecret(ctx, writer, raw, secretID, "ip_fraud_api_key")
 		if err != nil {

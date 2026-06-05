@@ -14,7 +14,7 @@ import (
 
 func (r *Runtime) checkIPListener(ctx context.Context, listenerID string) (config.EgressListener, error) {
 	configs := r.baseListenerConfigs()
-	leases, err := r.leases.ListLeases(ctx, false)
+	leases, err := r.store.ListLeaseFacts(ctx, false)
 	if err != nil {
 		return config.EgressListener{}, err
 	}
@@ -58,7 +58,15 @@ func (r *Runtime) localListenerEndpoint(listener config.EgressListener, advertis
 	if advertisedHost != "" && (host == "127.0.0.1" || host == "localhost" || host == "0.0.0.0" || host == "::1") {
 		host = advertisedHost
 	}
-	return &proxyruntimev1.ProxyEndpoint{Id: listener.ID, Protocol: protocolFromName(listenerProtocol(listener, r.cfg.LocalProtocol)), Host: host, Port: port, Labels: cloneLabels(listener.Labels)}, nil
+	labels := cloneLabels(listener.Labels)
+	if listener.Username != "" || listener.Password != "" {
+		if labels == nil {
+			labels = map[string]string{}
+		}
+		labels["proxy_username"] = listener.Username
+		labels["proxy_password"] = listener.Password
+	}
+	return &proxyruntimev1.ProxyEndpoint{Id: listener.ID, Protocol: protocolFromName(listenerProtocol(listener, r.cfg.LocalProtocol)), Host: host, Port: port, Labels: labels}, nil
 }
 
 func (r *Runtime) sessionAdvertisedHost(req *http.Request, listener config.EgressListener) string {

@@ -4,26 +4,28 @@ import (
 	"context"
 	"errors"
 	"net/http"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
 )
 
 func (r *Runtime) lookupIPGeo(ctx context.Context, ip string) (proxyExitGeo, error) {
-	if geo, ok := r.cachedIPGeo(ip); ok {
+	if geo, ok := r.geoCache.get(ip); ok {
 		return geo, nil
 	}
-	settings, err := r.settings.load()
+	settings, err := r.settings.load(ctx)
 	if err != nil {
 		return proxyExitGeo{}, err
 	}
 	timeout := proxyExitIPTimeout(settings)
 	lookupCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	client := &http.Client{Timeout: timeout}
+	client := runtimehttp.New(timeout)
 	geo, err := firstSuccessfulIPGeo(lookupCtx, client, ipGeoLookupEndpoints(ip))
 	if err != nil {
 		return proxyExitGeo{}, err
 	}
 	geo.IP = ip
-	r.saveIPGeoCache(ip, geo)
+	r.geoCache.put(ip, geo)
 	return geo, nil
 }
 

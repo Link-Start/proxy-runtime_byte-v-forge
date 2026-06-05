@@ -2,11 +2,18 @@ package app
 
 import (
 	"context"
+	"sync"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+type ipFraudCheckerCache struct {
+	mu        sync.Mutex
+	signature string
+	checker   ipFraudChecker
+}
 
 func (r *Runtime) checkIPFraud(ctx context.Context, ip string, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyIPFraudCheck, error) {
 	providers, err := ipFraudProviders(ctx, r.store, settings, r.ipFraudProviders)
@@ -22,21 +29,31 @@ func (r *Runtime) checkIPFraud(ctx context.Context, ip string, settings *runtime
 
 func (r *Runtime) ipFraudChecker(settings *runtimeSettingsFile, providers []ipfraud.ProviderConfig) ipFraudChecker {
 	signature := runtimeSettingsSignature(settings, r.ipFraudProviders)
-	r.fraudMu.Lock()
-	defer r.fraudMu.Unlock()
-	if r.fraud != nil && r.fraudSignature == signature {
-		return r.fraud
-	}
-	r.fraud = newIPFraudChecker(r.ipFraudProviders, r.cfg.IPFraud, providers, r.logger)
-	r.fraudSignature = signature
-	return r.fraud
+	return r.fraudChecker.get(signature, func() ipFraudChecker {
+		return newIPFraudChecker(r.ipFraudProviders, r.cfg.IPFraud, providers, r.logger)
+	})
 }
 
 func (r *Runtime) resetIPFraudChecker() {
-	r.fraudMu.Lock()
-	defer r.fraudMu.Unlock()
-	r.fraud = nil
-	r.fraudSignature = ""
+	r.fraudChecker.reset()
+}
+
+func (c *ipFraudCheckerCache) get(signature string, create func() ipFraudChecker) ipFraudChecker {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.checker != nil && c.signature == signature {
+		return c.checker
+	}
+	c.checker = create()
+	c.signature = signature
+	return c.checker
+}
+
+func (c *ipFraudCheckerCache) reset() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.checker = nil
+	c.signature = ""
 }
 
 func edgeBaseFraudCheck(ip string) *proxyruntimev1.ProxyIPFraudCheck {

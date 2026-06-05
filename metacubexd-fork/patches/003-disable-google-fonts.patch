@@ -1,0 +1,72 @@
+diff --git a/assets/css/main.css b/assets/css/main.css
+index c8975fe..7dee47e 100644
+--- a/assets/css/main.css
++++ b/assets/css/main.css
+@@ -82,24 +82,24 @@ option {
+   color: var(--color-base-content);
+ }
+ 
+-/* Default font - Ubuntu from @nuxt/fonts */
++/* Default font - system stack, no build-time remote font provider */
+ body {
+   font-family:
+-    'Ubuntu', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+-    'Noto Sans CJK SC', system-ui, sans-serif;
++    system-ui, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
++    'Noto Sans CJK SC', sans-serif;
+ }
+ 
+ /* Custom font families */
+ .font-twemoji {
+   font-family:
+-    'Twemoji Mozilla', 'Ubuntu', 'PingFang SC', 'Hiragino Sans GB',
+-    'Microsoft YaHei', 'Noto Sans CJK SC', system-ui, sans-serif;
++    'Twemoji Mozilla', system-ui, 'PingFang SC', 'Hiragino Sans GB',
++    'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+ }
+ 
+ .font-default {
+   font-family:
+-    'Ubuntu', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
+-    'Noto Sans CJK SC', system-ui, sans-serif;
++    system-ui, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei',
++    'Noto Sans CJK SC', sans-serif;
+ }
+ 
+ /* Animated glow pulse effect for selected items */
+diff --git a/nuxt.config.ts b/nuxt.config.ts
+index 016e725..e7c99c4 100644
+--- a/nuxt.config.ts
++++ b/nuxt.config.ts
+@@ -33,7 +33,6 @@ export default defineNuxtConfig({
+     '@vueuse/nuxt',
+     '@pinia/nuxt',
+     '@nuxtjs/i18n',
+-    '@nuxt/fonts',
+     '@vite-pwa/nuxt',
+   ],
+ 
+@@ -101,23 +100,6 @@ export default defineNuxtConfig({
+     },
+   },
+ 
+-  // Fonts configuration - using Ubuntu font
+-  fonts: {
+-    families: [
+-      {
+-        name: 'Ubuntu',
+-        provider: 'google',
+-        weights: [300, 400, 500, 700],
+-        styles: ['normal', 'italic'],
+-      },
+-    ],
+-    defaults: {
+-      weights: [400, 700],
+-      styles: ['normal'],
+-      subsets: ['latin', 'latin-ext', 'cyrillic', 'cyrillic-ext'],
+-    },
+-  },
+-
+   // TypeScript configuration
+   typescript: {
+     strict: true,

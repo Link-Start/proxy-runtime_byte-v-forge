@@ -2,6 +2,7 @@ package accountproxy
 
 import (
 	"net/http"
+	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
@@ -25,12 +26,8 @@ type Config struct {
 }
 
 type Gateway struct {
-	ID               string
-	DisplayName      string
-	Addr             string
-	DefaultProtocol  string
-	Protocols        []string
-	PreferredRegions []string
+	ID          string
+	EndpointURL string
 }
 
 type Plugin interface {
@@ -40,7 +37,7 @@ type Plugin interface {
 	DynamicSource(accountID string, displayName string, gateways []Gateway) *proxyruntimev1.ProxySourceDescriptor
 	GatewayProtocol(gateway Gateway) string
 	SupportsRuntimeGeoTargeting() bool
-	NewProvider(cfg Config, client *http.Client) (provider.Provider, error)
+	NewSessionProvider(cfg Config, client *http.Client) (provider.SessionProvider, error)
 	Validate(cfg Config) error
 }
 
@@ -58,3 +55,5 @@ type Definition struct {
 	BuildUsername            UsernameBuilder
 	GenerateSessionID        SessionIDGenerator
 }
+
+func normalizeProviderID(value string) string { return strings.TrimSpace(value) }

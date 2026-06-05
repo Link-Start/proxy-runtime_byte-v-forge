@@ -6,6 +6,7 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 )
 
 func dynamicIPGatewayMap(settings *runtimeSettingsFile) map[string][]accountproxy.Gateway {
@@ -24,7 +25,10 @@ func dynamicIPProviderFromProto(in *proxyruntimev1.ProxyDynamicIPProviderSetting
 	if in == nil {
 		return &proxyruntimev1.ProxyDynamicIPProviderSettings{}
 	}
-	out := &proxyruntimev1.ProxyDynamicIPProviderSettings{ProviderId: strings.TrimSpace(in.GetProviderId()), Gateways: make([]*proxyruntimev1.ProxyDynamicIPGatewaySettings, 0, len(in.GetGateways()))}
+	out := &proxyruntimev1.ProxyDynamicIPProviderSettings{
+		ProviderId: strings.TrimSpace(in.GetProviderId()),
+		Gateways:   make([]*proxyruntimev1.ProxyDynamicIPGatewaySettings, 0, len(in.GetGateways())),
+	}
 	for _, gateway := range in.GetGateways() {
 		out.Gateways = append(out.Gateways, dynamicIPGatewayFromProto(gateway))
 	}
@@ -37,12 +41,7 @@ func dynamicIPGatewayFromProto(in *proxyruntimev1.ProxyDynamicIPGatewaySettings)
 		return &proxyruntimev1.ProxyDynamicIPGatewaySettings{}
 	}
 	out := &proxyruntimev1.ProxyDynamicIPGatewaySettings{
-		GatewayId:       strings.TrimSpace(in.GetGatewayId()),
-		DisplayName:     strings.TrimSpace(in.GetDisplayName()),
-		Addr:            strings.TrimSpace(in.GetAddr()),
-		RegionCodes:     cleanRegionCodes(in.GetRegionCodes()),
-		Protocols:       cleanProtocols(in.GetProtocols()),
-		DefaultProtocol: in.GetDefaultProtocol(),
+		EndpointUrl: normalizeEndpointURL(in.GetEndpointUrl()),
 	}
 	return out
 }
@@ -57,47 +56,41 @@ func normalizeDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderS
 	}
 }
 
-func validateDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderSettings, index int, accountProviders *accountproxy.Registry) error {
+func validateDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderSettings, index int, accountProviders *providerregistry.Registry) error {
 	if !accountProviders.IsSupported(provider.GetProviderId()) {
 		return fmt.Errorf("dynamic_ip_providers[%d].provider_id is unsupported", index)
 	}
 	seen := map[string]struct{}{}
 	for gatewayIndex, gateway := range provider.GetGateways() {
-		if strings.TrimSpace(gateway.GetAddr()) == "" {
-			return fmt.Errorf("dynamic_ip_providers[%d].gateways[%d].addr is required", index, gatewayIndex)
+		endpointURL := normalizeEndpointURL(gateway.GetEndpointUrl())
+		if endpointURL == "" {
+			return fmt.Errorf("dynamic_ip_providers[%d].gateways[%d].endpoint_url is required", index, gatewayIndex)
 		}
-		if _, exists := seen[gateway.GetGatewayId()]; exists {
-			return fmt.Errorf("dynamic_ip_providers[%d].gateways[%d] duplicates gateway %q", index, gatewayIndex, gateway.GetGatewayId())
+		if _, exists := seen[endpointURL]; exists {
+			return fmt.Errorf("dynamic_ip_providers[%d].gateways[%d] duplicates endpoint %q", index, gatewayIndex, endpointURL)
 		}
-		seen[gateway.GetGatewayId()] = struct{}{}
+		seen[endpointURL] = struct{}{}
 	}
 	return nil
 }
 
-func normalizeDynamicIPGateway(gateway *proxyruntimev1.ProxyDynamicIPGatewaySettings, index int) {
+func normalizeDynamicIPGateway(gateway *proxyruntimev1.ProxyDynamicIPGatewaySettings, _ int) {
 	if gateway == nil {
 		return
 	}
-	gateway.GatewayId = strings.TrimSpace(gateway.GetGatewayId())
-	if gateway.GatewayId == "" {
-		gateway.GatewayId = fmt.Sprintf("gateway-%d", index+1)
-	}
-	gateway.DisplayName = strings.TrimSpace(gateway.GetDisplayName())
-	gateway.Addr = strings.TrimSpace(gateway.GetAddr())
-	gateway.RegionCodes = cleanRegionCodes(gateway.GetRegionCodes())
-	gateway.Protocols = cleanProtocols(gateway.GetProtocols())
+	gateway.EndpointUrl = normalizeEndpointURL(gateway.GetEndpointUrl())
 }
 
 func accountProxyGateways(gateways []*proxyruntimev1.ProxyDynamicIPGatewaySettings) []accountproxy.Gateway {
 	out := make([]accountproxy.Gateway, 0, len(gateways))
 	for _, gateway := range gateways {
+		endpointURL := normalizeEndpointURL(gateway.GetEndpointUrl())
+		if endpointURL == "" {
+			continue
+		}
 		out = append(out, accountproxy.Gateway{
-			ID:               gateway.GetGatewayId(),
-			DisplayName:      gateway.GetDisplayName(),
-			Addr:             gateway.GetAddr(),
-			DefaultProtocol:  configuredProtocolName(gateway.GetDefaultProtocol()),
-			Protocols:        protocolNames(gateway.GetProtocols()),
-			PreferredRegions: gateway.GetRegionCodes(),
+			ID:          gatewayIDFromEndpointURL(endpointURL),
+			EndpointURL: endpointURL,
 		})
 	}
 	return out
@@ -105,4 +98,16 @@ func accountProxyGateways(gateways []*proxyruntimev1.ProxyDynamicIPGatewaySettin
 
 func cloneDynamicIPProvider(in *proxyruntimev1.ProxyDynamicIPProviderSettings) *proxyruntimev1.ProxyDynamicIPProviderSettings {
 	return dynamicIPProviderFromProto(in)
+}
+
+func normalizeEndpointURL(value string) string {
+	return strings.TrimSpace(value)
+}
+
+func gatewayIDFromEndpointURL(value string) string {
+	value = normalizeEndpointURL(value)
+	if value == "" {
+		return ""
+	}
+	return "endpoint-" + shortHash(value)
 }

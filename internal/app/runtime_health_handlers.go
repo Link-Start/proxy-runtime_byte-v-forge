@@ -6,7 +6,7 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
-func (r *Runtime) handleHealth(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleHealth(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		methodNotAllowed(w, http.MethodGet)
 		return
@@ -14,68 +14,72 @@ func (r *Runtime) handleHealth(w http.ResponseWriter, req *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (r *Runtime) handleReady(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleReady(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		methodNotAllowed(w, http.MethodGet)
 		return
 	}
-	status := r.routePlane.Status()
-	if !status.Running {
-		msg := firstNonEmpty(status.LastError, "route runtime is not running")
-		http.Error(w, msg, http.StatusServiceUnavailable)
+	if api.ready != nil {
+		ready, msg := api.ready()
+		if ready {
+			w.WriteHeader(http.StatusNoContent)
+			return
+		}
+		msg = firstNonEmpty(msg, "route runtime is not running")
+		writeHTTPError(w, unavailable(msg, nil), http.StatusServiceUnavailable)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (r *Runtime) handleProviders(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleProviders(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		methodNotAllowed(w, http.MethodGet)
 		return
 	}
-	settings, err := r.settings.load()
+	response, err := api.service.ListProxyProviders(req.Context(), &proxyruntimev1.ListProxyProvidersRequest{})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeHTTPError(w, err, http.StatusInternalServerError)
 		return
 	}
-	r.writeProto(w, &proxyruntimev1.ListProxyProvidersResponse{Providers: r.accountProviders.Descriptors(dynamicIPGatewayMap(settings))})
+	api.writeProto(w, response)
 }
 
-func (r *Runtime) handleGateway(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleGateway(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		methodNotAllowed(w, http.MethodGet)
 		return
 	}
-	gateway, err := r.gateway(req.Context())
+	response, err := api.service.GetEgressGateway(req.Context(), &proxyruntimev1.GetEgressGatewayRequest{})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeHTTPError(w, err, http.StatusInternalServerError)
 		return
 	}
-	r.writeProto(w, &proxyruntimev1.GetEgressGatewayResponse{Gateway: gateway})
+	api.writeProto(w, response)
 }
 
-func (r *Runtime) handlePool(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handlePool(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		methodNotAllowed(w, http.MethodGet)
 		return
 	}
-	pool, err := r.snapshot(req.Context())
+	response, err := api.service.GetProxyPool(req.Context(), &proxyruntimev1.GetProxyPoolRequest{})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		writeHTTPError(w, err, http.StatusInternalServerError)
 		return
 	}
-	r.writeProto(w, &proxyruntimev1.GetProxyPoolResponse{Pool: pool})
+	api.writeProto(w, response)
 }
 
-func (r *Runtime) handleRefresh(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleRefresh(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodPost {
 		methodNotAllowed(w, http.MethodPost)
 		return
 	}
-	if err := r.refresh(req.Context()); err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+	response, err := api.service.RefreshProxyPool(req.Context(), &proxyruntimev1.RefreshProxyPoolRequest{})
+	if err != nil {
+		writeHTTPError(w, err, http.StatusBadGateway)
 		return
 	}
-	pool, _ := r.snapshot(req.Context())
-	r.writeProto(w, &proxyruntimev1.RefreshProxyPoolResponse{Pool: pool})
+	api.writeProto(w, response)
 }

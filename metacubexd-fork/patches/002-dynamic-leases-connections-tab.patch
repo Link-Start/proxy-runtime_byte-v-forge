@@ -1,0 +1,165 @@
+diff --git a/components/connections/ConnectionsToolbar.vue b/components/connections/ConnectionsToolbar.vue
+index 20ce6c6..319905f 100644
+--- a/components/connections/ConnectionsToolbar.vue
++++ b/components/connections/ConnectionsToolbar.vue
+@@ -11,11 +11,11 @@ import {
+ 
+ defineProps<{
+   tabs: Array<{
+-    type: 'active' | 'closed'
++    type: 'active' | 'closed' | 'dynamicLeases'
+     name: string
+     count: number
+   }>
+-  activeTab: 'active' | 'closed'
++  activeTab: 'active' | 'closed' | 'dynamicLeases'
+   enableQuickFilter: boolean
+   sourceIPFilter: string
+   uniqueSourceIPs: string[]
+@@ -32,7 +32,7 @@ defineProps<{
+ }>()
+ 
+ const emit = defineEmits<{
+-  'update:activeTab': [tab: 'active' | 'closed']
++  'update:activeTab': [tab: 'active' | 'closed' | 'dynamicLeases']
+   'update:enableQuickFilter': [enabled: boolean]
+   'update:sourceIPFilter': [ip: string]
+   'update:sortColumn': [column: string]
+@@ -73,7 +73,7 @@ const { t } = useI18n()
+         </button>
+       </div>
+ 
+-      <div class="flex items-center gap-2">
++      <div v-if="activeTab !== 'dynamicLeases'" class="flex items-center gap-2">
+         <span
+           class="hidden text-[0.8125rem] text-base-content/60 sm:inline-block"
+         >
+@@ -97,7 +97,7 @@ const { t } = useI18n()
+         </label>
+       </div>
+ 
+-      <div class="max-w-40 flex-1">
++      <div v-if="activeTab !== 'dynamicLeases'" class="max-w-40 flex-1">
+         <select
+           class="w-full cursor-pointer appearance-none rounded-lg border border-base-content/12 bg-base-200/60 bg-[length:1rem] bg-[right_0.5rem_center] bg-no-repeat py-1.5 pr-7 pl-3 text-[0.8125rem] text-base-content transition-all duration-200 focus:border-primary focus:shadow-[0_0_0_2px_var(--color-primary)/20] focus:outline-none"
+           style="
+@@ -120,7 +120,10 @@ const { t } = useI18n()
+         </select>
+       </div>
+ 
+-      <div class="flex shrink-0 items-center gap-1.5">
++      <div
++        v-if="activeTab !== 'dynamicLeases'"
++        class="flex shrink-0 items-center gap-1.5"
++      >
+         <span
+           class="hidden text-[0.8125rem] whitespace-nowrap text-base-content/60 sm:inline-block"
+         >
+@@ -156,7 +159,10 @@ const { t } = useI18n()
+         </button>
+       </div>
+ 
+-      <div class="flex min-w-0 flex-1 items-center gap-1">
++      <div
++        v-if="activeTab !== 'dynamicLeases'"
++        class="flex min-w-0 flex-1 items-center gap-1"
++      >
+         <input
+           type="search"
+           class="min-w-0 flex-1 rounded-lg border border-base-content/12 bg-base-200/60 px-3 py-2 text-[0.8125rem] text-base-content transition-all duration-200 placeholder:text-base-content/40 focus:border-primary focus:bg-base-100 focus:shadow-[0_0_0_2px_var(--color-primary)/20] focus:outline-none"
+@@ -206,7 +212,7 @@ const { t } = useI18n()
+     <!-- Card-mode-only controls: group dropdown
+          (Sort UI is already provided in Row 1 above and works for both modes.) -->
+     <div
+-      v-if="displayMode === 'card'"
++      v-if="displayMode === 'card' && activeTab !== 'dynamicLeases'"
+       class="flex flex-wrap items-center gap-2"
+     >
+       <div class="flex items-center gap-1.5">
+diff --git a/pages/connections.vue b/pages/connections.vue
+index 84ba83d..bbbe07e 100644
+--- a/pages/connections.vue
++++ b/pages/connections.vue
+@@ -18,6 +18,7 @@ const { t, locale } = useI18n()
+ useHead({ title: computed(() => t('connections')) })
+ const connectionsStore = useConnectionsStore()
+ const configStore = useConfigStore()
++const dynamicLeases = useProxyRuntimeDynamicLeases()
+ 
+ // Modals
+ const settingsModal = ref<{ open: () => void; close: () => void }>()
+@@ -25,7 +26,7 @@ const detailsModal = ref<{ open: () => void; close: () => void }>()
+ const selectedConnection = ref<Connection | null>(null)
+ 
+ // Tab state
+-const activeTab = ref<'active' | 'closed'>('active')
++const activeTab = ref<'active' | 'closed' | 'dynamicLeases'>('active')
+ 
+ // Filter state
+ const globalFilter = ref('')
+@@ -372,6 +373,11 @@ const tabs = computed(() => [
+     name: t('closed'),
+     count: connectionsStore.closedConnections.length,
+   },
++  {
++    type: 'dynamicLeases' as const,
++    name: '动态租约',
++    count: dynamicLeases.activeLeases.value.length,
++  },
+ ])
+ 
+ // Source IP related
+@@ -532,6 +538,14 @@ watch([activeTab, globalFilter, sourceIPFilter, enableQuickFilter], () => {
+   currentPage.value = 0
+ })
+ 
++watch(activeTab, (tab) => {
++  if (tab === 'dynamicLeases') dynamicLeases.load()
++})
++
++onMounted(() => {
++  dynamicLeases.load()
++})
++
+ // Get current grouping column definition
+ const groupingColumnDef = computed(() =>
+   groupingColumn.value
+@@ -676,7 +690,10 @@ function showConnectionDetails(conn: Connection) {
+     />
+ 
+     <!-- Mobile Pagination - Top -->
+-    <div class="flex shrink-0 justify-center md:hidden">
++    <div
++      v-if="activeTab !== 'dynamicLeases'"
++      class="flex shrink-0 justify-center md:hidden"
++    >
+       <ConnectionsPagination
+         :current-page="currentPage"
+         :total-pages="totalPages"
+@@ -689,6 +706,7 @@ function showConnectionDetails(conn: Connection) {
+ 
+     <!-- Connections Table -->
+     <div
++      v-if="activeTab !== 'dynamicLeases'"
+       class="min-h-0 flex-1 overflow-auto rounded-xl border border-base-content/10 bg-base-200/50"
+     >
+       <ConnectionsTable
+@@ -706,8 +724,17 @@ function showConnectionDetails(conn: Connection) {
+       />
+     </div>
+ 
++    <DynamicIPProviderLeases
++      v-else
++      class="min-h-0 flex-1"
++      :runtime="dynamicLeases"
++    />
++
+     <!-- Desktop Pagination - Bottom -->
+-    <div class="hidden shrink-0 items-center justify-between gap-4 md:flex">
++    <div
++      v-if="activeTab !== 'dynamicLeases'"
++      class="hidden shrink-0 items-center justify-between gap-4 md:flex"
++    >
+       <div class="flex items-center gap-3">
+         <select
+           v-model.number="pageSize"

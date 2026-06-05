@@ -7,63 +7,51 @@ import (
 	"strings"
 )
 
-func validateListeners(listeners []EgressListener) error {
+func validateProxyUsers(users []ProxyUserRoute) error {
 	seen := map[string]struct{}{}
-	for index, listener := range listeners {
-		id := strings.TrimSpace(listener.ID)
-		if id == "" {
-			return fmt.Errorf("PROXY_RUNTIME_LISTENERS_JSON[%d].id is required", index)
+	for index, user := range users {
+		username := strings.TrimSpace(user.Username)
+		if username == "" {
+			return fmt.Errorf("PROXY_RUNTIME_PROXY_USERS_JSON[%d].username is required", index)
 		}
-		if _, ok := seen[id]; ok {
-			return fmt.Errorf("duplicate proxy runtime listener id %q", id)
+		if _, ok := seen[username]; ok {
+			return fmt.Errorf("duplicate proxy user username %q", username)
 		}
-		seen[id] = struct{}{}
-		if strings.TrimSpace(listener.Addr) == "" {
-			return fmt.Errorf("PROXY_RUNTIME_LISTENERS_JSON[%d].addr is required", index)
-		}
-		protocol := normalizeConfigToken(listener.Protocol)
-		if protocol == "" {
-			protocol = "http"
-		}
-		if !isLocalProtocol(protocol) {
-			return fmt.Errorf("unsupported listener protocol %q", listener.Protocol)
-		}
-		route := normalizeConfigToken(listener.Route)
-		switch route {
-		case "", ListenerRouteProvider, ListenerRouteDirect, ListenerRouteUpstream:
+		seen[username] = struct{}{}
+		switch normalizeConfigToken(user.Route) {
+		case "", ListenerRouteProvider, ListenerRouteDirect, ListenerRouteProfile, "source":
 		default:
-			return fmt.Errorf("unsupported listener route %q", listener.Route)
+			return fmt.Errorf("unsupported proxy user route %q", user.Route)
 		}
-		if route == ListenerRouteUpstream && strings.TrimSpace(listener.Upstream) == "" {
-			return fmt.Errorf("PROXY_RUNTIME_LISTENERS_JSON[%d].upstream is required for upstream route", index)
+		if normalizeConfigToken(user.Route) == ListenerRouteProfile && strings.TrimSpace(user.ProfileID) == "" && strings.TrimSpace(user.SourceID) == "" {
+			return fmt.Errorf("PROXY_RUNTIME_PROXY_USERS_JSON[%d].profile_id is required for profile route", index)
 		}
 	}
 	return nil
 }
 
-func envListeners(name string) []EgressListener {
+func envProxyUsers(name string) []ProxyUserRoute {
 	raw := strings.TrimSpace(os.Getenv(name))
 	if raw == "" {
 		return nil
 	}
-	var listeners []EgressListener
-	if err := json.Unmarshal([]byte(raw), &listeners); err != nil {
-		return []EgressListener{{
-			ID:    "__invalid__",
-			Addr:  "invalid",
-			Route: fmt.Sprintf("invalid JSON: %v", err),
+	var users []ProxyUserRoute
+	if err := json.Unmarshal([]byte(raw), &users); err != nil {
+		return []ProxyUserRoute{{
+			Username: "__invalid__",
+			Route:    fmt.Sprintf("invalid JSON: %v", err),
 		}}
 	}
-	for index := range listeners {
-		listeners[index].ID = strings.TrimSpace(listeners[index].ID)
-		listeners[index].Addr = strings.TrimSpace(listeners[index].Addr)
-		listeners[index].Protocol = normalizeConfigToken(listeners[index].Protocol)
-		listeners[index].Route = normalizeConfigToken(listeners[index].Route)
-		listeners[index].Upstream = strings.TrimSpace(listeners[index].Upstream)
-		listeners[index].Username = strings.TrimSpace(listeners[index].Username)
-		listeners[index].Password = strings.TrimSpace(listeners[index].Password)
+	for index := range users {
+		users[index].ID = strings.TrimSpace(users[index].ID)
+		users[index].Username = strings.TrimSpace(users[index].Username)
+		users[index].Password = strings.TrimSpace(users[index].Password)
+		users[index].Route = normalizeConfigToken(users[index].Route)
+		users[index].SourceID = strings.TrimSpace(users[index].SourceID)
+		users[index].NodeID = strings.TrimSpace(users[index].NodeID)
+		users[index].ProfileID = strings.TrimSpace(users[index].ProfileID)
 	}
-	return listeners
+	return users
 }
 
 func isLocalProtocol(protocol string) bool {

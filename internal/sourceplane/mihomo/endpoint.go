@@ -38,18 +38,22 @@ func splitEndpoint(addr string) (string, int, error) {
 		return "", 0, fmt.Errorf("invalid mihomo mixed port %q", portValue)
 	}
 	if host == "" {
-		host = "127.0.0.1"
+		host = "0.0.0.0"
 	}
 	return host, port, nil
 }
 
 func waitForEndpoint(ctx context.Context, addr string, timeout time.Duration) error {
+	dialAddr, err := endpointDialAddr(addr)
+	if err != nil {
+		return err
+	}
 	waitCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	ticker := time.NewTicker(50 * time.Millisecond)
 	defer ticker.Stop()
 	for {
-		conn, err := (&net.Dialer{Timeout: 100 * time.Millisecond}).DialContext(waitCtx, "tcp", addr)
+		conn, err := (&net.Dialer{Timeout: 100 * time.Millisecond}).DialContext(waitCtx, "tcp", dialAddr)
 		if err == nil {
 			_ = conn.Close()
 			return nil
@@ -60,4 +64,15 @@ func waitForEndpoint(ctx context.Context, addr string, timeout time.Duration) er
 		case <-ticker.C:
 		}
 	}
+}
+
+func endpointDialAddr(addr string) (string, error) {
+	host, port, err := splitEndpoint(addr)
+	if err != nil {
+		return "", err
+	}
+	if host == "0.0.0.0" || host == "::" {
+		host = "127.0.0.1"
+	}
+	return net.JoinHostPort(host, fmt.Sprintf("%d", port)), nil
 }

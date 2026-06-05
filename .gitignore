@@ -2,4 +2,5 @@
 /bin/
 /dist/
 /tmp/
+.playwright-cli/
 *.log

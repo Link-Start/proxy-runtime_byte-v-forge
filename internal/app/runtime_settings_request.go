@@ -9,10 +9,10 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/common-lib/secretref"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 )
 
-func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, current *runtimeSettingsFile, accountProviders *accountproxy.Registry, ipFraudProviders *ipfraud.Registry) (*runtimeSettingsFile, error) {
+func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, current *runtimeSettingsFile, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, sourceIDs map[string]struct{}) (*runtimeSettingsFile, error) {
 	current = normalizeRuntimeSettingsWithProviders(current, ipFraudProviders)
 	edgeCanary, err := edgeCanaryFromRequest(ctx, writer, req.GetEdgeCanary(), current.GetEdgeCanary())
 	if err != nil {
@@ -22,6 +22,8 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 		EdgeCanary:         edgeCanary,
 		IpFraudProviders:   make([]*proxyruntimev1.ProxyIPFraudProviderSettings, 0, len(req.GetIpFraudProviders())),
 		DynamicIpProviders: make([]*proxyruntimev1.ProxyDynamicIPProviderSettings, 0, len(req.GetDynamicIpProviders())),
+		EgressProfiles:     make([]*proxyruntimev1.EgressProfileSettings, 0, len(req.GetEgressProfiles())),
+		IngressRules:       make([]*proxyruntimev1.ProxyIngressRuleSettings, 0, len(req.GetIngressRules())),
 		CheckSettings:      checkSettingsFromRequest(req.GetCheckSettings(), current.GetCheckSettings()),
 	}
 	if edgeCanaryEnabled(settings.GetEdgeCanary()) && strings.TrimSpace(settings.GetEdgeCanary().GetUrl()) == "" {
@@ -55,6 +57,15 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 		}
 		seenDynamicProviders[item.GetProviderId()] = struct{}{}
 		settings.DynamicIpProviders = append(settings.DynamicIpProviders, item)
+	}
+	dynamicProviderIDs := enabledDynamicProviderIDs(settings)
+	settings.EgressProfiles, err = egressProfilesFromRequest(req.GetEgressProfiles(), sourceIDs, dynamicProviderIDs)
+	if err != nil {
+		return nil, err
+	}
+	settings.IngressRules, err = ingressRulesFromRequest(req.GetIngressRules(), settings.GetEgressProfiles())
+	if err != nil {
+		return nil, err
 	}
 	return normalizeRuntimeSettingsWithProviders(settings, ipFraudProviders), nil
 }

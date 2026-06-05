@@ -28,5 +28,11 @@ func runtimeSettingsView(settings *runtimeSettingsFile) *proxyruntimev1.ProxyRun
 	for _, provider := range settings.GetDynamicIpProviders() {
 		out.DynamicIpProviders = append(out.DynamicIpProviders, cloneDynamicIPProvider(provider))
 	}
+	for _, profile := range settings.GetEgressProfiles() {
+		out.EgressProfiles = append(out.EgressProfiles, cloneEgressProfile(profile))
+	}
+	for _, rule := range settings.GetIngressRules() {
+		out.IngressRules = append(out.IngressRules, cloneIngressRule(rule))
+	}
 	return out
 }

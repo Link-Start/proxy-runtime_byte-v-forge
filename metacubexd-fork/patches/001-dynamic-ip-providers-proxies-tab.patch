@@ -1,0 +1,82 @@
+diff --git a/pages/proxies.vue b/pages/proxies.vue
+index 9af484c..e52a24e 100644
+--- a/pages/proxies.vue
++++ b/pages/proxies.vue
+@@ -40,7 +40,9 @@ const nodeRecommendationStore = useNodeRecommendationStore()
+ // Batch latency test
+ const { isRunning: isBatchTesting, testMultipleGroups } = useBatchLatencyTest()
+ 
+-const activeTab = ref<'proxies' | 'proxyProviders'>('proxies')
++const proxyRuntime = useProxyRuntimeDynamicIPProviders()
++const activeTab =
++  ref<'proxies' | 'proxyProviders' | 'dynamicIPProviders'>('proxies')
+ const settingsModal = ref<{ open: () => void; close: () => void }>()
+ const proxyGroupsWrapper = ref<{ isTwoColumns: boolean }>()
+ const providersWrapper = ref<{ isTwoColumns: boolean }>()
+@@ -87,6 +89,11 @@ const tabs = computed(() => [
+     name: t('proxyProviders'),
+     count: proxiesStore.proxyProviders.length,
+   },
++  {
++    type: 'dynamicIPProviders' as const,
++    name: '动态代理提供者',
++    count: proxyRuntime.dynamicProviderCount.value,
++  },
+ ])
+ 
+ function getSortedProxyNames(proxyGroup: ProxyType) {
+@@ -131,6 +138,7 @@ function getProviderProxyNames(
+ // Fetch proxies on mount
+ onMounted(() => {
+   proxiesStore.fetchProxies()
++  proxyRuntime.load()
+ })
+ 
+ // Enable window focus refetch for proxies data
+@@ -582,6 +590,22 @@ const ProviderProxyNodes = defineComponent({
+             }"
+           />
+         </Button>
++
++        <Button
++          v-if="activeTab === 'dynamicIPProviders'"
++          aria-label="刷新"
++          class="flex h-9 w-9 items-center justify-center rounded-[0.625rem] border border-base-content/10 bg-base-200/80 transition-all duration-200 hover:border-primary/30 hover:bg-primary/15 hover:text-primary"
++          :disabled="proxyRuntime.loading.value"
++          title="刷新"
++          @click="proxyRuntime.load"
++        >
++          <IconReload
++            :size="18"
++            :class="{
++              'animate-spin text-success': proxyRuntime.loading.value,
++            }"
++          />
++        </Button>
+       </div>
+ 
+       <!-- Settings Button -->
+@@ -677,7 +701,10 @@ const ProviderProxyNodes = defineComponent({
+     </div>
+ 
+     <!-- Proxy Providers Content -->
+-    <div v-else class="min-h-0 flex-1 overflow-y-auto">
++    <div
++      v-else-if="activeTab === 'proxyProviders'"
++      class="min-h-0 flex-1 overflow-y-auto"
++    >
+       <ProxiesRenderWrapper ref="providersWrapper">
+         <template v-if="providersWrapper?.isTwoColumns" #even>
+           <Collapse
+@@ -757,6 +784,11 @@ const ProviderProxyNodes = defineComponent({
+       </ProxiesRenderWrapper>
+     </div>
+ 
++    <!-- Dynamic IP Providers Content -->
++    <div v-else class="min-h-0 flex-1 overflow-y-auto">
++      <ProxyRuntimeDynamicIPProviders :runtime="proxyRuntime" />
++    </div>
++
+     <!-- Settings Modal -->
+     <Modal ref="settingsModal" :title="t('proxiesSettings')">
+       <template #icon>

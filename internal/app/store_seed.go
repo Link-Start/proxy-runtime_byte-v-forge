@@ -4,7 +4,6 @@ import (
 	"context"
 	"strings"
 
-	commonv1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/common/v1"
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
@@ -19,16 +18,12 @@ func (s *PostgresStore) seedFromConfig(ctx context.Context, cfg config.Config) e
 		return nil
 	}
 	_, err := s.UpsertProviderAccount(ctx, &proxyruntimev1.UpsertProxyProviderAccountRequest{
-		AccountId:   "default-1024proxy",
-		ProviderId:  accountproxy.ProviderTen24,
-		DisplayName: "Default 1024Proxy",
-		Enabled:     true,
-		Username:    cfg.Ten24.Username,
-		PasswordSecretRef: &commonv1.SecretRef{
-			SecretId: cfg.Ten24.Password,
-			Provider: "proxy-runtime",
-			Purpose:  "dynamic_ip_provider_password",
-		},
+		AccountId:     "default-1024proxy",
+		ProviderId:    accountproxy.ProviderTen24,
+		DisplayName:   "Default 1024Proxy",
+		Enabled:       true,
+		Username:      cfg.Ten24.Username,
+		PasswordValue: cfg.Ten24.Password,
 		ClearPassword: false,
 	})
 	return err

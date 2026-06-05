@@ -3,29 +3,39 @@ package mihomo
 import (
 	"time"
 
+	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 )
 
 type renderOptions struct {
 	Providers           []sourceplane.SubscriptionProvider
 	FixedProxies        []sourceplane.FixedProxy
+	EgressProfiles      []sourceplane.EgressProfile
 	Endpoint            sourceplane.Endpoint
 	ConfigDir           string
 	APIAddr             string
+	DashboardDir        string
+	DashboardURL        string
 	GroupStrategy       string
 	HealthCheckURL      string
 	HealthCheckInterval time.Duration
 	HealthCheckTimeout  time.Duration
-	NodeListeners       []nodeListener
+	BasePool            []provider.Node
+	ProxyUsers          []dataplane.ProxyUserRoute
+	SessionRoutes       []dataplane.SessionRoute
 }
 
 type mihomoConfig struct {
-	MixedPort          int                       `json:"mixed-port"`
+	MixedPort          int                       `json:"mixed-port,omitempty"`
 	BindAddress        string                    `json:"bind-address,omitempty"`
 	AllowLAN           bool                      `json:"allow-lan"`
 	Mode               string                    `json:"mode"`
 	LogLevel           string                    `json:"log-level"`
 	ExternalController string                    `json:"external-controller,omitempty"`
+	ExternalUI         string                    `json:"external-ui,omitempty"`
+	ExternalUIURL      string                    `json:"external-ui-url,omitempty"`
+	Authentication     []string                  `json:"authentication,omitempty"`
 	Proxies            []map[string]any          `json:"proxies,omitempty"`
 	ProxyProviders     map[string]mihomoProvider `json:"proxy-providers,omitempty"`
 	ProxyGroups        []mihomoGroup             `json:"proxy-groups,omitempty"`
@@ -42,6 +52,7 @@ type mihomoProvider struct {
 	Exclude     string              `json:"exclude-filter,omitempty"`
 	HealthCheck *mihomoHealthCheck  `json:"health-check,omitempty"`
 	Header      map[string][]string `json:"header,omitempty"`
+	Override    map[string]any      `json:"override,omitempty"`
 }
 
 type mihomoHealthCheck struct {
@@ -62,24 +73,24 @@ type mihomoGroup struct {
 	URL            string   `json:"url,omitempty"`
 	Interval       int      `json:"interval,omitempty"`
 	Timeout        int      `json:"timeout,omitempty"`
+	Strategy       string   `json:"strategy,omitempty"`
 	Lazy           bool     `json:"lazy"`
 	ExpectedStatus uint32   `json:"expected-status,omitempty"`
+	Hidden         bool     `json:"hidden,omitempty"`
 }
 
 type mihomoListener struct {
-	Name   string `json:"name"`
-	Type   string `json:"type"`
-	Listen string `json:"listen,omitempty"`
-	Port   int    `json:"port"`
-	Proxy  string `json:"proxy"`
-	UDP    bool   `json:"udp"`
+	Name   string       `json:"name"`
+	Type   string       `json:"type"`
+	Listen string       `json:"listen,omitempty"`
+	Port   int          `json:"port"`
+	Rule   string       `json:"rule,omitempty"`
+	Proxy  string       `json:"proxy,omitempty"`
+	UDP    bool         `json:"udp"`
+	Users  []mihomoUser `json:"users,omitempty"`
 }
 
-type nodeListener struct {
-	SourceID       string
-	NodeID         string
-	DisplayName    string
-	ProxyName      string
-	ProviderBacked bool
-	Endpoint       sourceplane.Endpoint
+type mihomoUser struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }

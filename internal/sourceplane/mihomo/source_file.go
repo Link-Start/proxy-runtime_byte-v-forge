@@ -2,8 +2,6 @@ package mihomo
 
 import (
 	"context"
-	"encoding/json"
-	"errors"
 	"net"
 	"net/url"
 	"os"
@@ -29,51 +27,6 @@ type providerProxyNode struct {
 	Server string `yaml:"server"`
 }
 
-func (d *Driver) loadSourceFileLocked(bootstrap []sourceplane.SubscriptionProvider) (sourceFile, error) {
-	dir, err := d.ensureConfigDir()
-	if err != nil {
-		return sourceFile{}, err
-	}
-	path := sourcesPath(dir)
-	data, err := os.ReadFile(path)
-	if errors.Is(err, os.ErrNotExist) {
-		file := cleanSourceFile(sourceFile{Subscriptions: bootstrap})
-		if len(file.Subscriptions) > 0 || len(file.FixedProxies) > 0 {
-			return file, d.saveSourceFileLocked(file)
-		}
-		return sourceFile{}, nil
-	}
-	if err != nil {
-		return sourceFile{}, err
-	}
-	var file sourceFile
-	if len(data) > 0 {
-		if err := json.Unmarshal(data, &file); err != nil {
-			return sourceFile{}, err
-		}
-	}
-	file = cleanSourceFile(file)
-	if len(file.Subscriptions) == 0 && len(file.FixedProxies) == 0 && len(bootstrap) > 0 {
-		file = cleanSourceFile(sourceFile{Subscriptions: bootstrap})
-		return file, d.saveSourceFileLocked(file)
-	}
-	return file, nil
-}
-
-func (d *Driver) saveSourceFileLocked(file sourceFile) error {
-	dir, err := d.ensureConfigDir()
-	if err != nil {
-		return err
-	}
-	data, err := json.MarshalIndent(cleanSourceFile(file), "", "  ")
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(sourcesPath(dir), data, 0o600)
-}
-
-func sourcesPath(dir string) string { return filepath.Join(dir, "sources.json") }
-
 func (d *Driver) providerFileCandidatesLocked(providers []sourceplane.SubscriptionProvider, sourceID string) []string {
 	dir, err := d.ensureConfigDir()
 	if err != nil {
@@ -86,6 +39,27 @@ func (d *Driver) providerFileCandidatesLocked(providers []sourceplane.Subscripti
 		}
 	}
 	return nil
+}
+
+func cloneSourceFile(file sourceFile) sourceFile {
+	out := sourceFile{
+		Subscriptions: append([]sourceplane.SubscriptionProvider(nil), file.Subscriptions...),
+		FixedProxies:  append([]sourceplane.FixedProxy(nil), file.FixedProxies...),
+	}
+	for i := range out.Subscriptions {
+		if out.Subscriptions[i].Headers != nil {
+			headers := map[string][]string{}
+			for key, values := range out.Subscriptions[i].Headers {
+				headers[key] = append([]string(nil), values...)
+			}
+			out.Subscriptions[i].Headers = headers
+		}
+		out.Subscriptions[i].RegionCodes = append([]string(nil), out.Subscriptions[i].RegionCodes...)
+	}
+	for i := range out.FixedProxies {
+		out.FixedProxies[i].RegionCodes = append([]string(nil), out.FixedProxies[i].RegionCodes...)
+	}
+	return out
 }
 
 func providerNodeHost(paths []string, nodeID string, nodeDisplayName string) string {
@@ -116,6 +90,30 @@ func providerNodeHost(paths []string, nodeID string, nodeDisplayName string) str
 		}
 	}
 	return fallback
+}
+
+func providerProxyNameFromNodeID(paths []string, nodeID string) string {
+	targetID := strings.TrimSpace(filepath.Base(nodeID))
+	if targetID == "" {
+		return ""
+	}
+	for _, path := range paths {
+		data, err := os.ReadFile(path)
+		if err != nil || len(data) == 0 {
+			continue
+		}
+		var file providerProxyFile
+		if yaml.Unmarshal(data, &file) != nil {
+			continue
+		}
+		for _, node := range file.Proxies {
+			name := strings.TrimSpace(node.Name)
+			if name != "" && sourceNodeKey(name) == targetID {
+				return name
+			}
+		}
+	}
+	return ""
 }
 
 func providerFileCandidates(configDir string, item sourceplane.SubscriptionProvider, id string) []string {

@@ -1,0 +1,84 @@
+package app
+
+import (
+	"strconv"
+	"strings"
+
+	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/common-lib/geox"
+)
+
+func normalizeDynamicGatewayPolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) *proxyruntimev1.EgressRoutePolicy {
+	in := req.GetRoutePolicy()
+	policy := &proxyruntimev1.EgressRoutePolicy{}
+	if in != nil {
+		policy.CountryCode = strings.TrimSpace(in.GetCountryCode())
+		policy.Region = strings.TrimSpace(in.GetRegion())
+		policy.Purpose = strings.TrimSpace(in.GetPurpose())
+		policy.Strategy = in.GetStrategy()
+		policy.MaxAttempts = in.GetMaxAttempts()
+		policy.RequireDynamicExit = in.GetRequireDynamicExit()
+		policy.AllowDirectDynamicGateway = in.GetAllowDirectDynamicGateway()
+	}
+	if policy.CountryCode == "" {
+		policy.CountryCode = firstNonEmpty(req.GetPolicy().GetLabels()["country_code"], req.GetPolicy().GetRegion())
+	}
+	if policy.Region == "" {
+		policy.Region = firstNonEmpty(req.GetPolicy().GetLabels()["region"], req.GetPolicy().GetRegion())
+	}
+	if policy.Purpose == "" {
+		policy.Purpose = strings.TrimSpace(req.GetPurpose())
+	}
+	policy.CountryCode = geox.NormalizeCountryAlpha2(policy.CountryCode)
+	policy.Region = strings.ToUpper(strings.TrimSpace(policy.Region))
+	if policy.Strategy == proxyruntimev1.ProxySelectorStrategy_PROXY_SELECTOR_STRATEGY_UNSPECIFIED {
+		policy.Strategy = proxyruntimev1.ProxySelectorStrategy_PROXY_SELECTOR_STRATEGY_HASH_TARGET_HOST
+	}
+	if policy.MaxAttempts == 0 {
+		policy.MaxAttempts = 10
+	}
+	policy.RequireDynamicExit = true
+	if in == nil {
+		policy.AllowDirectDynamicGateway = true
+	}
+	return policy
+}
+
+func stableRouteStrategy(policy *proxyruntimev1.EgressRoutePolicy) bool {
+	switch policy.GetStrategy() {
+	case proxyruntimev1.ProxySelectorStrategy_PROXY_SELECTOR_STRATEGY_HASH_CLIENT_IP,
+		proxyruntimev1.ProxySelectorStrategy_PROXY_SELECTOR_STRATEGY_HASH_TARGET_HOST:
+		return true
+	default:
+		return false
+	}
+}
+
+func gatewayAttempt(req *proxyruntimev1.AcquireProxyLeaseRequest) int {
+	if req == nil || req.GetPolicy() == nil {
+		return 1
+	}
+	value := strings.TrimSpace(req.GetPolicy().GetLabels()["attempt"])
+	if value == "" {
+		return 1
+	}
+	attempt, err := strconv.Atoi(value)
+	if err != nil || attempt < 1 {
+		return 1
+	}
+	return attempt
+}
+
+func gatewaySelectionKey(req *proxyruntimev1.AcquireProxyLeaseRequest) string {
+	if req == nil {
+		return ""
+	}
+	labels := req.GetPolicy().GetLabels()
+	return firstNonEmpty(
+		labels["selection_seed"],
+		labels["proxy_selection_seed"],
+		labels["job_id"],
+		req.GetAccountId(),
+		req.GetPurpose(),
+	)
+}

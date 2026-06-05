@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"net/http"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -47,7 +47,7 @@ func NewService(registry *Registry, cfg Config, logger *slog.Logger) *Service {
 	sort.SliceStable(cfg.Providers, func(i, j int) bool {
 		return cfg.Providers[i].Weight > cfg.Providers[j].Weight
 	})
-	client := &http.Client{Timeout: cfg.Timeout}
+	client := runtimehttp.New(cfg.Timeout)
 	providers := make([]providerEntry, 0, len(cfg.Providers))
 	for _, item := range cfg.Providers {
 		plugin, ok := registry.PluginForKind(item.Kind)

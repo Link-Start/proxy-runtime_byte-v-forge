@@ -2,36 +2,42 @@ package app
 
 import (
 	"strings"
+	"sync"
 	"time"
 )
 
-func (r *Runtime) cachedIPGeo(ip string) (proxyExitGeo, bool) {
+type ipGeoCache struct {
+	mu    sync.Mutex
+	items map[string]cachedIPGeo
+}
+
+func (c *ipGeoCache) get(ip string) (proxyExitGeo, bool) {
 	ip = strings.TrimSpace(ip)
 	if ip == "" {
 		return proxyExitGeo{}, false
 	}
-	r.geoMu.Lock()
-	defer r.geoMu.Unlock()
-	if r.geoCache == nil {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.items == nil {
 		return proxyExitGeo{}, false
 	}
-	item, ok := r.geoCache[ip]
+	item, ok := c.items[ip]
 	if !ok || time.Now().After(item.expiresAt) {
-		delete(r.geoCache, ip)
+		delete(c.items, ip)
 		return proxyExitGeo{}, false
 	}
 	return item.geo, true
 }
 
-func (r *Runtime) saveIPGeoCache(ip string, geo proxyExitGeo) {
+func (c *ipGeoCache) put(ip string, geo proxyExitGeo) {
 	ip = strings.TrimSpace(ip)
 	if ip == "" {
 		return
 	}
-	r.geoMu.Lock()
-	defer r.geoMu.Unlock()
-	if r.geoCache == nil {
-		r.geoCache = map[string]cachedIPGeo{}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.items == nil {
+		c.items = map[string]cachedIPGeo{}
 	}
-	r.geoCache[ip] = cachedIPGeo{geo: geo, expiresAt: time.Now().Add(ipGeoCacheTTL)}
+	c.items[ip] = cachedIPGeo{geo: geo, expiresAt: time.Now().Add(ipGeoCacheTTL)}
 }

@@ -17,16 +17,6 @@ func signature(data []byte) string {
 	return hex.EncodeToString(sum[:])
 }
 
-func lineListenerName(sourceID string, nodeID string) string {
-	sum := sha256.Sum256([]byte(strings.TrimSpace(sourceID) + "/" + strings.TrimSpace(nodeID)))
-	return "bvf-line-" + hex.EncodeToString(sum[:])[:16]
-}
-
-func lineGroupName(sourceID string, nodeID string) string {
-	sum := sha256.Sum256([]byte("group/" + strings.TrimSpace(sourceID) + "/" + strings.TrimSpace(nodeID)))
-	return "bvf-line-group-" + hex.EncodeToString(sum[:])[:16]
-}
-
 func sourceNodeID(sourceID string, name string) string {
 	return strings.TrimSpace(sourceID) + "/" + sourceNodeKey(name)
 }

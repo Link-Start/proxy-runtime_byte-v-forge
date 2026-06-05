@@ -9,12 +9,12 @@ import (
 	"io"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+	"github.com/byte-v-forge/proxy-runtime/internal/processruntime"
 )
 
 func (d *Driver) Stop() {
@@ -23,10 +23,10 @@ func (d *Driver) Stop() {
 	d.stopLocked()
 }
 
-func (d *Driver) Status() sourceplane.Status {
+func (d *Driver) Status() dataplane.Status {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	return sourceplane.Status{Running: d.running, ConfigPath: d.configPath, LastError: d.lastError}
+	return dataplane.Status{Running: d.running, ConfigPath: d.configPath, LastError: d.lastError}
 }
 
 func (d *Driver) ensureConfigDir() (string, error) {
@@ -53,21 +53,32 @@ func (d *Driver) startLocked(ctx context.Context, dir string, configPath string)
 	if path == "" {
 		return errors.New("mihomo path is required")
 	}
-	processCtx, cancel := context.WithCancel(ctx)
-	cmd := exec.CommandContext(processCtx, path, "-f", configPath)
-	cmd.Dir = dir
-	cmd.Env = append(os.Environ(), "SAFE_PATHS="+dir)
-	cmd.Stdout = io.Discard
-	cmd.Stderr = io.Discard
-	if err := cmd.Start(); err != nil {
-		cancel()
+	process, err := processruntime.Start(ctx, processruntime.Config{Path: path, Args: []string{"-f", configPath}, Dir: dir, Env: append(os.Environ(), "SAFE_PATHS="+d.safePaths(dir)), Stdout: io.Discard, Stderr: io.Discard})
+	if err != nil {
 		return err
 	}
-	d.cmd = cmd
-	d.cancel = cancel
+	d.process = process
 	d.running = true
-	go d.wait(cmd)
+	go d.wait(process)
 	return nil
+}
+
+func (d *Driver) safePaths(configDir string) string {
+	paths := []string{configDir, d.cfg.DashboardDir}
+	seen := map[string]struct{}{}
+	out := make([]string, 0, len(paths))
+	for _, value := range paths {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
+	}
+	return strings.Join(out, string(os.PathListSeparator))
 }
 
 func (d *Driver) reloadLocked(ctx context.Context, configPath string) error {
@@ -87,7 +98,7 @@ func (d *Driver) reloadLocked(ctx context.Context, configPath string) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	resp, err := (&http.Client{Timeout: 5 * time.Second}).Do(req)
+	resp, err := d.apiClient.Do(req)
 	if err != nil {
 		return err
 	}
@@ -99,11 +110,12 @@ func (d *Driver) reloadLocked(ctx context.Context, configPath string) error {
 	return fmt.Errorf("mihomo config reload returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(data)))
 }
 
-func (d *Driver) wait(cmd *exec.Cmd) {
-	err := cmd.Wait()
+func (d *Driver) wait(process *processruntime.Process) {
+	<-process.Done()
+	err := process.ExitError()
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	if d.cmd != cmd {
+	if d.process != process {
 		return
 	}
 	d.running = false
@@ -113,15 +125,10 @@ func (d *Driver) wait(cmd *exec.Cmd) {
 }
 
 func (d *Driver) stopLocked() {
-	cancel := d.cancel
-	cmd := d.cmd
-	d.cancel = nil
-	d.cmd = nil
+	process := d.process
+	d.process = nil
 	d.running = false
-	if cancel != nil {
-		cancel()
-	}
-	if cmd != nil && cmd.Process != nil {
-		_ = cmd.Process.Kill()
+	if process != nil {
+		_ = process.Stop(5 * time.Second)
 	}
 }

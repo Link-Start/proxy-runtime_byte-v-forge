@@ -3,6 +3,7 @@ package mihomo
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -37,12 +38,15 @@ type mihomoProxyHistory struct {
 	Message string `json:"message"`
 }
 
-func fetchSourceNodes(ctx context.Context, apiAddr string, sourceID string, allowed map[string]struct{}) ([]*proxyruntimev1.ProxySourceNode, error) {
+func fetchSourceNodes(ctx context.Context, client *http.Client, apiAddr string, sourceID string, allowed map[string]struct{}) ([]*proxyruntimev1.ProxySourceNode, error) {
+	if client == nil {
+		return nil, errors.New("mihomo control api client is required")
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, controlURL(apiAddr, "/providers/proxies"), nil)
 	if err != nil {
 		return nil, err
 	}
-	resp, err := (&http.Client{Timeout: 5 * time.Second}).Do(req)
+	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
 	}

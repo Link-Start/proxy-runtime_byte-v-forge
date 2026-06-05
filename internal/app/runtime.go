@@ -2,8 +2,8 @@ package app
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
-	"net"
 	"sync"
 	"time"
 
@@ -11,59 +11,62 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 )
 
 type Runtime struct {
-	cfg              config.Config
-	provider         provider.Provider
-	accountProviders *accountproxy.Registry
-	ipFraudProviders *ipfraud.Registry
-	routePlane       dataplane.Driver
-	sourcePlane      sourceplane.Driver
-	store            *PostgresStore
-	leases           leaseStore
-	settings         *runtimeSettingsStore
-	logger           *slog.Logger
+	cfg                    config.Config
+	provider               provider.PoolProvider
+	accountProviders       *providerregistry.Registry
+	ipFraudProviders       *ipfraud.Registry
+	dataPlane              dataplane.Driver
+	store                  *PostgresStore
+	leaseLocks             leaseRuntimeLocks
+	leaseCoordinator       leaseCoordinator
+	dynamicGatewaySelector *dynamicGatewaySelector
+	nodeObservations       *proxyNodeObservationStore
+	settings               *runtimeSettingsStore
+	appService             *RuntimeService
+	logger                 *slog.Logger
 
-	mu          sync.RWMutex
-	pool        []provider.Node
-	refreshedAt time.Time
+	poolSnapshot      poolSnapshotState
+	sourceObservation sourceNodeObservation
 
-	refreshMu        sync.Mutex
-	forwardMu        sync.Mutex
-	forwardCancel    context.CancelFunc
-	forwardListeners []net.Listener
-	forwardSignature string
+	refreshMu      sync.Mutex
+	reconcileMu    sync.RWMutex
+	reconcileState runtimeReconcileState
+	fraudChecker   ipFraudCheckerCache
+	geoCache       ipGeoCache
 
-	fraudMu        sync.Mutex
-	fraudSignature string
-	fraud          ipFraudChecker
-
-	geoMu    sync.Mutex
-	geoCache map[string]cachedIPGeo
+	reconcileCh chan struct{}
 }
 
-func NewRuntime(cfg config.Config, proxyProvider provider.Provider, accountProviders *accountproxy.Registry, ipFraudProviders *ipfraud.Registry, routePlane dataplane.Driver, sourcePlane sourceplane.Driver, store *PostgresStore, leases leaseStore, logger *slog.Logger) *Runtime {
+func NewRuntime(cfg config.Config, proxyProvider provider.PoolProvider, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, dataPlane dataplane.Driver, store *PostgresStore, leaseLocks leaseRuntimeLocks, logger *slog.Logger) (*Runtime, error) {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	if sourcePlane == nil {
-		sourcePlane = sourceplane.Empty{}
+	if dataPlane == nil {
+		return nil, fmt.Errorf("data plane driver is required")
 	}
-	return &Runtime{cfg: cfg, provider: proxyProvider, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, routePlane: routePlane, sourcePlane: sourcePlane, store: store, leases: leases, settings: newRuntimeSettingsStore(store, accountProviders, ipFraudProviders, logger), logger: logger}
+	nodeObservations, err := newProxyNodeObservationStore(context.Background(), cfg)
+	if err != nil {
+		return nil, err
+	}
+	runtime := &Runtime{cfg: cfg, provider: proxyProvider, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, dataPlane: dataPlane, store: store, leaseLocks: leaseLocks, nodeObservations: nodeObservations, settings: newRuntimeSettingsStore(store, accountProviders, ipFraudProviders, logger), logger: logger, reconcileCh: make(chan struct{}, 1)}
+	runtime.leaseCoordinator = newLeaseCoordinator(runtime)
+	runtime.dynamicGatewaySelector = newDynamicGatewaySelector(runtime)
+	runtime.appService = NewRuntimeService(runtime)
+	return runtime, nil
 }
 
 func (r *Runtime) Run(ctx context.Context) error {
+	defer r.nodeObservations.Close()
 	if err := r.refresh(ctx); err != nil {
 		return err
 	}
-	defer r.routePlane.Stop()
-	defer r.sourcePlane.Stop()
-	defer r.stopForwarders()
+	defer r.dataPlane.Stop()
 	errCh := make(chan error, 2)
-	go r.refreshLoop(ctx)
+	go r.reconcileLoop(ctx)
 	go r.serveHTTP(ctx, errCh)
 	select {
 	case <-ctx.Done():
@@ -73,55 +76,84 @@ func (r *Runtime) Run(ctx context.Context) error {
 	}
 }
 
-func (r *Runtime) refreshLoop(ctx context.Context) {
-	if r.cfg.RefreshInterval == 0 {
-		return
+func (r *Runtime) requestReconcile() {
+	r.markReconcilePending()
+	select {
+	case r.reconcileCh <- struct{}{}:
+	default:
 	}
-	ticker := time.NewTicker(r.cfg.RefreshInterval)
-	defer ticker.Stop()
+}
+
+func (r *Runtime) reconcileLoop(ctx context.Context) {
+	var ticker *time.Ticker
+	var tick <-chan time.Time
+	if r.cfg.RefreshInterval > 0 {
+		ticker = time.NewTicker(r.cfg.RefreshInterval)
+		defer ticker.Stop()
+		tick = ticker.C
+	}
 	for {
 		select {
 		case <-ctx.Done():
 			return
-		case <-ticker.C:
-			if err := r.refresh(ctx); err != nil {
-				r.logger.Warn("proxy base refresh failed", "error", err)
-			}
+		case <-tick:
+			r.reconcile(ctx)
+		case <-r.reconcileCh:
+			r.reconcile(ctx)
 		}
 	}
+}
+
+func (r *Runtime) reconcile(ctx context.Context) {
+	if err := r.runReconcile(ctx); err != nil {
+		r.logger.Warn("proxy runtime reconcile failed", "error", err)
+	}
+	for {
+		select {
+		case <-r.reconcileCh:
+			if err := r.runReconcile(ctx); err != nil {
+				r.logger.Warn("proxy runtime reconcile failed", "error", err)
+			}
+		default:
+			return
+		}
+	}
+}
+
+func (r *Runtime) runReconcile(ctx context.Context) error {
+	r.markReconcileStarted()
+	err := r.refresh(ctx)
+	r.markReconcileFinished(err)
+	return err
 }
 
 func (r *Runtime) refresh(ctx context.Context) error {
 	r.refreshMu.Lock()
 	defer r.refreshMu.Unlock()
-	nodes, err := r.provider.Fetch(ctx, nil)
+	nodes, err := r.provider.Fetch(ctx)
 	if err != nil && r.cfg.Provider != config.ProviderNone {
 		r.logger.Warn("base provider fetch failed", "error", err)
 		nodes = nil
 	}
-	sourceNodes, err := r.sourcePlane.Reconcile(ctx, r.sourcePlaneConfig())
+	sourceCfg, err := r.dataPlaneConfig(ctx)
 	if err != nil {
+		return err
+	}
+	sourceCfg.Pool = nodes
+	sourceCfg.Common = r.commonEgressService()
+	sourceCfg.Local = r.defaultLocalService()
+	sourceCfg.DynamicViaCommon = r.cfg.CommonEgressAddr != ""
+	sourceNodes, err := r.dataPlane.ReconcileBase(ctx, sourceCfg)
+	if err != nil {
+		r.sourceObservation.recordError(err)
 		return err
 	}
 	poolNodes := append(cloneNodes(nodes), cloneNodes(sourceNodes)...)
-	staticChain, err := r.parseStaticChain()
-	if err != nil {
+	r.refreshSourceNodeObservation(ctx)
+	r.poolSnapshot.record(poolNodes)
+	if err := r.leaseCoordinator.restoreActiveLeases(ctx); err != nil {
 		return err
 	}
-	cfg := dataplane.Config{Common: r.commonEgressService(), Local: r.defaultLocalService(), Listeners: r.routePlaneListeners(), StaticChain: staticChain, Pool: poolNodes, DynamicViaCommon: r.cfg.CommonEgressAddr != ""}
-	if len(cfg.Listeners) > 0 || cfg.Local.Addr != "" || len(staticChain) > 0 || len(poolNodes) > 0 {
-		if err := r.routePlane.ReconcileBase(ctx, cfg); err != nil {
-			return err
-		}
-	}
-	if err := r.reloadForwarders(ctx); err != nil {
-		return err
-	}
-	r.restoreActiveLeases(ctx, staticChain, poolNodes)
-	r.mu.Lock()
-	r.pool = cloneNodes(poolNodes)
-	r.refreshedAt = time.Now().UTC()
-	r.mu.Unlock()
-	r.logger.Info("proxy runtime base refreshed", "pool_size", len(poolNodes), "route_runtime", r.routePlane.Name(), "source_runtime", r.sourcePlane.Name())
+	r.logger.Info("proxy runtime base refreshed", "pool_size", len(poolNodes), "data_plane", r.dataPlane.Name())
 	return nil
 }

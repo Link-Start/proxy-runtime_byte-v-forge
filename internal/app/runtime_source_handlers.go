@@ -7,104 +7,81 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
-func (r *Runtime) handleSources(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleSources(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:
-		sources, err := r.listSources(req.Context())
+		response, err := api.service.ListProxySources(req.Context(), &proxyruntimev1.ListProxySourcesRequest{})
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			writeHTTPError(w, err, http.StatusInternalServerError)
 			return
 		}
-		r.writeProto(w, &proxyruntimev1.ListProxySourcesResponse{Sources: sources})
+		api.writeProto(w, response)
 	case http.MethodPost, http.MethodPut:
 		var body proxyruntimev1.UpsertProxySubscriptionSourceRequest
-		if !r.readProto(w, req, &body) {
+		if !api.readProto(w, req, &body) {
 			return
 		}
-		source, err := r.sourcePlane.UpsertSubscriptionSource(req.Context(), &body)
+		response, err := api.service.UpsertProxySubscriptionSource(req.Context(), &body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			writeHTTPError(w, err, http.StatusBadRequest)
 			return
 		}
-		_ = r.refresh(req.Context())
-		r.writeProto(w, &proxyruntimev1.UpsertProxySubscriptionSourceResponse{Source: source})
+		api.writeProto(w, response)
 	case http.MethodDelete:
 		var body proxyruntimev1.DeleteProxySourceRequest
-		if !r.readProto(w, req, &body) {
+		if !api.readProto(w, req, &body) {
 			return
 		}
-		if err := r.sourcePlane.DeleteSource(req.Context(), body.GetSourceId()); err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+		response, err := api.service.DeleteProxySource(req.Context(), &body)
+		if err != nil {
+			writeHTTPError(w, err, http.StatusBadRequest)
 			return
 		}
-		_ = r.refresh(req.Context())
-		r.writeProto(w, &proxyruntimev1.DeleteProxySourceResponse{})
+		api.writeProto(w, response)
 	default:
 		methodNotAllowed(w, http.MethodGet+", "+http.MethodPost+", "+http.MethodPut+", "+http.MethodDelete)
 	}
 }
 
-func (r *Runtime) handleFixedSources(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleFixedSources(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodPost, http.MethodPut:
 		var body proxyruntimev1.UpsertProxyFixedSourceRequest
-		if !r.readProto(w, req, &body) {
+		if !api.readProto(w, req, &body) {
 			return
 		}
-		source, err := r.sourcePlane.UpsertFixedSource(req.Context(), &body)
+		response, err := api.service.UpsertProxyFixedSource(req.Context(), &body)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			writeHTTPError(w, err, http.StatusBadRequest)
 			return
 		}
-		_ = r.refresh(req.Context())
-		r.writeProto(w, &proxyruntimev1.UpsertProxyFixedSourceResponse{Source: source})
+		api.writeProto(w, response)
 	default:
 		methodNotAllowed(w, http.MethodPost+", "+http.MethodPut)
 	}
 }
 
-func (r *Runtime) handleSourceNodes(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleSourceNodes(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		methodNotAllowed(w, http.MethodGet)
 		return
 	}
-	nodes, err := r.sourcePlane.SourceNodes(req.Context(), req.URL.Query().Get("source_id"))
+	response, err := api.service.ListProxySourceNodes(req.Context(), &proxyruntimev1.ListProxySourceNodesRequest{SourceId: req.URL.Query().Get("source_id")})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		writeHTTPError(w, err, http.StatusBadGateway)
 		return
 	}
-	r.writeProto(w, &proxyruntimev1.ListProxySourceNodesResponse{Nodes: nodes})
-}
-
-func (r *Runtime) handleResolveRoute(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		methodNotAllowed(w, http.MethodPost)
-		return
-	}
-	var body proxyruntimev1.ResolveEgressRouteRequest
-	if !r.readProto(w, req, &body) {
-		return
-	}
-	response, err := r.resolveEgressRoute(req.Context(), &body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
-		return
-	}
-	r.writeProto(w, response)
+	api.writeProto(w, response)
 }
 
 func (r *Runtime) listSources(ctx context.Context) ([]*proxyruntimev1.ProxySourceDescriptor, error) {
-	settings, err := r.settings.load()
+	settings, err := r.settings.load(ctx)
 	if err != nil {
 		return nil, err
 	}
-	sources, err := r.store.ListSources(ctx, len(r.cfg.StaticChain), dynamicIPGatewayMap(settings))
+	sources, err := r.store.ListSources(ctx, dynamicIPGatewayMap(settings))
 	if err != nil {
 		return nil, err
 	}
-	sourcePlaneSources, err := r.sourcePlane.Sources(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return append(sources, sourcePlaneSources...), nil
+	return sources, nil
 }

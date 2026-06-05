@@ -1,38 +1,123 @@
-# Egress Gateway Design
+# Mihomo-only Egress Gateway Design
 
-`proxy-runtime` 按统一出口网关建模，不按单个代理商建模。
+`proxy-runtime` is a proxy control plane. Mihomo is the data plane.
 
-## 设计依据
+## Product Shape
 
-- GOST v3 的配置核心是 `service -> handler/listener -> chain -> hop -> node`，并通过 selector 在 hop 内选择 node。对应本仓的 `EgressGateway`、`EgressRoute`、`EgressHop`、`ProxyEndpoint` 和 `ProxySelectorPolicy`。
-- Envoy 的动态转发代理把 listener、cluster、DNS cache 和 upstream 发现分开，说明“动态解析/动态转发”是能力和发现方式，不是链路拓扑本身。
-- Squid 的 `cache_peer` 模型把上游代理作为 peer，路由策略在 peer 之外表达。
+The runtime follows the common dynamic proxy provider model:
 
-参考链接：
+```text
+fixed entry host:port + proxy username/password -> egress policy
+```
 
-- https://v3.gost.run/en/concepts/selector/
-- https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/dynamic_forward_proxy_filter
-- https://www.squid-cache.org/Doc/config/cache_peer/
+Applications do not receive upstream provider proxy URLs. They receive a stable entry endpoint and a proxy user. The username selects a registered route, and the password authenticates access to the entry.
 
-## 核心边界
+## Data Plane
 
-- `EgressGateway`：业务服务看到的统一本地出口。
-- `EgressRoute`：一条可执行路线，分 data plane route 和 control plane route。
-- `EgressHop`：路线中的一跳；hop 是拓扑位置，不是代理类型。
-- `ProxyEndpoint`：真正的代理上游；上游类型通过 `upstream_kind` 表达。
-- `ProxyProviderDescriptor`：代理商 capability registry。
-- `ProxySession`：动态 IP/sticky IP 的会话身份。
+Mihomo owns:
 
-## 上游类型
+- inbound mixed listener
+- proxy user authentication
+- `IN-USER` routing rules
+- proxy providers
+- proxy groups
+- health checks
+- connection lifecycle through the external controller
+- forked MetaCubeXD main frontend through same-origin routes
 
-- `SIMPLE_PROXY`：固定 HTTP/SOCKS5 代理，通常不主动轮换。
-- `DYNAMIC_IP`：同一个 provider 接入点通过 session、用户名参数、token 或 API 控制出口 IP。
-- `PROXY_POOL`：provider API 返回多个可选代理节点，由 selector 选择。
+The control plane renders Mihomo config and reloads through the external controller. It never implements HTTP CONNECT/SOCKS forwarding itself.
 
-`CHAIN` 不作为上游类型。链式代理是 route/hop 拓扑；链路里的任意 hop 都可以是 simple proxy、dynamic IP 或 proxy pool。
+The external controller remains loopback-only. `proxy-runtime` exposes same-origin controller routes for the forked MetaCubeXD frontend, so browser clients use the service HTTP origin instead of directly reaching Mihomo.
 
-## 控制面与数据面
+## Control Plane
 
-有些代理商 API 需要先通过代理才能访问。这个路径属于 control plane route，只影响取号、刷新池、创建 session 等 provider 操作。
+`proxy-runtime` owns:
 
-业务实际流量走 data plane route，由 GOST chain/hop/node 执行。两条路由分开，避免把“如何访问代理商 API”和“业务流量从哪里出网”混成同一条链路。
+- provider adapters and provider account credentials
+- dynamic provider endpoint settings
+- dynamic provider session creation and release
+- sticky dynamic lease facts
+- route planning and dynamic endpoint selection
+- Mihomo config rendering
+- runtime observations and control-plane APIs
+- project-owned MetaCubeXD fork as the main frontend
+- same-origin business APIs used by the dynamic provider tab in that fork
+
+The forked frontend keeps Mihomo-native runtime operations in upstream MetaCubeXD pages. The project overlay edits dynamic provider endpoints, provider accounts, fixed sources, subscription sources, egress profiles, and active leases through `proxy-runtime` APIs; reconcile renders those facts into Mihomo.
+
+## Proxy User Routes
+
+`ProxyUserRoute` maps a proxy username to an egress policy.
+
+Supported MVP route targets:
+
+- `provider`: default provider/source group
+- `direct`: Mihomo `DIRECT`
+- `source`: a Mihomo-native source node/group observed by the control plane
+- `profile`: a configured egress profile rendered as Mihomo-native groups and `dialer-proxy`
+- dynamic session routes created by `AcquireProxyLease`
+
+Mihomo renders these as:
+
+```yaml
+listeners:
+  - name: proxy-runtime-gateway
+    type: mixed
+    listen: 0.0.0.0
+    port: 1080
+    users:
+      - username: crawler-us
+        password: crawler-pass
+
+rules:
+  - IN-USER,crawler-us,bvf-profile-profile-us
+  - MATCH,byte-v-forge-source
+```
+
+## Egress Profiles
+
+An Egress Profile is the only supported chain model. It has two layers:
+
+```text
+route: direct, fixed source node, or subscription source node
+exit: route exit, static IP source node, or dynamic IP provider pool
+```
+
+At render time, `proxy-runtime` projects the profile into Mihomo:
+
+- a selected route source becomes a hidden route proxy group
+- `exit=direct` selects the route group, or Mihomo `DIRECT` when the route is direct
+- static IP exits are fixed/subscription sources; when a route source is selected, their nodes/providers are cloned with `dialer-proxy`
+- dynamic IP exits use the dynamic provider pool; when a route source is selected, pool nodes are cloned with `dialer-proxy`
+- the final exit group name is used by `IN-USER` rules for `route=profile`
+
+There is no hidden second hop. Additional hops must be explicit profile configuration and are rendered as Mihomo-native groups or `dialer-proxy`, not as a separate chain resolver API or second runtime model.
+
+## Dynamic Lease Materialization
+
+Dynamic IP is a lease in the control plane and a normal proxy node in Mihomo.
+
+Flow:
+
+```text
+AcquireProxyLease
+  -> choose provider account/provider gateway
+  -> create provider session
+  -> fetch upstream HTTP/SOCKS node
+  -> create Mihomo materialized proxy
+  -> add IN-USER rule for the lease proxy user
+```
+
+Release removes the materialized route and releases the provider session. Restore fetches active lease sessions from provider adapters and recreates the Mihomo route.
+
+Fixed proxies, subscriptions, proxy providers, rules, groups, and chained egress profiles stay as Mihomo-native resources.
+
+## Reliability
+
+- Reconcile is idempotent and renders the whole desired data-plane state.
+- Mihomo config changes prefer external-controller hot reload. Restart is only a fallback when the process is not running, the gateway endpoint changes, or hot reload cannot recover.
+- The last accepted generated Mihomo runtime config bytes are kept only as a rollback buffer for failed reloads. Control-plane facts in the database remain the single desired-state model.
+- Active leases are persisted in PostgreSQL and restored after restart.
+- Lease/runtime cleanup failures are persisted and retried by reconcile.
+- Provider control-plane HTTP calls use configured timeouts and proxy settings.
+- Logs and errors must not include provider passwords, API tokens, cookies, or full upstream proxy URLs.

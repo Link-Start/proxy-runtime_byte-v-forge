@@ -3,6 +3,8 @@ package ten24
 import (
 	"net/http"
 	"time"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
 )
 
 const providerID = "1024proxy"
@@ -14,15 +16,11 @@ type Provider struct {
 
 func New(cfg Config, httpClient *http.Client) *Provider {
 	if httpClient == nil {
-		httpClient = &http.Client{Timeout: 10 * time.Second}
+		httpClient = runtimehttp.New(10 * time.Second)
 	}
 	return &Provider{cfg: cfg, httpClient: httpClient}
 }
 
 func (p *Provider) Name() string {
 	return providerID
-}
-
-func (p *Provider) RequiresSessionLease() bool {
-	return false
 }

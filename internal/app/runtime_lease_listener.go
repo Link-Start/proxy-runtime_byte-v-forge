@@ -2,57 +2,49 @@ package app
 
 import (
 	"context"
-	"fmt"
-	"net"
 
+	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
 func (r *Runtime) leaseListener(ctx context.Context, accountID string) (config.EgressListener, error) {
-	leases, _ := r.leases.ListLeases(ctx, false)
-	for _, lease := range leases {
-		if lease.GetAccountId() == accountID && lease.GetListener() != nil {
-			return listenerFromProto(lease.GetListener()), nil
-		}
-	}
-	used := map[int]struct{}{}
-	for _, lease := range leases {
-		if _, portValue, err := net.SplitHostPort(lease.GetListener().GetListenAddr()); err == nil {
-			var port int
-			_, _ = fmt.Sscanf(portValue, "%d", &port)
-			if port > 0 {
-				used[port] = struct{}{}
-			}
-		}
-	}
-	span := r.cfg.SessionListener.PortEnd - r.cfg.SessionListener.PortStart + 1
-	start := r.cfg.SessionListener.PortStart + int(hashModulo(accountID, uint32(span)))
-	port := start
-	for {
-		if _, ok := used[port]; !ok && tcpPortAvailable(r.cfg.SessionListener.Host, port) {
-			break
-		}
-		port++
-		if port > r.cfg.SessionListener.PortEnd {
-			port = r.cfg.SessionListener.PortStart
-		}
-		if port == start {
-			return config.EgressListener{}, fmt.Errorf("no available proxy runtime session listener port in %d-%d", r.cfg.SessionListener.PortStart, r.cfg.SessionListener.PortEnd)
-		}
-	}
+	_ = ctx
 	id := "lease-" + shortHash(accountID)
-	return config.EgressListener{ID: id, Addr: net.JoinHostPort(r.cfg.SessionListener.Host, fmt.Sprintf("%d", port)), Protocol: r.cfg.LocalProtocol, Route: config.ListenerRouteProvider, Labels: map[string]string{"mode": "dynamic_ip_session_lease", "account_id": accountID, "chain_id": leaseChainID(accountID)}}, nil
+	return config.EgressListener{
+		ID:       id,
+		Addr:     r.cfg.LocalAddr,
+		Protocol: r.cfg.LocalProtocol,
+		Route:    config.ListenerRouteProvider,
+		Username: proxyRouteUsername(accountID),
+		Password: r.cfg.LocalPassword,
+		Labels: map[string]string{
+			"mode":       "dynamic_ip_session_lease",
+			"account_id": accountID,
+		},
+	}, nil
 }
 
-func tcpPortAvailable(host string, port int) bool {
-	if port <= 0 {
-		return false
-	}
-	addr := net.JoinHostPort(host, fmt.Sprintf("%d", port))
-	listener, err := net.Listen("tcp", addr)
+func (r *Runtime) listenerReservedLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+	leases, err := r.store.ListLeaseFacts(ctx, true)
 	if err != nil {
-		return false
+		return nil, err
 	}
-	_ = listener.Close()
-	return true
+	out := make([]*proxyruntimev1.ProxyDynamicLease, 0, len(leases))
+	for _, lease := range leases {
+		if lease.GetListener() == nil {
+			continue
+		}
+		if lease.GetStatus() == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE || leaseRouteCleanupPending(lease) {
+			out = append(out, lease)
+		}
+	}
+	return out, nil
+}
+
+func proxyRouteUsername(accountID string) string {
+	username := sourceSafeID(accountID)
+	if username == "" {
+		username = shortHash(accountID)
+	}
+	return "acct-" + username
 }

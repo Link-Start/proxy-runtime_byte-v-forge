@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"net/http"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -49,14 +50,19 @@ func (a runtimeLeaseApplication) AcquireProxyLease(ctx context.Context, httpReq 
 	if err != nil {
 		return nil, err
 	}
-	pool, err := a.runtime.snapshot(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &proxyruntimev1.AcquireProxyLeaseResponse{Lease: lease, Pool: pool, Egress: lease.GetEgress(), RoutePlan: lease.GetRoutePlan()}, nil
+	return &proxyruntimev1.AcquireProxyLeaseResponse{Lease: lease, Egress: lease.GetEgress(), SelectionPlan: lease.GetSelectionPlan()}, nil
 }
 
 func (a runtimeLeaseApplication) ReleaseProxyLease(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ReleaseProxyLeaseResponse, error) {
+	if dynamicProfileLeaseReleaseRequest(req) {
+		lease, err := a.runtime.releaseDynamicProfileLease(ctx, req)
+		if err == nil {
+			return &proxyruntimev1.ReleaseProxyLeaseResponse{Lease: lease}, nil
+		}
+		if !errors.Is(err, errDynamicProfileLeaseNotFound) {
+			return nil, err
+		}
+	}
 	lease, err := a.leases.releaseLease(ctx, req)
 	if err != nil {
 		return nil, err

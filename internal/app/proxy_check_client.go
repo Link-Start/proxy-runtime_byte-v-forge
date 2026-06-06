@@ -14,11 +14,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
 )
 
-func (r *Runtime) checkProxyHTTPClient(ctx context.Context, poolID string, providerID string, listenerID string, timeout time.Duration) (*http.Client, error) {
-	if poolID := strings.TrimSpace(poolID); poolID != "" && poolID != "default" {
-		return nil, fmt.Errorf("pool %q is not configured", poolID)
-	}
-	_ = strings.TrimSpace(providerID)
+func (r *Runtime) checkProxyHTTPClient(ctx context.Context, listenerID string, timeout time.Duration) (*http.Client, error) {
 	listener, err := r.checkIPListener(ctx, strings.TrimSpace(listenerID))
 	if err != nil {
 		return nil, err

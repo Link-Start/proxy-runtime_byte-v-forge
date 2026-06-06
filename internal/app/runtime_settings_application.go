@@ -33,12 +33,8 @@ func (s *RuntimeService) UpdateProxyDynamicIPProviders(ctx context.Context, req 
 	return s.settings.UpdateProxyDynamicIPProviders(ctx, req)
 }
 
-func (s *RuntimeService) UpdateProxyEgressProfiles(ctx context.Context, req *proxyruntimev1.UpdateProxyEgressProfilesRequest) (*proxyruntimev1.UpdateProxyEgressProfilesResponse, error) {
-	return s.settings.UpdateProxyEgressProfiles(ctx, req)
-}
-
-func (s *RuntimeService) UpdateProxyIngressRules(ctx context.Context, req *proxyruntimev1.UpdateProxyIngressRulesRequest) (*proxyruntimev1.UpdateProxyIngressRulesResponse, error) {
-	return s.settings.UpdateProxyIngressRules(ctx, req)
+func (s *RuntimeService) UpdateProxyInUserRules(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
+	return s.settings.UpdateProxyInUserRules(ctx, req)
 }
 
 func (a runtimeSettingsApplication) ListProxyIPFraudProviders(context.Context) (*proxyruntimev1.ListProxyIPFraudProvidersResponse, error) {
@@ -75,25 +71,16 @@ func (a runtimeSettingsApplication) UpdateProxyDynamicIPProviders(ctx context.Co
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }
 
-func (a runtimeSettingsApplication) UpdateProxyEgressProfiles(ctx context.Context, req *proxyruntimev1.UpdateProxyEgressProfilesRequest) (*proxyruntimev1.UpdateProxyEgressProfilesResponse, error) {
+func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
 	if err := rejectMissingProxyUserProfiles(a.runtime.cfg.ProxyUsers, req.GetEgressProfiles()); err != nil {
 		return nil, err
 	}
-	settings, err := a.runtime.settings.updateEgressProfiles(ctx, req.GetEgressProfiles())
+	settings, err := a.runtime.settings.updateInUserRules(ctx, req.GetEgressProfiles(), req.GetIngressRules())
 	if err != nil {
 		return nil, err
 	}
 	a.runtime.requestReconcile()
-	return &proxyruntimev1.UpdateProxyEgressProfilesResponse{Settings: settings}, nil
-}
-
-func (a runtimeSettingsApplication) UpdateProxyIngressRules(ctx context.Context, req *proxyruntimev1.UpdateProxyIngressRulesRequest) (*proxyruntimev1.UpdateProxyIngressRulesResponse, error) {
-	settings, err := a.runtime.settings.updateIngressRules(ctx, req.GetIngressRules())
-	if err != nil {
-		return nil, err
-	}
-	a.runtime.requestReconcile()
-	return &proxyruntimev1.UpdateProxyIngressRulesResponse{Settings: settings}, nil
+	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }
 
 func rejectMissingProxyUserProfiles(users []config.ProxyUserRoute, profiles []*proxyruntimev1.EgressProfileSettings) error {
@@ -102,7 +89,7 @@ func rejectMissingProxyUserProfiles(users []config.ProxyUserRoute, profiles []*p
 		if strings.TrimSpace(user.Route) != config.ListenerRouteProfile {
 			continue
 		}
-		if id := sourceSafeID(firstNonEmpty(user.ProfileID, user.SourceID)); id != "" {
+		if id := runtimeSafeID(user.ProfileID); id != "" {
 			referenced[id] = struct{}{}
 		}
 	}

@@ -1,7 +1,15 @@
 import type {
-  ProxyDynamicIPGatewaySettings,
+  ProxyDynamicIPEndpointSettings,
   ProxyDynamicIPProviderSettings,
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+
+export function newDynamicProviderForm(providerID = '') {
+  return {
+    dynamic_provider_id: '',
+    provider_id: providerID,
+    display_name: '',
+  }
+}
 
 export function newEndpointForm(providerID = '') {
   return {
@@ -11,21 +19,42 @@ export function newEndpointForm(providerID = '') {
   }
 }
 
-export function newAccountForm(providerID = '') {
+export function newAccountForm(dynamicProviderID = '', providerID = '') {
   return {
     account_id: '',
+    dynamic_provider_id: dynamicProviderID,
     provider_id: providerID,
     display_name: '',
     enabled: true,
     username: '',
     original_password_value: '',
     password_value: '',
+    rotating_concurrency_limit: 10,
+    sticky_concurrency_limit: 2,
+  }
+}
+
+export function dynamicProviderFromForm(
+  form: ReturnType<typeof newDynamicProviderForm>,
+  current?: ProxyDynamicIPProviderSettings,
+  sharedEndpoints: ProxyDynamicIPEndpointSettings[] = [],
+): ProxyDynamicIPProviderSettings {
+  const providerID = form.provider_id.trim()
+  const dynamicProviderID =
+    form.dynamic_provider_id.trim() || generatedDynamicProviderID(providerID)
+  return {
+    dynamic_provider_id: dynamicProviderID,
+    provider_id: providerID,
+    display_name: form.display_name.trim() || dynamicProviderID,
+    endpoints: (
+      sharedEndpoints.length > 0 ? sharedEndpoints : current?.endpoints || []
+    ).map((endpoint) => ({ ...endpoint })),
   }
 }
 
 export function endpointFromForm(
   form: ReturnType<typeof newEndpointForm>,
-): ProxyDynamicIPGatewaySettings {
+): ProxyDynamicIPEndpointSettings {
   return {
     endpoint_url: form.endpoint_url.trim(),
   }
@@ -35,25 +64,109 @@ export function cloneDynamicIPProvider(
   provider: ProxyDynamicIPProviderSettings,
 ): ProxyDynamicIPProviderSettings {
   return {
+    dynamic_provider_id: provider.dynamic_provider_id,
     provider_id: provider.provider_id,
-    gateways: provider.gateways.map((gateway) => ({ ...gateway })),
+    display_name: provider.display_name,
+    endpoints: (provider.endpoints || []).map((endpoint) => ({ ...endpoint })),
   }
 }
 
-export function upsertDynamicIPProvider(
+export function providerEndpoints(
   providers: ProxyDynamicIPProviderSettings[],
   providerID: string,
 ) {
-  let provider = providers.find((item) => item.provider_id === providerID)
-  if (!provider) {
-    provider = { provider_id: providerID, gateways: [] }
-    providers.push(provider)
+  return uniqueEndpoints(
+    providers
+      .filter((item) => item.provider_id === providerID)
+      .flatMap((item) => item.endpoints || []),
+  )
+}
+
+export function syncDynamicIPProviderEndpoints(
+  providers: ProxyDynamicIPProviderSettings[],
+) {
+  const endpointsByProviderID = new Map<
+    string,
+    ProxyDynamicIPEndpointSettings[]
+  >()
+  for (const provider of providers) {
+    if (!provider.provider_id) continue
+    endpointsByProviderID.set(
+      provider.provider_id,
+      uniqueEndpoints([
+        ...(endpointsByProviderID.get(provider.provider_id) || []),
+        ...(provider.endpoints || []),
+      ]),
+    )
   }
-  return provider
+  return providers.map((provider) => ({
+    ...provider,
+    endpoints: provider.provider_id
+      ? [...(endpointsByProviderID.get(provider.provider_id) || [])]
+      : (provider.endpoints || []).map((endpoint) => ({ ...endpoint })),
+  }))
+}
+
+export function upsertProviderEndpoint(
+  providers: ProxyDynamicIPProviderSettings[],
+  providerID: string,
+  endpoint: ProxyDynamicIPEndpointSettings,
+  originalEndpointURL = '',
+) {
+  return syncDynamicIPProviderEndpoints(
+    providers.map((provider) => {
+      if (provider.provider_id !== providerID) return provider
+      const endpoints = [...(provider.endpoints || [])]
+      const endpointURL = originalEndpointURL || endpoint.endpoint_url
+      const index = endpoints.findIndex(
+        (item) => item.endpoint_url === endpointURL,
+      )
+      if (index >= 0) endpoints[index] = endpoint
+      else endpoints.push(endpoint)
+      return { ...provider, endpoints: uniqueEndpoints(endpoints) }
+    }),
+  )
+}
+
+export function removeProviderEndpoint(
+  providers: ProxyDynamicIPProviderSettings[],
+  providerID: string,
+  endpointURL: string,
+) {
+  return syncDynamicIPProviderEndpoints(
+    providers.map((provider) => {
+      if (provider.provider_id !== providerID) return provider
+      return {
+        ...provider,
+        endpoints: (provider.endpoints || []).filter(
+          (endpoint) => endpoint.endpoint_url !== endpointURL,
+        ),
+      }
+    }),
+  )
 }
 
 export function hasDynamicIPProviderConfig(
   provider: ProxyDynamicIPProviderSettings,
 ) {
-  return provider.gateways.length > 0
+  return !!provider.dynamic_provider_id && !!provider.provider_id
+}
+
+function generatedDynamicProviderID(providerID: string) {
+  const provider = providerID.trim() || 'dynamic'
+  const uuid = globalThis.crypto?.randomUUID?.()
+  const entropy = uuid?.slice(0, 8) || Math.random().toString(16).slice(2, 10)
+  return `${provider}-${entropy}`
+}
+
+function uniqueEndpoints(endpoints: ProxyDynamicIPEndpointSettings[]) {
+  const seen = new Set<string>()
+  const out: ProxyDynamicIPEndpointSettings[] = []
+  for (const endpoint of endpoints) {
+    const endpointURL = endpoint.endpoint_url.trim()
+    if (!endpointURL || seen.has(endpointURL)) continue
+    seen.add(endpointURL)
+    out.push({ endpoint_url: endpointURL })
+  }
+  return out
 }

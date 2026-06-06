@@ -11,7 +11,7 @@ func (s *redisLeaseRuntimeLocks) LockAccount(ctx context.Context, accountID stri
 	if accountID == "" {
 		return nil, errors.New("lease account_id is required")
 	}
-	return s.locker.Lock(ctx, "account:"+accountID)
+	return s.locks.Lock(ctx, "account:"+accountID)
 }
 
 func (s *redisLeaseRuntimeLocks) LockProviderAccount(ctx context.Context, providerAccountID string) (leaseRuntimeLock, error) {
@@ -19,9 +19,9 @@ func (s *redisLeaseRuntimeLocks) LockProviderAccount(ctx context.Context, provid
 	if providerAccountID == "" {
 		return nil, errors.New("provider account id is required")
 	}
-	return s.locker.Lock(ctx, "provider-account:"+providerAccountID)
+	return s.locks.Lock(ctx, "provider-account:"+providerAccountID)
 }
 
 func (s *redisLeaseRuntimeLocks) LockSessionListenerAllocation(ctx context.Context) (leaseRuntimeLock, error) {
-	return s.locker.Lock(ctx, "session-listener-allocation")
+	return s.locks.Lock(ctx, "session-listener-allocation")
 }

@@ -13,8 +13,6 @@ func renderEgressProfiles(opts renderOptions) ([]map[string]any, map[string]miho
 	proxies := []map[string]any{}
 	providers := map[string]mihomoProvider{}
 	groups := []mihomoGroup{}
-	subscriptions := subscriptionProviderMap(opts.Providers)
-	fixed := fixedProxyMap(opts.FixedProxies)
 	for _, profile := range opts.EgressProfiles {
 		if !profile.Enabled {
 			continue
@@ -23,7 +21,7 @@ func renderEgressProfiles(opts renderOptions) ([]map[string]any, map[string]miho
 		if id == "" {
 			continue
 		}
-		line, err := renderEgressProfileLine(opts, id, profile.Line, subscriptions, fixed)
+		line, err := renderEgressProfileLine(opts, id, profile.Line)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("profile %q line: %w", id, err)
 		}
@@ -36,7 +34,7 @@ func renderEgressProfiles(opts renderOptions) ([]map[string]any, map[string]miho
 		if line.group.Name != "" {
 			groups = append(groups, line.group)
 		}
-		exit, err := renderEgressProfileExit(opts, id, profile.Exit, line.group.Name, subscriptions, fixed)
+		exit, err := renderEgressProfileExit(opts, id, profileGroupNameFor(opts, profile), profile.Exit, line.target, opts.BasePool)
 		if err != nil {
 			return nil, nil, nil, fmt.Errorf("profile %q exit: %w", id, err)
 		}
@@ -58,45 +56,35 @@ type renderedProfileLayer struct {
 	providerName string
 	provider     mihomoProvider
 	group        mihomoGroup
+	target       string
 }
 
-func renderEgressProfileLine(opts renderOptions, profileID string, line sourceplane.EgressProfileLine, subscriptions map[string]sourceplane.SubscriptionProvider, fixed map[string]sourceplane.FixedProxy) (renderedProfileLayer, error) {
+func renderEgressProfileLine(opts renderOptions, profileID string, line sourceplane.EgressProfileLine) (renderedProfileLayer, error) {
 	switch strings.TrimSpace(line.Kind) {
 	case "", "direct":
 		return renderedProfileLayer{}, nil
-	case "source":
-		return renderSourceProfileLayer(opts, profileID, "line", profileLineGroupName(profileID), line, "", subscriptions, fixed)
+	case "mihomo_node":
+		return renderMihomoNativeProfileTarget(opts, profileID, line)
 	default:
 		return renderedProfileLayer{}, fmt.Errorf("unsupported line kind %q", line.Kind)
 	}
 }
 
-func renderEgressProfileExit(opts renderOptions, profileID string, exit sourceplane.EgressProfileExit, dialerProxy string, subscriptions map[string]sourceplane.SubscriptionProvider, fixed map[string]sourceplane.FixedProxy) (renderedProfileLayer, error) {
+func renderEgressProfileExit(opts renderOptions, profileID string, groupName string, exit sourceplane.EgressProfileExit, dialerProxy string, nodes []provider.Node) (renderedProfileLayer, error) {
 	switch strings.TrimSpace(exit.Kind) {
 	case "direct":
-		return renderDirectProfileExit(profileID, exit, dialerProxy)
+		return renderDirectProfileExit(groupName, exit, dialerProxy)
 	case "static_ip":
-		return renderStaticProfileExit(opts, profileID, exit, dialerProxy, subscriptions, fixed)
+		return renderMihomoNativeProfileLayer(opts, groupName, exit, dialerProxy)
 	case "dynamic_ip":
-		return renderDynamicProfileExit(profileID, exit, dialerProxy, opts.BasePool)
+		return renderDynamicProfileExit(profileID, groupName, exit, dialerProxy, nodes)
 	default:
 		return renderedProfileLayer{}, fmt.Errorf("unsupported exit kind %q", exit.Kind)
 	}
 }
 
-func renderSourceProfileLayer(opts renderOptions, profileID string, layerID string, groupName string, layer sourceplane.EgressProfileLayer, dialerProxy string, subscriptions map[string]sourceplane.SubscriptionProvider, fixed map[string]sourceplane.FixedProxy) (renderedProfileLayer, error) {
-	sourceID := safeID(layer.SourceID)
-	if _, exists := fixed[sourceID]; exists {
-		return renderFixedProfileLayer(profileID, layerID, groupName, layer, dialerProxy, fixed)
-	}
-	if _, exists := subscriptions[sourceID]; exists {
-		return renderSubscriptionProfileLayer(opts, profileID, layerID, groupName, layer, dialerProxy, subscriptions)
-	}
-	return renderedProfileLayer{}, fmt.Errorf("source %q is not enabled", sourceID)
-}
-
-func renderDirectProfileExit(profileID string, exit sourceplane.EgressProfileExit, dialerProxy string) (renderedProfileLayer, error) {
-	group := profileLayerGroup(profileGroupName(profileID), exit, "select")
+func renderDirectProfileExit(groupName string, exit sourceplane.EgressProfileExit, dialerProxy string) (renderedProfileLayer, error) {
+	group := profileLayerGroup(groupName, exit, "select")
 	if strings.TrimSpace(dialerProxy) == "" {
 		group.Proxies = []string{"DIRECT"}
 		return renderedProfileLayer{group: group}, nil
@@ -105,84 +93,72 @@ func renderDirectProfileExit(profileID string, exit sourceplane.EgressProfileExi
 	return renderedProfileLayer{group: group}, nil
 }
 
-func renderStaticProfileExit(opts renderOptions, profileID string, exit sourceplane.EgressProfileExit, dialerProxy string, subscriptions map[string]sourceplane.SubscriptionProvider, fixed map[string]sourceplane.FixedProxy) (renderedProfileLayer, error) {
-	sourceID := safeID(exit.SourceID)
-	if _, exists := fixed[sourceID]; exists {
-		return renderFixedProfileLayer(profileID, "exit", profileGroupName(profileID), exit, dialerProxy, fixed)
+func renderMihomoNativeProfileTarget(opts renderOptions, profileID string, layer sourceplane.EgressProfileLayer) (renderedProfileLayer, error) {
+	resourceID := strings.TrimSpace(layer.ResourceID)
+	if resourceID == "" {
+		return renderedProfileLayer{}, fmt.Errorf("resource_id is required")
 	}
-	if _, exists := subscriptions[sourceID]; exists {
-		return renderSubscriptionProfileLayer(opts, profileID, "exit", profileGroupName(profileID), exit, dialerProxy, subscriptions)
-	}
-	return renderedProfileLayer{}, fmt.Errorf("source %q is not enabled", sourceID)
-}
-
-func renderFixedProfileLayer(profileID string, layerID string, groupName string, layer sourceplane.EgressProfileLayer, dialerProxy string, fixed map[string]sourceplane.FixedProxy) (renderedProfileLayer, error) {
-	sourceID := safeID(layer.SourceID)
-	if sourceID == "" {
-		return renderedProfileLayer{}, fmt.Errorf("source_id is required")
-	}
-	if strings.TrimSpace(layer.NodeID) == "" {
+	nodeName := mihomoNativeNodeName(resourceID, layer.NodeID)
+	if nodeName == "" {
 		return renderedProfileLayer{}, fmt.Errorf("node_id is required")
 	}
-	group := profileLayerGroup(groupName, layer, "select")
-	if item, exists := fixed[sourceID]; exists {
-		proxyName := sourceID
-		var proxy map[string]any
-		if strings.TrimSpace(dialerProxy) != "" {
-			proxyName = profileProxyName(profileID, layerID, sourceID)
-			item.ID = proxyName
-			var err error
-			proxy, err = renderFixedProxy(item)
-			if err != nil {
-				return renderedProfileLayer{}, err
-			}
-			proxy["dialer-proxy"] = strings.TrimSpace(dialerProxy)
-		}
-		group.Proxies = []string{fixedProfileProxyTarget(layer, proxyName, dialerProxy)}
-		return renderedProfileLayer{proxy: proxy, group: group}, nil
+	if mihomoProxyAvailable(opts.AvailableProxies, nodeName) {
+		return renderedProfileLayer{target: nodeName}, nil
 	}
-	return renderedProfileLayer{}, fmt.Errorf("fixed proxy source %q is not enabled", sourceID)
-}
-
-func renderSubscriptionProfileLayer(opts renderOptions, profileID string, layerID string, groupName string, layer sourceplane.EgressProfileLayer, dialerProxy string, subscriptions map[string]sourceplane.SubscriptionProvider) (renderedProfileLayer, error) {
-	sourceID := safeID(layer.SourceID)
-	if sourceID == "" {
-		return renderedProfileLayer{}, fmt.Errorf("source_id is required")
-	}
-	if strings.TrimSpace(layer.NodeID) == "" {
-		return renderedProfileLayer{}, fmt.Errorf("node_id is required")
-	}
-	group := profileLayerGroup(groupName, layer, "select")
-	if item, exists := subscriptions[sourceID]; exists {
-		providerName := sourceID
-		var provider mihomoProvider
-		if strings.TrimSpace(dialerProxy) != "" {
-			providerName = profileProviderName(profileID, layerID, sourceID)
-			provider = renderSubscriptionProvider(opts, item, providerName, dialerProxy)
-		}
-		group.Use = []string{providerName}
-		nodeID := strings.TrimSpace(layer.NodeID)
-		nodeName := providerProxyNameFromNodeID(providerFileCandidates(opts.ConfigDir, item, sourceID), nodeID)
-		if nodeName == "" {
-			return renderedProfileLayer{}, fmt.Errorf("subscription source %q node %q is not available", sourceID, nodeID)
-		}
-		if strings.TrimSpace(dialerProxy) != "" {
-			nodeName = safeID(providerName) + "-" + nodeName
-		}
+	if mihomoProviderAvailable(opts.AvailableProviders, resourceID) {
+		group := profileLayerGroup(profileLineGroupName(profileID), layer, "select")
+		group.Use = []string{resourceID}
 		group.Filter = exactNodeFilter(nodeName)
-		return renderedProfileLayer{providerName: providerNameForReturn(providerName, sourceID, dialerProxy), provider: provider, group: group}, nil
+		return renderedProfileLayer{group: group, target: group.Name}, nil
 	}
-	return renderedProfileLayer{}, fmt.Errorf("subscription source %q is not enabled", sourceID)
+	return renderedProfileLayer{target: "REJECT"}, nil
 }
 
-func renderDynamicProfileExit(profileID string, exit sourceplane.EgressProfileExit, dialerProxy string, nodes []provider.Node) (renderedProfileLayer, error) {
-	group := profileLayerGroup(profileGroupName(profileID), exit, "url-test")
-	nodes = dynamicProfileNodes(nodes, exit.ProviderID)
+func renderMihomoNativeProfileLayer(opts renderOptions, groupName string, layer sourceplane.EgressProfileLayer, dialerProxy string) (renderedProfileLayer, error) {
+	resourceID := strings.TrimSpace(layer.ResourceID)
+	if resourceID == "" {
+		return renderedProfileLayer{}, fmt.Errorf("resource_id is required")
+	}
+	nodeName := mihomoNativeNodeName(resourceID, layer.NodeID)
+	if nodeName == "" {
+		return renderedProfileLayer{}, fmt.Errorf("node_id is required")
+	}
+	if strings.TrimSpace(dialerProxy) != "" {
+		return renderedProfileLayer{}, fmt.Errorf("mihomo-native node %q cannot be cloned with dialer-proxy by proxy-runtime", nodeName)
+	}
+	group := profileLayerGroup(groupName, layer, "select")
+	if mihomoProxyAvailable(opts.AvailableProxies, nodeName) {
+		group.Proxies = []string{nodeName}
+		return renderedProfileLayer{group: group}, nil
+	}
+	if mihomoProviderAvailable(opts.AvailableProviders, resourceID) {
+		group.Use = []string{resourceID}
+		group.Filter = exactNodeFilter(nodeName)
+		return renderedProfileLayer{group: group}, nil
+	}
+	group.Proxies = []string{"REJECT"}
+	return renderedProfileLayer{group: group}, nil
+}
+
+func mihomoNativeNodeName(resourceID string, nodeID string) string {
+	resourceID = strings.TrimSpace(resourceID)
+	nodeID = strings.TrimSpace(nodeID)
+	if nodeID == "" {
+		return ""
+	}
+	prefix := resourceID + "/"
+	if strings.HasPrefix(nodeID, prefix) {
+		return strings.TrimSpace(strings.TrimPrefix(nodeID, prefix))
+	}
+	return nodeID
+}
+
+func renderDynamicProfileExit(profileID string, groupName string, exit sourceplane.EgressProfileExit, dialerProxy string, nodes []provider.Node) (renderedProfileLayer, error) {
+	group := profileLayerGroup(groupName, exit, "select")
+	nodes = dynamicProfileNodes(nodes, profileID, exit.ProviderID)
 	if len(nodes) == 0 {
-		if strings.TrimSpace(exit.ProviderID) == "" {
-			return renderedProfileLayer{}, fmt.Errorf("dynamic provider pool is empty")
-		}
-		return renderedProfileLayer{}, fmt.Errorf("dynamic provider pool %q is empty", exit.ProviderID)
+		group.Proxies = []string{"REJECT"}
+		return renderedProfileLayer{group: group}, nil
 	}
 	if strings.TrimSpace(dialerProxy) == "" {
 		group.Proxies = make([]string, 0, len(nodes))
@@ -205,18 +181,36 @@ func renderDynamicProfileExit(profileID string, exit sourceplane.EgressProfileEx
 	return out, nil
 }
 
-func dynamicProfileNodes(nodes []provider.Node, providerID string) []provider.Node {
-	providerID = strings.TrimSpace(providerID)
-	if providerID == "" {
-		return nodes
-	}
+func dynamicProfileNodes(nodes []provider.Node, profileID string, dynamicProviderID string) []provider.Node {
+	profileID = safeID(profileID)
+	dynamicProviderID = strings.TrimSpace(dynamicProviderID)
 	out := make([]provider.Node, 0, len(nodes))
 	for _, node := range nodes {
-		if strings.TrimSpace(node.ProviderID) == providerID {
+		if strings.TrimSpace(node.Labels["egress_profile_id"]) != profileID {
+			continue
+		}
+		if dynamicProviderID == "" {
+			out = append(out, node)
+			continue
+		}
+		if dynamicProfileNodeHasProviderID(node, dynamicProviderID) {
 			out = append(out, node)
 		}
 	}
 	return out
+}
+
+func dynamicProfileNodeHasProviderID(node provider.Node, dynamicProviderID string) bool {
+	dynamicProviderID = strings.TrimSpace(dynamicProviderID)
+	if strings.TrimSpace(node.Labels["dynamic_provider_id"]) == dynamicProviderID || strings.TrimSpace(node.ProviderID) == dynamicProviderID {
+		return true
+	}
+	for _, value := range strings.Split(node.Labels["dynamic_provider_ids"], ",") {
+		if strings.TrimSpace(value) == dynamicProviderID {
+			return true
+		}
+	}
+	return false
 }
 
 func profileLayerGroup(name string, layer sourceplane.EgressProfileLayer, groupType string) mihomoGroup {
@@ -232,45 +226,7 @@ func profileLayerGroup(name string, layer sourceplane.EgressProfileLayer, groupT
 	}
 }
 
-func providerNameForReturn(providerName string, sourceID string, dialerProxy string) string {
-	if strings.TrimSpace(dialerProxy) == "" || providerName == sourceID {
-		return ""
-	}
-	return providerName
-}
-
-func fixedProfileProxyTarget(layer sourceplane.EgressProfileLayer, proxyName string, dialerProxy string) string {
-	if strings.TrimSpace(dialerProxy) != "" {
-		return safeID(proxyName)
-	}
-	return safeID(layer.NodeID)
-}
-
-func exactNodeFilter(name string) string {
-	return "^" + regexp.QuoteMeta(strings.TrimSpace(name)) + "$"
-}
-
-func subscriptionProviderMap(items []sourceplane.SubscriptionProvider) map[string]sourceplane.SubscriptionProvider {
-	out := map[string]sourceplane.SubscriptionProvider{}
-	for _, item := range items {
-		if id := safeID(item.ID); id != "" {
-			out[id] = item
-		}
-	}
-	return out
-}
-
-func fixedProxyMap(items []sourceplane.FixedProxy) map[string]sourceplane.FixedProxy {
-	out := map[string]sourceplane.FixedProxy{}
-	for _, item := range items {
-		if id := safeID(item.ID); id != "" {
-			out[id] = item
-		}
-	}
-	return out
-}
-
-func profileGroupName(profileID string) string {
+func profileInternalGroupName(profileID string) string {
 	id := safeID(profileID)
 	if id == "" {
 		id = "profile"
@@ -279,19 +235,92 @@ func profileGroupName(profileID string) string {
 }
 
 func profileLineGroupName(profileID string) string {
-	return profileGroupName(profileID) + "-line"
+	return profileInternalGroupName(profileID) + "-line"
 }
 
-func profileProxyName(profileID string, layerID string, sourceID string) string {
-	return safeID(fmt.Sprintf("%s-%s-proxy-%s", profileGroupName(profileID), layerID, safeID(sourceID)))
+func profileGroupNames(profiles []sourceplane.EgressProfile) map[string]string {
+	out := map[string]string{}
+	used := map[string]int{}
+	for _, profile := range profiles {
+		if !profile.Enabled {
+			continue
+		}
+		key := profileIDKey(profile.ID)
+		if key == "" {
+			continue
+		}
+		base := mihomoRuleTargetName(firstNonEmpty(profile.DisplayName, profile.ID))
+		if base == "" {
+			base = profileInternalGroupName(profile.ID)
+		}
+		name := base
+		if count := used[base]; count > 0 {
+			name = fmt.Sprintf("%s %d", base, count+1)
+		}
+		used[base]++
+		out[key] = name
+	}
+	return out
 }
 
-func profileProviderName(profileID string, layerID string, sourceID string) string {
-	return safeID(fmt.Sprintf("%s-%s-provider-%s", profileGroupName(profileID), layerID, safeID(sourceID)))
+func profileGroupNameFor(opts renderOptions, profile sourceplane.EgressProfile) string {
+	if name := opts.ProfileGroups[profileIDKey(profile.ID)]; name != "" {
+		return name
+	}
+	return profileInternalGroupName(profile.ID)
+}
+
+func profileIDKey(value string) string {
+	return safeID(value)
+}
+
+func mihomoRuleTargetName(value string) string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return ""
+	}
+	var out strings.Builder
+	lastSpace := false
+	for _, r := range value {
+		if r == ',' || r == '\n' || r == '\r' || r == '\t' {
+			r = ' '
+		}
+		if r == ' ' {
+			if lastSpace {
+				continue
+			}
+			lastSpace = true
+			out.WriteRune(r)
+			continue
+		}
+		lastSpace = false
+		out.WriteRune(r)
+	}
+	return strings.TrimSpace(out.String())
+}
+
+func exactNodeFilter(name string) string {
+	return "^" + regexp.QuoteMeta(strings.TrimSpace(name)) + "$"
+}
+
+func mihomoProxyAvailable(available map[string]struct{}, name string) bool {
+	if len(available) == 0 {
+		return false
+	}
+	_, exists := available[strings.TrimSpace(name)]
+	return exists
+}
+
+func mihomoProviderAvailable(available map[string]struct{}, name string) bool {
+	if len(available) == 0 {
+		return false
+	}
+	_, exists := available[strings.TrimSpace(name)]
+	return exists
 }
 
 func profileDynamicProxyName(profileID string, index int, node provider.Node) string {
-	return safeID(fmt.Sprintf("%s-dynamic-%d-%s", profileGroupName(profileID), index, providerNodeName("provider-pool", node, index)))
+	return safeID(fmt.Sprintf("%s-dynamic-%d-%s", profileInternalGroupName(profileID), index, providerNodeName("provider-pool", node, index)))
 }
 
 func profileGroupStrategy(value string) string {

@@ -17,10 +17,10 @@ type leaseAcquireFailure struct {
 	session           *proxyruntimev1.ProxySession
 	listener          *proxyruntimev1.EgressListener
 	egress            *proxyruntimev1.ProxyEndpoint
-	plan              *proxyruntimev1.EgressRoutePlan
+	plan              *proxyruntimev1.ProxyDynamicIPSelectionPlan
 }
 
-func newLeaseAcquireFailure(coordinator leaseCoordinator, ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest, providerAccountID string, providerClient provider.SessionProvider, session *proxyruntimev1.ProxySession, plan *proxyruntimev1.EgressRoutePlan) *leaseAcquireFailure {
+func newLeaseAcquireFailure(coordinator leaseCoordinator, ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest, providerAccountID string, providerClient provider.SessionProvider, session *proxyruntimev1.ProxySession, plan *proxyruntimev1.ProxyDynamicIPSelectionPlan) *leaseAcquireFailure {
 	return &leaseAcquireFailure{coordinator: coordinator, ctx: ctx, req: req, providerAccountID: providerAccountID, providerClient: providerClient, session: session, plan: plan}
 }
 

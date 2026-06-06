@@ -16,7 +16,7 @@ func egressProfileFromProto(in *proxyruntimev1.EgressProfileSettings) *proxyrunt
 		return &proxyruntimev1.EgressProfileSettings{}
 	}
 	out := &proxyruntimev1.EgressProfileSettings{
-		ProfileId:   sourceSafeID(in.GetProfileId()),
+		ProfileId:   runtimeSafeID(in.GetProfileId()),
 		DisplayName: strings.TrimSpace(in.GetDisplayName()),
 		Enabled:     in.GetEnabled(),
 		Line:        egressProfileLineFromProto(in.GetLine()),
@@ -32,7 +32,7 @@ func egressProfileLineFromProto(in *proxyruntimev1.EgressProfileLineSettings) *p
 	}
 	out := &proxyruntimev1.EgressProfileLineSettings{
 		Kind:           in.GetKind(),
-		Source:         egressProfileSourceRefFromProto(in.GetSource()),
+		MihomoNode:     egressProfileMihomoNodeRefFromProto(in.GetMihomoNode()),
 		HealthCheckUrl: strings.TrimSpace(in.GetHealthCheckUrl()),
 		HealthInterval: cloneDuration(in.GetHealthInterval()),
 		HealthTimeout:  cloneDuration(in.GetHealthTimeout()),
@@ -50,23 +50,31 @@ func egressProfileExitFromProto(in *proxyruntimev1.EgressProfileExitSettings) *p
 	}
 	out := &proxyruntimev1.EgressProfileExitSettings{
 		Kind:              in.GetKind(),
-		Source:            egressProfileSourceRefFromProto(in.GetSource()),
+		MihomoNode:        egressProfileMihomoNodeRefFromProto(in.GetMihomoNode()),
 		HealthCheckUrl:    strings.TrimSpace(in.GetHealthCheckUrl()),
 		HealthInterval:    cloneDuration(in.GetHealthInterval()),
 		HealthTimeout:     cloneDuration(in.GetHealthTimeout()),
 		ExpectedStatus:    in.GetExpectedStatus(),
 		DynamicProviderId: strings.TrimSpace(in.GetDynamicProviderId()),
+		DynamicIpPolicy:   egressProfileDynamicIPPolicyFromProto(in.GetDynamicIpPolicy()),
 	}
 	return out
 }
 
-func egressProfileSourceRefFromProto(in *proxyruntimev1.EgressProfileSourceRef) *proxyruntimev1.EgressProfileSourceRef {
+func egressProfileDynamicIPPolicyFromProto(in *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxySessionPolicy {
 	if in == nil {
-		return &proxyruntimev1.EgressProfileSourceRef{}
+		return nil
 	}
-	return &proxyruntimev1.EgressProfileSourceRef{
-		SourceId: sourceSafeID(in.GetSourceId()),
-		NodeId:   strings.TrimSpace(in.GetNodeId()),
+	return normalizeDynamicIPSessionPolicy(in)
+}
+
+func egressProfileMihomoNodeRefFromProto(in *proxyruntimev1.EgressProfileMihomoNodeRef) *proxyruntimev1.EgressProfileMihomoNodeRef {
+	if in == nil {
+		return &proxyruntimev1.EgressProfileMihomoNodeRef{}
+	}
+	return &proxyruntimev1.EgressProfileMihomoNodeRef{
+		ResourceId: strings.TrimSpace(in.GetResourceId()),
+		NodeId:     strings.TrimSpace(in.GetNodeId()),
 	}
 }
 
@@ -74,50 +82,63 @@ func normalizeEgressProfile(profile *proxyruntimev1.EgressProfileSettings) {
 	if profile == nil {
 		return
 	}
-	profile.ProfileId = sourceSafeID(profile.GetProfileId())
+	profile.ProfileId = runtimeSafeID(profile.GetProfileId())
 	profile.DisplayName = strings.TrimSpace(profile.GetDisplayName())
 	profile.Line = egressProfileLineFromProto(profile.GetLine())
 	profile.Exit = egressProfileExitFromProto(profile.GetExit())
 }
 
-func validateEgressProfile(profile *proxyruntimev1.EgressProfileSettings, index int, sourceIDs map[string]struct{}, dynamicProviderIDs map[string]struct{}) error {
+func validateEgressProfile(profile *proxyruntimev1.EgressProfileSettings, index int, nativeResourceIDs map[string]struct{}, dynamicProviderEndpointIDs map[string]map[string]struct{}) error {
 	if profile.GetProfileId() == "" {
 		return fmt.Errorf("egress_profiles[%d].profile_id is required", index)
 	}
-	if err := validateEgressProfileLine(profile.GetLine(), index, sourceIDs); err != nil {
+	if err := validateEgressProfileLine(profile.GetLine(), index, nativeResourceIDs); err != nil {
 		return err
 	}
-	return validateEgressProfileExit(profile.GetLine(), profile.GetExit(), index, sourceIDs, dynamicProviderIDs)
+	return validateEgressProfileExit(profile.GetLine(), profile.GetExit(), index, nativeResourceIDs, dynamicProviderEndpointIDs)
 }
 
-func validateEgressProfileLine(line *proxyruntimev1.EgressProfileLineSettings, index int, sourceIDs map[string]struct{}) error {
+func validateEgressProfileLine(line *proxyruntimev1.EgressProfileLineSettings, index int, nativeResourceIDs map[string]struct{}) error {
 	switch line.GetKind() {
 	case proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_DIRECT:
 		return nil
-	case proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_SOURCE:
-		return validateEgressProfileSource(line.GetSource(), fmt.Sprintf("egress_profiles[%d].line.source", index), sourceIDs, true)
+	case proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_MIHOMO_NODE:
+		return validateEgressProfileResource(line.GetMihomoNode(), fmt.Sprintf("egress_profiles[%d].line.mihomo_node", index), nativeResourceIDs, true)
 	default:
 		return fmt.Errorf("egress_profiles[%d].line.kind is required", index)
 	}
 }
 
-func validateEgressProfileExit(line *proxyruntimev1.EgressProfileLineSettings, exit *proxyruntimev1.EgressProfileExitSettings, index int, sourceIDs map[string]struct{}, dynamicProviderIDs map[string]struct{}) error {
+func validateEgressProfileExit(line *proxyruntimev1.EgressProfileLineSettings, exit *proxyruntimev1.EgressProfileExitSettings, index int, nativeResourceIDs map[string]struct{}, dynamicProviderEndpointIDs map[string]map[string]struct{}) error {
 	switch exit.GetKind() {
 	case proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DIRECT:
 		return nil
 	case proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_STATIC_IP:
-		if err := validateEgressProfileSource(exit.GetSource(), fmt.Sprintf("egress_profiles[%d].exit.source", index), sourceIDs, true); err != nil {
+		if err := validateEgressProfileResource(exit.GetMihomoNode(), fmt.Sprintf("egress_profiles[%d].exit.mihomo_node", index), nativeResourceIDs, true); err != nil {
 			return err
 		}
-		if line.GetKind() == proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_SOURCE && sameProfileSource(line.GetSource(), exit.GetSource()) {
-			return fmt.Errorf("egress_profiles[%d].line and exit cannot use the same source", index)
+		if line.GetKind() == proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_MIHOMO_NODE {
+			return fmt.Errorf("egress_profiles[%d].exit static_ip requires direct line because Mihomo-native nodes are not cloned by proxy-runtime", index)
 		}
 		return nil
 	case proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP:
-		if providerID := strings.TrimSpace(exit.GetDynamicProviderId()); providerID != "" && dynamicProviderIDs != nil {
-			if _, exists := dynamicProviderIDs[providerID]; !exists {
-				return fmt.Errorf("egress_profiles[%d].exit.dynamic_provider_id %q is not enabled", index, providerID)
+		dynamicProviderID := strings.TrimSpace(exit.GetDynamicProviderId())
+		endpointID := dynamicIPPolicyEndpointID(exit.GetDynamicIpPolicy())
+		if dynamicProviderID == "" {
+			if endpointID != "" {
+				return fmt.Errorf("egress_profiles[%d].exit.dynamic_ip_policy.labels.dynamic_ip_endpoint_id requires dynamic_provider_id", index)
 			}
+			return nil
+		}
+		endpoints, exists := dynamicProviderEndpointIDs[dynamicProviderID]
+		if dynamicProviderEndpointIDs != nil && !exists {
+			return fmt.Errorf("egress_profiles[%d].exit.dynamic_provider_id %q is not enabled", index, dynamicProviderID)
+		}
+		if endpointID == "" {
+			return nil
+		}
+		if _, exists := endpoints[endpointID]; !exists {
+			return fmt.Errorf("egress_profiles[%d].exit.dynamic_ip_policy.labels.dynamic_ip_endpoint_id %q is not enabled for dynamic_provider_id %q", index, endpointID, dynamicProviderID)
 		}
 		return nil
 	default:
@@ -125,36 +146,32 @@ func validateEgressProfileExit(line *proxyruntimev1.EgressProfileLineSettings, e
 	}
 }
 
-func validateEgressProfileSource(source *proxyruntimev1.EgressProfileSourceRef, field string, sourceIDs map[string]struct{}, requireNode bool) error {
-	sourceID := source.GetSourceId()
-	if sourceID == "" {
-		return fmt.Errorf("%s.source_id is required", field)
+func validateEgressProfileResource(resource *proxyruntimev1.EgressProfileMihomoNodeRef, field string, nativeResourceIDs map[string]struct{}, requireNode bool) error {
+	resourceID := strings.TrimSpace(resource.GetResourceId())
+	if resourceID == "" {
+		return fmt.Errorf("%s.resource_id is required", field)
 	}
-	if requireNode && strings.TrimSpace(source.GetNodeId()) == "" {
+	if requireNode && strings.TrimSpace(resource.GetNodeId()) == "" {
 		return fmt.Errorf("%s.node_id is required", field)
 	}
-	if sourceIDs != nil {
-		if _, exists := sourceIDs[sourceID]; !exists {
-			return fmt.Errorf("%s.source_id %q is not enabled", field, sourceID)
+	if nativeResourceIDs != nil {
+		if _, exists := nativeResourceIDs[resourceID]; !exists {
+			return fmt.Errorf("%s.resource_id %q is not enabled", field, resourceID)
 		}
 	}
 	return nil
-}
-
-func sameProfileSource(left *proxyruntimev1.EgressProfileSourceRef, right *proxyruntimev1.EgressProfileSourceRef) bool {
-	return left.GetSourceId() == right.GetSourceId() && strings.TrimSpace(left.GetNodeId()) == strings.TrimSpace(right.GetNodeId())
 }
 
 func cloneEgressProfile(in *proxyruntimev1.EgressProfileSettings) *proxyruntimev1.EgressProfileSettings {
 	return egressProfileFromProto(in)
 }
 
-func egressProfilesFromRequest(in []*proxyruntimev1.EgressProfileSettings, sourceIDs map[string]struct{}, dynamicProviderIDs map[string]struct{}) ([]*proxyruntimev1.EgressProfileSettings, error) {
+func egressProfilesFromRequest(in []*proxyruntimev1.EgressProfileSettings, nativeResourceIDs map[string]struct{}, dynamicProviderEndpointIDs map[string]map[string]struct{}) ([]*proxyruntimev1.EgressProfileSettings, error) {
 	out := make([]*proxyruntimev1.EgressProfileSettings, 0, len(in))
 	seen := map[string]struct{}{}
 	for index, profile := range in {
 		item := egressProfileFromProto(profile)
-		if err := validateEgressProfile(item, index, sourceIDs, dynamicProviderIDs); err != nil {
+		if err := validateEgressProfile(item, index, nativeResourceIDs, dynamicProviderEndpointIDs); err != nil {
 			return nil, err
 		}
 		if _, exists := seen[item.GetProfileId()]; exists {
@@ -166,68 +183,48 @@ func egressProfilesFromRequest(in []*proxyruntimev1.EgressProfileSettings, sourc
 	return out, nil
 }
 
-func (s *runtimeSettingsStore) updateEgressProfiles(ctx context.Context, profiles []*proxyruntimev1.EgressProfileSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	settings, err := s.loadLocked(ctx)
-	if err != nil {
-		return nil, err
-	}
-	sourceIDs, err := s.enabledSourceIDs(ctx)
-	if err != nil {
-		return nil, err
-	}
-	dynamicProviderIDs := enabledDynamicProviderIDs(settings)
-	nextProfiles, err := egressProfilesFromRequest(profiles, sourceIDs, dynamicProviderIDs)
-	if err != nil {
-		return nil, err
-	}
-	if err := rejectMissingIngressRuleProfiles(settings.GetIngressRules(), nextProfiles); err != nil {
-		return nil, err
-	}
-	settings.EgressProfiles = nextProfiles
-	if err := s.saveLocked(ctx, settings); err != nil {
-		return nil, err
-	}
-	return runtimeSettingsView(settings), nil
-}
-
-func (s *runtimeSettingsStore) enabledSourceIDs(ctx context.Context) (map[string]struct{}, error) {
-	if s.store == nil {
-		return nil, nil
-	}
-	providers, fixedProxies, err := s.store.ListSourcePlaneConfig(ctx)
-	if err != nil {
-		return nil, err
-	}
-	out := map[string]struct{}{}
-	for _, provider := range providers {
-		if id := sourceSafeID(provider.ID); id != "" {
-			out[id] = struct{}{}
-		}
-	}
-	for _, fixed := range fixedProxies {
-		if id := sourceSafeID(fixed.ID); id != "" {
-			out[id] = struct{}{}
-		}
-	}
-	return out, nil
+func (s *runtimeSettingsStore) enabledMihomoResourceIDs(_ context.Context) (map[string]struct{}, error) {
+	return nil, nil
 }
 
 func enabledDynamicProviderIDs(settings *runtimeSettingsFile) map[string]struct{} {
 	out := map[string]struct{}{}
 	for _, provider := range normalizeRuntimeSettings(settings).GetDynamicIpProviders() {
-		if id := strings.TrimSpace(provider.GetProviderId()); id != "" {
+		if id := dynamicIPProviderID(provider); id != "" {
 			out[id] = struct{}{}
 		}
 	}
 	return out
 }
 
+func enabledDynamicProviderEndpointIDs(settings *runtimeSettingsFile) map[string]map[string]struct{} {
+	out := map[string]map[string]struct{}{}
+	for _, provider := range normalizeRuntimeSettings(settings).GetDynamicIpProviders() {
+		dynamicProviderID := dynamicIPProviderID(provider)
+		if dynamicProviderID == "" {
+			continue
+		}
+		if out[dynamicProviderID] == nil {
+			out[dynamicProviderID] = map[string]struct{}{}
+		}
+		for _, endpoint := range provider.GetEndpoints() {
+			endpointID := endpointIDFromURL(endpoint.GetEndpointUrl())
+			if endpointID != "" {
+				out[dynamicProviderID][endpointID] = struct{}{}
+			}
+		}
+	}
+	return out
+}
+
+func dynamicIPPolicyEndpointID(policy *proxyruntimev1.ProxySessionPolicy) string {
+	return strings.TrimSpace(policy.GetLabels()["dynamic_ip_endpoint_id"])
+}
+
 func enabledEgressProfileIDsFromProfiles(profiles []*proxyruntimev1.EgressProfileSettings) map[string]struct{} {
 	out := map[string]struct{}{}
 	for _, profile := range profiles {
-		if id := sourceSafeID(profile.GetProfileId()); id != "" && profile.GetEnabled() {
+		if id := runtimeSafeID(profile.GetProfileId()); id != "" && profile.GetEnabled() {
 			out[id] = struct{}{}
 		}
 	}
@@ -255,8 +252,8 @@ func sourcePlaneEgressProfiles(settings *runtimeSettingsFile) []sourceplane.Egre
 func sourcePlaneEgressProfileLine(line *proxyruntimev1.EgressProfileLineSettings) sourceplane.EgressProfileLine {
 	return sourceplane.EgressProfileLine{
 		Kind:           egressProfileLineKind(line.GetKind()),
-		SourceID:       line.GetSource().GetSourceId(),
-		NodeID:         strings.TrimSpace(line.GetSource().GetNodeId()),
+		ResourceID:     strings.TrimSpace(line.GetMihomoNode().GetResourceId()),
+		NodeID:         strings.TrimSpace(line.GetMihomoNode().GetNodeId()),
 		HealthCheckURL: strings.TrimSpace(line.GetHealthCheckUrl()),
 		HealthInterval: protoDuration(line.GetHealthInterval(), 300*time.Second),
 		HealthTimeout:  protoDuration(line.GetHealthTimeout(), 5*time.Second),
@@ -268,8 +265,8 @@ func sourcePlaneEgressProfileExit(exit *proxyruntimev1.EgressProfileExitSettings
 	return sourceplane.EgressProfileExit{
 		Kind:           egressProfileExitKind(exit.GetKind()),
 		ProviderID:     strings.TrimSpace(exit.GetDynamicProviderId()),
-		SourceID:       exit.GetSource().GetSourceId(),
-		NodeID:         strings.TrimSpace(exit.GetSource().GetNodeId()),
+		ResourceID:     strings.TrimSpace(exit.GetMihomoNode().GetResourceId()),
+		NodeID:         strings.TrimSpace(exit.GetMihomoNode().GetNodeId()),
 		HealthCheckURL: strings.TrimSpace(exit.GetHealthCheckUrl()),
 		HealthInterval: protoDuration(exit.GetHealthInterval(), 300*time.Second),
 		HealthTimeout:  protoDuration(exit.GetHealthTimeout(), 5*time.Second),
@@ -279,8 +276,8 @@ func sourcePlaneEgressProfileExit(exit *proxyruntimev1.EgressProfileExitSettings
 
 func egressProfileLineKind(kind proxyruntimev1.EgressProfileLineKind) string {
 	switch kind {
-	case proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_SOURCE:
-		return "source"
+	case proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_MIHOMO_NODE:
+		return "mihomo_node"
 	default:
 		return "direct"
 	}

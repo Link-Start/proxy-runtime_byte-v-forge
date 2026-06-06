@@ -52,7 +52,6 @@ func (n Node) Endpoint() *proxyruntimev1.ProxyEndpoint {
 type PoolProvider interface {
 	Name() string
 	Descriptor() *proxyruntimev1.ProxyProviderDescriptor
-	Sources() []*proxyruntimev1.ProxySourceDescriptor
 	Fetch(ctx context.Context) ([]Node, error)
 }
 
@@ -65,10 +64,7 @@ type SessionProvider interface {
 
 type Empty struct{}
 
-const (
-	EmptyProviderID  = "none"
-	StaticProviderID = "static"
-)
+const EmptyProviderID = "none"
 
 func (Empty) Name() string {
 	return EmptyProviderID
@@ -85,10 +81,6 @@ func (Empty) Descriptor() *proxyruntimev1.ProxyProviderDescriptor {
 			proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_NONE,
 		},
 	}
-}
-
-func (Empty) Sources() []*proxyruntimev1.ProxySourceDescriptor {
-	return nil
 }
 
 func (Empty) Fetch(context.Context) ([]Node, error) {

@@ -9,11 +9,13 @@ func Ten24Plugin() Plugin {
 		DefaultProtocol:          "socks5",
 		Protocols:                []string{"http", "socks5"},
 		UsernameParameterSession: true,
-		RuntimeGeoTargeting:      true,
 		BuildUsername:            ten24Username,
 	})
 }
 
 func ten24Username(base string, policy *proxyruntimev1.ProxySessionPolicy, sessionID string) string {
+	if !stickySessionPolicy(policy) {
+		return dashUsername(base, "region", policy.GetRegion(), "st", policy.GetState(), "city", policy.GetCity(), "asn", policy.GetAsn())
+	}
 	return dashUsername(base, "region", policy.GetRegion(), "st", policy.GetState(), "city", policy.GetCity(), "asn", policy.GetAsn(), "sid", sessionID, "t", stickyMinutesString(policy))
 }

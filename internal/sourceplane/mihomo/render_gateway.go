@@ -10,7 +10,7 @@ import (
 
 const gatewayListenerName = "proxy-runtime-gateway"
 
-func renderGateway(endpoint sourceplane.Endpoint, users []dataplane.ProxyUserRoute, sessions []dataplane.SessionRoute) (mihomoListener, []mihomoGroup, []string, error) {
+func renderGateway(endpoint sourceplane.Endpoint, users []dataplane.ProxyUserRoute, sessions []dataplane.SessionRoute, profiles map[string]string) (mihomoListener, []mihomoGroup, []string, error) {
 	host, port, err := splitEndpoint(endpoint.Addr)
 	if err != nil {
 		return mihomoListener{}, nil, nil, err
@@ -18,7 +18,7 @@ func renderGateway(endpoint sourceplane.Endpoint, users []dataplane.ProxyUserRou
 	listener := mihomoListener{Name: gatewayListenerName, Type: "mixed", Listen: host, Port: port, UDP: true}
 	listener.Users = renderUsers(users, sessions)
 	groups := renderUserGroups(users, sessions)
-	rules := renderUserRules(users, sessions)
+	rules := renderUserRules(users, sessions, profiles)
 	return listener, groups, rules, nil
 }
 
@@ -65,7 +65,7 @@ func renderAuthentication(users []mihomoUser) []string {
 	return out
 }
 
-func renderUserRules(users []dataplane.ProxyUserRoute, sessions []dataplane.SessionRoute) []string {
+func renderUserRules(users []dataplane.ProxyUserRoute, sessions []dataplane.SessionRoute, profiles map[string]string) []string {
 	rules := make([]string, 0, len(users)+len(sessions))
 	seen := map[string]struct{}{}
 	for _, session := range sessions {
@@ -91,7 +91,7 @@ func renderUserRules(users []dataplane.ProxyUserRoute, sessions []dataplane.Sess
 			continue
 		}
 		seen[username] = struct{}{}
-		rules = append(rules, "IN-USER,"+username+","+userRouteTarget(user))
+		rules = append(rules, "IN-USER,"+username+","+userRouteTarget(user, profiles))
 	}
 	return rules
 }
@@ -108,41 +108,20 @@ func renderUserGroups(users []dataplane.ProxyUserRoute, sessions []dataplane.Ses
 		}
 		groups = append(groups, mihomoGroup{Name: name, Type: "select", Proxies: sessionProxyNames(session), Hidden: true})
 	}
-	for _, user := range users {
-		target := userRouteTarget(user)
-		if target == groupName || target == "DIRECT" {
-			continue
-		}
-		if strings.TrimSpace(user.Route) == "source" {
-			if group := sourceRouteGroup(target, user); group != nil {
-				groups = append(groups, *group)
-			}
-		}
-	}
 	return groups
 }
 
-func sourceRouteGroup(name string, user dataplane.ProxyUserRoute) *mihomoGroup {
-	sourceID := safeID(user.SourceID)
-	if sourceID == "" {
-		return nil
-	}
-	group := &mihomoGroup{Name: name, Type: "select", Hidden: true}
-	group.Proxies = []string{safeID(firstNonEmpty(user.NodeID, user.SourceID))}
-	group.Use = []string{sourceID}
-	return group
-}
-
-func userRouteTarget(user dataplane.ProxyUserRoute) string {
+func userRouteTarget(user dataplane.ProxyUserRoute, profiles map[string]string) string {
 	switch strings.TrimSpace(user.Route) {
 	case "direct":
 		return "DIRECT"
-	case "source":
-		return userGroupName(user)
 	case "profile":
-		return profileGroupName(firstNonEmpty(user.ProfileID, user.SourceID))
+		if name := profiles[profileIDKey(user.ProfileID)]; name != "" {
+			return name
+		}
+		return profileInternalGroupName(user.ProfileID)
 	default:
-		return groupName
+		return "REJECT"
 	}
 }
 

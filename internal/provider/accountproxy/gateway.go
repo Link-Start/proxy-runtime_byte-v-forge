@@ -22,6 +22,10 @@ func gatewayEndpointHost(value string) string {
 	return value
 }
 
-func GatewayProtocol(_ Gateway, fallback string) string {
+func GatewayProtocol(gateway Gateway, fallback string) string {
+	endpointURL := strings.TrimSpace(gateway.EndpointURL)
+	if parsed, err := url.Parse(endpointURL); err == nil && parsed.Scheme != "" {
+		return defaultProtocol(parsed.Scheme, fallback)
+	}
 	return defaultProtocol(fallback, "socks5")
 }

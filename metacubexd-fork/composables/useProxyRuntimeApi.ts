@@ -3,27 +3,20 @@ import type {
   DeleteProxyProviderAccountResponse,
   EgressProfileSettings,
   GetProxyRuntimeSettingsResponse,
-  ListProxySourcesResponse,
-  ListProxySourceNodesResponse,
   ListProxyDynamicLeasesResponse,
   ListProxyProviderAccountsResponse,
   ListProxyProvidersResponse,
   ProxyDynamicIPProviderSettings,
   ProxyIngressRuleSettings,
-  DeleteProxySourceRequest,
-  DeleteProxySourceResponse,
-  ReleaseProxyLeaseRequest,
-  ReleaseProxyLeaseResponse,
-  UpdateProxyIngressRulesResponse,
   UpdateProxyRuntimeSettingsResponse,
-  UpdateProxyEgressProfilesResponse,
-  UpsertProxyFixedSourceRequest,
-  UpsertProxyFixedSourceResponse,
   UpsertProxyProviderAccountRequest,
   UpsertProxyProviderAccountResponse,
-  UpsertProxySubscriptionSourceRequest,
-  UpsertProxySubscriptionSourceResponse,
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import type { ProxyRuntimeNativeConfig } from '~/composables/proxyRuntimeNativeConfigTypes'
+import {
+  listMihomoConfigNodes,
+  listMihomoEgressOwners,
+} from '~/composables/proxyRuntimeMihomoController'
 
 const base = '/api/proxy-runtime'
 
@@ -81,27 +74,15 @@ export function useProxyRuntimeApi() {
       ),
     getSettings: () =>
       proxyRuntimeRequest<GetProxyRuntimeSettingsResponse>('/settings'),
-    listSources: () =>
-      proxyRuntimeRequest<ListProxySourcesResponse>('/sources'),
-    listSourceNodes: (sourceId: string) =>
-      proxyRuntimeRequest<ListProxySourceNodesResponse>(
-        `/sources/nodes?source_id=${encodeURIComponent(sourceId)}`,
-      ),
-    upsertSubscriptionSource: (req: UpsertProxySubscriptionSourceRequest) =>
-      proxyRuntimeRequest<UpsertProxySubscriptionSourceResponse>('/sources', {
+    getNativeConfig: () =>
+      proxyRuntimeRequest<ProxyRuntimeNativeConfig>('/settings/mihomo-native'),
+    updateNativeConfig: (config: ProxyRuntimeNativeConfig) =>
+      proxyRuntimeRequest<ProxyRuntimeNativeConfig>('/settings/mihomo-native', {
         method: 'PUT',
-        body: jsonBody(req),
+        body: jsonBody(config),
       }),
-    upsertFixedSource: (req: UpsertProxyFixedSourceRequest) =>
-      proxyRuntimeRequest<UpsertProxyFixedSourceResponse>('/sources/fixed', {
-        method: 'PUT',
-        body: jsonBody(req),
-      }),
-    deleteSource: (req: DeleteProxySourceRequest) =>
-      proxyRuntimeRequest<DeleteProxySourceResponse>('/sources', {
-        method: 'DELETE',
-        body: jsonBody(req),
-      }),
+    listMihomoEgressOwners,
+    listMihomoConfigNodes,
     updateDynamicIPProviders: (
       dynamicIpProviders: ProxyDynamicIPProviderSettings[],
     ) =>
@@ -112,30 +93,21 @@ export function useProxyRuntimeApi() {
           body: jsonBody({ dynamic_ip_providers: dynamicIpProviders }),
         },
       ),
-    updateEgressProfiles: (egressProfiles: EgressProfileSettings[]) =>
-      proxyRuntimeRequest<UpdateProxyEgressProfilesResponse>(
-        '/settings/egress-profiles',
+    updateInUserRules: (
+      egressProfiles: EgressProfileSettings[],
+      ingressRules: ProxyIngressRuleSettings[],
+    ) =>
+      proxyRuntimeRequest<UpdateProxyRuntimeSettingsResponse>(
+        '/settings/in-user-rules',
         {
           method: 'PUT',
-          body: jsonBody({ egress_profiles: egressProfiles }),
-        },
-      ),
-    updateIngressRules: (ingressRules: ProxyIngressRuleSettings[]) =>
-      proxyRuntimeRequest<UpdateProxyIngressRulesResponse>(
-        '/settings/ingress-rules',
-        {
-          method: 'PUT',
-          body: jsonBody({ ingress_rules: ingressRules }),
+          body: jsonBody({
+            egress_profiles: egressProfiles,
+            ingress_rules: ingressRules,
+          }),
         },
       ),
     listLeases: () =>
-      proxyRuntimeRequest<ListProxyDynamicLeasesResponse>(
-        '/leases?include_inactive=true',
-      ),
-    releaseLease: (req: ReleaseProxyLeaseRequest) =>
-      proxyRuntimeRequest<ReleaseProxyLeaseResponse>('/leases/release', {
-        method: 'POST',
-        body: jsonBody(req),
-      }),
+      proxyRuntimeRequest<ListProxyDynamicLeasesResponse>('/leases'),
   }
 }

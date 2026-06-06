@@ -47,7 +47,7 @@ func (a runtimeCheckApplication) GetProxyExitIP(ctx context.Context, req *proxyr
 		return nil, err
 	}
 	timeout := proxyExitIPTimeout(settings)
-	client, err := a.runtime.checkProxyHTTPClient(ctx, req.GetPoolId(), req.GetProviderId(), req.GetListenerId(), timeout)
+	client, err := a.runtime.checkProxyHTTPClient(ctx, req.GetListenerId(), timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +94,7 @@ func (a runtimeCheckApplication) CheckProxyEdgeAccess(ctx context.Context, req *
 		return nil, err
 	}
 	timeout := proxyExitIPTimeout(settings)
-	client, err := a.runtime.checkProxyHTTPClient(ctx, req.GetPoolId(), req.GetProviderId(), req.GetListenerId(), timeout)
+	client, err := a.runtime.checkProxyHTTPClient(ctx, req.GetListenerId(), timeout)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (a runtimeCheckApplication) CheckProxyTargetConnectivity(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	client, err := a.runtime.checkProxyHTTPClient(ctx, req.GetPoolId(), req.GetProviderId(), req.GetListenerId(), proxyExitIPTimeout(settings))
+	client, err := a.runtime.checkProxyHTTPClient(ctx, req.GetListenerId(), proxyExitIPTimeout(settings))
 	if err != nil {
 		return nil, err
 	}

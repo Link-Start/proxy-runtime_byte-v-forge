@@ -27,13 +27,16 @@ type providerCredential struct {
 }
 
 type providerAccountRecord struct {
-	AccountID        string
-	ProviderID       string
-	DisplayName      string
-	Enabled          bool
-	CredentialSecret string
-	CreatedAt        time.Time
-	UpdatedAt        time.Time
+	AccountID         string
+	ProviderID        string
+	DynamicProviderID string
+	DisplayName       string
+	Enabled           bool
+	RotatingLimit     int64
+	StickyLimit       int64
+	CredentialSecret  string
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }
 
 func NewPostgresStore(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger) (*PostgresStore, error) {

@@ -47,6 +47,20 @@ defineExpose({ open, close })
         placeholder="密码"
         type="text"
       />
+      <input
+        v-model.number="runtime.accountForm.rotating_concurrency_limit"
+        class="input-bordered input w-full"
+        min="1"
+        placeholder="轮转并发上限"
+        type="number"
+      />
+      <input
+        v-model.number="runtime.accountForm.sticky_concurrency_limit"
+        class="input-bordered input w-full"
+        min="1"
+        placeholder="粘性并发上限"
+        type="number"
+      />
       <label class="flex h-12 items-center gap-2 text-sm">
         <input
           v-model="runtime.accountForm.enabled"

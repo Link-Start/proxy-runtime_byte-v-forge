@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"fmt"
 	"strings"
 
@@ -14,9 +13,9 @@ func ingressRuleFromProto(in *proxyruntimev1.ProxyIngressRuleSettings, index int
 	if in == nil {
 		return &proxyruntimev1.ProxyIngressRuleSettings{RuleId: fmt.Sprintf("ingress-%d", index+1)}
 	}
-	ruleID := sourceSafeID(in.GetRuleId())
+	ruleID := runtimeSafeID(in.GetRuleId())
 	if ruleID == "" {
-		ruleID = sourceSafeID(firstNonEmpty(in.GetUsername(), in.GetDisplayName()))
+		ruleID = runtimeSafeID(firstNonEmpty(in.GetUsername(), in.GetDisplayName()))
 	}
 	if ruleID == "" {
 		ruleID = fmt.Sprintf("ingress-%d", index+1)
@@ -27,7 +26,7 @@ func ingressRuleFromProto(in *proxyruntimev1.ProxyIngressRuleSettings, index int
 		Enabled:       in.GetEnabled(),
 		Username:      strings.TrimSpace(in.GetUsername()),
 		PasswordValue: in.GetPasswordValue(),
-		ProfileId:     sourceSafeID(in.GetProfileId()),
+		ProfileId:     runtimeSafeID(in.GetProfileId()),
 	}
 }
 
@@ -78,23 +77,6 @@ func validateIngressRule(rule *proxyruntimev1.ProxyIngressRuleSettings, index in
 		return fmt.Errorf("ingress_rules[%d].profile_id %q is not enabled", index, profileID)
 	}
 	return nil
-}
-
-func (s *runtimeSettingsStore) updateIngressRules(ctx context.Context, rules []*proxyruntimev1.ProxyIngressRuleSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	settings, err := s.loadLocked(ctx)
-	if err != nil {
-		return nil, err
-	}
-	settings.IngressRules, err = ingressRulesFromRequest(rules, settings.GetEgressProfiles())
-	if err != nil {
-		return nil, err
-	}
-	if err := s.saveLocked(ctx, settings); err != nil {
-		return nil, err
-	}
-	return runtimeSettingsView(settings), nil
 }
 
 func sourcePlaneProxyUserRoutes(settings *runtimeSettingsFile) []dataplane.ProxyUserRoute {

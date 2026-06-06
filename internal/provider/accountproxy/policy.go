@@ -1,6 +1,7 @@
 package accountproxy
 
 import (
+	"strings"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -8,12 +9,18 @@ import (
 )
 
 func (p *CredentialProvider) sessionPolicy(input *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxySessionPolicy {
-	policy := &proxyruntimev1.ProxySessionPolicy{Mode: proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY, StickyTtl: stickyDuration(defaultStickyMinutes), UpstreamKind: proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP, RotationMode: proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION}
+	policy := &proxyruntimev1.ProxySessionPolicy{
+		Mode:         proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY,
+		StickyTtl:    stickyDuration(defaultStickyMinutes),
+		UpstreamKind: proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP,
+		RotationMode: proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION,
+	}
 	if input == nil {
 		return policy
 	}
-	if input.Mode != proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_UNSPECIFIED {
-		policy.Mode = input.Mode
+	if input.GetMode() == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
+		policy.Mode = proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING
+		policy.RotationMode = proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_PER_REQUEST
 	}
 	policy.Region = firstNonEmpty(input.Region, policy.Region)
 	policy.State = firstNonEmpty(input.State, policy.State)
@@ -29,6 +36,21 @@ func (p *CredentialProvider) sessionPolicy(input *proxyruntimev1.ProxySessionPol
 		}
 	}
 	return policy
+}
+
+func stickySessionPolicy(policy *proxyruntimev1.ProxySessionPolicy) bool {
+	return policy == nil || policy.GetMode() != proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING
+}
+
+func requestedSessionID(policy *proxyruntimev1.ProxySessionPolicy) string {
+	labels := policy.GetLabels()
+	return firstNonEmpty(
+		labels["session_id"],
+		labels["sticky_session_id"],
+		labels["sticky_id"],
+		labels["sid"],
+		strings.TrimSpace(labels["session"]),
+	)
 }
 
 func policyStickyTTL(policy *proxyruntimev1.ProxySessionPolicy) time.Duration {

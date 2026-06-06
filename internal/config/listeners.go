@@ -19,11 +19,11 @@ func validateProxyUsers(users []ProxyUserRoute) error {
 		}
 		seen[username] = struct{}{}
 		switch normalizeConfigToken(user.Route) {
-		case "", ListenerRouteProvider, ListenerRouteDirect, ListenerRouteProfile, "source":
+		case "", ListenerRouteDirect, ListenerRouteProfile:
 		default:
 			return fmt.Errorf("unsupported proxy user route %q", user.Route)
 		}
-		if normalizeConfigToken(user.Route) == ListenerRouteProfile && strings.TrimSpace(user.ProfileID) == "" && strings.TrimSpace(user.SourceID) == "" {
+		if normalizeConfigToken(user.Route) == ListenerRouteProfile && strings.TrimSpace(user.ProfileID) == "" {
 			return fmt.Errorf("PROXY_RUNTIME_PROXY_USERS_JSON[%d].profile_id is required for profile route", index)
 		}
 	}
@@ -47,8 +47,6 @@ func envProxyUsers(name string) []ProxyUserRoute {
 		users[index].Username = strings.TrimSpace(users[index].Username)
 		users[index].Password = strings.TrimSpace(users[index].Password)
 		users[index].Route = normalizeConfigToken(users[index].Route)
-		users[index].SourceID = strings.TrimSpace(users[index].SourceID)
-		users[index].NodeID = strings.TrimSpace(users[index].NodeID)
 		users[index].ProfileID = strings.TrimSpace(users[index].ProfileID)
 	}
 	return users

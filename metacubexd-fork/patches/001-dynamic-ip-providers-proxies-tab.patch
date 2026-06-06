@@ -2,38 +2,46 @@ diff --git a/pages/proxies.vue b/pages/proxies.vue
 index 9af484c..e52a24e 100644
 --- a/pages/proxies.vue
 +++ b/pages/proxies.vue
-@@ -40,7 +40,9 @@ const nodeRecommendationStore = useNodeRecommendationStore()
+@@ -40,7 +40,11 @@ const nodeRecommendationStore = useNodeRecommendationStore()
  // Batch latency test
  const { isRunning: isBatchTesting, testMultipleGroups } = useBatchLatencyTest()
  
 -const activeTab = ref<'proxies' | 'proxyProviders'>('proxies')
 +const proxyRuntime = useProxyRuntimeDynamicIPProviders()
-+const activeTab =
-+  ref<'proxies' | 'proxyProviders' | 'dynamicIPProviders'>('proxies')
++const nativeRuntime = useProxyRuntimeNativeConfig()
++const activeTab = ref<
++  'proxies' | 'proxyProviders' | 'dynamicIPProviders' | 'mihomoNative'
++>('proxies')
  const settingsModal = ref<{ open: () => void; close: () => void }>()
  const proxyGroupsWrapper = ref<{ isTwoColumns: boolean }>()
  const providersWrapper = ref<{ isTwoColumns: boolean }>()
-@@ -87,6 +89,11 @@ const tabs = computed(() => [
+@@ -87,6 +91,16 @@ const tabs = computed(() => [
      name: t('proxyProviders'),
      count: proxiesStore.proxyProviders.length,
    },
 +  {
 +    type: 'dynamicIPProviders' as const,
-+    name: '动态代理提供者',
++    name: '动态IP提供商',
 +    count: proxyRuntime.dynamicProviderCount.value,
++  },
++  {
++    type: 'mihomoNative' as const,
++    name: '原生配置',
++    count: nativeRuntime.itemCount.value,
 +  },
  ])
  
  function getSortedProxyNames(proxyGroup: ProxyType) {
-@@ -131,6 +138,7 @@ function getProviderProxyNames(
+@@ -131,6 +145,8 @@ function getProviderProxyNames(
  // Fetch proxies on mount
  onMounted(() => {
    proxiesStore.fetchProxies()
 +  proxyRuntime.load()
++  nativeRuntime.load()
  })
  
  // Enable window focus refetch for proxies data
-@@ -582,6 +590,22 @@ const ProviderProxyNodes = defineComponent({
+@@ -582,6 +598,38 @@ const ProviderProxyNodes = defineComponent({
              }"
            />
          </Button>
@@ -53,10 +61,26 @@ index 9af484c..e52a24e 100644
 +            }"
 +          />
 +        </Button>
++
++        <Button
++          v-if="activeTab === 'mihomoNative'"
++          aria-label="刷新"
++          class="flex h-9 w-9 items-center justify-center rounded-[0.625rem] border border-base-content/10 bg-base-200/80 transition-all duration-200 hover:border-primary/30 hover:bg-primary/15 hover:text-primary"
++          :disabled="nativeRuntime.loading.value"
++          title="刷新"
++          @click="nativeRuntime.load"
++        >
++          <IconReload
++            :size="18"
++            :class="{
++              'animate-spin text-success': nativeRuntime.loading.value,
++            }"
++          />
++        </Button>
        </div>
  
        <!-- Settings Button -->
-@@ -677,7 +701,10 @@ const ProviderProxyNodes = defineComponent({
+@@ -677,7 +725,10 @@ const ProviderProxyNodes = defineComponent({
      </div>
  
      <!-- Proxy Providers Content -->
@@ -68,13 +92,21 @@ index 9af484c..e52a24e 100644
        <ProxiesRenderWrapper ref="providersWrapper">
          <template v-if="providersWrapper?.isTwoColumns" #even>
            <Collapse
-@@ -757,6 +784,11 @@ const ProviderProxyNodes = defineComponent({
+@@ -757,6 +808,19 @@ const ProviderProxyNodes = defineComponent({
        </ProxiesRenderWrapper>
      </div>
  
 +    <!-- Dynamic IP Providers Content -->
-+    <div v-else class="min-h-0 flex-1 overflow-y-auto">
++    <div
++      v-else-if="activeTab === 'dynamicIPProviders'"
++      class="min-h-0 flex-1 overflow-y-auto"
++    >
 +      <ProxyRuntimeDynamicIPProviders :runtime="proxyRuntime" />
++    </div>
++
++    <!-- Mihomo Native Config Content -->
++    <div v-else class="min-h-0 flex-1 overflow-y-auto">
++      <ProxyRuntimeMihomoNative :runtime="nativeRuntime" />
 +    </div>
 +
      <!-- Settings Modal -->

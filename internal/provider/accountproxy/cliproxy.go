@@ -9,11 +9,13 @@ func CliproxyPlugin() Plugin {
 		DefaultProtocol:          "socks5",
 		Protocols:                []string{"socks5"},
 		UsernameParameterSession: true,
-		RuntimeGeoTargeting:      true,
 		BuildUsername:            cliproxyUsername,
 	})
 }
 
 func cliproxyUsername(base string, policy *proxyruntimev1.ProxySessionPolicy, sessionID string) string {
+	if !stickySessionPolicy(policy) {
+		return dashUsername(base, "region", policy.GetRegion(), "st", policy.GetState())
+	}
 	return dashUsername(base, "region", policy.GetRegion(), "st", policy.GetState(), "sid", sessionID, "t", stickyMinutesString(policy))
 }

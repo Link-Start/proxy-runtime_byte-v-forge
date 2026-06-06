@@ -1,50 +1,29 @@
 <script setup lang="ts">
 import type { ProxyRuntimeDynamicIPProvidersState } from '~/composables/useProxyRuntimeDynamicIPProviders'
 import type {
-  ProxyDynamicIPProviderSettings,
+  ProxyDynamicIPEndpointSettings,
   ProxyProviderAccount,
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import { IconServer } from '@tabler/icons-vue'
+import { IconPlus, IconServer } from '@tabler/icons-vue'
 
 const props = defineProps<{ runtime: ProxyRuntimeDynamicIPProvidersState }>()
 
+const providerModal = ref<{ open: () => void; close: () => void }>()
 const endpointModal = ref<{ open: () => void; close: () => void }>()
 const accountModal = ref<{ open: () => void; close: () => void }>()
 
-const rows = computed(() => {
-  const providerIDs = new Set<string>()
-  for (const provider of props.runtime.providerOptions.value) {
-    providerIDs.add(provider.id)
-  }
-  for (const provider of props.runtime.dynamicIpProviders.value) {
-    providerIDs.add(provider.provider_id)
-  }
-  for (const account of props.runtime.accounts.value) {
-    providerIDs.add(account.provider_id)
-  }
-  return [...providerIDs].map((providerID) => {
-    const settings = props.runtime.dynamicIpProviders.value.find(
-      (provider) => provider.provider_id === providerID,
-    )
-    const accounts = props.runtime.accounts.value.filter(
-      (account) => account.provider_id === providerID,
-    )
-    return {
-      provider_id: providerID,
-      provider_name: props.runtime.providerName(providerID),
-      settings,
-      gateways: settings?.gateways || [],
-      accounts,
-    }
-  })
+const groups = computed(() => {
+  return props.runtime.providerEndpointGroups.value.map((group) => ({
+    ...group,
+    accounts: props.runtime.accounts.value.filter(
+      (account) => account.provider_id === group.provider_id,
+    ),
+  }))
 })
 
-function providerSettings(providerID: string): ProxyDynamicIPProviderSettings {
-  return (
-    props.runtime.dynamicIpProviders.value.find(
-      (provider) => provider.provider_id === providerID,
-    ) || { provider_id: providerID, gateways: [] }
-  )
+function addProvider() {
+  props.runtime.resetProviderForm()
+  providerModal.value?.open()
 }
 
 function addEndpoint(providerID: string) {
@@ -53,15 +32,15 @@ function addEndpoint(providerID: string) {
 }
 
 function addAccount(providerID: string) {
-  props.runtime.resetAccountForm(providerID)
+  props.runtime.resetAccountForm('', providerID)
   accountModal.value?.open()
 }
 
 function editEndpoint(
-  provider: ProxyDynamicIPProviderSettings,
-  endpoint: ProxyDynamicIPProviderSettings['gateways'][number],
+  providerID: string,
+  endpoint: ProxyDynamicIPEndpointSettings,
 ) {
-  props.runtime.editEndpoint(provider, endpoint)
+  props.runtime.editEndpoint(providerID, endpoint)
   endpointModal.value?.open()
 }
 
@@ -73,36 +52,48 @@ function editAccount(account: ProxyProviderAccount) {
 
 <template>
   <section
-    class="flex min-h-0 flex-col gap-4 rounded-xl border border-base-content/8 bg-base-200/60 p-4"
+    class="flex min-h-0 flex-col gap-3 p-2"
   >
     <div class="flex items-center justify-between gap-3">
       <h2 class="flex items-center gap-2 text-base font-semibold">
         <IconServer :size="18" />
-        动态代理提供者
+        动态IP提供商
       </h2>
-      <span class="badge badge-primary badge-sm">{{ rows.length }}</span>
+      <div class="flex items-center gap-2">
+        <span class="badge badge-primary badge-sm">{{ groups.length }}</span>
+        <button
+          aria-label="添加动态代理提供商"
+          class="btn btn-primary btn-sm btn-square"
+          title="添加动态代理提供商"
+          type="button"
+          @click="addProvider"
+        >
+          <IconPlus :size="16" />
+        </button>
+      </div>
     </div>
 
     <div
-      v-if="rows.length === 0"
+      v-if="groups.length === 0"
       class="rounded-lg border border-dashed border-base-content/15 p-6 text-center text-sm opacity-60"
     >
-      暂无动态代理提供者
+      暂无动态IP提供商
     </div>
-    <div v-else class="flex min-h-0 flex-col gap-3 overflow-y-auto">
-      <DynamicIPProviderCard
-        v-for="row in rows"
-        :key="row.provider_id"
-        :row="row"
+    <div v-else class="grid min-h-0 gap-3 overflow-y-auto xl:grid-cols-2">
+      <DynamicIPProviderGroup
+        v-for="group in groups"
+        :key="group.provider_id"
+        :group="group"
         @add-account="addAccount"
         @add-endpoint="addEndpoint"
         @delete-account="runtime.deleteAccount"
-        @delete-endpoint="(endpointURL) => runtime.deleteEndpoint(row.provider_id, endpointURL)"
+        @delete-endpoint="runtime.deleteEndpoint"
         @edit-account="editAccount"
         @edit-endpoint="editEndpoint"
       />
     </div>
 
+    <DynamicIPProviderModal ref="providerModal" :runtime="runtime" />
     <DynamicIPProviderEndpointModal ref="endpointModal" :runtime="runtime" />
     <DynamicIPProviderAccountModal ref="accountModal" :runtime="runtime" />
   </section>

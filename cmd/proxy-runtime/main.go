@@ -58,7 +58,13 @@ func main() {
 		os.Exit(1)
 	}
 	defer leaseRuntimeLocks.Close()
-	runtime, err := app.NewRuntime(cfg, proxyProvider, proxyProviders, ipFraudProviders, dataPlane, store, leaseRuntimeLocks, logger)
+	providerConcurrency, err := app.NewProviderAccountConcurrencyLimiter(context.Background(), cfg)
+	if err != nil {
+		logger.Error("create provider account concurrency limiter failed", "error", err)
+		os.Exit(1)
+	}
+	defer providerConcurrency.Close()
+	runtime, err := app.NewRuntime(cfg, proxyProvider, proxyProviders, ipFraudProviders, dataPlane, store, leaseRuntimeLocks, providerConcurrency, logger)
 	if err != nil {
 		logger.Error("create runtime failed", "error", err)
 		os.Exit(1)

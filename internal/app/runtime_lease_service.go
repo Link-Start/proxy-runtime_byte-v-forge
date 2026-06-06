@@ -27,60 +27,88 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 	}
 	defer func() { _ = lock.Unlock(ctx) }()
 	req.Purpose = firstNonEmpty(req.GetPurpose(), "general")
-	if existing, err := r.store.ActiveLeaseFact(ctx, req.GetAccountId()); err == nil && leaseActive(existing, time.Now().UTC()) {
+	normalizeLeasePolicy(req)
+	requestedSessionID := requestedLeaseSessionID(req)
+	existing, err := r.activeLeaseByRequest(ctx, req, requestedSessionID)
+	if err == nil && leaseActive(existing, time.Now().UTC()) {
 		if !req.GetForceNew() {
+			if err := r.refreshLeaseConcurrencySlot(ctx, existing); err != nil {
+				return nil, err
+			}
 			return existing, nil
 		}
 		if err := c.retireLeaseRoute(ctx, existing); err != nil {
 			return nil, err
 		}
 	}
-	planResult, err := r.dynamicGatewaySelector.selectDynamicGateway(ctx, req)
+	selection, err := r.dynamicIPSelector.selectDynamicIPEndpoint(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	providerAccountID := planResult.plan.GetDynamicGateway().GetProviderAccountId()
+	providerAccountID := selection.plan.GetSelectedEndpoint().GetProviderAccountId()
+	providerAccount, err := r.store.ProviderAccount(ctx, providerAccountID)
+	if err != nil {
+		return nil, err
+	}
+	leaseID, err := randx.Hex(12)
+	if err != nil {
+		return nil, err
+	}
+	concurrencyHolder := "lease:" + leaseID
+	concurrencySlot, err := r.acquireProviderAccountConcurrencySlot(ctx, providerAccount, req.GetPolicy(), concurrencyHolder, leaseConcurrencySlotTTL(req.GetPolicy()))
+	if err != nil {
+		return nil, err
+	}
+	keepConcurrencySlot := false
+	defer func() {
+		if !keepConcurrencySlot {
+			_ = concurrencySlot.Release(ctx)
+		}
+	}()
 	providerLock, err := r.leaseLocks.LockProviderAccount(ctx, providerAccountID)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = providerLock.Unlock(ctx) }()
-	providerAccountActive, err := r.store.ProviderAccountHasBlockingLease(ctx, providerAccountID)
-	if err != nil {
-		return nil, err
-	}
-	if providerAccountActive {
-		return nil, errors.New("selected provider account is already leased")
-	}
 	providerCfg, providerAccountID, err := r.store.ProviderConfig(ctx, providerAccountID)
 	if err != nil {
 		return nil, err
 	}
-	providerCfg.Gateways = []accountproxy.Gateway{planResult.gateway}
+	providerCfg.Gateways = []accountproxy.Gateway{selection.endpoint}
 	providerClient, err := r.accountProviders.NewSessionProvider(providerCfg, BuildProviderHTTPClient(r.cfg))
 	if err != nil {
 		return nil, err
 	}
-	normalizeLeasePolicy(req)
-	req.Policy.Labels["route_id"] = planResult.plan.GetRouteId()
-	req.Policy.Labels["dynamic_gateway_id"] = planResult.plan.GetDynamicGateway().GetGatewayId()
+	if requestedSessionID != "" {
+		req.Policy.Labels["session_id"] = requestedSessionID
+	}
+	req.Policy.Labels["selection_id"] = selection.plan.GetSelectionId()
+	req.Policy.Labels["dynamic_ip_endpoint_id"] = selection.plan.GetSelectedEndpoint().GetEndpointId()
+	req.Policy.Labels["provider_account_concurrency_holder"] = concurrencyHolder
 	session, err := providerClient.CreateSession(ctx, req)
 	if err != nil {
 		return nil, err
 	}
-	failure := newLeaseAcquireFailure(c, ctx, req, providerAccountID, providerClient, session, planResult.plan)
+	failure := newLeaseAcquireFailure(c, ctx, req, providerAccountID, providerClient, session, selection.plan)
 	nodes, err := providerClient.FetchSession(ctx, session)
 	if err != nil {
 		failure.beforeRoute("provider session fetch failed")
 		return nil, err
 	}
+	settings, err := r.settings.load(ctx)
+	if err != nil {
+		failure.beforeRoute("runtime settings load failed")
+		return nil, err
+	}
+	dialerProxy, lineLabels := dynamicLeaseDialerProxy(settings, selection.plan.GetSelectedEndpoint())
+	nodes = applyDynamicLeaseLineLabels(nodes, lineLabels)
 	listenerLock, err := r.leaseLocks.LockSessionListenerAllocation(ctx)
 	if err != nil {
 		failure.beforeRoute("lease listener allocation lock failed")
 		return nil, err
 	}
 	defer func() { _ = listenerLock.Unlock(ctx) }()
-	listener, err := r.leaseListener(ctx, req.GetAccountId())
+	listener, err := r.leaseListener(ctx, req.GetAccountId(), leaseID)
 	if err != nil {
 		failure.beforeRoute("lease listener allocation failed")
 		return nil, err
@@ -95,31 +123,39 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 	failure.egress = egress
 	egress.ProviderId = providerClient.Name()
 	egress.UpstreamKind = proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP
-	egress.RotationMode = proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION
+	egress.RotationMode = req.GetPolicy().GetRotationMode()
 	egress.SessionId = session.GetSessionId()
 	egress.Labels["account_id"] = req.GetAccountId()
 	egress.Labels["purpose"] = req.GetPurpose()
 	egress.Labels["provider_account_id"] = providerAccountID
-	egress.Labels["route_id"] = planResult.plan.GetRouteId()
-	egress.Labels["dynamic_gateway_id"] = planResult.plan.GetDynamicGateway().GetGatewayId()
+	egress.Labels["selection_id"] = selection.plan.GetSelectionId()
+	egress.Labels["dynamic_provider_id"] = selection.plan.GetSelectedEndpoint().GetDynamicProviderId()
+	egress.Labels["dynamic_ip_endpoint_id"] = selection.plan.GetSelectedEndpoint().GetEndpointId()
+	egress.Labels["provider_account_concurrency_holder"] = concurrencyHolder
+	for key, value := range lineLabels {
+		egress.Labels[key] = value
+	}
 	session.Egress = egress
-	route := dataplane.SessionRoute{SessionID: session.GetSessionId(), Listener: localServiceFromListener(listener, r.cfg.LocalProtocol), Pool: nodes}
+	route := dataplane.SessionRoute{SessionID: session.GetSessionId(), Listener: localServiceFromListener(listener, r.cfg.LocalProtocol), Pool: nodes, DialerProxy: dialerProxy}
 	if err := r.dataPlane.UpsertSessionRoute(ctx, route); err != nil {
 		failure.afterRoute(route, "dataplane route apply failed")
 		return nil, err
 	}
-	leaseID, err := randx.Hex(12)
-	if err != nil {
-		failure.afterRoute(route, "lease id generation failed")
-		return nil, err
-	}
 	now := time.Now().UTC()
-	lease := &proxyruntimev1.ProxyDynamicLease{LeaseId: leaseID, AccountId: req.GetAccountId(), Purpose: req.GetPurpose(), ProviderAccountId: providerAccountID, Status: proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE, Session: session, Egress: egress, Listener: listenerProto, AcquiredAt: timestamppb.New(now), ExpiresAt: session.GetExpiresAt(), RoutePlan: planResult.plan}
+	lease := &proxyruntimev1.ProxyDynamicLease{LeaseId: leaseID, AccountId: req.GetAccountId(), Purpose: req.GetPurpose(), ProviderAccountId: providerAccountID, Status: proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE, Session: session, Egress: egress, Listener: listenerProto, AcquiredAt: timestamppb.New(now), ExpiresAt: session.GetExpiresAt(), SelectionPlan: selection.plan}
 	if err := r.store.SaveLeaseFact(ctx, lease); err != nil {
 		failure.afterRoute(route, "lease fact save failed")
 		return nil, err
 	}
+	keepConcurrencySlot = true
 	return lease, nil
+}
+
+func (r *Runtime) activeLeaseByRequest(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest, sessionID string) (*proxyruntimev1.ProxyDynamicLease, error) {
+	if strings.TrimSpace(sessionID) != "" {
+		return r.store.ActiveLeaseFactBySession(ctx, req.GetAccountId(), req.GetPurpose(), sessionID)
+	}
+	return nil, pgx.ErrNoRows
 }
 
 func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
@@ -231,23 +267,23 @@ func (c leaseCoordinator) deleteLeaseRoute(ctx context.Context, lease *proxyrunt
 }
 
 func normalizeLeasePolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) {
-	if req.Policy == nil {
-		req.Policy = &proxyruntimev1.ProxySessionPolicy{}
-	}
-	if req.Policy.Mode == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_UNSPECIFIED {
-		req.Policy.Mode = proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY
-	}
-	if req.Policy.UpstreamKind == proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_UNSPECIFIED {
-		req.Policy.UpstreamKind = proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP
-	}
-	if req.Policy.RotationMode == proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_UNSPECIFIED {
-		req.Policy.RotationMode = proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION
-	}
+	req.Policy = normalizeDynamicIPSessionPolicy(req.GetPolicy())
 	if req.Policy.Labels == nil {
 		req.Policy.Labels = map[string]string{}
 	}
 	req.Policy.Labels["account_id"] = req.GetAccountId()
 	req.Policy.Labels["purpose"] = req.GetPurpose()
+}
+
+func requestedLeaseSessionID(req *proxyruntimev1.AcquireProxyLeaseRequest) string {
+	labels := req.GetPolicy().GetLabels()
+	return firstNonEmpty(
+		labels["session_id"],
+		labels["sticky_session_id"],
+		labels["sticky_id"],
+		labels["sid"],
+		labels["session"],
+	)
 }
 
 func leaseActive(lease *proxyruntimev1.ProxyDynamicLease, now time.Time) bool {

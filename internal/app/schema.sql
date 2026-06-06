@@ -1,25 +1,24 @@
 CREATE TABLE IF NOT EXISTS proxy_runtime_provider_accounts (
   account_id text PRIMARY KEY,
   provider_id text NOT NULL,
+  dynamic_provider_id text NOT NULL DEFAULT '',
   display_name text NOT NULL,
   enabled boolean NOT NULL DEFAULT true,
+  rotating_concurrency_limit bigint NOT NULL DEFAULT 10,
+  sticky_concurrency_limit bigint NOT NULL DEFAULT 2,
   credential_secret text NOT NULL DEFAULT '',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE TABLE IF NOT EXISTS proxy_runtime_sources (
-  source_id text PRIMARY KEY,
-  source_kind text NOT NULL,
-  display_name text NOT NULL,
-  enabled boolean NOT NULL DEFAULT true,
-  source_secret text NOT NULL DEFAULT '',
-  created_at timestamptz NOT NULL DEFAULT now(),
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
+ALTER TABLE proxy_runtime_provider_accounts
+  ADD COLUMN IF NOT EXISTS dynamic_provider_id text NOT NULL DEFAULT '';
+ALTER TABLE proxy_runtime_provider_accounts
+  ADD COLUMN IF NOT EXISTS rotating_concurrency_limit bigint NOT NULL DEFAULT 10;
+ALTER TABLE proxy_runtime_provider_accounts
+  ADD COLUMN IF NOT EXISTS sticky_concurrency_limit bigint NOT NULL DEFAULT 2;
 
-CREATE INDEX IF NOT EXISTS idx_proxy_runtime_sources_kind_enabled
-  ON proxy_runtime_sources(source_kind, enabled);
+DROP TABLE IF EXISTS proxy_runtime_sources;
 
 CREATE TABLE IF NOT EXISTS proxy_runtime_dynamic_leases (
   lease_id text PRIMARY KEY,
@@ -43,6 +42,16 @@ CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_provider_status
 CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_expires_at
   ON proxy_runtime_dynamic_leases(expires_at);
 
+CREATE TABLE IF NOT EXISTS proxy_runtime_dynamic_profile_sessions (
+  profile_key text PRIMARY KEY,
+  generation bigint NOT NULL DEFAULT 0,
+  released boolean NOT NULL DEFAULT false,
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE proxy_runtime_dynamic_profile_sessions
+  ADD COLUMN IF NOT EXISTS released boolean NOT NULL DEFAULT false;
+
 CREATE TABLE IF NOT EXISTS proxy_runtime_secrets (
   secret_id text PRIMARY KEY,
   provider text NOT NULL,
@@ -61,34 +70,3 @@ CREATE TABLE IF NOT EXISTS proxy_runtime_settings (
   setting_json jsonb NOT NULL DEFAULT '{}'::jsonb,
   updated_at timestamptz NOT NULL DEFAULT now()
 );
-
-UPDATE proxy_runtime_settings
-SET setting_json = jsonb_set(
-  setting_json,
-  '{dynamic_ip_providers}',
-  COALESCE((
-    SELECT jsonb_agg(
-      jsonb_set(
-        provider,
-        '{gateways}',
-        COALESCE((
-          SELECT jsonb_agg(
-            CASE
-              WHEN jsonb_typeof(gateway) = 'object' AND gateway ? 'endpoint_url'
-                THEN jsonb_build_object('endpoint_url', gateway->'endpoint_url')
-              WHEN jsonb_typeof(gateway) = 'object' AND gateway ? 'addr'
-                THEN jsonb_build_object('endpoint_url', gateway->'addr')
-              ELSE jsonb_build_object('endpoint_url', '')
-            END
-          )
-          FROM jsonb_array_elements(COALESCE(provider->'gateways', '[]'::jsonb)) AS gateway
-        ), '[]'::jsonb),
-        true
-      )
-    )
-    FROM jsonb_array_elements(setting_json->'dynamic_ip_providers') AS provider
-  ), '[]'::jsonb),
-  true
-)
-WHERE setting_key = 'runtime'
-  AND jsonb_typeof(setting_json->'dynamic_ip_providers') = 'array';

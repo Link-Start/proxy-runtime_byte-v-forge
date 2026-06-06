@@ -30,6 +30,7 @@ RUN npm config set registry https://repo.huaweicloud.com/repository/npm/ \
 COPY proxy-runtime/metacubexd-fork ./metacubexd-fork
 COPY common-lib/ui/src/proto/byte/v/forge/contracts ./types/byte/v/forge/contracts
 RUN git apply metacubexd-fork/patches/*.patch \
+    && pnpm add country-region-data@4.1.0 --save-exact \
     && for dir in pages components composables; do \
          if [ -d "metacubexd-fork/${dir}" ]; then cp -R "metacubexd-fork/${dir}/." "${dir}/"; fi; \
        done \

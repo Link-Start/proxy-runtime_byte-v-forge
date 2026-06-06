@@ -15,6 +15,7 @@ const (
 	leaseCleanupProviderPendingLabel = "provider_cleanup_pending"
 	leaseCleanupFinalStatusLabel     = "cleanup_final_status"
 	leaseCleanupFinalFailed          = "failed"
+	leaseCleanupFinalExpired         = "expired"
 	leaseCleanupFinalReleased        = "released"
 )
 
@@ -139,7 +140,10 @@ func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *pr
 		clearLeaseCleanupPending(current, false, true)
 	}
 	if !leaseCleanupPending(current) {
-		if leaseCleanupFinalStatus(current) == leaseCleanupFinalReleased {
+		switch leaseCleanupFinalStatus(current) {
+		case leaseCleanupFinalExpired:
+			return c.saveLeaseExpired(ctx, current)
+		case leaseCleanupFinalReleased:
 			return c.saveLeaseReleased(ctx, current)
 		}
 		return r.store.SaveLeaseFact(ctx, current)

@@ -52,11 +52,8 @@ func sessionRouteKey(route dataplane.SessionRoute) string {
 
 func sourceConfigFromDataPlane(cfg dataplane.Config) sourceplane.Config {
 	return sourceplane.Config{
-		Providers:           cfg.SourceProviders,
-		FixedProxies:        cfg.FixedProxies,
 		EgressProfiles:      cfg.EgressProfiles,
 		Endpoint:            cfg.Endpoint,
-		GroupStrategy:       cfg.GroupStrategy,
 		HealthCheckURL:      cfg.HealthCheckURL,
 		HealthCheckInterval: cfg.HealthCheckPeriod,
 		HealthCheckTimeout:  cfg.HealthCheckWait,
@@ -64,8 +61,6 @@ func sourceConfigFromDataPlane(cfg dataplane.Config) sourceplane.Config {
 }
 
 func cloneDataPlaneConfig(cfg dataplane.Config) dataplane.Config {
-	cfg.SourceProviders = append([]sourceplane.SubscriptionProvider(nil), cfg.SourceProviders...)
-	cfg.FixedProxies = append([]sourceplane.FixedProxy(nil), cfg.FixedProxies...)
 	cfg.EgressProfiles = cloneEgressProfiles(cfg.EgressProfiles)
 	cfg.Pool = cloneProviderNodes(cfg.Pool)
 	cfg.ProxyUsers = append([]dataplane.ProxyUserRoute(nil), cfg.ProxyUsers...)

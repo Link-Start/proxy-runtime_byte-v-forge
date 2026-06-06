@@ -4,31 +4,29 @@ import (
 	"context"
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 )
 
 func (r *Runtime) dataPlaneConfig(ctx context.Context) (dataplane.Config, error) {
-	providers, fixedProxies, err := r.store.ListSourcePlaneConfig(ctx)
-	if err != nil {
-		return dataplane.Config{}, err
-	}
 	settings, err := r.settings.load(ctx)
 	if err != nil {
 		return dataplane.Config{}, err
 	}
+	pool, err := r.dynamicProfilePool(ctx, settings)
+	if err != nil {
+		return dataplane.Config{}, err
+	}
+	r.setDynamicProfilePoolSnapshot(pool)
 	return dataplane.Config{
-		SourceProviders:   providers,
-		FixedProxies:      fixedProxies,
 		EgressProfiles:    sourcePlaneEgressProfiles(settings),
 		Endpoint:          sourceplane.Endpoint{Addr: r.cfg.LocalAddr, Protocol: "socks5"},
-		GroupStrategy:     r.cfg.Mihomo.GroupStrategy,
 		HealthCheckURL:    r.cfg.Mihomo.HealthCheckURL,
 		HealthCheckPeriod: r.cfg.Mihomo.HealthCheckInterval,
 		HealthCheckWait:   r.cfg.Mihomo.HealthCheckTimeout,
 		DashboardDir:      r.cfg.Mihomo.DashboardDir,
 		DashboardURL:      r.cfg.Mihomo.DashboardURL,
+		Pool:              pool,
 		ProxyUsers:        r.proxyUserRoutes(settings),
 	}, nil
 }
@@ -42,17 +40,7 @@ func (r *Runtime) proxyUserRoutes(settings *runtimeSettingsFile) []dataplane.Pro
 			Username:  user.Username,
 			Password:  user.Password,
 			Route:     user.Route,
-			SourceID:  user.SourceID,
-			NodeID:    user.NodeID,
 			ProfileID: user.ProfileID,
-		})
-	}
-	if r.cfg.LocalUsername != "" || r.cfg.LocalPassword != "" {
-		out = appendProxyUserRoute(out, seen, dataplane.ProxyUserRoute{
-			ID:       "default",
-			Username: r.cfg.LocalUsername,
-			Password: r.cfg.LocalPassword,
-			Route:    config.ListenerRouteProvider,
 		})
 	}
 	return out

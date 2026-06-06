@@ -48,6 +48,12 @@ function statusText(status: ProxyProviderAccountStatus) {
             >
               已配置凭据
             </span>
+            <span class="badge badge-ghost badge-sm">
+              轮转 {{ account.rotating_concurrency_limit || 10 }}
+            </span>
+            <span class="badge badge-ghost badge-sm">
+              粘性 {{ account.sticky_concurrency_limit || 2 }}
+            </span>
           </div>
         </div>
         <div class="flex items-center gap-1">

@@ -21,14 +21,7 @@ func (api *runtimeHTTPAPI) registerControlPlaneHTTPRoutes(mux *http.ServeMux) {
 func (api *runtimeHTTPAPI) controlPlaneHTTPRoutes() []runtimeHTTPRoute {
 	return []runtimeHTTPRoute{
 		{path: "/providers", handler: api.handleProviders},
-		{path: "/gateway", handler: api.handleGateway},
-		{path: "/pool", handler: api.handlePool},
-		{path: "/refresh", handler: api.handleRefresh},
 		{path: "/provider-accounts", handler: api.handleProviderAccounts},
-		{path: "/sources", handler: api.handleSources},
-		{path: "/sources/fixed", handler: api.handleFixedSources},
-		{path: "/sources/nodes", handler: api.handleSourceNodes},
-		{path: "/proxies/resolve", handler: api.handleResolveProxy},
 		{path: "/leases", handler: api.handleLeases},
 		{path: "/leases/acquire", handler: api.handleAcquireLease},
 		{path: "/leases/release", handler: api.handleReleaseLease},
@@ -38,8 +31,8 @@ func (api *runtimeHTTPAPI) controlPlaneHTTPRoutes() []runtimeHTTPRoute {
 		{path: "/check_cf_access_risk", handler: api.handleCheckEdgeAccessRisk},
 		{path: "/target_connectivity_check", handler: api.handleCheckTargetConnectivity},
 		{path: "/settings/dynamic-ip-providers", handler: api.handleDynamicIPProviders},
-		{path: "/settings/egress-profiles", handler: api.handleEgressProfiles},
-		{path: "/settings/ingress-rules", handler: api.handleIngressRules},
+		{path: "/settings/in-user-rules", handler: api.handleInUserRules},
+		{path: "/settings/mihomo-native", handler: api.handleMihomoNativeConfig},
 		{path: "/settings/ip-fraud-providers", handler: api.handleIPFraudProviders},
 		{path: "/settings", handler: api.handleRuntimeSettings},
 	}

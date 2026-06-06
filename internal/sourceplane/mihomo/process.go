@@ -132,3 +132,11 @@ func (d *Driver) stopLocked() {
 		_ = process.Stop(5 * time.Second)
 	}
 }
+
+func controlURL(apiAddr string, path string) string {
+	apiAddr = strings.TrimRight(strings.TrimSpace(apiAddr), "/")
+	if strings.HasPrefix(apiAddr, "http://") || strings.HasPrefix(apiAddr, "https://") {
+		return apiAddr + path
+	}
+	return "http://" + apiAddr + path
+}

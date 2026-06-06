@@ -28,24 +28,3 @@ func (p *Provider) Descriptor() *proxyruntimev1.ProxyProviderDescriptor {
 		RotationModes: rotationModes,
 	}
 }
-
-func (p *Provider) Sources() []*proxyruntimev1.ProxySourceDescriptor {
-	if p.cfg.APIURL == "" {
-		return nil
-	}
-	return []*proxyruntimev1.ProxySourceDescriptor{{
-		SourceId:    "1024proxy-api-pool",
-		ProviderId:  p.Name(),
-		DisplayName: "1024Proxy API pool",
-		Kind:        proxyruntimev1.ProxySourceKind_PROXY_SOURCE_KIND_API_POOL,
-		Capabilities: []proxyruntimev1.ProxyCapability{
-			proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_API_POOL,
-			proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_POOL_REFRESH,
-			proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_UNIFIED_EGRESS_GATEWAY,
-		},
-		Protocols: []proxyruntimev1.ProxyProtocol{protocolEnum(defaultProtocol(p.cfg.Protocol))},
-		Model: &proxyruntimev1.ProxySourceDescriptor_ApiPool{
-			ApiPool: &proxyruntimev1.ProxyAPIPoolSourceDescriptor{},
-		},
-	}}
-}

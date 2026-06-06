@@ -34,9 +34,7 @@ type Plugin interface {
 	ID() string
 	DisplayName() string
 	Descriptor(gateways []Gateway) *proxyruntimev1.ProxyProviderDescriptor
-	DynamicSource(accountID string, displayName string, gateways []Gateway) *proxyruntimev1.ProxySourceDescriptor
 	GatewayProtocol(gateway Gateway) string
-	SupportsRuntimeGeoTargeting() bool
 	NewSessionProvider(cfg Config, client *http.Client) (provider.SessionProvider, error)
 	Validate(cfg Config) error
 }
@@ -51,7 +49,6 @@ type Definition struct {
 	Protocols                []string
 	Gateways                 []Gateway
 	UsernameParameterSession bool
-	RuntimeGeoTargeting      bool
 	BuildUsername            UsernameBuilder
 	GenerateSessionID        SessionIDGenerator
 }

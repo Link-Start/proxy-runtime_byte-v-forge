@@ -35,11 +35,8 @@ func (c Config) validate() error {
 	if err := validateProxyUsers(c.ProxyUsers); err != nil {
 		return err
 	}
-	if c.Provider != ProviderTen24 && c.Provider != ProviderNone && c.Provider != ProviderStatic {
+	if c.Provider != ProviderTen24 && c.Provider != ProviderNone {
 		return ErrUnsupportedProvider
-	}
-	if c.Provider == ProviderStatic && len(c.SimpleProxies) == 0 {
-		return errors.New("PROXY_RUNTIME_SIMPLE_PROXIES is required for static provider")
 	}
 	if c.Provider == ProviderTen24 && c.Ten24.HasRuntimeConfig() {
 		if err := c.Ten24.Validate(); err != nil {

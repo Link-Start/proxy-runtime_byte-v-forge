@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 )
@@ -14,8 +13,6 @@ type Driver interface {
 	ReconcileBase(ctx context.Context, cfg Config) ([]provider.Node, error)
 	UpsertSessionRoute(ctx context.Context, route SessionRoute) error
 	DeleteSessionRoute(ctx context.Context, route SessionRoute) error
-	SourceNodes(ctx context.Context, sourceID string) ([]*proxyruntimev1.ProxySourceNode, error)
-	ResolveNodePublicIP(ctx context.Context, sourceID string, nodeID string, nodeDisplayName string) (string, error)
 	Stop()
 	Status() Status
 }
@@ -27,11 +24,8 @@ type Status struct {
 }
 
 type Config struct {
-	SourceProviders   []sourceplane.SubscriptionProvider
-	FixedProxies      []sourceplane.FixedProxy
 	EgressProfiles    []sourceplane.EgressProfile
 	Endpoint          sourceplane.Endpoint
-	GroupStrategy     string
 	HealthCheckURL    string
 	HealthCheckPeriod time.Duration
 	HealthCheckWait   time.Duration
@@ -54,9 +48,10 @@ type LocalService struct {
 }
 
 type SessionRoute struct {
-	SessionID string
-	Listener  LocalService
-	Pool      []provider.Node
+	SessionID   string
+	Listener    LocalService
+	Pool        []provider.Node
+	DialerProxy string
 }
 
 type ProxyUserRoute struct {
@@ -64,7 +59,5 @@ type ProxyUserRoute struct {
 	Username  string
 	Password  string
 	Route     string
-	SourceID  string
-	NodeID    string
 	ProfileID string
 }

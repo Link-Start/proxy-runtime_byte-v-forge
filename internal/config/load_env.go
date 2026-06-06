@@ -22,7 +22,6 @@ func LoadFromEnv() (Config, error) {
 			APIAddr:             envx.StringDefault("PROXY_RUNTIME_MIHOMO_API_ADDR", "127.0.0.1:18901"),
 			DashboardDir:        envx.StringDefault("PROXY_RUNTIME_MIHOMO_DASHBOARD_DIR", "/app/dashboard/metacubexd"),
 			DashboardURL:        strings.TrimSpace(os.Getenv("PROXY_RUNTIME_MIHOMO_DASHBOARD_URL")),
-			GroupStrategy:       normalizeConfigToken(envx.StringDefault("PROXY_RUNTIME_MIHOMO_GROUP_STRATEGY", "fallback")),
 			HealthCheckURL:      envx.StringDefault("PROXY_RUNTIME_MIHOMO_HEALTH_CHECK_URL", "https://www.gstatic.com/generate_204"),
 			HealthCheckInterval: envx.DurationSeconds("PROXY_RUNTIME_MIHOMO_HEALTH_CHECK_INTERVAL_SECONDS", 300*time.Second),
 			HealthCheckTimeout:  envx.DurationSeconds("PROXY_RUNTIME_MIHOMO_HEALTH_CHECK_TIMEOUT_SECONDS", 5*time.Second),
@@ -35,7 +34,6 @@ func LoadFromEnv() (Config, error) {
 		SessionListener: SessionListenerConfig{
 			AdvertisedHost: strings.TrimSpace(os.Getenv("PROXY_RUNTIME_SESSION_ADVERTISED_HOST")),
 		},
-		SimpleProxies:     envx.List("PROXY_RUNTIME_SIMPLE_PROXIES"),
 		ProviderHTTPProxy: strings.TrimSpace(os.Getenv("PROXY_RUNTIME_PROVIDER_HTTP_PROXY")),
 		Provider:          normalizeConfigToken(envx.StringDefault("PROXY_RUNTIME_PROVIDER", ProviderTen24)),
 		ProxyUsers:        envProxyUsers("PROXY_RUNTIME_PROXY_USERS_JSON"),

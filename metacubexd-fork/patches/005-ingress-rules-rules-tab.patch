@@ -1,80 +1,55 @@
 diff --git a/pages/rules.vue b/pages/rules.vue
+index b5ecdac..6a4ed18 100644
 --- a/pages/rules.vue
 +++ b/pages/rules.vue
-@@ -3,5 +3,5 @@ import type { Rule, RuleProvider } from '~/types'
- import { IconFilter, IconReload, IconSearch } from '@tabler/icons-vue'
- import { useVirtualizer } from '@tanstack/vue-virtual'
+@@ -5,3 +5,3 @@ import { useVirtualizer } from '@tanstack/vue-virtual'
  import { matchSorter } from 'match-sorter'
 -import { computed, ref } from 'vue'
 +import { computed, onMounted, ref } from 'vue'
  import {
-@@ -23,5 +23,6 @@ const { data: ruleProviders = ref([]), isLoading: isLoadingProviders } =
- const updateProviderMutation = useUpdateRuleProviderMutation()
- const toggleRuleDisabledMutation = useToggleRuleDisabledMutation()
+@@ -25,3 +25,4 @@ const toggleRuleDisabledMutation = useToggleRuleDisabledMutation()
  
 -const activeTab = ref<'rules' | 'ruleProviders'>('rules')
-+const ingressRules = useProxyRuntimeIngressRules()
-+const activeTab = ref<'rules' | 'ruleProviders' | 'ingressRules'>('rules')
++const inUserRules = useProxyRuntimeInUserRules()
++const activeTab = ref<'rules' | 'ruleProviders' | 'proxyRuntimeRules'>('rules')
  const globalFilter = ref('')
-@@ -42,5 +43,10 @@ const tabs = computed(() => [
-     name: t('ruleProviders'),
-     count: ruleProviders.value?.length ?? 0,
+@@ -46,2 +48,7 @@ const tabs = computed(() => [
    },
 +  {
-+    type: 'ingressRules' as const,
-+    name: '入口规则',
-+    count: ingressRules.ruleCount.value,
++    type: 'proxyRuntimeRules' as const,
++    name: 'IN-USER规则',
++    count: inUserRules.ruleCount.value,
 +  },
  ])
+@@ -86,2 +93,8 @@ async function onUpdateAllProvider() {
  
-@@ -78,11 +84,15 @@ async function onUpdateAllProvider() {
-   const providers = ruleProviders.value ?? []
-   await Promise.all(
-     providers.map((provider) =>
-       updateProviderMutation.mutateAsync(provider.name),
-     ),
-   )
- }
- 
-+onMounted(() => {
-+  ingressRules.load()
-+})
++function refreshProxyRuntimeRules() {
++  inUserRules.load()
++}
++
++onMounted(refreshProxyRuntimeRules)
 +
  const isLoading = computed(
-   () => isLoadingRules.value || isLoadingProviders.value,
- )
-@@ -186,12 +196,28 @@ const providersTotalSize = computed(() =>
-           <Button
-             v-if="activeTab === 'ruleProviders'"
-             class="flex h-9 w-9 items-center justify-center rounded-[0.625rem] border border-primary/20 bg-primary/10 text-primary transition-all duration-200 hover:bg-primary/20"
-             :disabled="allProviderIsUpdating"
-             @click="onUpdateAllProvider"
-           >
-             <IconReload
-               :size="18"
-               :class="{ 'animate-spin text-success': allProviderIsUpdating }"
-             />
+@@ -196,2 +210,18 @@ const providersTotalSize = computed(() =>
            </Button>
 +
 +          <Button
-+            v-if="activeTab === 'ingressRules'"
++            v-if="activeTab === 'proxyRuntimeRules'"
 +            aria-label="刷新"
 +            class="flex h-9 w-9 items-center justify-center rounded-[0.625rem] border border-base-content/10 bg-base-200/80 transition-all duration-200 hover:border-primary/30 hover:bg-primary/15 hover:text-primary"
-+            :disabled="ingressRules.loading.value"
++            :disabled="inUserRules.loading.value"
 +            title="刷新"
-+            @click="ingressRules.load"
++            @click="refreshProxyRuntimeRules"
 +          >
 +            <IconReload
 +              :size="18"
 +              :class="{
-+                'animate-spin text-success': ingressRules.loading.value,
++                'animate-spin text-success': inUserRules.loading.value,
 +              }"
 +            />
 +          </Button>
          </div>
-@@ -315,5 +342,9 @@ const providersTotalSize = computed(() =>
-       </template>
- 
+@@ -315,3 +346,7 @@ const providersTotalSize = computed(() =>
        <!-- Rule Providers List -->
 -      <div v-else ref="providersParentRef" class="flex-1 overflow-y-auto">
 +      <div
@@ -83,14 +58,11 @@ diff --git a/pages/rules.vue b/pages/rules.vue
 +        class="flex-1 overflow-y-auto"
 +      >
          <div
-@@ -400,5 +431,10 @@ const providersTotalSize = computed(() =>
-           </div>
-         </div>
+@@ -402,2 +437,7 @@ const providersTotalSize = computed(() =>
        </div>
 +
-+      <!-- Ingress Rules List -->
++      <!-- Proxy Runtime Rules List -->
 +      <div v-else class="min-h-0 flex-1 overflow-y-auto">
-+        <ProxyRuntimeIngressRules :runtime="ingressRules" />
++        <ProxyRuntimeInUserRules :runtime="inUserRules" />
 +      </div>
      </template>
-   </div>

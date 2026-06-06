@@ -22,18 +22,6 @@ func (s *RuntimeService) ListProxyProviders(ctx context.Context, _ *proxyruntime
 	return s.providers.ListProxyProviders(ctx)
 }
 
-func (s *RuntimeService) GetEgressGateway(ctx context.Context, _ *proxyruntimev1.GetEgressGatewayRequest) (*proxyruntimev1.GetEgressGatewayResponse, error) {
-	return s.providers.GetEgressGateway(ctx)
-}
-
-func (s *RuntimeService) GetProxyPool(ctx context.Context, _ *proxyruntimev1.GetProxyPoolRequest) (*proxyruntimev1.GetProxyPoolResponse, error) {
-	return s.providers.GetProxyPool(ctx)
-}
-
-func (s *RuntimeService) RefreshProxyPool(ctx context.Context, _ *proxyruntimev1.RefreshProxyPoolRequest) (*proxyruntimev1.RefreshProxyPoolResponse, error) {
-	return s.providers.RefreshProxyPool(ctx)
-}
-
 func (s *RuntimeService) ListProxyProviderAccounts(ctx context.Context, _ *proxyruntimev1.ListProxyProviderAccountsRequest) (*proxyruntimev1.ListProxyProviderAccountsResponse, error) {
 	return s.providers.ListProxyProviderAccounts(ctx)
 }
@@ -51,34 +39,7 @@ func (a runtimeProviderApplication) ListProxyProviders(ctx context.Context) (*pr
 	if err != nil {
 		return nil, err
 	}
-	return &proxyruntimev1.ListProxyProvidersResponse{Providers: a.runtime.accountProviders.Descriptors(dynamicIPGatewayMap(settings))}, nil
-}
-
-func (a runtimeProviderApplication) GetEgressGateway(ctx context.Context) (*proxyruntimev1.GetEgressGatewayResponse, error) {
-	gateway, err := a.runtime.gateway(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &proxyruntimev1.GetEgressGatewayResponse{Gateway: gateway}, nil
-}
-
-func (a runtimeProviderApplication) GetProxyPool(ctx context.Context) (*proxyruntimev1.GetProxyPoolResponse, error) {
-	pool, err := a.runtime.snapshot(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return &proxyruntimev1.GetProxyPoolResponse{Pool: pool}, nil
-}
-
-func (a runtimeProviderApplication) RefreshProxyPool(ctx context.Context) (*proxyruntimev1.RefreshProxyPoolResponse, error) {
-	if err := a.runtime.runReconcile(ctx); err != nil {
-		return nil, unavailable("refresh proxy runtime failed", err)
-	}
-	pool, err := a.runtime.snapshot(ctx)
-	if err != nil {
-		return nil, internalError("", err)
-	}
-	return &proxyruntimev1.RefreshProxyPoolResponse{Pool: pool}, nil
+	return &proxyruntimev1.ListProxyProvidersResponse{Providers: a.runtime.accountProviders.Descriptors(dynamicIPEndpointMap(settings))}, nil
 }
 
 func (a runtimeProviderApplication) ListProxyProviderAccounts(ctx context.Context) (*proxyruntimev1.ListProxyProviderAccountsResponse, error) {
@@ -93,11 +54,37 @@ func (a runtimeProviderApplication) UpsertProxyProviderAccount(ctx context.Conte
 	if err := a.rejectActiveProviderAccountRuntimeMutation(ctx, req); err != nil {
 		return nil, err
 	}
+	if err := a.normalizeProviderAccountDynamicProvider(ctx, req); err != nil {
+		return nil, invalidArgument("", err)
+	}
 	account, err := a.runtime.store.UpsertProviderAccount(ctx, req)
 	if err != nil {
 		return nil, invalidArgument("", err)
 	}
 	return &proxyruntimev1.UpsertProxyProviderAccountResponse{Account: account}, nil
+}
+
+func (a runtimeProviderApplication) normalizeProviderAccountDynamicProvider(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) error {
+	dynamicProviderID := runtimeSafeID(req.GetDynamicProviderId())
+	if dynamicProviderID == "" {
+		return nil
+	}
+	settings, err := a.runtime.settings.load(ctx)
+	if err != nil {
+		return err
+	}
+	for _, provider := range dynamicIPProviderInstances(settings) {
+		if provider.dynamicProviderID != dynamicProviderID {
+			continue
+		}
+		if providerID := strings.TrimSpace(req.GetProviderId()); providerID != "" && providerID != provider.providerID {
+			return fmt.Errorf("dynamic provider %q uses provider_id %q", dynamicProviderID, provider.providerID)
+		}
+		req.DynamicProviderId = dynamicProviderID
+		req.ProviderId = provider.providerID
+		return nil
+	}
+	return fmt.Errorf("dynamic provider %q is not enabled", dynamicProviderID)
 }
 
 func (a runtimeProviderApplication) DeleteProxyProviderAccount(ctx context.Context, req *proxyruntimev1.DeleteProxyProviderAccountRequest) (*proxyruntimev1.DeleteProxyProviderAccountResponse, error) {
@@ -127,6 +114,9 @@ func (a runtimeProviderApplication) rejectActiveProviderAccountRuntimeMutation(c
 		return err
 	}
 	if providerID := strings.TrimSpace(req.GetProviderId()); providerID != "" && providerID != record.ProviderID {
+		return failedPrecondition("provider account has active leases", nil)
+	}
+	if dynamicProviderID := runtimeSafeID(req.GetDynamicProviderId()); dynamicProviderID != "" && dynamicProviderID != record.DynamicProviderID {
 		return failedPrecondition("provider account has active leases", nil)
 	}
 	credential := credentialFromSecret(a.runtime.store.box, record.CredentialSecret)

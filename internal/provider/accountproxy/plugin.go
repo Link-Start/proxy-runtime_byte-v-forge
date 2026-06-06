@@ -25,16 +25,8 @@ func (p definitionPlugin) Descriptor(gateways []Gateway) *proxyruntimev1.ProxyPr
 	return descriptor(p.definition, gateways)
 }
 
-func (p definitionPlugin) DynamicSource(accountID string, displayName string, gateways []Gateway) *proxyruntimev1.ProxySourceDescriptor {
-	return dynamicSource(p.definition, accountID, displayName, gateways)
-}
-
 func (p definitionPlugin) GatewayProtocol(gateway Gateway) string {
 	return GatewayProtocol(gateway, p.definition.DefaultProtocol)
-}
-
-func (p definitionPlugin) SupportsRuntimeGeoTargeting() bool {
-	return p.definition.RuntimeGeoTargeting
 }
 
 func (p definitionPlugin) NewSessionProvider(cfg Config, client *http.Client) (provider.SessionProvider, error) {

@@ -12,7 +12,7 @@ import (
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 )
 
-func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, current *runtimeSettingsFile, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, sourceIDs map[string]struct{}) (*runtimeSettingsFile, error) {
+func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, current *runtimeSettingsFile, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, nativeResourceIDs map[string]struct{}) (*runtimeSettingsFile, error) {
 	current = normalizeRuntimeSettingsWithProviders(current, ipFraudProviders)
 	edgeCanary, err := edgeCanaryFromRequest(ctx, writer, req.GetEdgeCanary(), current.GetEdgeCanary())
 	if err != nil {
@@ -52,14 +52,15 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 		if err := validateDynamicIPProvider(item, index, accountProviders); err != nil {
 			return nil, err
 		}
-		if _, exists := seenDynamicProviders[item.GetProviderId()]; exists {
-			return nil, fmt.Errorf("dynamic_ip_providers[%d] duplicates provider %q", index, item.GetProviderId())
+		id := dynamicIPProviderID(item)
+		if _, exists := seenDynamicProviders[id]; exists {
+			return nil, fmt.Errorf("dynamic_ip_providers[%d] duplicates dynamic provider %q", index, id)
 		}
-		seenDynamicProviders[item.GetProviderId()] = struct{}{}
+		seenDynamicProviders[id] = struct{}{}
 		settings.DynamicIpProviders = append(settings.DynamicIpProviders, item)
 	}
-	dynamicProviderIDs := enabledDynamicProviderIDs(settings)
-	settings.EgressProfiles, err = egressProfilesFromRequest(req.GetEgressProfiles(), sourceIDs, dynamicProviderIDs)
+	dynamicProviderEndpoints := enabledDynamicProviderEndpointIDs(settings)
+	settings.EgressProfiles, err = egressProfilesFromRequest(req.GetEgressProfiles(), nativeResourceIDs, dynamicProviderEndpoints)
 	if err != nil {
 		return nil, err
 	}

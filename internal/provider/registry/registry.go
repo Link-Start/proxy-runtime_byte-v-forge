@@ -60,9 +60,6 @@ func NewDefaultRegistry() (*Registry, error) {
 		NewPoolPlugin(config.ProviderNone, func(BuildContext) (provider.PoolProvider, error) {
 			return provider.Empty{}, nil
 		}),
-		NewPoolPlugin(config.ProviderStatic, func(ctx BuildContext) (provider.PoolProvider, error) {
-			return provider.NewStatic(ctx.Config.SimpleProxies)
-		}),
 		NewPoolPlugin(config.ProviderTen24, func(ctx BuildContext) (provider.PoolProvider, error) {
 			return ten24.New(ctx.Config.Ten24, ctx.HTTPClient), nil
 		}),
@@ -135,11 +132,6 @@ func (r *Registry) IsSupported(providerID string) bool {
 	return ok
 }
 
-func (r *Registry) SupportsRuntimeGeoTargeting(providerID string) bool {
-	plugin, ok := r.accountPlugin(providerID)
-	return ok && plugin.SupportsRuntimeGeoTargeting()
-}
-
 func (r *Registry) Descriptors(gateways map[string][]accountproxy.Gateway) []*proxyruntimev1.ProxyProviderDescriptor {
 	if r == nil {
 		return nil
@@ -173,14 +165,6 @@ func (r *Registry) GatewayProtocolForProvider(providerID string, gateway account
 		return "", false
 	}
 	return plugin.GatewayProtocol(gateway), true
-}
-
-func (r *Registry) DynamicSource(providerID string, displayName string, accountID string, gateways []accountproxy.Gateway) (*proxyruntimev1.ProxySourceDescriptor, error) {
-	plugin, ok := r.accountPlugin(providerID)
-	if !ok {
-		return nil, fmt.Errorf("unsupported provider_id %q", providerID)
-	}
-	return plugin.DynamicSource(accountID, displayName, gateways), nil
 }
 
 func normalizeProviderID(value string) string { return strings.TrimSpace(value) }

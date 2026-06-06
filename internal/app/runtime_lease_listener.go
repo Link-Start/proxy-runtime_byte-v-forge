@@ -7,19 +7,21 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
-func (r *Runtime) leaseListener(ctx context.Context, accountID string) (config.EgressListener, error) {
+func (r *Runtime) leaseListener(ctx context.Context, accountID string, leaseID string) (config.EgressListener, error) {
 	_ = ctx
-	id := "lease-" + shortHash(accountID)
+	leaseID = firstNonEmpty(leaseID, accountID)
+	id := "lease-" + shortHash(leaseID)
 	return config.EgressListener{
 		ID:       id,
 		Addr:     r.cfg.LocalAddr,
 		Protocol: r.cfg.LocalProtocol,
 		Route:    config.ListenerRouteProvider,
-		Username: proxyRouteUsername(accountID),
+		Username: proxyRouteUsername(leaseID),
 		Password: r.cfg.LocalPassword,
 		Labels: map[string]string{
 			"mode":       "dynamic_ip_session_lease",
 			"account_id": accountID,
+			"lease_id":   leaseID,
 		},
 	}, nil
 }
@@ -42,7 +44,7 @@ func (r *Runtime) listenerReservedLeaseFacts(ctx context.Context) ([]*proxyrunti
 }
 
 func proxyRouteUsername(accountID string) string {
-	username := sourceSafeID(accountID)
+	username := runtimeSafeID(accountID)
 	if username == "" {
 		username = shortHash(accountID)
 	}

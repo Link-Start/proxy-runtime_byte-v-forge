@@ -9,21 +9,22 @@ import (
 )
 
 type renderOptions struct {
-	Providers           []sourceplane.SubscriptionProvider
-	FixedProxies        []sourceplane.FixedProxy
 	EgressProfiles      []sourceplane.EgressProfile
 	Endpoint            sourceplane.Endpoint
 	ConfigDir           string
+	NativeConfig        mihomoNativeConfig
 	APIAddr             string
 	DashboardDir        string
 	DashboardURL        string
-	GroupStrategy       string
 	HealthCheckURL      string
 	HealthCheckInterval time.Duration
 	HealthCheckTimeout  time.Duration
 	BasePool            []provider.Node
+	AvailableProxies    map[string]struct{}
+	AvailableProviders  map[string]struct{}
 	ProxyUsers          []dataplane.ProxyUserRoute
 	SessionRoutes       []dataplane.SessionRoute
+	ProfileGroups       map[string]string
 }
 
 type mihomoConfig struct {
@@ -41,6 +42,13 @@ type mihomoConfig struct {
 	ProxyGroups        []mihomoGroup             `json:"proxy-groups,omitempty"`
 	Listeners          []mihomoListener          `json:"listeners,omitempty"`
 	Rules              []string                  `json:"rules"`
+}
+
+type mihomoNativeConfig struct {
+	Proxies        []map[string]any          `json:"proxies,omitempty"`
+	ProxyProviders map[string]mihomoProvider `json:"proxy-providers,omitempty"`
+	ProxyGroups    []mihomoGroup             `json:"proxy-groups,omitempty"`
+	Rules          []string                  `json:"rules,omitempty"`
 }
 
 type mihomoProvider struct {

@@ -8,11 +8,10 @@ import (
 )
 
 const (
-	ProviderTen24  = "1024proxy"
-	ProviderB2     = "b2proxy"
-	ProviderCli    = "cliproxy"
-	ProviderNone   = "none"
-	ProviderStatic = "static"
+	ProviderTen24 = "1024proxy"
+	ProviderB2    = "b2proxy"
+	ProviderCli   = "cliproxy"
+	ProviderNone  = "none"
 )
 
 var ErrUnsupportedProvider = errors.New("unsupported proxy provider")
@@ -38,8 +37,6 @@ type ProxyUserRoute struct {
 	Username  string `json:"username"`
 	Password  string `json:"password"`
 	Route     string `json:"route"`
-	SourceID  string `json:"source_id"`
-	NodeID    string `json:"node_id"`
 	ProfileID string `json:"profile_id"`
 }
 
@@ -53,7 +50,6 @@ type MihomoConfig struct {
 	APIAddr             string
 	DashboardDir        string
 	DashboardURL        string
-	GroupStrategy       string
 	HealthCheckURL      string
 	HealthCheckInterval time.Duration
 	HealthCheckTimeout  time.Duration
@@ -78,7 +74,6 @@ type Config struct {
 	LocalPassword     string
 	SessionListener   SessionListenerConfig
 	ProxyUsers        []ProxyUserRoute
-	SimpleProxies     []string
 	ProviderHTTPProxy string
 	Provider          string
 	RefreshInterval   time.Duration

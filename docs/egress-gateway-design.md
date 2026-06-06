@@ -1,4 +1,4 @@
-# Mihomo-only Egress Gateway Design
+# Mihomo-only Egress Design
 
 `proxy-runtime` is a proxy control plane. Mihomo is the data plane.
 
@@ -19,6 +19,7 @@ Mihomo owns:
 - inbound mixed listener
 - proxy user authentication
 - `IN-USER` routing rules
+- static proxies
 - proxy providers
 - proxy groups
 - health checks
@@ -37,13 +38,13 @@ The external controller remains loopback-only. `proxy-runtime` exposes same-orig
 - dynamic provider endpoint settings
 - dynamic provider session creation and release
 - sticky dynamic lease facts
-- route planning and dynamic endpoint selection
+- dynamic IP endpoint selection
 - Mihomo config rendering
 - runtime observations and control-plane APIs
 - project-owned MetaCubeXD fork as the main frontend
 - same-origin business APIs used by the dynamic provider tab in that fork
 
-The forked frontend keeps Mihomo-native runtime operations in upstream MetaCubeXD pages. The project overlay edits dynamic provider endpoints, provider accounts, fixed sources, subscription sources, egress profiles, and active leases through `proxy-runtime` APIs; reconcile renders those facts into Mihomo.
+The forked frontend keeps Mihomo-native runtime operations in upstream MetaCubeXD pages. The project overlay edits dynamic IP provider endpoints/accounts, IN-USER rules, and active leases through `proxy-runtime` APIs; reconcile renders only the proxy-runtime-owned facts into Mihomo.
 
 ## Proxy User Routes
 
@@ -51,9 +52,7 @@ The forked frontend keeps Mihomo-native runtime operations in upstream MetaCubeX
 
 Supported MVP route targets:
 
-- `provider`: default provider/source group
 - `direct`: Mihomo `DIRECT`
-- `source`: a Mihomo-native source node/group observed by the control plane
 - `profile`: a configured egress profile rendered as Mihomo-native groups and `dialer-proxy`
 - dynamic session routes created by `AcquireProxyLease`
 
@@ -71,7 +70,7 @@ listeners:
 
 rules:
   - IN-USER,crawler-us,bvf-profile-profile-us
-  - MATCH,byte-v-forge-source
+  - MATCH,REJECT
 ```
 
 ## Egress Profiles
@@ -79,16 +78,16 @@ rules:
 An Egress Profile is the only supported chain model. It has two layers:
 
 ```text
-route: direct, fixed source node, or subscription source node
-exit: route exit, static IP source node, or dynamic IP provider pool
+route: direct or a Mihomo-selected node
+exit: route exit, Mihomo-selected node, or dynamic IP provider pool
 ```
 
 At render time, `proxy-runtime` projects the profile into Mihomo:
 
-- a selected route source becomes a hidden route proxy group
+- a selected Mihomo node becomes a hidden route proxy group
 - `exit=direct` selects the route group, or Mihomo `DIRECT` when the route is direct
-- static IP exits are fixed/subscription sources; when a route source is selected, their nodes/providers are cloned with `dialer-proxy`
-- dynamic IP exits use the dynamic provider pool; when a route source is selected, pool nodes are cloned with `dialer-proxy`
+- static IP exits are Mihomo-native nodes and require a direct route; proxy-runtime does not clone Mihomo-native proxies or proxy providers
+- dynamic IP exits use the dynamic provider pool; when a route node is selected, pool nodes are rendered with `dialer-proxy`
 - the final exit group name is used by `IN-USER` rules for `route=profile`
 
 There is no hidden second hop. Additional hops must be explicit profile configuration and are rendered as Mihomo-native groups or `dialer-proxy`, not as a separate chain resolver API or second runtime model.
@@ -101,7 +100,7 @@ Flow:
 
 ```text
 AcquireProxyLease
-  -> choose provider account/provider gateway
+  -> choose provider account/provider endpoint
   -> create provider session
   -> fetch upstream HTTP/SOCKS node
   -> create Mihomo materialized proxy
@@ -110,7 +109,7 @@ AcquireProxyLease
 
 Release removes the materialized route and releases the provider session. Restore fetches active lease sessions from provider adapters and recreates the Mihomo route.
 
-Fixed proxies, subscriptions, proxy providers, rules, groups, and chained egress profiles stay as Mihomo-native resources.
+Fixed proxies, subscriptions, proxy providers, rules, and groups stay as Mihomo-native resources.
 
 ## Reliability
 

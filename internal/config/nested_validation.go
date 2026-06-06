@@ -30,11 +30,6 @@ func (c MihomoConfig) validate() error {
 	if err := validateLoopbackHostPort("PROXY_RUNTIME_MIHOMO_API_ADDR", c.APIAddr); err != nil {
 		return err
 	}
-	switch strings.TrimSpace(c.GroupStrategy) {
-	case "", "select", "url-test", "fallback", "load-balance":
-	default:
-		return fmt.Errorf("unsupported mihomo group strategy %q", c.GroupStrategy)
-	}
 	if c.HealthCheckInterval < 0 {
 		return errors.New("PROXY_RUNTIME_MIHOMO_HEALTH_CHECK_INTERVAL_SECONDS must be >= 0")
 	}

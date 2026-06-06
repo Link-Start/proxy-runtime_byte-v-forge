@@ -61,6 +61,10 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 	if !s.accountProviders.IsSupported(providerID) {
 		return nil, fmt.Errorf("unsupported provider_id %q", providerID)
 	}
+	dynamicProviderID := runtimeSafeID(req.GetDynamicProviderId())
+	if dynamicProviderID == "" && existing != nil {
+		dynamicProviderID = existing.DynamicProviderID
+	}
 	secret := ""
 	if existing != nil {
 		secret = existing.CredentialSecret
@@ -113,11 +117,13 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 			return nil, fmt.Errorf("enabled provider account invalid: %w", err)
 		}
 	}
+	rotatingLimit := normalizeProviderAccountRotatingConcurrencyLimit(req.GetRotatingConcurrencyLimit())
+	stickyLimit := normalizeProviderAccountStickyConcurrencyLimit(req.GetStickyConcurrencyLimit())
 	row := s.pool.QueryRow(ctx, `
-INSERT INTO proxy_runtime_provider_accounts (account_id, provider_id, display_name, enabled, credential_secret)
-VALUES ($1,$2,$3,$4,$5)
-ON CONFLICT (account_id) DO UPDATE SET provider_id=EXCLUDED.provider_id, display_name=EXCLUDED.display_name, enabled=EXCLUDED.enabled, credential_secret=EXCLUDED.credential_secret, updated_at=now()
-RETURNING `+providerAccountColumns(), accountID, providerID, displayName, enabled, secret)
+INSERT INTO proxy_runtime_provider_accounts (account_id, provider_id, dynamic_provider_id, display_name, enabled, rotating_concurrency_limit, sticky_concurrency_limit, credential_secret)
+VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+ON CONFLICT (account_id) DO UPDATE SET provider_id=EXCLUDED.provider_id, dynamic_provider_id=EXCLUDED.dynamic_provider_id, display_name=EXCLUDED.display_name, enabled=EXCLUDED.enabled, rotating_concurrency_limit=EXCLUDED.rotating_concurrency_limit, sticky_concurrency_limit=EXCLUDED.sticky_concurrency_limit, credential_secret=EXCLUDED.credential_secret, updated_at=now()
+RETURNING `+providerAccountColumns(), accountID, providerID, dynamicProviderID, displayName, enabled, rotatingLimit, stickyLimit, secret)
 	record, err := scanProviderAccount(row)
 	if err != nil {
 		return nil, err
@@ -148,6 +154,14 @@ func generatedID(prefix string) (string, error) {
 func (s *PostgresStore) DeleteProviderAccount(ctx context.Context, accountID string) error {
 	_, err := s.pool.Exec(ctx, `DELETE FROM proxy_runtime_provider_accounts WHERE account_id=$1`, normalizeID(accountID))
 	return err
+}
+
+func (s *PostgresStore) ProviderAccount(ctx context.Context, accountID string) (*proxyruntimev1.ProxyProviderAccount, error) {
+	record, err := s.providerAccountRecord(ctx, accountID)
+	if err != nil {
+		return nil, err
+	}
+	return record.toProto(s.box), nil
 }
 
 func (s *PostgresStore) ProviderConfig(ctx context.Context, accountID string) (accountproxy.Config, string, error) {
@@ -198,12 +212,12 @@ func (s *PostgresStore) providerAccountRecord(ctx context.Context, accountID str
 }
 
 func providerAccountColumns() string {
-	return `account_id, provider_id, display_name, enabled, credential_secret, created_at, updated_at`
+	return `account_id, provider_id, dynamic_provider_id, display_name, enabled, rotating_concurrency_limit, sticky_concurrency_limit, credential_secret, created_at, updated_at`
 }
 
 func scanProviderAccount(row pgx.Row) (*providerAccountRecord, error) {
 	var record providerAccountRecord
-	err := row.Scan(&record.AccountID, &record.ProviderID, &record.DisplayName, &record.Enabled, &record.CredentialSecret, &record.CreatedAt, &record.UpdatedAt)
+	err := row.Scan(&record.AccountID, &record.ProviderID, &record.DynamicProviderID, &record.DisplayName, &record.Enabled, &record.RotatingLimit, &record.StickyLimit, &record.CredentialSecret, &record.CreatedAt, &record.UpdatedAt)
 	return &record, err
 }
 
@@ -247,14 +261,17 @@ func (r providerAccountRecord) toProto(box secretbox.Box) *proxyruntimev1.ProxyP
 		username = credential.Username
 	}
 	return &proxyruntimev1.ProxyProviderAccount{
-		AccountId:            r.AccountID,
-		ProviderId:           r.ProviderID,
-		DisplayName:          r.DisplayName,
-		Status:               status,
-		CredentialConfigured: r.CredentialSecret != "",
-		CreatedAt:            timestamppb.New(r.CreatedAt),
-		UpdatedAt:            timestamppb.New(r.UpdatedAt),
-		Username:             username,
+		AccountId:                r.AccountID,
+		ProviderId:               r.ProviderID,
+		DynamicProviderId:        r.DynamicProviderID,
+		DisplayName:              r.DisplayName,
+		Status:                   status,
+		CredentialConfigured:     r.CredentialSecret != "",
+		RotatingConcurrencyLimit: normalizeProviderAccountRotatingConcurrencyLimit(storedProviderAccountConcurrencyLimit(r.RotatingLimit)),
+		StickyConcurrencyLimit:   normalizeProviderAccountStickyConcurrencyLimit(storedProviderAccountConcurrencyLimit(r.StickyLimit)),
+		CreatedAt:                timestamppb.New(r.CreatedAt),
+		UpdatedAt:                timestamppb.New(r.UpdatedAt),
+		Username:                 username,
 	}
 }
 

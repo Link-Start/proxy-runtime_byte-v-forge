@@ -15,22 +15,19 @@ import (
 )
 
 type Runtime struct {
-	cfg                    config.Config
-	provider               provider.PoolProvider
-	accountProviders       *providerregistry.Registry
-	ipFraudProviders       *ipfraud.Registry
-	dataPlane              dataplane.Driver
-	store                  *PostgresStore
-	leaseLocks             leaseRuntimeLocks
-	leaseCoordinator       leaseCoordinator
-	dynamicGatewaySelector *dynamicGatewaySelector
-	nodeObservations       *proxyNodeObservationStore
-	settings               *runtimeSettingsStore
-	appService             *RuntimeService
-	logger                 *slog.Logger
-
-	poolSnapshot      poolSnapshotState
-	sourceObservation sourceNodeObservation
+	cfg                 config.Config
+	provider            provider.PoolProvider
+	accountProviders    *providerregistry.Registry
+	ipFraudProviders    *ipfraud.Registry
+	dataPlane           dataplane.Driver
+	store               *PostgresStore
+	leaseLocks          leaseRuntimeLocks
+	providerConcurrency providerAccountConcurrencyLimiter
+	leaseCoordinator    leaseCoordinator
+	dynamicIPSelector   *dynamicIPSelector
+	settings            *runtimeSettingsStore
+	appService          *RuntimeService
+	logger              *slog.Logger
 
 	refreshMu      sync.Mutex
 	reconcileMu    sync.RWMutex
@@ -38,35 +35,35 @@ type Runtime struct {
 	fraudChecker   ipFraudCheckerCache
 	geoCache       ipGeoCache
 
+	dynamicProfileMu        sync.RWMutex
+	dynamicProfilePoolNodes []provider.Node
+	dynamicProfileUpdatedAt time.Time
+
 	reconcileCh chan struct{}
 }
 
-func NewRuntime(cfg config.Config, proxyProvider provider.PoolProvider, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, dataPlane dataplane.Driver, store *PostgresStore, leaseLocks leaseRuntimeLocks, logger *slog.Logger) (*Runtime, error) {
+func NewRuntime(cfg config.Config, proxyProvider provider.PoolProvider, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, dataPlane dataplane.Driver, store *PostgresStore, leaseLocks leaseRuntimeLocks, providerConcurrency providerAccountConcurrencyLimiter, logger *slog.Logger) (*Runtime, error) {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	if dataPlane == nil {
 		return nil, fmt.Errorf("data plane driver is required")
 	}
-	nodeObservations, err := newProxyNodeObservationStore(context.Background(), cfg)
-	if err != nil {
-		return nil, err
-	}
-	runtime := &Runtime{cfg: cfg, provider: proxyProvider, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, dataPlane: dataPlane, store: store, leaseLocks: leaseLocks, nodeObservations: nodeObservations, settings: newRuntimeSettingsStore(store, accountProviders, ipFraudProviders, logger), logger: logger, reconcileCh: make(chan struct{}, 1)}
+	runtime := &Runtime{cfg: cfg, provider: proxyProvider, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, dataPlane: dataPlane, store: store, leaseLocks: leaseLocks, providerConcurrency: providerConcurrency, settings: newRuntimeSettingsStore(store, accountProviders, ipFraudProviders, logger), logger: logger, reconcileCh: make(chan struct{}, 1)}
 	runtime.leaseCoordinator = newLeaseCoordinator(runtime)
-	runtime.dynamicGatewaySelector = newDynamicGatewaySelector(runtime)
+	runtime.dynamicIPSelector = newDynamicIPSelector(runtime)
 	runtime.appService = NewRuntimeService(runtime)
 	return runtime, nil
 }
 
 func (r *Runtime) Run(ctx context.Context) error {
-	defer r.nodeObservations.Close()
 	if err := r.refresh(ctx); err != nil {
 		return err
 	}
 	defer r.dataPlane.Stop()
 	errCh := make(chan error, 2)
 	go r.reconcileLoop(ctx)
+	go r.leaseExpiryLoop(ctx)
 	go r.serveHTTP(ctx, errCh)
 	select {
 	case <-ctx.Done():
@@ -139,21 +136,19 @@ func (r *Runtime) refresh(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	sourceCfg.Pool = nodes
+	dynamicProfileNodes := len(sourceCfg.Pool)
+	sourceCfg.Pool = append(sourceCfg.Pool, nodes...)
 	sourceCfg.Common = r.commonEgressService()
 	sourceCfg.Local = r.defaultLocalService()
 	sourceCfg.DynamicViaCommon = r.cfg.CommonEgressAddr != ""
 	sourceNodes, err := r.dataPlane.ReconcileBase(ctx, sourceCfg)
 	if err != nil {
-		r.sourceObservation.recordError(err)
 		return err
 	}
-	poolNodes := append(cloneNodes(nodes), cloneNodes(sourceNodes)...)
-	r.refreshSourceNodeObservation(ctx)
-	r.poolSnapshot.record(poolNodes)
+	r.refreshDynamicProfileExitIPs(ctx)
 	if err := r.leaseCoordinator.restoreActiveLeases(ctx); err != nil {
 		return err
 	}
-	r.logger.Info("proxy runtime base refreshed", "pool_size", len(poolNodes), "data_plane", r.dataPlane.Name())
+	r.logger.Info("proxy runtime base refreshed", "provider_nodes", len(nodes), "dynamic_profile_nodes", dynamicProfileNodes, "mihomo_nodes", len(sourceNodes), "data_plane", r.dataPlane.Name())
 	return nil
 }

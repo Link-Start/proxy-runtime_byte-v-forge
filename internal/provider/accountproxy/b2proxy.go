@@ -12,10 +12,9 @@ func B2ProxyPlugin() Plugin {
 	return NewDefinitionPlugin(Definition{
 		ProviderID:               ProviderB2Proxy,
 		DisplayName:              "B2Proxy",
-		DefaultProtocol:          "socks5",
+		DefaultProtocol:          "http",
 		Protocols:                []string{"http", "socks5"},
 		UsernameParameterSession: true,
-		RuntimeGeoTargeting:      true,
 		BuildUsername:            b2proxyUsername,
 		GenerateSessionID:        numericSessionID,
 	})
@@ -23,6 +22,13 @@ func B2ProxyPlugin() Plugin {
 
 func b2proxyUsername(base string, policy *proxyruntimev1.ProxySessionPolicy, sessionID string) string {
 	countryCode, stateCode := b2proxyGeo(policy)
+	if !stickySessionPolicy(policy) {
+		return dashUsername(base,
+			"zone", "custom",
+			"region", countryCode,
+			"st", b2proxyStateName(countryCode, stateCode),
+		)
+	}
 	return dashUsername(base,
 		"zone", "custom",
 		"region", countryCode,

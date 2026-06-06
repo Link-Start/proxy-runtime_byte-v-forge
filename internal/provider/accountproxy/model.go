@@ -22,32 +22,6 @@ func descriptor(definition Definition, gateways []Gateway) *proxyruntimev1.Proxy
 	}
 }
 
-func dynamicSource(definition Definition, accountID string, displayName string, gateways []Gateway) *proxyruntimev1.ProxySourceDescriptor {
-	definition.Gateways = gateways
-	if displayName == "" {
-		displayName = definition.DisplayName
-	}
-	sourceID := "dynamic-" + definition.ProviderID
-	if accountID != "" {
-		sourceID = "dynamic-" + accountID
-	}
-	return &proxyruntimev1.ProxySourceDescriptor{
-		SourceId:     sourceID,
-		ProviderId:   definition.ProviderID,
-		DisplayName:  displayName,
-		Kind:         proxyruntimev1.ProxySourceKind_PROXY_SOURCE_KIND_DYNAMIC_IP,
-		Enabled:      true,
-		Capabilities: capabilities(definition),
-		Protocols:    protocols(definition),
-		Model: &proxyruntimev1.ProxySourceDescriptor_DynamicIp{DynamicIp: &proxyruntimev1.ProxyDynamicIPSourceDescriptor{
-			ProviderAccountId:    accountID,
-			RequiresAccountLease: true,
-			MinStickyTtl:         stickyDuration(minStickyMinutes),
-			MaxStickyTtl:         stickyDuration(maxStickyMinutes),
-		}},
-	}
-}
-
 func capabilities(definition Definition) []proxyruntimev1.ProxyCapability {
 	out := []proxyruntimev1.ProxyCapability{}
 	if len(definition.Gateways) == 0 {
@@ -71,7 +45,11 @@ func rotationModes(definition Definition) []proxyruntimev1.ProxyRotationMode {
 	if len(definition.Gateways) == 0 {
 		return nil
 	}
-	return []proxyruntimev1.ProxyRotationMode{proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION}
+	out := []proxyruntimev1.ProxyRotationMode{proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION}
+	if definition.UsernameParameterSession {
+		out = append(out, proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_PER_REQUEST)
+	}
+	return out
 }
 
 func protocols(definition Definition) []proxyruntimev1.ProxyProtocol {

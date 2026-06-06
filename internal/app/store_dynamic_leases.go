@@ -61,70 +61,18 @@ func (s *PostgresStore) ListLeaseFacts(ctx context.Context, includeInactive bool
 	return out, rows.Err()
 }
 
-func (s *PostgresStore) ActiveProviderAccountIDs(ctx context.Context) (map[string]struct{}, error) {
-	rows, err := s.pool.Query(ctx, `
-SELECT DISTINCT provider_account_id
-FROM proxy_runtime_dynamic_leases
-WHERE status=$1
-	AND provider_account_id <> ''
-	AND (expires_at IS NULL OR expires_at > now())
-`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String())
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := map[string]struct{}{}
-	for rows.Next() {
-		var providerAccountID string
-		if err := rows.Scan(&providerAccountID); err != nil {
-			return nil, err
-		}
-		if providerAccountID = strings.TrimSpace(providerAccountID); providerAccountID != "" {
-			out[providerAccountID] = struct{}{}
-		}
-	}
-	return out, rows.Err()
-}
-
-func (s *PostgresStore) ProviderAccountHasActiveLease(ctx context.Context, providerAccountID string) (bool, error) {
-	providerAccountID = strings.TrimSpace(providerAccountID)
-	if providerAccountID == "" {
-		return false, nil
-	}
-	var active bool
-	err := s.pool.QueryRow(ctx, `
-SELECT EXISTS (
-	SELECT 1
-	FROM proxy_runtime_dynamic_leases
-	WHERE provider_account_id=$1
-		AND status=$2
-		AND (expires_at IS NULL OR expires_at > now())
-)
-`, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String()).Scan(&active)
-	return active, err
-}
-
-func (s *PostgresStore) ProviderAccountHasBlockingLease(ctx context.Context, providerAccountID string) (bool, error) {
-	leases, err := s.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID)
-	if err != nil {
-		return false, err
-	}
-	return len(leases) > 0, nil
-}
-
-func (s *PostgresStore) ActiveLeaseFactsByProviderAccount(ctx context.Context, providerAccountID string) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	providerAccountID = strings.TrimSpace(providerAccountID)
-	if providerAccountID == "" {
-		return nil, nil
+func (s *PostgresStore) RecentLeaseFacts(ctx context.Context, since time.Time, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+	if limit <= 0 {
+		limit = 100
 	}
 	rows, err := s.pool.Query(ctx, `
 SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
-WHERE provider_account_id=$1
-	AND status=$2
-	AND (expires_at IS NULL OR expires_at > now())
-ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
-`, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String())
+WHERE acquired_at IS NOT NULL
+	AND acquired_at >= $1
+ORDER BY acquired_at DESC, updated_at DESC, lease_id
+LIMIT $2
+`, since, limit)
 	if err != nil {
 		return nil, err
 	}
@@ -138,6 +86,14 @@ ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
 		out = append(out, lease)
 	}
 	return out, rows.Err()
+}
+
+func (s *PostgresStore) ProviderAccountHasBlockingLease(ctx context.Context, providerAccountID string) (bool, error) {
+	leases, err := s.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID)
+	if err != nil {
+		return false, err
+	}
+	return len(leases) > 0, nil
 }
 
 func (s *PostgresStore) BlockingLeaseFactsByProviderAccount(ctx context.Context, providerAccountID string) ([]*proxyruntimev1.ProxyDynamicLease, error) {
@@ -196,22 +152,36 @@ ORDER BY acquired_at ASC NULLS LAST, updated_at ASC, lease_id
 	return out, rows.Err()
 }
 
-func (s *PostgresStore) BlockingLeaseFactsBySource(ctx context.Context, sourceID string) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	_ = ctx
-	_ = s
-	sourceID = strings.TrimSpace(sourceID)
-	if sourceID == "" {
-		return nil, nil
-	}
-	return nil, nil
-}
-
 func (s *PostgresStore) ListRestorableLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	rows, err := s.pool.Query(ctx, `
 SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
 WHERE status=$1
 ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
+`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String())
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []*proxyruntimev1.ProxyDynamicLease{}
+	for rows.Next() {
+		lease, err := scanLeaseFact(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, lease)
+	}
+	return out, rows.Err()
+}
+
+func (s *PostgresStore) ExpiredActiveLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+	rows, err := s.pool.Query(ctx, `
+SELECT lease_json::text
+FROM proxy_runtime_dynamic_leases
+WHERE status=$1
+	AND expires_at IS NOT NULL
+	AND expires_at <= now()
+ORDER BY expires_at ASC, acquired_at ASC NULLS LAST, updated_at ASC, lease_id
 `, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String())
 	if err != nil {
 		return nil, err
@@ -246,6 +216,23 @@ LIMIT 1
 	return scanLeaseFact(row)
 }
 
+func (s *PostgresStore) ActiveLeaseFactBySession(ctx context.Context, accountID string, purpose string, sessionID string) (*proxyruntimev1.ProxyDynamicLease, error) {
+	sessionID = strings.TrimSpace(sessionID)
+	if sessionID == "" {
+		return nil, pgx.ErrNoRows
+	}
+	leases, err := s.activeLeaseFactsByAccount(ctx, accountID, purpose)
+	if err != nil {
+		return nil, err
+	}
+	for _, lease := range leases {
+		if strings.TrimSpace(lease.GetSession().GetSessionId()) == sessionID {
+			return lease, nil
+		}
+	}
+	return nil, pgx.ErrNoRows
+}
+
 func (s *PostgresStore) ActiveLeaseFactByAccount(ctx context.Context, accountID string, purpose string) (*proxyruntimev1.ProxyDynamicLease, error) {
 	return s.leaseFactByAccount(ctx, accountID, purpose, true)
 }
@@ -273,6 +260,34 @@ ORDER BY acquired_at DESC NULLS LAST, updated_at DESC
 LIMIT 1
 `, args...)
 	return scanLeaseFact(row)
+}
+
+func (s *PostgresStore) activeLeaseFactsByAccount(ctx context.Context, accountID string, purpose string) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+	args := []any{strings.TrimSpace(accountID), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String()}
+	conditions := []string{`account_id=$1`, `status=$2`, `(expires_at IS NULL OR expires_at > now())`}
+	if trimmed := strings.TrimSpace(purpose); trimmed != "" {
+		args = append(args, trimmed)
+		conditions = append(conditions, fmt.Sprintf("purpose=$%d", len(args)))
+	}
+	rows, err := s.pool.Query(ctx, `
+SELECT lease_json::text
+FROM proxy_runtime_dynamic_leases
+WHERE `+strings.Join(conditions, " AND ")+`
+ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
+`, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	out := []*proxyruntimev1.ProxyDynamicLease{}
+	for rows.Next() {
+		lease, err := scanLeaseFact(rows)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, lease)
+	}
+	return out, rows.Err()
 }
 
 func scanLeaseFact(row pgx.Row) (*proxyruntimev1.ProxyDynamicLease, error) {

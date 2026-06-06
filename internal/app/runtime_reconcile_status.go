@@ -1,5 +1,7 @@
 package app
 
+import "github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+
 type runtimeReconcileState struct {
 	pending   bool
 	running   bool
@@ -32,6 +34,13 @@ func (r *Runtime) markReconcileFinished(err error) {
 
 func (r *Runtime) dataPlaneStatus() string {
 	return r.decorateRuntimeStatus(statusString(r.dataPlane.Status()))
+}
+
+func statusString(status dataplane.Status) string {
+	if !status.Running {
+		return firstNonEmpty(status.LastError, "stopped")
+	}
+	return "running"
 }
 
 func (r *Runtime) decorateRuntimeStatus(status string) string {

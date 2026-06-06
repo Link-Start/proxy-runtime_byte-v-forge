@@ -34,17 +34,17 @@ func (p *CredentialProvider) FetchSession(_ context.Context, session *proxyrunti
 
 func (p *CredentialProvider) CreateSession(_ context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxySession, error) {
 	policy := p.sessionPolicy(req.GetPolicy())
-	if policy.Mode == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_UNSPECIFIED {
-		policy.Mode = proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY
-	}
-	if policy.Mode != proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY {
+	if policy.Mode != proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY && policy.Mode != proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
 		return nil, provider.ErrUnsupportedCapability
 	}
 	policy.UpstreamKind = proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP
-	policy.RotationMode = proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION
-	sessionID, err := p.sessionID()
-	if err != nil {
-		return nil, fmt.Errorf("generate proxy session id: %w", err)
+	sessionID := requestedSessionID(policy)
+	if sessionID == "" {
+		generated, err := p.sessionID()
+		if err != nil {
+			return nil, fmt.Errorf("generate proxy session id: %w", err)
+		}
+		sessionID = generated
 	}
 	now := time.Now().UTC()
 	return &proxyruntimev1.ProxySession{SessionId: sessionID, ProviderId: p.Name(), Policy: policy, CreatedAt: timestamppb.New(now), ExpiresAt: timestamppb.New(now.Add(policyStickyTTL(policy))), AccountId: strings.TrimSpace(req.GetAccountId()), Purpose: strings.TrimSpace(req.GetPurpose()), Labels: sessionLabels(p.definition)}, nil
@@ -66,13 +66,21 @@ func (p *CredentialProvider) node(session *proxyruntimev1.ProxySession) (provide
 	if !ok {
 		return provider.Node{}, provider.ErrUnsupportedCapability
 	}
+	policy := p.sessionPolicy(nil)
+	if session != nil {
+		policy = p.sessionPolicy(session.Policy)
+	}
 	protocol := GatewayProtocol(gateway, p.definition.DefaultProtocol)
 	proxyURL := url.URL{Scheme: protocol, Host: gatewayEndpointHost(gateway.EndpointURL), User: url.UserPassword(p.username(session), p.cfg.Password)}
 	sessionID := ""
 	if session != nil {
 		sessionID = session.GetSessionId()
 	}
-	return provider.Node{ID: p.Name() + "-dynamic-" + gateway.ID, URL: &proxyURL, ProviderID: p.Name(), SessionID: sessionID, UpstreamKind: proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP, RotationMode: proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION, Labels: map[string]string{"gateway": gateway.ID, "mode": "credential", "network_kind": "residential", "protocol": protocol}}, nil
+	rotationMode := policy.GetRotationMode()
+	if rotationMode == proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_UNSPECIFIED {
+		rotationMode = proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION
+	}
+	return provider.Node{ID: p.Name() + "-dynamic-" + gateway.ID, URL: &proxyURL, ProviderID: p.Name(), SessionID: sessionID, UpstreamKind: proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP, RotationMode: rotationMode, Labels: map[string]string{"gateway": gateway.ID, "mode": "credential", "network_kind": "residential", "protocol": protocol, "session_mode": policy.GetMode().String(), "rotation_mode": rotationMode.String()}}, nil
 }
 
 func (p *CredentialProvider) username(session *proxyruntimev1.ProxySession) string {

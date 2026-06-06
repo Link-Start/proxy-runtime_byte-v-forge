@@ -46,11 +46,11 @@ func (s *runtimeSettingsStore) update(ctx context.Context, req *proxyruntimev1.U
 	if err != nil {
 		return nil, err
 	}
-	sourceIDs, err := s.enabledSourceIDs(ctx)
+	nativeResourceIDs, err := s.enabledMihomoResourceIDs(ctx)
 	if err != nil {
 		return nil, err
 	}
-	settings, err := settingsFromRequest(ctx, s.store, req, current, s.accountProviders, s.ipFraudProviders, sourceIDs)
+	settings, err := settingsFromRequest(ctx, s.store, req, current, s.accountProviders, s.ipFraudProviders, nativeResourceIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -74,10 +74,11 @@ func (s *runtimeSettingsStore) updateDynamicIPProviders(ctx context.Context, pro
 		if err := validateDynamicIPProvider(item, index, s.accountProviders); err != nil {
 			return nil, err
 		}
-		if _, exists := seen[item.GetProviderId()]; exists {
-			return nil, fmt.Errorf("dynamic_ip_providers[%d] duplicates provider %q", index, item.GetProviderId())
+		id := dynamicIPProviderID(item)
+		if _, exists := seen[id]; exists {
+			return nil, fmt.Errorf("dynamic_ip_providers[%d] duplicates dynamic provider %q", index, id)
 		}
-		seen[item.GetProviderId()] = struct{}{}
+		seen[id] = struct{}{}
 		settings.DynamicIpProviders = append(settings.DynamicIpProviders, item)
 	}
 	if err := s.saveLocked(ctx, settings); err != nil {

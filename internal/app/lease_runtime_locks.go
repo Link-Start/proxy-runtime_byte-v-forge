@@ -6,6 +6,7 @@ import (
 
 	"github.com/byte-v-forge/common-lib/redisx"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -25,8 +26,8 @@ type leaseRuntimeLock interface {
 }
 
 type redisLeaseRuntimeLocks struct {
-	closer interface{ Close() error }
-	locker *redisx.BestEffortLocker
+	client *redis.Client
+	locks  *redisx.BestEffortLocker
 }
 
 func NewLeaseRuntimeLocks(ctx context.Context, cfg config.Config) (leaseRuntimeLocks, error) {
@@ -38,12 +39,15 @@ func newRedisLeaseRuntimeLocks(ctx context.Context, cfg config.Config) (*redisLe
 	if err != nil {
 		return nil, err
 	}
-	return &redisLeaseRuntimeLocks{closer: client, locker: redisx.NewBestEffortLocker(client, leaseRuntimeLockPrefix, leaseRuntimeLockTTL, 100*time.Millisecond)}, nil
+	return &redisLeaseRuntimeLocks{
+		client: client,
+		locks:  redisx.NewBestEffortLocker(client, leaseRuntimeLockPrefix, leaseRuntimeLockTTL, 100*time.Millisecond),
+	}, nil
 }
 
 func (s *redisLeaseRuntimeLocks) Close() error {
-	if s == nil || s.closer == nil {
+	if s == nil || s.client == nil {
 		return nil
 	}
-	return s.closer.Close()
+	return s.client.Close()
 }

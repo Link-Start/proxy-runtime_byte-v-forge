@@ -1,9 +1,13 @@
 import type { ProxyDynamicIPProviderSettings } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 import {
   cloneDynamicIPProvider,
+  dynamicProviderFromForm,
   endpointFromForm,
   hasDynamicIPProviderConfig,
-  upsertDynamicIPProvider,
+  providerEndpoints,
+  removeProviderEndpoint,
+  syncDynamicIPProviderEndpoints,
+  upsertProviderEndpoint,
 } from '~/composables/proxyRuntimeDynamicIPHelpers'
 
 export function useProxyRuntimeDynamicIPProviders() {
@@ -38,30 +42,79 @@ export function useProxyRuntimeDynamicIPProviders() {
   async function saveEndpoint() {
     await withSave(async () => {
       const endpoint = endpointFromForm(state.endpointForm)
+      const providerID = state.endpointForm.provider_id.trim()
+      if (!providerID) throw new Error('provider_id is required')
       const next = state.dynamicIpProviders.value.map(cloneDynamicIPProvider)
-      const provider = upsertDynamicIPProvider(
-        next,
-        state.endpointForm.provider_id.trim(),
+      if (!next.some((provider) => provider.provider_id === providerID)) {
+        throw new Error('请先添加动态代理提供商')
+      }
+      await api.updateDynamicIPProviders(
+        upsertProviderEndpoint(
+          next,
+          providerID,
+          endpoint,
+          state.endpointForm.original_endpoint_url.trim(),
+        ),
       )
-      const originalURL = state.endpointForm.original_endpoint_url.trim()
-      const index = provider.gateways.findIndex(
-        (item) =>
-          item.endpoint_url === (originalURL || endpoint.endpoint_url),
-      )
-      if (index >= 0) provider.gateways[index] = endpoint
-      else provider.gateways.push(endpoint)
-      await api.updateDynamicIPProviders(next)
       state.resetEndpointForm()
+      await load()
+    })
+  }
+
+  async function saveProvider() {
+    await withSave(async () => {
+      const next = syncDynamicIPProviderEndpoints(
+        state.dynamicIpProviders.value.map(cloneDynamicIPProvider),
+      )
+      const current = next.find(
+        (provider) =>
+          provider.dynamic_provider_id ===
+          state.providerForm.dynamic_provider_id.trim(),
+      )
+      const providerID = state.providerForm.provider_id.trim()
+      const sharedEndpoints = providerEndpoints(next, providerID)
+      const provider = dynamicProviderFromForm(
+        state.providerForm,
+        current,
+        sharedEndpoints,
+      )
+      const existing = next.filter(
+        (item) => item.dynamic_provider_id !== provider.dynamic_provider_id,
+      )
+      await api.updateDynamicIPProviders(
+        syncDynamicIPProviderEndpoints([...existing, provider]),
+      )
+      state.resetProviderForm()
+      await load()
+    })
+  }
+
+  async function deleteProvider(provider: ProxyDynamicIPProviderSettings) {
+    await withSave(async () => {
+      const dynamicProviderID = provider.dynamic_provider_id
+      for (const account of state.accounts.value) {
+        if (account.dynamic_provider_id === dynamicProviderID) {
+          await api.deleteProviderAccount({ account_id: account.account_id })
+        }
+      }
+      await api.updateDynamicIPProviders(
+        syncDynamicIPProviderEndpoints(
+          state.dynamicIpProviders.value
+            .filter((item) => item.dynamic_provider_id !== dynamicProviderID)
+            .map(cloneDynamicIPProvider),
+        ),
+      )
       await load()
     })
   }
 
   async function deleteEndpoint(providerID: string, endpointURL: string) {
     await withSave(async () => {
-      const next = state.dynamicIpProviders.value
-        .map(cloneDynamicIPProvider)
-        .map((provider) => removeEndpoint(provider, providerID, endpointURL))
-        .filter(hasDynamicIPProviderConfig)
+      const next = removeProviderEndpoint(
+        state.dynamicIpProviders.value.map(cloneDynamicIPProvider),
+        providerID,
+        endpointURL,
+      ).filter(hasDynamicIPProviderConfig)
       await api.updateDynamicIPProviders(next)
       await load()
     })
@@ -77,10 +130,15 @@ export function useProxyRuntimeDynamicIPProviders() {
         display_name: state.accountForm.display_name,
         enabled: state.accountForm.enabled,
         provider_id: state.accountForm.provider_id,
+        dynamic_provider_id: state.accountForm.dynamic_provider_id,
         username: state.accountForm.username,
         password_secret_ref: undefined,
         clear_password: false,
         password_value: passwordChanged ? state.accountForm.password_value : '',
+        rotating_concurrency_limit:
+          state.accountForm.rotating_concurrency_limit || 10,
+        sticky_concurrency_limit:
+          state.accountForm.sticky_concurrency_limit || 2,
       })
       state.resetAccountForm()
       await load()
@@ -98,11 +156,13 @@ export function useProxyRuntimeDynamicIPProviders() {
     ...state,
     deleteAccount,
     deleteEndpoint,
+    deleteProvider,
     error,
     load,
     loading,
     saveAccount,
     saveEndpoint,
+    saveProvider,
     saving,
   }
 
@@ -122,17 +182,3 @@ export function useProxyRuntimeDynamicIPProviders() {
 export type ProxyRuntimeDynamicIPProvidersState = ReturnType<
   typeof useProxyRuntimeDynamicIPProviders
 >
-
-function removeEndpoint(
-  provider: ProxyDynamicIPProviderSettings,
-  providerID: string,
-  endpointURL: string,
-) {
-  if (provider.provider_id !== providerID) return provider
-  return {
-    ...provider,
-    gateways: provider.gateways.filter(
-      (gateway) => gateway.endpoint_url !== endpointURL,
-    ),
-  }
-}

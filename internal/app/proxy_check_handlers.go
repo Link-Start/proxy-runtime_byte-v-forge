@@ -129,56 +129,6 @@ func (api *runtimeHTTPAPI) handleDynamicIPProviders(w http.ResponseWriter, req *
 	}
 }
 
-func (api *runtimeHTTPAPI) handleEgressProfiles(w http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case http.MethodGet:
-		response, err := api.service.GetProxyRuntimeSettings(req.Context(), &proxyruntimev1.GetProxyRuntimeSettingsRequest{})
-		if err != nil {
-			writeHTTPError(w, err, http.StatusInternalServerError)
-			return
-		}
-		api.writeProto(w, response)
-	case http.MethodPost, http.MethodPut:
-		var updateReq proxyruntimev1.UpdateProxyEgressProfilesRequest
-		if !api.readProto(w, req, &updateReq) {
-			return
-		}
-		response, err := api.service.UpdateProxyEgressProfiles(req.Context(), &updateReq)
-		if err != nil {
-			writeHTTPError(w, err, http.StatusBadRequest)
-			return
-		}
-		api.writeProto(w, response)
-	default:
-		methodNotAllowed(w, http.MethodGet+", "+http.MethodPost+", "+http.MethodPut)
-	}
-}
-
-func (api *runtimeHTTPAPI) handleIngressRules(w http.ResponseWriter, req *http.Request) {
-	switch req.Method {
-	case http.MethodGet:
-		response, err := api.service.GetProxyRuntimeSettings(req.Context(), &proxyruntimev1.GetProxyRuntimeSettingsRequest{})
-		if err != nil {
-			writeHTTPError(w, err, http.StatusInternalServerError)
-			return
-		}
-		api.writeProto(w, response)
-	case http.MethodPost, http.MethodPut:
-		var updateReq proxyruntimev1.UpdateProxyIngressRulesRequest
-		if !api.readProto(w, req, &updateReq) {
-			return
-		}
-		response, err := api.service.UpdateProxyIngressRules(req.Context(), &updateReq)
-		if err != nil {
-			writeHTTPError(w, err, http.StatusBadRequest)
-			return
-		}
-		api.writeProto(w, response)
-	default:
-		methodNotAllowed(w, http.MethodGet+", "+http.MethodPost+", "+http.MethodPut)
-	}
-}
-
 func (api *runtimeHTTPAPI) handleRuntimeSettings(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:

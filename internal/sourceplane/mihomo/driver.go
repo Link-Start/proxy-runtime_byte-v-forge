@@ -21,7 +21,6 @@ import (
 
 const (
 	ProviderID = "mihomo"
-	groupName  = "byte-v-forge-source"
 )
 
 type Config struct {
@@ -42,8 +41,7 @@ type Driver struct {
 	configDir    string
 	configPath   string
 	signature    string
-	sourceSig    string
-	sources      sourceFile
+	baseSig      string
 	baseCfg      dataplane.Config
 	sessions     map[string]dataplane.SessionRoute
 	running      bool
@@ -68,10 +66,6 @@ func (d *Driver) Reconcile(ctx context.Context, cfg sourceplane.Config) ([]provi
 }
 
 func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([]provider.Node, error) {
-	file := cleanSourceFile(sourceFile{Subscriptions: cfg.Providers, FixedProxies: cfg.FixedProxies})
-	d.sources = cloneSourceFile(file)
-	providers := enabledProviders(file.Subscriptions)
-	fixedProxies := enabledFixedProxies(file.FixedProxies)
 	endpoint, err := normalizeEndpoint(cfg.Endpoint)
 	if err != nil {
 		d.lastError = err.Error()
@@ -82,16 +76,19 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 		d.lastError = err.Error()
 		return nil, err
 	}
+	nativeConfig, err := loadNativeConfig(dir)
+	if err != nil {
+		d.lastError = err.Error()
+		return nil, err
+	}
 	baseOptions := renderOptions{
-		Providers:           providers,
-		FixedProxies:        fixedProxies,
 		EgressProfiles:      cfg.EgressProfiles,
 		Endpoint:            endpoint,
 		ConfigDir:           dir,
+		NativeConfig:        nativeConfig,
 		APIAddr:             d.cfg.APIAddr,
 		DashboardDir:        firstNonEmpty(d.cfg.DashboardDir, d.baseCfg.DashboardDir),
 		DashboardURL:        firstNonEmpty(d.cfg.DashboardURL, d.baseCfg.DashboardURL),
-		GroupStrategy:       cfg.GroupStrategy,
 		HealthCheckURL:      cfg.HealthCheckURL,
 		HealthCheckInterval: cfg.HealthCheckInterval,
 		HealthCheckTimeout:  cfg.HealthCheckTimeout,
@@ -117,7 +114,7 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 	configPath := filepath.Join(dir, "config.json")
 
 	restartRequired := !d.running || d.lastEndpoint != endpoint
-	sourceChanged := d.sourceSig != baseSig
+	baseChanged := d.baseSig != baseSig
 	baseReloaded := false
 	if restartRequired {
 		if err := writeConfigData(configPath, data); err != nil {
@@ -131,7 +128,7 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 			return nil, err
 		}
 		baseReloaded = true
-	} else if sourceChanged {
+	} else if baseChanged {
 		if err := writeConfigData(configPath, data); err != nil {
 			d.lastError = err.Error()
 			return nil, err
@@ -180,7 +177,7 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 		}
 	}
 	d.signature = finalSig
-	d.sourceSig = baseSig
+	d.baseSig = baseSig
 	d.configPath = configPath
 	d.lastEndpoint = endpoint
 	d.lastGoodData = append(d.lastGoodData[:0], finalData...)

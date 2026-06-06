@@ -19,6 +19,9 @@ func renderSessionRoutes(sessions []dataplane.SessionRoute) ([]map[string]any, e
 			if err != nil {
 				return nil, err
 			}
+			if session.DialerProxy != "" {
+				proxy["dialer-proxy"] = session.DialerProxy
+			}
 			out = append(out, proxy)
 		}
 	}

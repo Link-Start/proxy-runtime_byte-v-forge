@@ -31,7 +31,7 @@ func (c leaseCoordinator) releaseLeaseProviderSession(ctx context.Context, lease
 	if err != nil {
 		return err
 	}
-	providerCfg.Gateways = gatewaysForDynamicGateway(settings, lease.GetRoutePlan(), providerCfg.ProviderID)
+	providerCfg.Gateways = endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerCfg.ProviderID)
 	providerClient, err := r.accountProviders.NewSessionProvider(providerCfg, BuildProviderHTTPClient(r.cfg))
 	if err != nil {
 		return err

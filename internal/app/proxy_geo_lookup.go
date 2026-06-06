@@ -20,6 +20,7 @@ func (r *Runtime) lookupIPGeo(ctx context.Context, ip string) (proxyExitGeo, err
 	lookupCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	client := runtimehttp.New(timeout)
+	defer client.CloseIdleConnections()
 	geo, err := firstSuccessfulIPGeo(lookupCtx, client, ipGeoLookupEndpoints(ip))
 	if err != nil {
 		return proxyExitGeo{}, err

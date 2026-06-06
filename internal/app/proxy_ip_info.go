@@ -16,7 +16,9 @@ func requestIPInfo(ctx context.Context, client *http.Client, endpoint string, re
 	if err != nil {
 		return proxyExitGeo{}, err
 	}
+	req.Close = true
 	req.Header.Set("Accept", "application/json, text/plain;q=0.8")
+	req.Header.Set("Connection", "close")
 	resp, err := client.Do(req)
 	if err != nil {
 		return proxyExitGeo{}, err

@@ -51,6 +51,7 @@ func (a runtimeCheckApplication) GetProxyExitIP(ctx context.Context, req *proxyr
 	if err != nil {
 		return nil, err
 	}
+	defer client.CloseIdleConnections()
 	probeCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	ip, err := a.runtime.probeExitIP(probeCtx, client)
@@ -98,6 +99,7 @@ func (a runtimeCheckApplication) CheckProxyEdgeAccess(ctx context.Context, req *
 	if err != nil {
 		return nil, err
 	}
+	defer client.CloseIdleConnections()
 	ip := strings.TrimSpace(req.GetIp())
 	if net.ParseIP(ip) == nil {
 		probeCtx, cancel := context.WithTimeout(ctx, timeout)
@@ -122,6 +124,7 @@ func (a runtimeCheckApplication) CheckProxyTargetConnectivity(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
+	defer client.CloseIdleConnections()
 	target, err := normalizeConnectivityTarget(req.GetTargetUrl())
 	if err != nil {
 		return nil, err
@@ -131,8 +134,10 @@ func (a runtimeCheckApplication) CheckProxyTargetConnectivity(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
+	checkReq.Close = true
 	checkReq.Header.Set("Accept", "text/html,application/json,text/plain;q=0.8")
 	checkReq.Header.Set("Cache-Control", "no-cache")
+	checkReq.Header.Set("Connection", "close")
 	resp, err := client.Do(checkReq)
 	latency := uint32(time.Since(started).Milliseconds())
 	check := &proxyruntimev1.ProxyTargetConnectivityCheck{TargetUrl: target, Host: checkReq.URL.Hostname(), LatencyMs: latency, CheckedAt: timestamppb.Now()}

@@ -39,8 +39,10 @@ func (r *Runtime) runEdgeCanary(ctx context.Context, client *http.Client, settin
 	if err != nil {
 		return edgeUnavailableOutcome()
 	}
+	req.Close = true
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Cache-Control", "no-cache")
+	req.Header.Set("Connection", "close")
 	req.Header.Set("X-Canary-Token", token)
 	resp, err := client.Do(req)
 	if err != nil {

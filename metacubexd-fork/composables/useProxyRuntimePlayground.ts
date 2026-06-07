@@ -5,7 +5,7 @@ import { isProxyRuntimePlaygroundRule, proxyRuntimePlaygroundProfileID, proxyRun
 export function useProxyRuntimePlayground() {
   const runtime = useProxyRuntimeInUserRules()
   const gatewayHost = ref('')
-  const gatewayPort = '31081'
+  const gatewayPort = '30081'
   const copied = ref('')
   const leases = useProxyRuntimePlaygroundLeases(runtime, save)
   const dynamicExit = computed(() => runtime.form.exit_kind === EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP)

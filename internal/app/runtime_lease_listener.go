@@ -2,22 +2,31 @@ package app
 
 import (
 	"context"
+	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
-func (r *Runtime) leaseListener(ctx context.Context, accountID string, leaseID string) (config.EgressListener, error) {
+func (r *Runtime) leaseListener(ctx context.Context, settings *runtimeSettingsFile, accountID string, leaseID string) (config.EgressListener, error) {
 	_ = ctx
 	leaseID = firstNonEmpty(leaseID, accountID)
 	id := "lease-" + shortHash(leaseID)
+	username := proxyRouteUsername(leaseID)
+	password := r.cfg.LocalPassword
+	if accountID == playgroundProfileID {
+		if rule := playgroundIngressRule(settings); rule != nil {
+			username = rule.GetUsername()
+			password = rule.GetPasswordValue()
+		}
+	}
 	return config.EgressListener{
 		ID:       id,
 		Addr:     r.cfg.LocalAddr,
 		Protocol: r.cfg.LocalProtocol,
 		Route:    config.ListenerRouteProvider,
-		Username: proxyRouteUsername(leaseID),
-		Password: r.cfg.LocalPassword,
+		Username: username,
+		Password: password,
 		Labels: map[string]string{
 			"mode":       "dynamic_ip_session_lease",
 			"account_id": accountID,
@@ -49,4 +58,13 @@ func proxyRouteUsername(accountID string) string {
 		username = shortHash(accountID)
 	}
 	return "acct-" + username
+}
+
+func playgroundIngressRule(settings *runtimeSettingsFile) *proxyruntimev1.ProxyIngressRuleSettings {
+	for _, rule := range settings.GetIngressRules() {
+		if rule.GetRuleId() == playgroundRuleID || strings.TrimSpace(rule.GetUsername()) == playgroundUsername {
+			return rule
+		}
+	}
+	return nil
 }

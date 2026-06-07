@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ProxyRuntimePlaygroundChecksState } from '~/composables/useProxyRuntimePlaygroundChecks'
+import type { ProxyIPFraudCheck } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 import { IconMapPin, IconSearch, IconShieldCheck } from '@tabler/icons-vue'
 
 defineProps<{
@@ -12,6 +13,11 @@ const expanded = ref(false)
 function scoreText(value?: number) {
   return typeof value === 'number' ? value.toFixed(1) : '-'
 }
+
+function fraudScoreText(value?: ProxyIPFraudCheck) {
+  if (!value) return '-'
+  return scoreText(value.risk_score || 0)
+}
 </script>
 
 <template>
@@ -23,7 +29,7 @@ function scoreText(value?: number) {
           <div class="mt-2 flex flex-wrap gap-1">
             <span class="badge badge-ghost badge-sm">{{ state.exitIP.value?.ip || '未检测' }}</span>
             <span v-if="state.fraud.value" class="badge badge-primary badge-sm">
-              score {{ scoreText(state.fraud.value.risk_score) }}
+              score {{ fraudScoreText(state.fraud.value) }}
             </span>
           </div>
         </div>
@@ -76,7 +82,7 @@ function scoreText(value?: number) {
             class="badge badge-sm"
             :class="riskBadgeClass(fraudRiskLabel(state.fraud.value?.risk_level))"
           >
-            score {{ scoreText(state.fraud.value?.risk_score) }}
+            score {{ fraudScoreText(state.fraud.value) }}
           </span>
           <span v-else class="badge badge-ghost badge-sm">-</span>
           <span v-if="state.fraud.value?.provider_display_name" class="badge badge-ghost badge-sm">

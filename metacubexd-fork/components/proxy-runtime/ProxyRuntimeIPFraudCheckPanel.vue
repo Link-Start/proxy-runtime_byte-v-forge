@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { ProxyRuntimePluginsState } from '~/composables/useProxyRuntimePlugins'
+import type { ProxyIPFraudCheck } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 import { IconShieldCheck } from '@tabler/icons-vue'
 
 const props = defineProps<{ runtime: ProxyRuntimePluginsState }>()
@@ -10,6 +11,10 @@ function descriptorName(providerID: string) {
     (item) => item.provider_id === providerID,
   )
   return descriptor?.display_name || providerID
+}
+
+function scoreText(check: ProxyIPFraudCheck) {
+  return (check.risk_score || 0).toFixed(1)
 }
 </script>
 
@@ -59,7 +64,7 @@ function descriptorName(providerID: string) {
           {{ descriptorName(runtime.fraudResult.value.provider_id) }}
         </span>
         <span class="badge badge-ghost">
-          score {{ runtime.fraudResult.value.risk_score }}
+          score {{ scoreText(runtime.fraudResult.value) }}
         </span>
         <span class="badge badge-ghost">
           {{ runtime.fraudResult.value.country_code }}

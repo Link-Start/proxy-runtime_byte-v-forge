@@ -20,6 +20,7 @@ func (api *runtimeHTTPAPI) registerMihomoDashboardRoutes(mux *http.ServeMux, pre
 	mux.HandleFunc(prefix+"/mihomo/dashboard", api.handleMihomoDashboard)
 	mux.HandleFunc(prefix+"/mihomo/ui", redirectToTrailingSlash)
 	mux.Handle(prefix+"/mihomo/ui/", api.mihomoReverseProxy(prefix+"/mihomo/ui/", "/ui/"))
+	mux.Handle(prefix+"/mihomo/controller", api.mihomoReverseProxy(prefix+"/mihomo/controller", "/"))
 	mux.Handle(prefix+"/mihomo/controller/", api.mihomoReverseProxy(prefix+"/mihomo/controller/", "/"))
 }
 

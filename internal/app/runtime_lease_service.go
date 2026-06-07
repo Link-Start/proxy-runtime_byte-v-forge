@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"net/http"
 	"strings"
@@ -41,7 +40,7 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 	requestedSessionID := requestedLeaseSessionID(req)
 	existing, err := r.activeLeaseByRequest(ctx, req, requestedSessionID)
 	if err == nil && leaseActive(existing, time.Now().UTC()) {
-		if !req.GetForceNew() {
+		if !req.GetForceNew() && !playgroundLeaseNeedsReplacement(req, existing) {
 			if err := r.refreshLeaseConcurrencySlot(ctx, existing); err != nil {
 				return nil, err
 			}
@@ -113,7 +112,7 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 		return nil, err
 	}
 	defer func() { _ = listenerLock.Unlock(ctx) }()
-	listener, err := r.leaseListener(ctx, req.GetAccountId(), leaseID)
+	listener, err := r.leaseListener(ctx, settings, req.GetAccountId(), leaseID)
 	if err != nil {
 		failure.beforeRoute("lease listener allocation failed")
 		return nil, err
@@ -193,7 +192,14 @@ func (r *Runtime) activeLeaseByRequest(ctx context.Context, req *proxyruntimev1.
 	if strings.TrimSpace(sessionID) != "" {
 		return r.store.ActiveLeaseFactBySession(ctx, req.GetAccountId(), req.GetPurpose(), sessionID)
 	}
-	return nil, sql.ErrNoRows
+	return r.store.ActiveLeaseFactByAccount(ctx, req.GetAccountId(), req.GetPurpose())
+}
+
+func playgroundLeaseNeedsReplacement(req *proxyruntimev1.AcquireProxyLeaseRequest, lease *proxyruntimev1.ProxyDynamicLease) bool {
+	if req.GetAccountId() != playgroundProfileID {
+		return false
+	}
+	return strings.TrimSpace(lease.GetListener().GetLabels()["proxy_username"]) != playgroundUsername
 }
 
 func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {

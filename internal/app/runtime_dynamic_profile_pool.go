@@ -28,7 +28,7 @@ func (r *Runtime) dynamicProfilePool(ctx context.Context, settings *runtimeSetti
 	endpointHealthScores := r.dynamicIPSelector.dynamicIPEndpointHealthScores(ctx)
 	out := []provider.Node{}
 	for _, profile := range settings.GetEgressProfiles() {
-		if !profile.GetEnabled() || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
+		if !profile.GetEnabled() || runtimeSafeID(profile.GetProfileId()) == playgroundProfileID || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
 			continue
 		}
 		nodes := r.dynamicProfilePoolForProfile(ctx, client, accounts, instances, endpointHealthScores, profile)
@@ -177,13 +177,28 @@ func dynamicProfileProviderInstancesForAccount(instances []dynamicIPProviderInst
 func dynamicProfileSession(profileID string, accountID string, providerID string, endpointID string, input *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxySession {
 	policy := dynamicProfileSessionPolicy(input, endpointID)
 	seed := dynamicProfileSessionSeed(profileID, accountID, providerID, endpointID, policy)
+	sessionID := dynamicProfileRequestedSessionID(policy)
+	if sessionID == "" {
+		sessionID = dynamicProfileSessionID(seed)
+	}
 	return &proxyruntimev1.ProxySession{
-		SessionId:  dynamicProfileSessionID(seed),
+		SessionId:  sessionID,
 		ProviderId: strings.TrimSpace(providerID),
 		AccountId:  strings.TrimSpace(accountID),
 		Purpose:    "in-user-profile",
 		Policy:     policy,
 	}
+}
+
+func dynamicProfileRequestedSessionID(policy *proxyruntimev1.ProxySessionPolicy) string {
+	labels := policy.GetLabels()
+	return runtimeSafeID(firstNonEmpty(
+		labels["session_id"],
+		labels["sticky_session_id"],
+		labels["sticky_id"],
+		labels["sid"],
+		labels["session"],
+	))
 }
 
 func dynamicProfileSessionSeed(profileID string, accountID string, providerID string, endpointID string, policy *proxyruntimev1.ProxySessionPolicy) string {

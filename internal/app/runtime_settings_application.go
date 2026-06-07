@@ -88,7 +88,9 @@ func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, 
 	if err != nil {
 		return nil, err
 	}
-	a.runtime.requestReconcile()
+	if err := a.runtime.runReconcile(ctx); err != nil {
+		return nil, err
+	}
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }
 

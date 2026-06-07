@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { IconTrash } from '@tabler/icons-vue'
 import type { ProxyRuntimeDynamicLeasesState } from '~/composables/useProxyRuntimeDynamicLeases'
 import type { ProxyDynamicLease } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 import { ProxyDynamicLeaseStatus } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
@@ -22,6 +23,11 @@ function endpointText(lease: ProxyDynamicLease) {
 function updatedText(lease: ProxyDynamicLease) {
   if (!lease.acquired_at) return '-'
   return new Date(lease.acquired_at).toLocaleString()
+}
+
+function expiresText(lease: ProxyDynamicLease) {
+  if (!lease.expires_at) return ''
+  return `过期 ${new Date(lease.expires_at).toLocaleString()}`
 }
 
 function statusText(status: ProxyDynamicLeaseStatus) {
@@ -119,6 +125,9 @@ function exitIPText(lease: ProxyDynamicLease) {
             <span class="badge badge-ghost badge-sm">
               更新 {{ updatedText(lease) }}
             </span>
+            <span v-if="expiresText(lease)" class="badge badge-ghost badge-sm">
+              {{ expiresText(lease) }}
+            </span>
             <span
               v-if="lease.session?.provider_id"
               class="badge badge-ghost badge-sm"
@@ -135,11 +144,19 @@ function exitIPText(lease: ProxyDynamicLease) {
               IP {{ exitIPText(lease) }}
             </span>
           </div>
-          <div
-            v-if="lease.error_message"
-            class="mt-2 truncate text-xs text-error"
-          >
-            {{ lease.error_message }}
+          <div class="mt-2 flex items-center justify-between gap-2">
+            <div v-if="lease.error_message" class="truncate text-xs text-error">
+              {{ lease.error_message }}
+            </div>
+            <div v-else></div>
+            <Button
+              class="btn-ghost btn-xs btn-square"
+              :disabled="runtime.busyLeaseID.value === lease.lease_id"
+              title="释放租约"
+              @click="runtime.release(lease)"
+            >
+              <IconTrash :size="14" />
+            </Button>
           </div>
         </div>
       </div>

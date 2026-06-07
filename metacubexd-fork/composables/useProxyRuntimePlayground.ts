@@ -1,10 +1,6 @@
-import {
-  EgressProfileExitKind,
-  EgressProfileLineKind,
-  ProxySessionMode,
-} from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import { EgressProfileExitKind, EgressProfileLineKind } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 import { writeProxyRuntimeClipboard } from '~/composables/proxyRuntimeClipboard'
-import { isProxyRuntimePlaygroundRule } from '~/composables/proxyRuntimePlaygroundRule'
+import { isProxyRuntimePlaygroundRule, proxyRuntimePlaygroundProfileID, proxyRuntimePlaygroundRuleID, proxyRuntimePlaygroundUsername } from '~/composables/proxyRuntimePlaygroundRule'
 
 export function useProxyRuntimePlayground() {
   const runtime = useProxyRuntimeInUserRules()
@@ -12,131 +8,84 @@ export function useProxyRuntimePlayground() {
   const gatewayPort = '31081'
   const copied = ref('')
   const leases = useProxyRuntimePlaygroundLeases(runtime, save)
-
-  const lineUsesNode = computed(
-    () =>
-      runtime.form.line_kind ===
-      EgressProfileLineKind.EGRESS_PROFILE_LINE_KIND_MIHOMO_NODE,
-  )
-  const stickyMode = computed(
-    () =>
-      runtime.form.exit_dynamic_session_mode ===
-      ProxySessionMode.PROXY_SESSION_MODE_STICKY,
-  )
+  const dynamicExit = computed(() => runtime.form.exit_kind === EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP)
+  const lineUsesNode = computed(() => runtime.form.line_kind === EgressProfileLineKind.EGRESS_PROFILE_LINE_KIND_MIHOMO_NODE)
   const canSave = computed(() => {
-    if (!runtime.form.username.trim() || !runtime.form.password_value.trim()) {
-      return false
-    }
-    if (lineUsesNode.value && !(runtime.form.line_resource_id && runtime.form.line_node_id)) {
-      return false
-    }
-    if (
-      runtime.form.exit_kind ===
-        EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_STATIC_IP &&
-      !(runtime.form.exit_resource_id && runtime.form.exit_node_id)
-    ) {
-      return false
-    }
+    if (!runtime.form.username.trim() || !runtime.form.password_value.trim()) return false
+    if (lineUsesNode.value && !(runtime.form.line_resource_id && runtime.form.line_node_id)) return false
+    if (runtime.form.exit_kind === EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_STATIC_IP && !(runtime.form.exit_resource_id && runtime.form.exit_node_id)) return false
     return true
   })
   const checks = useProxyRuntimePlaygroundChecks(runtime, save, canSave)
-  const dynamicExit = computed(
-    () =>
-      runtime.form.exit_kind ===
-      EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP,
-  )
-  const proxyAuthority = computed(() => {
-    const host = gatewayHost.value.trim() || '<gateway-host>'
-    return `${host}:${gatewayPort}`
-  })
-  const credentials = computed(
-    () => `${runtime.form.username}:${runtime.form.password_value}`,
-  )
-  const proxyURL = computed(
-    () =>
-      `http://${encodeURIComponent(runtime.form.username)}:${encodeURIComponent(
-        runtime.form.password_value,
-      )}@${proxyAuthority.value}`,
-  )
-  const curlCommand = computed(
-    () => `curl -x '${proxyURL.value}' https://ipv4.icanhazip.com`,
-  )
+  const proxyAuthority = computed(() => `${gatewayHost.value.trim() || '<gateway-host>'}:${gatewayPort}`)
+  const credentials = computed(() => `${runtime.form.username}:${runtime.form.password_value}`)
+  const proxyURL = computed(() => `http://${encodeURIComponent(runtime.form.username)}:${encodeURIComponent(runtime.form.password_value)}@${proxyAuthority.value}`)
+  const curlCommand = computed(() => `curl -x '${proxyURL.value}' https://ipv4.icanhazip.com`)
 
   onMounted(async () => {
     gatewayHost.value = window.location.hostname
     await refresh()
   })
 
-  watch(
-    () => runtime.form.exit_dynamic_provider_id,
-    () => {
-      runtime.form.exit_dynamic_endpoint_id = ''
-    },
-  )
-
-  watch(dynamicExit, async (enabled) => {
-    enforcePlaygroundSticky()
-    if (enabled) await leases.load()
-  })
-
-  watch(
-    () => runtime.form.exit_dynamic_session_mode,
-    () => {
-      enforcePlaygroundSticky()
-    },
-  )
-
   async function refresh() {
     await runtime.load()
-    const created = hydratePlayground()
-    if (created) {
+    const changed = hydratePlayground()
+    if (changed) {
       await save()
       return
     }
-    if (dynamicExit.value) await leases.load()
+    await leases.load()
   }
 
   function hydratePlayground() {
     const row = runtime.findRuleRow((item) => isProxyRuntimePlaygroundRule(item.rule))
     if (row) {
       runtime.editRule(row.rule)
-      return enforcePlaygroundSticky()
+      return normalizePlayground()
     }
     runtime.resetForm()
     Object.assign(runtime.form, {
       display_name: 'PlayGround',
       exit_kind: EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_DIRECT,
-      exit_dynamic_session_mode: ProxySessionMode.PROXY_SESSION_MODE_STICKY,
       password_value: newPassword(),
-      profile_id: 'playground-egress',
-      rule_id: 'in-user-playground',
-      username: 'playground',
+      profile_id: proxyRuntimePlaygroundProfileID,
+      rule_id: proxyRuntimePlaygroundRuleID,
+      username: proxyRuntimePlaygroundUsername,
     })
+    normalizePlayground()
     return true
   }
 
-  function enforcePlaygroundSticky() {
-    if (
-      runtime.form.exit_kind !==
-      EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP
-    ) {
-      return false
-    }
-    if (
-      runtime.form.exit_dynamic_session_mode ===
-      ProxySessionMode.PROXY_SESSION_MODE_STICKY
-    ) {
-      return false
-    }
-    runtime.form.exit_dynamic_session_mode = ProxySessionMode.PROXY_SESSION_MODE_STICKY
-    return true
+  function normalizePlayground() {
+    let changed = false
+    changed = assignIfChanged('rule_id', proxyRuntimePlaygroundRuleID) || changed
+    changed = assignIfChanged('profile_id', proxyRuntimePlaygroundProfileID) || changed
+    changed = assignIfChanged('display_name', 'PlayGround') || changed
+    changed = assignIfChanged('username', proxyRuntimePlaygroundUsername) || changed
+    changed = assignIfChanged('exit_dynamic_session_id', '') || changed
+    return changed
   }
 
   async function save() {
+    normalizePlayground()
     if (!canSave.value) return
     await runtime.saveRule()
-    if (!runtime.error.value) hydratePlayground()
-    if (dynamicExit.value) await leases.load()
+    if (!runtime.error.value) {
+      hydratePlayground()
+      if (!dynamicExit.value) await releaseActiveLeases()
+      await leases.load()
+    }
+  }
+
+  async function releaseActiveLeases() {
+    await leases.load({ preserveError: true })
+    for (const lease of leases.activeRows.value) await leases.release(lease)
+  }
+
+  function assignIfChanged(key: PlaygroundTextField, value: string) {
+    if (runtime.form[key] === value) return false
+    runtime.form[key] = value
+    return true
   }
 
   function regeneratePassword() {
@@ -151,24 +100,7 @@ export function useProxyRuntimePlayground() {
     }, 1200)
   }
 
-  return {
-    canSave,
-    checks,
-    copied,
-    copyText,
-    credentials,
-    curlCommand,
-    dynamicExit,
-    gatewayHost,
-    gatewayPort,
-    leases,
-    proxyAuthority,
-    regeneratePassword,
-    refresh,
-    runtime,
-    save,
-    stickyMode,
-  }
+  return { canSave, checks, copied, copyText, credentials, curlCommand, dynamicExit, gatewayHost, gatewayPort, leases, proxyAuthority, regeneratePassword, refresh, runtime, save }
 }
 
 function newPassword() {
@@ -176,3 +108,5 @@ function newPassword() {
   crypto.getRandomValues(bytes)
   return Array.from(bytes, (item) => item.toString(16).padStart(2, '0')).join('')
 }
+
+type PlaygroundTextField = 'display_name' | 'exit_dynamic_session_id' | 'profile_id' | 'rule_id' | 'username'

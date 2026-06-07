@@ -12,6 +12,7 @@ import {
   durationMinutes,
   dynamicIPEndpointLabel,
   dynamicIPExitText,
+  dynamicIPPolicySessionID,
   dynamicIPPolicy,
   dynamicIPSessionMode,
 } from '~/composables/proxyRuntimeDynamicProfilePolicyHelpers'
@@ -33,6 +34,7 @@ export function newEgressProfileForm() {
     exit_dynamic_city: '',
     exit_dynamic_asn: '',
     exit_dynamic_sticky_minutes: 10,
+    exit_dynamic_session_id: '',
     exit_resource_id: '',
     exit_node_id: '',
   }
@@ -62,6 +64,9 @@ export function profileFormFromSettings(profile: EgressProfileSettings) {
     exit_dynamic_sticky_minutes: durationMinutes(
       profile.exit?.dynamic_ip_policy?.sticky_ttl,
       fallback.exit_dynamic_sticky_minutes,
+    ),
+    exit_dynamic_session_id: dynamicIPPolicySessionID(
+      profile.exit?.dynamic_ip_policy,
     ),
     exit_resource_id: profile.exit?.mihomo_node?.resource_id || '',
     exit_node_id: profile.exit?.mihomo_node?.node_id || '',

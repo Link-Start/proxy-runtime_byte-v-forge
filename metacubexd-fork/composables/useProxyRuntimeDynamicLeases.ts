@@ -11,15 +11,13 @@ export function useProxyRuntimeDynamicLeases() {
   const providers = ref<ProxyProviderDescriptor[]>([])
   const leases = ref<ProxyDynamicLease[]>([])
   const loading = ref(false)
+  const busyLeaseID = ref('')
   const error = ref('')
-  const now = ref(Date.now())
   let refreshTimer: ReturnType<typeof setInterval> | undefined
   const activeLeases = computed(() =>
     leases.value.filter(
       (item) =>
-        item.status ===
-          ProxyDynamicLeaseStatus.PROXY_DYNAMIC_LEASE_STATUS_ACTIVE &&
-        leaseNotExpired(item, now.value),
+        item.status === ProxyDynamicLeaseStatus.PROXY_DYNAMIC_LEASE_STATUS_ACTIVE,
     ),
   )
 
@@ -40,21 +38,31 @@ export function useProxyRuntimeDynamicLeases() {
     }
   }
 
+  async function release(lease: ProxyDynamicLease) {
+    busyLeaseID.value = lease.lease_id
+    error.value = ''
+    try {
+      await api.releaseLease({
+        account_id: lease.account_id,
+        lease_id: lease.lease_id,
+        purpose: lease.purpose,
+      })
+      await load()
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : String(err)
+    } finally {
+      busyLeaseID.value = ''
+    }
+  }
+
   function providerName(providerID: string) {
     const found = providers.value.find((item) => item.provider_id === providerID)
     return found?.display_name || providerID
   }
 
-  function refreshNow() {
-    now.value = Date.now()
-  }
-
   function startAutoRefresh() {
     if (refreshTimer) return
-    refreshTimer = setInterval(() => {
-      refreshNow()
-      void load()
-    }, refreshIntervalMs)
+    refreshTimer = setInterval(() => void load(), refreshIntervalMs)
   }
 
   function stopAutoRefresh() {
@@ -63,30 +71,21 @@ export function useProxyRuntimeDynamicLeases() {
     refreshTimer = undefined
   }
 
-  onMounted(() => {
-    refreshNow()
-    startAutoRefresh()
-  })
-
+  onMounted(startAutoRefresh)
   onBeforeUnmount(stopAutoRefresh)
 
   return {
     activeLeases,
+    busyLeaseID,
     error,
     leases,
     load,
     loading,
     providerName,
+    release,
   }
 }
 
 export type ProxyRuntimeDynamicLeasesState = ReturnType<
   typeof useProxyRuntimeDynamicLeases
 >
-
-function leaseNotExpired(lease: ProxyDynamicLease, now: number) {
-  if (!lease.expires_at) return true
-  const expiresAt = Date.parse(lease.expires_at)
-  if (Number.isNaN(expiresAt)) return true
-  return expiresAt > now
-}

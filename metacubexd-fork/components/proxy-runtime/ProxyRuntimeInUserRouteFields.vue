@@ -1,12 +1,8 @@
 <script setup lang="ts">
 import type { ProxyRuntimeInUserRulesState } from '~/composables/useProxyRuntimeInUserRules'
-import {
-  EgressProfileExitKind,
-  EgressProfileLineKind,
-  ProxySessionMode,
-} from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import { EgressProfileExitKind, EgressProfileLineKind, ProxySessionMode } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 
-const props = defineProps<{ runtime: ProxyRuntimeInUserRulesState, dense?: boolean }>()
+const props = defineProps<{ allowDynamicExit?: boolean, dense?: boolean, runtime: ProxyRuntimeInUserRulesState }>()
 
 const lineKinds = [
   [EgressProfileLineKind.EGRESS_PROFILE_LINE_KIND_DIRECT, '直连'],
@@ -46,8 +42,10 @@ const exitUsesStickyDynamicIP = computed(
 const availableExitKinds = computed(() =>
   exitKinds.filter(
     ([value]) =>
-      !lineUsesMihomoNode.value ||
-      value !== EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_STATIC_IP,
+      (props.allowDynamicExit !== false ||
+        value !== EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP) &&
+      (!lineUsesMihomoNode.value ||
+        value !== EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_STATIC_IP),
   ),
 )
 const rootClass = computed(() => [
@@ -73,6 +71,15 @@ const exitGridClass = computed(() =>
   props.dense
     ? 'grid gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6'
     : 'grid gap-2 sm:grid-cols-2',
+)
+
+watch(
+  () => props.allowDynamicExit,
+  (allowDynamicExit) => {
+    if (allowDynamicExit !== false || props.runtime.form.exit_kind !== EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP) return
+    props.runtime.form.exit_kind = EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_DIRECT
+  },
+  { immediate: true },
 )
 
 watch(lineUsesMihomoNode, (usesMihomoNode) => {

@@ -10,6 +10,7 @@ import {
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 
 export const dynamicIPEndpointLabel = 'dynamic_ip_endpoint_id'
+export const dynamicIPSessionLabel = 'session_id'
 
 export interface DynamicProfilePolicyForm {
   exit_kind: EgressProfileExitKind
@@ -20,6 +21,7 @@ export interface DynamicProfilePolicyForm {
   exit_dynamic_city: string
   exit_dynamic_asn: string
   exit_dynamic_sticky_minutes: number
+  exit_dynamic_session_id: string
 }
 
 export function dynamicIPPolicy(
@@ -66,6 +68,17 @@ export function dynamicIPExitText(profile: EgressProfileSettings) {
   return parts.join(' / ')
 }
 
+export function dynamicIPPolicySessionID(policy: ProxySessionPolicy | undefined) {
+  return (
+    policy?.labels?.[dynamicIPSessionLabel] ||
+    policy?.labels?.sticky_session_id ||
+    policy?.labels?.sticky_id ||
+    policy?.labels?.sid ||
+    policy?.labels?.session ||
+    ''
+  ).trim()
+}
+
 export function dynamicIPSessionMode(value: ProxySessionMode | undefined) {
   return value === ProxySessionMode.PROXY_SESSION_MODE_ROTATING
     ? ProxySessionMode.PROXY_SESSION_MODE_ROTATING
@@ -86,8 +99,17 @@ function durationFromMinutes(value: number) {
 }
 
 function dynamicIPPolicyLabels(form: DynamicProfilePolicyForm) {
+  const labels: Record<string, string> = {}
   const endpointID = form.exit_dynamic_endpoint_id.trim()
-  return endpointID ? { [dynamicIPEndpointLabel]: endpointID } : {}
+  const sessionID = form.exit_dynamic_session_id.trim()
+  if (endpointID) labels[dynamicIPEndpointLabel] = endpointID
+  if (
+    sessionID &&
+    form.exit_dynamic_session_mode === ProxySessionMode.PROXY_SESSION_MODE_STICKY
+  ) {
+    labels[dynamicIPSessionLabel] = sessionID
+  }
+  return labels
 }
 
 function durationText(value: string | undefined) {

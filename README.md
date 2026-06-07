@@ -18,10 +18,10 @@
 - Fixed entry listener: the Mihomo mixed listener exposed to internal applications.
 - `ProxyDynamicIPProviderSettings`: dynamic provider endpoint settings owned by `proxy-runtime`.
 - `EgressProfileSettings`: two-layer egress profile with a line layer and an exit layer.
-- `ProxyDynamicLease`: a sticky dynamic IP session managed by the control plane.
+- `ProxyDynamicLease`: a dynamic IP lease managed by the control plane; PlayGround uses a single fixed IN-USER user plus one active lease at most.
 - `ProxyDynamicIPSelectionPlan`: the selected provider account and endpoint for a dynamic lease.
 
-Traffic enters one Mihomo mixed listener. Mihomo `IN-USER` rules map proxy usernames to proxy groups. Dynamic provider credentials and session parameters are rendered only into Mihomo upstream proxy nodes and are not exposed as business-facing proxy addresses.
+Traffic enters one Mihomo mixed listener. Mihomo `IN-USER` rules map proxy usernames to proxy groups. PlayGround persists one fixed IN-USER user, `playground`; when dynamic IP is needed it acquires one active lease and routes that same user to the lease. Dynamic provider credentials and session parameters are rendered only into Mihomo upstream proxy nodes and are not exposed as business-facing proxy addresses.
 
 Detailed design: `docs/egress-gateway-design.md`.
 
@@ -108,8 +108,8 @@ All endpoints are exposed under both `/proxy/*` and `/api/proxy-runtime/*`.
 - `GET /proxy/providers`: provider capability descriptors.
 - `GET /proxy/provider-accounts` / `PUT /proxy/provider-accounts` / `DELETE /proxy/provider-accounts`: upstream provider accounts.
 - `GET /proxy/leases`: dynamic IP leases.
-- `POST /proxy/leases/acquire`: explicit lease tooling endpoint. Business applications should not depend on it for normal egress.
-- `POST /proxy/leases/release`: release an explicit lease or profile lease view idempotently.
+- `POST /proxy/leases/acquire`: explicit lease tooling endpoint. Business applications and PlayGround sticky profiles should not depend on it for normal egress.
+- `POST /proxy/leases/release`: release an explicit lease idempotently.
 - `POST /proxy/proxy_exit_ip`: check the exit IP through a configured listener.
 - `POST /proxy/proxy_exit_geo`: lookup geo for an IP without proxy egress.
 - `POST /proxy/ip_fraud_check`: check IP fraud risk.
@@ -127,7 +127,7 @@ The dashboard uses a project-owned MetaCubeXD fork as the main frontend:
 
 - Upstream MetaCubeXD pages remain the Mihomo operations surface: overview, proxies, proxy providers, rules, connections, logs, config, fixed proxies, subscriptions, and provider updates.
 - The project overlay adds `入口用户` and `动态IP提供商` inside MetaCubeXD `proxies` for proxy username/password routing plus dynamic provider endpoints/accounts.
-- The project overlay adds `动态租约` inside MetaCubeXD `connections` for active dynamic lease runtime state.
+- The project overlay adds `动态租约` inside MetaCubeXD `connections` for active dynamic lease runtime state. PlayGround also shows its own single active lease in the PlayGround page.
 
 The forked MetaCubeXD assets are built into the `proxy-runtime` image and served full-page through same-origin routes. The Byte-V dashboard no longer loads a `proxy-runtime` module-federation frontend. Browsers do not need direct access to the loopback-only Mihomo API.
 

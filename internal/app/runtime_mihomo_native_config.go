@@ -296,7 +296,9 @@ func updateMihomoNativeSettings(ctx context.Context, runtime *Runtime, view miho
 	if err := runtime.settings.replaceMihomoResourceRefs(ctx, resourceReplacements); err != nil {
 		return nil, err
 	}
-	runtime.requestReconcile()
+	if err := runtime.runReconcile(ctx); err != nil {
+		return nil, err
+	}
 	return mihomoNativeSettings(runtime)
 }
 

@@ -61,13 +61,24 @@ func (a runtimeSettingsApplication) UpdateProxyRuntimeSettings(ctx context.Conte
 	if err := rejectMissingProxyUserProfiles(a.runtime.cfg.ProxyUsers, req.GetEgressProfiles()); err != nil {
 		return nil, err
 	}
+	before, err := a.runtime.settings.load(ctx)
+	if err != nil {
+		return nil, err
+	}
 	settings, err := a.runtime.settings.update(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	after, err := a.runtime.settings.load(ctx)
 	if err != nil {
 		return nil, err
 	}
 	a.runtime.resetIPFraudChecker()
 	a.runtime.geoCache.clear()
-	a.runtime.requestReconcile()
+	if err := a.runtime.runReconcile(ctx); err != nil {
+		return nil, err
+	}
+	a.runtime.closeMihomoInUserConnections(ctx, changedInUserConnectionUsernames(before, after))
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }
 
@@ -76,7 +87,9 @@ func (a runtimeSettingsApplication) UpdateProxyDynamicIPProviders(ctx context.Co
 	if err != nil {
 		return nil, err
 	}
-	a.runtime.requestReconcile()
+	if err := a.runtime.runReconcile(ctx); err != nil {
+		return nil, err
+	}
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }
 
@@ -84,13 +97,22 @@ func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, 
 	if err := rejectMissingProxyUserProfiles(a.runtime.cfg.ProxyUsers, req.GetEgressProfiles()); err != nil {
 		return nil, err
 	}
+	before, err := a.runtime.settings.load(ctx)
+	if err != nil {
+		return nil, err
+	}
 	settings, err := a.runtime.settings.updateInUserRules(ctx, req.GetEgressProfiles(), req.GetIngressRules())
+	if err != nil {
+		return nil, err
+	}
+	after, err := a.runtime.settings.load(ctx)
 	if err != nil {
 		return nil, err
 	}
 	if err := a.runtime.runReconcile(ctx); err != nil {
 		return nil, err
 	}
+	a.runtime.closeMihomoInUserConnections(ctx, changedInUserConnectionUsernames(before, after))
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }
 

@@ -82,7 +82,10 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	if err != nil {
 		return err
 	}
-	dialerProxy, lineLabels := dynamicLeaseDialerProxy(settings, lease.GetAccountId(), lease.GetSelectionPlan().GetSelectedEndpoint())
+	dialerProxy, lineLabels, err := r.dynamicLeaseDialerProxy(settings, lease.GetAccountId())
+	if err != nil {
+		return err
+	}
 	nodes = applyDynamicLeaseLineLabels(nodes, lineLabels)
 	route := dataplane.SessionRoute{
 		SessionID:   lease.GetSession().GetSessionId(),

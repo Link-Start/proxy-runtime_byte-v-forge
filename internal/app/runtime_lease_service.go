@@ -104,7 +104,11 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 		failure.beforeRoute("provider session fetch failed")
 		return nil, err
 	}
-	dialerProxy, lineLabels := dynamicLeaseDialerProxy(settings, req.GetAccountId(), selection.plan.GetSelectedEndpoint())
+	dialerProxy, lineLabels, err := r.dynamicLeaseDialerProxy(settings, req.GetAccountId())
+	if err != nil {
+		failure.beforeRoute("lease line resolution failed")
+		return nil, err
+	}
 	nodes = applyDynamicLeaseLineLabels(nodes, lineLabels)
 	listenerLock, err := r.leaseLocks.LockSessionListenerAllocation(ctx)
 	if err != nil {
@@ -150,6 +154,9 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 	if err := r.store.SaveLeaseFact(ctx, lease); err != nil {
 		failure.afterRoute(route, "lease fact save failed")
 		return nil, err
+	}
+	if req.GetAccountId() == playgroundProfileID {
+		r.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
 	}
 	keepConcurrencySlot = true
 	return lease, nil
@@ -288,6 +295,9 @@ func (c leaseCoordinator) retireLeaseRoute(ctx context.Context, lease *proxyrunt
 	if err := c.deleteLeaseRoute(ctx, lease); err != nil {
 		_ = c.saveLeaseReleaseCleanupFailure(ctx, lease, true, false, "lease route cleanup failed")
 		return err
+	}
+	if lease.GetAccountId() == playgroundProfileID {
+		r.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
 	}
 	releaseErr := c.releaseLeaseProviderSession(ctx, lease)
 	if releaseErr != nil {

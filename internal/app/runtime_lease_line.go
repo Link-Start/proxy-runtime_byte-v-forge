@@ -1,77 +1,126 @@
 package app
 
 import (
+	"fmt"
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
-func dynamicLeaseDialerProxy(settings *runtimeSettingsFile, profileID string, selected *proxyruntimev1.ProxyDynamicIPEndpointCandidate) (string, map[string]string) {
+func (r *Runtime) dynamicLeaseDialerProxy(settings *runtimeSettingsFile, profileID string) (string, map[string]string, error) {
 	settings = normalizeRuntimeSettings(settings)
-	profiles := dynamicLeaseLineProfiles(settings, profileID, selected)
+	profiles := dynamicLeaseLineProfiles(settings, profileID)
+	if len(profiles) == 0 {
+		return "", nil, nil
+	}
+	nativeConfig, err := loadMihomoNativeConfig(r)
+	if err != nil {
+		return "", nil, fmt.Errorf("load mihomo native config for lease line: %w", err)
+	}
 	for _, profile := range profiles {
-		dialer, labels := dynamicLeaseProfileDialerProxy(profile)
+		dialer, labels, err := dynamicLeaseProfileDialerProxy(profile, nativeConfig)
+		if err != nil {
+			return "", nil, err
+		}
 		if dialer != "" {
-			return dialer, labels
+			return dialer, labels, nil
 		}
 	}
-	return "", nil
+	return "", nil, nil
 }
 
-func dynamicLeaseLineProfiles(settings *runtimeSettingsFile, profileID string, selected *proxyruntimev1.ProxyDynamicIPEndpointCandidate) []*proxyruntimev1.EgressProfileSettings {
-	selectedDynamicProviderID := runtimeSafeID(selected.GetDynamicProviderId())
+func dynamicLeaseLineProfiles(settings *runtimeSettingsFile, profileID string) []*proxyruntimev1.EgressProfileSettings {
 	profileID = runtimeSafeID(profileID)
-	exact := make([]*proxyruntimev1.EgressProfileSettings, 0, 1)
-	fallback := make([]*proxyruntimev1.EgressProfileSettings, 0)
+	if profileID == "" {
+		return nil
+	}
 	for _, profile := range settings.GetEgressProfiles() {
 		if !profile.GetEnabled() {
 			continue
 		}
-		if profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
+		if runtimeSafeID(profile.GetProfileId()) != profileID {
 			continue
 		}
-		profileDynamicProviderID := runtimeSafeID(profile.GetExit().GetDynamicProviderId())
-		if profileDynamicProviderID != "" && selectedDynamicProviderID != "" && profileDynamicProviderID != selectedDynamicProviderID {
+		if profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
 			continue
 		}
 		line := profile.GetLine()
 		if line.GetKind() != proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_MIHOMO_NODE {
 			continue
 		}
-		if profileID != "" && runtimeSafeID(profile.GetProfileId()) == profileID {
-			exact = append(exact, profile)
-			continue
-		}
-		fallback = append(fallback, profile)
+		return []*proxyruntimev1.EgressProfileSettings{profile}
 	}
-	if len(exact) > 0 {
-		return exact
-	}
-	return fallback
+	return nil
 }
 
-func dynamicLeaseProfileDialerProxy(profile *proxyruntimev1.EgressProfileSettings) (string, map[string]string) {
+func dynamicLeaseProfileDialerProxy(profile *proxyruntimev1.EgressProfileSettings, nativeConfig mihomoNativeConfigFile) (string, map[string]string, error) {
 	node := profile.GetLine().GetMihomoNode()
-	dialer := dynamicLeaseLineDialerProxy(profile.GetProfileId(), node.GetResourceId(), node.GetNodeId())
+	dialer := dynamicLeaseLineDialerProxy(profile.GetProfileId(), nativeConfig, node.GetResourceId(), node.GetNodeId())
 	if dialer == "" {
-		return "", nil
+		return "", nil, fmt.Errorf(
+			"egress profile %q line mihomo node %q/%q cannot be resolved from current native config",
+			strings.TrimSpace(profile.GetProfileId()),
+			strings.TrimSpace(node.GetResourceId()),
+			strings.TrimSpace(node.GetNodeId()),
+		)
 	}
 	return dialer, map[string]string{
 		"line_kind":        "mihomo_node",
 		"line_resource_id": strings.TrimSpace(node.GetResourceId()),
 		"line_node_id":     strings.TrimSpace(node.GetNodeId()),
 		"line_dialer":      dialer,
-	}
+	}, nil
 }
 
-func dynamicLeaseLineDialerProxy(profileID string, resourceID string, nodeID string) string {
+func dynamicLeaseLineDialerProxy(profileID string, nativeConfig mihomoNativeConfigFile, resourceID string, nodeID string) string {
 	resourceID = strings.TrimSpace(resourceID)
 	nodeID = strings.TrimSpace(nodeID)
-	if resourceID != "" && strings.HasPrefix(nodeID, resourceID+"/") {
-		return dynamicLeaseProfileLineGroupName(profileID)
+	if nodeID == "" {
+		return ""
 	}
-	return mihomoNodeDialerProxyName(resourceID, nodeID)
+	if dialer := dynamicLeaseNativeDialerProxy(profileID, nativeConfig, resourceID, nodeID); dialer != "" {
+		return dialer
+	}
+	if resourceID == "" {
+		return strings.TrimSpace(nodeID)
+	}
+	return ""
+}
+
+func dynamicLeaseNativeDialerProxy(profileID string, nativeConfig mihomoNativeConfigFile, resourceID string, nodeID string) string {
+	fixedByID, fixedByName := currentFixedProxyIndexes(nativeConfig)
+	for _, key := range []string{resourceID, nodeID, mihomoNodeDialerProxyName(resourceID, nodeID)} {
+		key = strings.TrimSpace(key)
+		if key == "" {
+			continue
+		}
+		if proxy := fixedByID[key]; proxy.Name != "" {
+			return proxy.Name
+		}
+		if proxy := fixedByName[key]; proxy.Name != "" {
+			return proxy.Name
+		}
+	}
+	subscriptionByID, subscriptionByName := currentSubscriptionIndexes(nativeConfig)
+	for _, key := range []string{resourceID, mihomoNodeResourcePrefix(nodeID)} {
+		key = strings.TrimSpace(key)
+		if key == "" {
+			continue
+		}
+		if subscriptionByID[key].Name != "" || subscriptionByName[key].Name != "" {
+			return dynamicLeaseProfileLineGroupName(profileID)
+		}
+	}
+	return ""
+}
+
+func mihomoNodeResourcePrefix(nodeID string) string {
+	resource, _, ok := strings.Cut(strings.TrimSpace(nodeID), "/")
+	if !ok {
+		return ""
+	}
+	return strings.TrimSpace(resource)
 }
 
 func dynamicLeaseProfileLineGroupName(profileID string) string {

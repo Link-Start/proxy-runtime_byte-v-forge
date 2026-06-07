@@ -13,8 +13,9 @@ func LoadFromEnv() (Config, error) {
 	mihomoConfigDir := envx.StringDefault("PROXY_RUNTIME_MIHOMO_CONFIG_DIR", "/var/lib/byte-v-forge/proxy-runtime/mihomo")
 	cfg := Config{
 		RuntimeAddr:   envx.StringDefault("PROXY_RUNTIME_ADDR", ":8080"),
+		DataDir:       envx.StringDefault("PROXY_RUNTIME_DATA_DIR", "/var/lib/byte-v-forge/proxy-runtime"),
 		PostgresDSN:   firstNonEmpty(strings.TrimSpace(os.Getenv("PROXY_RUNTIME_POSTGRES_DSN")), strings.TrimSpace(os.Getenv("PG_DSN"))),
-		RedisURL:      strings.TrimSpace(os.Getenv("PLATFORM_REDIS_URL")),
+		RedisURL:      firstNonEmpty(strings.TrimSpace(os.Getenv("PROXY_RUNTIME_REDIS_URL")), strings.TrimSpace(os.Getenv("PLATFORM_REDIS_URL"))),
 		EncryptionKey: strings.TrimSpace(os.Getenv("PROXY_RUNTIME_ENCRYPTION_KEY")),
 		Mihomo: MihomoConfig{
 			Path:                envx.StringDefault("PROXY_RUNTIME_MIHOMO_PATH", "mihomo"),

@@ -109,7 +109,7 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 	enabled := req.GetEnabled()
 	displayName := firstNonEmpty(req.GetDisplayName(), accountID)
 	if enabled {
-		cfg, err := s.providerConfigFromCredentialSecret(ctx, providerID, secret)
+		cfg, err := providerConfigFromCredentialSecret(ctx, s, s.box, providerID, secret)
 		if err != nil {
 			return nil, fmt.Errorf("enabled provider account invalid: %w", err)
 		}
@@ -117,13 +117,11 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 			return nil, fmt.Errorf("enabled provider account invalid: %w", err)
 		}
 	}
-	rotatingLimit := normalizeProviderAccountRotatingConcurrencyLimit(req.GetRotatingConcurrencyLimit())
-	stickyLimit := normalizeProviderAccountStickyConcurrencyLimit(req.GetStickyConcurrencyLimit())
 	row := s.pool.QueryRow(ctx, `
-INSERT INTO proxy_runtime_provider_accounts (account_id, provider_id, dynamic_provider_id, display_name, enabled, rotating_concurrency_limit, sticky_concurrency_limit, credential_secret)
-VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
-ON CONFLICT (account_id) DO UPDATE SET provider_id=EXCLUDED.provider_id, dynamic_provider_id=EXCLUDED.dynamic_provider_id, display_name=EXCLUDED.display_name, enabled=EXCLUDED.enabled, rotating_concurrency_limit=EXCLUDED.rotating_concurrency_limit, sticky_concurrency_limit=EXCLUDED.sticky_concurrency_limit, credential_secret=EXCLUDED.credential_secret, updated_at=now()
-RETURNING `+providerAccountColumns(), accountID, providerID, dynamicProviderID, displayName, enabled, rotatingLimit, stickyLimit, secret)
+INSERT INTO proxy_runtime_provider_accounts (account_id, provider_id, dynamic_provider_id, display_name, enabled, credential_secret)
+VALUES ($1,$2,$3,$4,$5,$6)
+ON CONFLICT (account_id) DO UPDATE SET provider_id=EXCLUDED.provider_id, dynamic_provider_id=EXCLUDED.dynamic_provider_id, display_name=EXCLUDED.display_name, enabled=EXCLUDED.enabled, credential_secret=EXCLUDED.credential_secret, updated_at=now()
+RETURNING `+providerAccountColumns(), accountID, providerID, dynamicProviderID, displayName, enabled, secret)
 	record, err := scanProviderAccount(row)
 	if err != nil {
 		return nil, err
@@ -172,32 +170,11 @@ func (s *PostgresStore) ProviderConfig(ctx context.Context, accountID string) (a
 	if !record.Enabled {
 		return accountproxy.Config{}, "", errors.New("provider account is disabled")
 	}
-	cfg, err := s.providerConfigFromCredentialSecret(ctx, record.ProviderID, record.CredentialSecret)
+	cfg, err := providerConfigFromCredentialSecret(ctx, s, s.box, record.ProviderID, record.CredentialSecret)
 	if err != nil {
 		return accountproxy.Config{}, "", err
 	}
 	return cfg, record.AccountID, s.accountProviders.Validate(cfg)
-}
-
-func (s *PostgresStore) providerConfigFromCredentialSecret(ctx context.Context, providerID string, secret string) (accountproxy.Config, error) {
-	credential := credentialFromSecret(s.box, secret)
-	cfg := accountproxy.Config{ProviderID: providerID}
-	if credential == nil {
-		return cfg, nil
-	}
-	cfg.Username = credential.Username
-	if password := credentialRawPassword(credential); password != "" {
-		cfg.Password = password
-		return cfg, nil
-	}
-	if ref := cloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password"); ref != nil {
-		password, err := s.ResolveSecret(ctx, ref)
-		if err != nil {
-			return accountproxy.Config{}, err
-		}
-		cfg.Password = password
-	}
-	return cfg, nil
 }
 
 func (s *PostgresStore) DefaultProviderAccountID(ctx context.Context) (string, error) {
@@ -212,18 +189,61 @@ func (s *PostgresStore) providerAccountRecord(ctx context.Context, accountID str
 }
 
 func providerAccountColumns() string {
-	return `account_id, provider_id, dynamic_provider_id, display_name, enabled, rotating_concurrency_limit, sticky_concurrency_limit, credential_secret, created_at, updated_at`
+	return `account_id, provider_id, dynamic_provider_id, display_name, enabled, credential_secret, created_at, updated_at`
 }
 
 func scanProviderAccount(row pgx.Row) (*providerAccountRecord, error) {
 	var record providerAccountRecord
-	err := row.Scan(&record.AccountID, &record.ProviderID, &record.DynamicProviderID, &record.DisplayName, &record.Enabled, &record.RotatingLimit, &record.StickyLimit, &record.CredentialSecret, &record.CreatedAt, &record.UpdatedAt)
+	err := row.Scan(&record.AccountID, &record.ProviderID, &record.DynamicProviderID, &record.DisplayName, &record.Enabled, &record.CredentialSecret, &record.CreatedAt, &record.UpdatedAt)
 	return &record, err
 }
 
 func (s *PostgresStore) providerAccountToProto(ctx context.Context, record *providerAccountRecord) (*proxyruntimev1.ProxyProviderAccount, error) {
-	account := record.toProto(s.box)
+	return providerAccountToProto(ctx, s, s.box, record)
+}
+
+func (s *PostgresStore) ProviderAccountMutationState(ctx context.Context, accountID string) (providerAccountMutationState, error) {
+	record, err := s.providerAccountRecord(ctx, accountID)
+	if err != nil {
+		return providerAccountMutationState{}, err
+	}
 	credential := credentialFromSecret(s.box, record.CredentialSecret)
+	state := providerAccountMutationState{
+		ProviderID:         record.ProviderID,
+		DynamicProviderID:  record.DynamicProviderID,
+		PasswordConfigured: record.CredentialSecret != "",
+	}
+	if credential != nil {
+		state.Username = credential.Username
+		state.PasswordSecretRef = cloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password")
+	}
+	return state, nil
+}
+
+func providerConfigFromCredentialSecret(ctx context.Context, resolver secretref.Resolver, box secretbox.Box, providerID string, secret string) (accountproxy.Config, error) {
+	credential := credentialFromSecret(box, secret)
+	cfg := accountproxy.Config{ProviderID: providerID}
+	if credential == nil {
+		return cfg, nil
+	}
+	cfg.Username = credential.Username
+	if password := credentialRawPassword(credential); password != "" {
+		cfg.Password = password
+		return cfg, nil
+	}
+	if ref := cloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password"); ref != nil {
+		password, err := resolver.ResolveSecret(ctx, ref)
+		if err != nil {
+			return accountproxy.Config{}, err
+		}
+		cfg.Password = password
+	}
+	return cfg, nil
+}
+
+func providerAccountToProto(ctx context.Context, resolver secretref.Resolver, box secretbox.Box, record *providerAccountRecord) (*proxyruntimev1.ProxyProviderAccount, error) {
+	account := record.toProto(box)
+	credential := credentialFromSecret(box, record.CredentialSecret)
 	if password := credentialRawPassword(credential); password != "" {
 		account.PasswordValue = password
 		return account, nil
@@ -235,7 +255,7 @@ func (s *PostgresStore) providerAccountToProto(ctx context.Context, record *prov
 	if ref == nil {
 		return account, nil
 	}
-	password, err := s.ResolveSecret(ctx, ref)
+	password, err := resolver.ResolveSecret(ctx, ref)
 	if err != nil {
 		return account, nil
 	}
@@ -261,17 +281,15 @@ func (r providerAccountRecord) toProto(box secretbox.Box) *proxyruntimev1.ProxyP
 		username = credential.Username
 	}
 	return &proxyruntimev1.ProxyProviderAccount{
-		AccountId:                r.AccountID,
-		ProviderId:               r.ProviderID,
-		DynamicProviderId:        r.DynamicProviderID,
-		DisplayName:              r.DisplayName,
-		Status:                   status,
-		CredentialConfigured:     r.CredentialSecret != "",
-		RotatingConcurrencyLimit: normalizeProviderAccountRotatingConcurrencyLimit(storedProviderAccountConcurrencyLimit(r.RotatingLimit)),
-		StickyConcurrencyLimit:   normalizeProviderAccountStickyConcurrencyLimit(storedProviderAccountConcurrencyLimit(r.StickyLimit)),
-		CreatedAt:                timestamppb.New(r.CreatedAt),
-		UpdatedAt:                timestamppb.New(r.UpdatedAt),
-		Username:                 username,
+		AccountId:            r.AccountID,
+		ProviderId:           r.ProviderID,
+		DynamicProviderId:    r.DynamicProviderID,
+		DisplayName:          r.DisplayName,
+		Status:               status,
+		CredentialConfigured: r.CredentialSecret != "",
+		CreatedAt:            timestamppb.New(r.CreatedAt),
+		UpdatedAt:            timestamppb.New(r.UpdatedAt),
+		Username:             username,
 	}
 }
 

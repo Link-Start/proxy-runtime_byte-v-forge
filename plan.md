@@ -6,7 +6,7 @@
 
 Mihomo is the only data plane. `proxy-runtime` is the control plane for dynamic IP provider adapters, provider accounts/endpoints, proxy user routes, dynamic IP leases, Egress Profiles, Mihomo config rendering, and runtime observations.
 
-MetaCubeXD becomes the main `proxy-runtime` frontend through a project-owned fork. The fork keeps upstream Mihomo operations as-is. Mihomo-native fixed proxies, subscriptions, proxy providers, rules, groups, and config editing stay in upstream pages. The project overlay adds `动态IP提供商` inside `proxies` for proxy-runtime-only dynamic provider endpoints and provider accounts, `IN-USER规则` inside `rules` for proxy username/password plus line/exit bindings, and `动态租约` inside `connections` for active dynamic lease runtime state.
+MetaCubeXD becomes the main `proxy-runtime` frontend through a project-owned fork. The fork keeps upstream Mihomo operations as-is. Mihomo-native fixed proxies, subscriptions, proxy providers, rules, groups, and config editing stay in upstream pages. The project overlay adds `入口用户` inside `proxies` for proxy username/password plus line/exit bindings, `动态IP提供商` inside `proxies` for proxy-runtime-only dynamic provider endpoints and provider accounts, and `动态租约` inside `connections` for active dynamic lease runtime state.
 
 There is one desired-state model: service-owned control-plane facts in the database. The generated Mihomo config is only a runtime projection of those facts.
 

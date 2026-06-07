@@ -1,0 +1,38 @@
+diff --git a/components/MobileBottomNav.vue b/components/MobileBottomNav.vue
+index 273bc70..01195ef 100644
+--- a/components/MobileBottomNav.vue
++++ b/components/MobileBottomNav.vue
+@@ -1,5 +1,6 @@
+ <script setup lang="ts">
+ import {
++  IconBolt,
+   IconChartAreaLine,
+   IconFileStack,
+   IconGlobe,
+@@ -27,6 +28,7 @@ const rightPrimaryItems = computed(() => primaryItems.value.slice(2, 4))
+ 
+ // Secondary items in the FAB popup
+ const secondaryItems = computed(() => [
++  { href: '/playground', name: 'PlayGround', icon: IconBolt },
+   { href: '/traffic', name: t('dataUsage'), icon: IconChartAreaLine },
+   { href: '/logs', name: t('logs'), icon: IconFileStack },
+   { href: '/config', name: t('config'), icon: IconSettings },
+diff --git a/components/Sidebar.vue b/components/Sidebar.vue
+index 86521fc..2d45d8c 100644
+--- a/components/Sidebar.vue
++++ b/components/Sidebar.vue
+@@ -1,5 +1,6 @@
+ <script setup lang="ts">
+ import {
++  IconBolt,
+   IconChartAreaLine,
+   IconChevronsLeft,
+   IconChevronsRight,
+@@ -21,6 +22,7 @@ const navItems = computed(() => [
+   { href: '/proxies', name: t('proxies'), icon: IconGlobe },
+   { href: '/rules', name: t('rules'), icon: IconRuler },
+   { href: '/connections', name: t('connections'), icon: IconNetwork },
++  { href: '/playground', name: 'PlayGround', icon: IconBolt },
+   { href: '/traffic', name: t('dataUsage'), icon: IconChartAreaLine },
+   { href: '/logs', name: t('logs'), icon: IconFileStack },
+   { href: '/config', name: t('config'), icon: IconSettings },

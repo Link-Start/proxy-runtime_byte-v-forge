@@ -6,9 +6,12 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 )
 
 const nativeConfigFileName = "native.json"
+
+const defaultProviderUserAgent = "mihomo/1.18.3"
 
 func loadNativeConfig(configDir string) (mihomoNativeConfig, error) {
 	path := filepath.Join(configDir, nativeConfigFileName)
@@ -37,9 +40,23 @@ func normalizeNativeConfigPaths(configDir string, config *mihomoNativeConfig) {
 	for name, provider := range config.ProxyProviders {
 		if provider.Path != "" && !filepath.IsAbs(provider.Path) {
 			provider.Path = filepath.Join(configDir, provider.Path)
-			config.ProxyProviders[name] = provider
 		}
+		normalizeNativeProviderHeaders(&provider)
+		config.ProxyProviders[name] = provider
 	}
+}
+
+func normalizeNativeProviderHeaders(provider *mihomoProvider) {
+	if provider == nil {
+		return
+	}
+	if !strings.EqualFold(strings.TrimSpace(provider.Type), "http") || strings.TrimSpace(provider.URL) == "" {
+		return
+	}
+	if len(provider.Header) > 0 {
+		return
+	}
+	provider.Header = map[string][]string{"User-Agent": {defaultProviderUserAgent}}
 }
 
 func cloneNativeProxies(items []map[string]any) []map[string]any {

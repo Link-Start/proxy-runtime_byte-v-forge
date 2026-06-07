@@ -2,7 +2,7 @@ import type {
   EgressProfileMihomoNodeRef,
   EgressProfileSettings,
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import type { MihomoConfigNode } from '~/composables/proxyRuntimeMihomoController'
+import type { MihomoEgressOwner } from '~/composables/proxyRuntimeMihomoOwnerHelpers'
 import {
   EgressProfileExitKind,
   EgressProfileLineKind,
@@ -15,12 +15,6 @@ import {
   dynamicIPPolicy,
   dynamicIPSessionMode,
 } from '~/composables/proxyRuntimeDynamicProfilePolicyHelpers'
-
-export interface MihomoEgressOwner {
-  owner_id: string
-  display_name: string
-  kind: 'static_proxy' | 'proxy_provider'
-}
 
 export function newEgressProfileForm() {
   return {
@@ -102,53 +96,16 @@ export function profileRequest(
   }
 }
 
-export function mihomoOwnerLabel(owner: MihomoEgressOwner) {
-  const kind = owner.kind === 'proxy_provider' ? 'Provider' : 'Proxy'
-  return `${owner.display_name || owner.owner_id} / ${kind}`
-}
-
-export function nodeLabel(node: MihomoConfigNode) {
-  const name = node.display_name || node.node_id
-  if (node.delay_ms > 0) return `${name} / ${node.delay_ms}ms`
-  return name
-}
-
-export function mihomoOwnersFromController(input: {
-  proxies: Record<string, { type?: string; hidden?: boolean }>
-  providers: Record<string, { name?: string; type?: string; vehicleType?: string }>
-}) {
-  const internal = new Set(['DIRECT', 'REJECT', 'GLOBAL'])
-  const out: MihomoEgressOwner[] = []
-  for (const [name, proxy] of Object.entries(input.proxies)) {
-    const type = (proxy.type || '').toLowerCase()
-    if (internal.has(name) || proxy.hidden) continue
-    if (type === 'selector' || type === 'fallback' || type === 'urltest') {
-      continue
-    }
-    out.push({ owner_id: name, display_name: name, kind: 'static_proxy' })
-  }
-  for (const [name, provider] of Object.entries(input.providers)) {
-    const providerType = (provider.vehicleType || provider.type || '').toLowerCase()
-    if (providerType === 'compatible') continue
-    out.push({
-      owner_id: provider.name || name,
-      display_name: provider.name || name,
-      kind: 'proxy_provider',
-    })
-  }
-  return out.sort((left, right) => left.display_name.localeCompare(right.display_name))
-}
-
-export function lineText(profile: EgressProfileSettings) {
+export function lineText(profile: EgressProfileSettings, owners: MihomoEgressOwner[] = []) {
   if (
     profile.line?.kind === EgressProfileLineKind.EGRESS_PROFILE_LINE_KIND_MIHOMO_NODE
   ) {
-    return mihomoNodeRefText(profile.line.mihomo_node, 'Mihomo 节点')
+    return mihomoNodeRefText(profile.line.mihomo_node, 'Mihomo 节点', owners)
   }
   return '无代理路线'
 }
 
-export function exitText(profile: EgressProfileSettings) {
+export function exitText(profile: EgressProfileSettings, owners: MihomoEgressOwner[] = []) {
   switch (profile.exit?.kind) {
     case EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_DIRECT:
       if (
@@ -161,7 +118,7 @@ export function exitText(profile: EgressProfileSettings) {
     case EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP:
       return dynamicIPExitText(profile)
     case EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_STATIC_IP:
-      return mihomoNodeRefText(profile.exit.mihomo_node, '静态 IP')
+      return mihomoNodeRefText(profile.exit.mihomo_node, '静态 IP', owners)
     default:
       return '出口'
   }
@@ -184,11 +141,21 @@ function mihomoNodeRef(resourceID: string, nodeID: string) {
 function mihomoNodeRefText(
   ref: EgressProfileMihomoNodeRef | undefined,
   fallback: string,
+  owners: MihomoEgressOwner[],
 ) {
   const resourceID = ref?.resource_id || ''
   const nodeID = ref?.node_id || ''
-  if (resourceID && nodeID) return `${resourceID}/${nodeID}`
-  return resourceID || fallback
+  const owner = owners.find((item) => item.owner_id === resourceID)
+  const ownerName = owner?.display_name || resourceID
+  if (resourceID && nodeID) {
+    if (nodeID === resourceID || nodeID === ownerName) return ownerName
+    const stablePrefix = `${resourceID}/`
+    const displayPrefix = `${ownerName}/`
+    if (nodeID.startsWith(stablePrefix)) return `${ownerName}/${nodeID.slice(stablePrefix.length)}`
+    if (nodeID.startsWith(displayPrefix)) return nodeID
+    return `${ownerName}/${nodeID}`
+  }
+  return ownerName || fallback
 }
 
 function generatedProfileID(displayName: string) {

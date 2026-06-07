@@ -25,7 +25,7 @@ type scoredDynamicIPEndpointCandidate struct {
 }
 
 type dynamicIPSelector struct {
-	store            *PostgresStore
+	store            controlStore
 	settings         *runtimeSettingsStore
 	accountProviders *providerregistry.Registry
 	concurrency      providerAccountConcurrencyLimiter

@@ -1,13 +1,28 @@
 import type {
   DeleteProxyProviderAccountRequest,
   DeleteProxyProviderAccountResponse,
+  AcquireProxyLeaseRequest,
+  AcquireProxyLeaseResponse,
   EgressProfileSettings,
+  CheckProxyEdgeAccessRequest,
+  CheckProxyEdgeAccessResponse,
+  CheckProxyIPFraudRequest,
+  CheckProxyIPFraudResponse,
+  GetProxyExitIPRequest,
+  GetProxyExitIPResponse,
+  GetProxyExitGeoRequest,
+  GetProxyExitGeoResponse,
   GetProxyRuntimeSettingsResponse,
+  ListProxyIPFraudProvidersResponse,
+  ListProxyIPGeoProvidersResponse,
   ListProxyDynamicLeasesResponse,
   ListProxyProviderAccountsResponse,
   ListProxyProvidersResponse,
   ProxyDynamicIPProviderSettings,
   ProxyIngressRuleSettings,
+  ReleaseProxyLeaseRequest,
+  ReleaseProxyLeaseResponse,
+  UpdateProxyRuntimeSettingsRequest,
   UpdateProxyRuntimeSettingsResponse,
   UpsertProxyProviderAccountRequest,
   UpsertProxyProviderAccountResponse,
@@ -74,6 +89,42 @@ export function useProxyRuntimeApi() {
       ),
     getSettings: () =>
       proxyRuntimeRequest<GetProxyRuntimeSettingsResponse>('/settings'),
+    updateRuntimeSettings: (req: UpdateProxyRuntimeSettingsRequest) =>
+      proxyRuntimeRequest<UpdateProxyRuntimeSettingsResponse>('/settings', {
+        method: 'PUT',
+        body: jsonBody(req),
+      }),
+    listIPFraudProviders: () =>
+      proxyRuntimeRequest<ListProxyIPFraudProvidersResponse>(
+        '/settings/ip-fraud-providers',
+      ),
+    listIPGeoProviders: () =>
+      proxyRuntimeRequest<ListProxyIPGeoProvidersResponse>(
+        '/settings/ip-geo-providers',
+      ),
+    checkProxyIPFraud: (req: CheckProxyIPFraudRequest) =>
+      proxyRuntimeRequest<CheckProxyIPFraudResponse>('/ip_fraud_check', {
+        method: 'POST',
+        body: jsonBody(req),
+      }),
+    getProxyExitIP: (req: GetProxyExitIPRequest) =>
+      proxyRuntimeRequest<GetProxyExitIPResponse>('/proxy_exit_ip', {
+        method: 'POST',
+        body: jsonBody(req),
+      }),
+    checkProxyExitGeo: (req: GetProxyExitGeoRequest) =>
+      proxyRuntimeRequest<GetProxyExitGeoResponse>('/proxy_exit_geo', {
+        method: 'POST',
+        body: jsonBody(req),
+      }),
+    checkProxyEdgeAccess: (req: CheckProxyEdgeAccessRequest) =>
+      proxyRuntimeRequest<CheckProxyEdgeAccessResponse>(
+        '/check_cf_access_risk',
+        {
+          method: 'POST',
+          body: jsonBody(req),
+        },
+      ),
     getNativeConfig: () =>
       proxyRuntimeRequest<ProxyRuntimeNativeConfig>('/settings/mihomo-native'),
     updateNativeConfig: (config: ProxyRuntimeNativeConfig) =>
@@ -108,6 +159,18 @@ export function useProxyRuntimeApi() {
         },
       ),
     listLeases: () =>
-      proxyRuntimeRequest<ListProxyDynamicLeasesResponse>('/leases'),
+      proxyRuntimeRequest<ListProxyDynamicLeasesResponse>(
+        '/leases?include_inactive=true',
+      ),
+    acquireLease: (req: AcquireProxyLeaseRequest) =>
+      proxyRuntimeRequest<AcquireProxyLeaseResponse>('/leases/acquire', {
+        method: 'POST',
+        body: jsonBody(req),
+      }),
+    releaseLease: (req: ReleaseProxyLeaseRequest) =>
+      proxyRuntimeRequest<ReleaseProxyLeaseResponse>('/leases/release', {
+        method: 'POST',
+        body: jsonBody(req),
+      }),
   }
 }

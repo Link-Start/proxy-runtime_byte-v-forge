@@ -183,6 +183,62 @@ func egressProfilesFromRequest(in []*proxyruntimev1.EgressProfileSettings, nativ
 	return out, nil
 }
 
+type mihomoNativeResourceReplacement struct {
+	ResourceID string
+	FixedProxy bool
+}
+
+func (s *runtimeSettingsStore) replaceMihomoResourceRefs(ctx context.Context, replacements map[string]mihomoNativeResourceReplacement) error {
+	if len(replacements) == 0 {
+		return nil
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	settings, err := s.loadLocked(ctx)
+	if err != nil {
+		return err
+	}
+	changed := false
+	for _, profile := range settings.GetEgressProfiles() {
+		if replaceMihomoNodeRef(profile.GetLine().GetMihomoNode(), replacements) {
+			changed = true
+		}
+		if replaceMihomoNodeRef(profile.GetExit().GetMihomoNode(), replacements) {
+			changed = true
+		}
+	}
+	if !changed {
+		return nil
+	}
+	return s.saveLocked(ctx, settings)
+}
+
+func replaceMihomoNodeRef(ref *proxyruntimev1.EgressProfileMihomoNodeRef, replacements map[string]mihomoNativeResourceReplacement) bool {
+	if ref == nil {
+		return false
+	}
+	current := strings.TrimSpace(ref.GetResourceId())
+	replacement, exists := replacements[current]
+	if !exists {
+		return false
+	}
+	nextResourceID := strings.TrimSpace(replacement.ResourceID)
+	if nextResourceID == "" {
+		return false
+	}
+	oldNodeID := strings.TrimSpace(ref.GetNodeId())
+	ref.ResourceId = nextResourceID
+	if replacement.FixedProxy {
+		ref.NodeId = nextResourceID
+		return current != nextResourceID || oldNodeID != nextResourceID
+	}
+	prefix := current + "/"
+	if strings.HasPrefix(oldNodeID, prefix) {
+		ref.NodeId = nextResourceID + "/" + strings.TrimPrefix(oldNodeID, prefix)
+	}
+	return current != nextResourceID
+}
+
 func (s *runtimeSettingsStore) enabledMihomoResourceIDs(_ context.Context) (map[string]struct{}, error) {
 	return nil, nil
 }

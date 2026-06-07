@@ -32,8 +32,6 @@ type providerAccountRecord struct {
 	DynamicProviderID string
 	DisplayName       string
 	Enabled           bool
-	RotatingLimit     int64
-	StickyLimit       int64
 	CredentialSecret  string
 	CreatedAt         time.Time
 	UpdatedAt         time.Time

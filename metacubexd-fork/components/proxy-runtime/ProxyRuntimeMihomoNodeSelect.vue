@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { MihomoConfigNode } from '~/composables/proxyRuntimeMihomoController'
-import { nodeLabel } from '~/composables/proxyRuntimeEgressProfileHelpers'
+import { nodeLabel } from '~/composables/proxyRuntimeMihomoOwnerHelpers'
 
 interface MihomoNodeRuntime {
   loadMihomoNodes(ownerID: string): Promise<void>

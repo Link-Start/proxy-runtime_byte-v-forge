@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/jackc/pgx/v5"
 )
 
 const (
@@ -106,7 +105,7 @@ func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *pr
 	defer func() { _ = lock.Unlock(ctx) }()
 	current, err := r.store.LeaseFactByID(ctx, lease.GetLeaseId())
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if isStoreNotFound(err) {
 			return nil
 		}
 		return err

@@ -2,24 +2,30 @@ package app
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net"
+	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
 	mihomoNativeFileName        = "native.json"
 	mihomoFixedProxyGroupName   = "固定代理"
 	defaultProviderHealthURL    = "https://www.gstatic.com/generate_204"
-	defaultProviderInterval     = 3600
 	defaultProviderHealthPeriod = 300
 	defaultProviderHealthWait   = 5000
+	defaultProviderUserAgent    = "mihomo/1.18.3"
+	maxSubscriptionContentBytes = 2 * 1024 * 1024
 )
 
 type mihomoNativeSettingsView struct {
@@ -28,18 +34,22 @@ type mihomoNativeSettingsView struct {
 }
 
 type mihomoNativeFixedProxy struct {
+	ID   string `json:"id,omitempty"`
 	Name string `json:"name"`
 	Type string `json:"type,omitempty"`
 	URI  string `json:"uri"`
 }
 
 type mihomoNativeSubscription struct {
+	ID   string `json:"id,omitempty"`
 	Name string `json:"name"`
 	URL  string `json:"url"`
 }
 
 type mihomoNativeConfigFile struct {
+	FixedProxies   []mihomoNativeFixedProxy        `json:"fixed_proxies,omitempty"`
 	Proxies        []map[string]any                `json:"proxies,omitempty"`
+	Subscriptions  []mihomoNativeSubscription      `json:"subscriptions,omitempty"`
 	ProxyProviders map[string]mihomoNativeProvider `json:"proxy-providers,omitempty"`
 	ProxyGroups    []mihomoNativeGroup             `json:"proxy-groups,omitempty"`
 	Rules          []string                        `json:"rules,omitempty"`
@@ -48,7 +58,7 @@ type mihomoNativeConfigFile struct {
 
 type mihomoNativeProvider struct {
 	Type        string                   `json:"type"`
-	URL         string                   `json:"url"`
+	URL         string                   `json:"url,omitempty"`
 	Path        string                   `json:"path,omitempty"`
 	Interval    int                      `json:"interval,omitempty"`
 	Filter      string                   `json:"filter,omitempty"`
@@ -158,19 +168,40 @@ func mihomoNativeSettings(runtime *Runtime) (*mihomoNativeSettingsView, error) {
 		return nil, err
 	}
 	view := &mihomoNativeSettingsView{}
-	for _, proxy := range config.Proxies {
-		name := jsonStringValue(proxy["name"])
-		proxyType := jsonStringValue(proxy["type"])
-		if name == "" {
-			continue
+	if len(config.FixedProxies) > 0 {
+		for _, proxy := range config.FixedProxies {
+			item := normalizeMihomoNativeFixedProxy(proxy, nil)
+			if item.Name == "" || item.URI == "" {
+				continue
+			}
+			view.FixedProxies = append(view.FixedProxies, item)
 		}
-		view.FixedProxies = append(view.FixedProxies, mihomoNativeFixedProxy{Name: name, Type: proxyType, URI: mihomoNativeProxyURI(proxy)})
+	} else {
+		for _, proxy := range config.Proxies {
+			name := jsonStringValue(proxy["name"])
+			proxyType := jsonStringValue(proxy["type"])
+			if name == "" {
+				continue
+			}
+			uri := mihomoNativeProxyURI(proxy)
+			view.FixedProxies = append(view.FixedProxies, mihomoNativeFixedProxy{ID: nativeStableID("fixed", uri), Name: name, Type: proxyType, URI: uri})
+		}
 	}
-	for name, provider := range config.ProxyProviders {
-		if strings.TrimSpace(provider.URL) == "" {
-			continue
+	if len(config.Subscriptions) > 0 {
+		for _, subscription := range config.Subscriptions {
+			item := normalizeMihomoNativeSubscription(subscription, nil)
+			if item.Name == "" || item.URL == "" {
+				continue
+			}
+			view.Subscriptions = append(view.Subscriptions, item)
 		}
-		view.Subscriptions = append(view.Subscriptions, mihomoNativeSubscription{Name: name, URL: provider.URL})
+	} else {
+		for name, provider := range config.ProxyProviders {
+			if strings.TrimSpace(provider.URL) == "" {
+				continue
+			}
+			view.Subscriptions = append(view.Subscriptions, mihomoNativeSubscription{ID: nativeStableID("sub", provider.URL), Name: name, URL: provider.URL})
+		}
 	}
 	return view, nil
 }
@@ -184,31 +215,85 @@ func updateMihomoNativeSettings(ctx context.Context, runtime *Runtime, view miho
 		return nil, err
 	}
 	next := mihomoNativeConfigFile{
+		FixedProxies:   make([]mihomoNativeFixedProxy, 0, len(view.FixedProxies)),
 		Proxies:        make([]map[string]any, 0, len(view.FixedProxies)),
 		ProxyProviders: map[string]mihomoNativeProvider{},
 		ProxyGroups:    preserveNativeGroups(current.ProxyGroups),
 		Rules:          append([]string(nil), current.Rules...),
 	}
+	currentFixedByID, currentFixedByName := currentFixedProxyIndexes(current)
+	resourceReplacements := map[string]mihomoNativeResourceReplacement{}
+	seenFixedIDs := map[string]struct{}{}
+	seenFixedNames := map[string]struct{}{}
 	for _, item := range view.FixedProxies {
-		proxy, err := mihomoNativeProxyFromURI(item.Name, item.URI)
+		normalized := normalizeMihomoNativeFixedProxy(item, currentFixedByName)
+		if existing := currentFixedByID[normalized.ID]; existing.ID != "" && existing.Name != normalized.Name {
+			resourceReplacements[existing.Name] = mihomoNativeResourceReplacement{ResourceID: normalized.ID, FixedProxy: true}
+		}
+		resourceReplacements[normalized.Name] = mihomoNativeResourceReplacement{ResourceID: normalized.ID, FixedProxy: true}
+		if _, exists := seenFixedIDs[normalized.ID]; exists {
+			return nil, fmt.Errorf("fixed proxy %q duplicates id %q", normalized.Name, normalized.ID)
+		}
+		if _, exists := seenFixedNames[normalized.Name]; exists {
+			return nil, fmt.Errorf("fixed proxy %q duplicates name", normalized.Name)
+		}
+		seenFixedIDs[normalized.ID] = struct{}{}
+		seenFixedNames[normalized.Name] = struct{}{}
+		proxy, err := mihomoNativeProxyFromURI(normalized.Name, normalized.URI)
 		if err != nil {
 			return nil, err
 		}
+		normalized.Type = jsonStringValue(proxy["type"])
+		next.FixedProxies = append(next.FixedProxies, normalized)
 		next.Proxies = append(next.Proxies, proxy)
 	}
 	providerPaths := map[string]string{}
+	subscriptionURLs := map[string]string{}
 	for name, provider := range current.ProxyProviders {
 		providerPaths[name] = provider.Path
+		if strings.TrimSpace(provider.URL) != "" {
+			subscriptionURLs[name] = provider.URL
+		}
 	}
+	for _, item := range current.Subscriptions {
+		if strings.TrimSpace(item.Name) != "" {
+			subscriptionURLs[item.Name] = item.URL
+		}
+	}
+	currentSubscriptionsByID, currentSubscriptionsByName := currentSubscriptionIndexes(current)
+	usedProviderPaths := map[string]struct{}{}
+	seenSubscriptionIDs := map[string]struct{}{}
+	seenSubscriptionNames := map[string]struct{}{}
 	for _, item := range view.Subscriptions {
-		provider, err := mihomoNativeSubscriptionProvider(runtime, item, providerPaths[item.Name])
+		normalized := normalizeMihomoNativeSubscription(item, currentSubscriptionsByName)
+		if existing := currentSubscriptionsByID[normalized.ID]; existing.ID != "" && existing.Name != normalized.Name {
+			resourceReplacements[existing.Name] = mihomoNativeResourceReplacement{ResourceID: normalized.ID}
+		}
+		resourceReplacements[normalized.Name] = mihomoNativeResourceReplacement{ResourceID: normalized.ID}
+		if _, exists := seenSubscriptionIDs[normalized.ID]; exists {
+			return nil, fmt.Errorf("subscription %q duplicates id %q", normalized.Name, normalized.ID)
+		}
+		if _, exists := seenSubscriptionNames[normalized.Name]; exists {
+			return nil, fmt.Errorf("subscription %q duplicates name", normalized.Name)
+		}
+		seenSubscriptionIDs[normalized.ID] = struct{}{}
+		seenSubscriptionNames[normalized.Name] = struct{}{}
+		provider, subscription, err := mihomoNativeSubscriptionProvider(ctx, runtime, normalized, providerPaths[normalized.Name], subscriptionURLs[normalized.Name])
 		if err != nil {
 			return nil, err
 		}
-		next.ProxyProviders[item.Name] = provider
+		next.Subscriptions = append(next.Subscriptions, subscription)
+		next.ProxyProviders[subscription.Name] = provider
+		if strings.TrimSpace(provider.Path) != "" {
+			usedProviderPaths[provider.Path] = struct{}{}
+		}
 	}
 	next.ProxyGroups = withFixedProxyGroup(next.ProxyGroups, next.Proxies)
 	if err := saveMihomoNativeConfig(runtime, next); err != nil {
+		return nil, err
+	}
+	removeUnusedNativeProviderFiles(runtime, providerPaths, usedProviderPaths)
+	if err := runtime.settings.replaceMihomoResourceRefs(ctx, resourceReplacements); err != nil {
 		return nil, err
 	}
 	runtime.requestReconcile()
@@ -240,31 +325,147 @@ func withFixedProxyGroup(groups []mihomoNativeGroup, proxies []map[string]any) [
 	return append([]mihomoNativeGroup{group}, groups...)
 }
 
-func mihomoNativeSubscriptionProvider(runtime *Runtime, item mihomoNativeSubscription, existingPath string) (mihomoNativeProvider, error) {
+func currentFixedProxyIndexes(config mihomoNativeConfigFile) (map[string]mihomoNativeFixedProxy, map[string]mihomoNativeFixedProxy) {
+	byID := map[string]mihomoNativeFixedProxy{}
+	byName := map[string]mihomoNativeFixedProxy{}
+	for _, item := range config.FixedProxies {
+		normalized := normalizeMihomoNativeFixedProxy(item, nil)
+		if normalized.ID != "" {
+			byID[normalized.ID] = normalized
+		}
+		if normalized.Name != "" {
+			byName[normalized.Name] = normalized
+		}
+	}
+	for _, proxy := range config.Proxies {
+		name := jsonStringValue(proxy["name"])
+		uri := mihomoNativeProxyURI(proxy)
+		if name == "" || uri == "" {
+			continue
+		}
+		normalized := mihomoNativeFixedProxy{ID: nativeStableID("fixed", uri), Name: name, Type: jsonStringValue(proxy["type"]), URI: uri}
+		if _, exists := byID[normalized.ID]; !exists {
+			byID[normalized.ID] = normalized
+		}
+		if _, exists := byName[normalized.Name]; !exists {
+			byName[normalized.Name] = normalized
+		}
+	}
+	return byID, byName
+}
+
+func currentSubscriptionIndexes(config mihomoNativeConfigFile) (map[string]mihomoNativeSubscription, map[string]mihomoNativeSubscription) {
+	byID := map[string]mihomoNativeSubscription{}
+	byName := map[string]mihomoNativeSubscription{}
+	for _, item := range config.Subscriptions {
+		normalized := normalizeMihomoNativeSubscription(item, nil)
+		if normalized.ID != "" {
+			byID[normalized.ID] = normalized
+		}
+		if normalized.Name != "" {
+			byName[normalized.Name] = normalized
+		}
+	}
+	for name, provider := range config.ProxyProviders {
+		url := strings.TrimSpace(provider.URL)
+		if strings.TrimSpace(name) == "" || url == "" {
+			continue
+		}
+		normalized := mihomoNativeSubscription{ID: nativeStableID("sub", url), Name: strings.TrimSpace(name), URL: url}
+		if _, exists := byID[normalized.ID]; !exists {
+			byID[normalized.ID] = normalized
+		}
+		if _, exists := byName[normalized.Name]; !exists {
+			byName[normalized.Name] = normalized
+		}
+	}
+	return byID, byName
+}
+
+func normalizeMihomoNativeFixedProxy(item mihomoNativeFixedProxy, currentByName map[string]mihomoNativeFixedProxy) mihomoNativeFixedProxy {
+	item.Name = strings.TrimSpace(item.Name)
+	item.URI = strings.TrimSpace(item.URI)
+	item.Type = strings.TrimSpace(item.Type)
+	item.ID = runtimeSafeID(item.ID)
+	if item.ID == "" && currentByName != nil {
+		item.ID = runtimeSafeID(currentByName[item.Name].ID)
+	}
+	if item.ID == "" {
+		item.ID = nativeStableID("fixed", item.URI)
+	}
+	return item
+}
+
+func normalizeMihomoNativeSubscription(item mihomoNativeSubscription, currentByName map[string]mihomoNativeSubscription) mihomoNativeSubscription {
+	item.Name = strings.TrimSpace(item.Name)
+	item.URL = strings.TrimSpace(item.URL)
+	item.ID = runtimeSafeID(item.ID)
+	if item.ID == "" && currentByName != nil {
+		item.ID = runtimeSafeID(currentByName[item.Name].ID)
+	}
+	if item.ID == "" {
+		item.ID = nativeStableID("sub", item.URL)
+	}
+	return item
+}
+
+func nativeStableID(prefix string, source string) string {
+	source = strings.TrimSpace(source)
+	if source == "" {
+		return ""
+	}
+	sum := sha256.Sum256([]byte(source))
+	return runtimeSafeID(prefix + "-" + hex.EncodeToString(sum[:])[:12])
+}
+
+func stableProviderPath(path string, id string) bool {
+	path = strings.TrimSpace(path)
+	id = runtimeSafeID(id)
+	if path == "" || id == "" {
+		return false
+	}
+	return filepath.Base(path) == id+".yaml"
+}
+
+func mihomoNativeSubscriptionProvider(ctx context.Context, runtime *Runtime, item mihomoNativeSubscription, existingPath string, existingURL string) (mihomoNativeProvider, mihomoNativeSubscription, error) {
+	id := runtimeSafeID(item.ID)
 	name := strings.TrimSpace(item.Name)
 	rawURL := strings.TrimSpace(item.URL)
+	if id == "" {
+		id = nativeStableID("sub", rawURL)
+	}
 	if name == "" {
-		return mihomoNativeProvider{}, errors.New("subscription name is required")
+		return mihomoNativeProvider{}, mihomoNativeSubscription{}, errors.New("subscription name is required")
 	}
 	if rawURL == "" {
-		return mihomoNativeProvider{}, fmt.Errorf("subscription %q url is required", name)
+		return mihomoNativeProvider{}, mihomoNativeSubscription{}, fmt.Errorf("subscription %q url is required", name)
 	}
 	parsed, err := url.Parse(rawURL)
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-		return mihomoNativeProvider{}, fmt.Errorf("subscription %q url is invalid", name)
+		return mihomoNativeProvider{}, mihomoNativeSubscription{}, fmt.Errorf("subscription %q url is invalid", name)
 	}
-	path := strings.TrimSpace(existingPath)
+	path := ""
+	if stableProviderPath(existingPath, id) {
+		path = strings.TrimSpace(existingPath)
+	}
 	if path == "" {
-		path = filepath.Join("providers", nativeConfigID(name)+".yaml")
+		path = filepath.Join("providers", id+".yaml")
 	}
 	if runtime != nil && strings.TrimSpace(runtime.cfg.Mihomo.ConfigDir) != "" && !filepath.IsAbs(path) {
 		path = filepath.Join(runtime.cfg.Mihomo.ConfigDir, path)
 	}
+	if rawURL != strings.TrimSpace(existingURL) || !regularFileExists(path) {
+		content, err := fetchSubscriptionContent(ctx, rawURL)
+		if err != nil {
+			return mihomoNativeProvider{}, mihomoNativeSubscription{}, fmt.Errorf("subscription %q fetch failed: %w", name, err)
+		}
+		if err := writeSubscriptionProviderFile(path, content); err != nil {
+			return mihomoNativeProvider{}, mihomoNativeSubscription{}, fmt.Errorf("subscription %q write provider file failed: %w", name, err)
+		}
+	}
 	return mihomoNativeProvider{
-		Type:     "http",
-		URL:      rawURL,
-		Path:     path,
-		Interval: defaultProviderInterval,
+		Type: "file",
+		Path: path,
 		HealthCheck: &mihomoNativeHealthCheck{
 			Enable:         true,
 			URL:            defaultProviderHealthURL,
@@ -273,7 +474,121 @@ func mihomoNativeSubscriptionProvider(runtime *Runtime, item mihomoNativeSubscri
 			Lazy:           true,
 			ExpectedStatus: 204,
 		},
-	}, nil
+	}, mihomoNativeSubscription{ID: id, Name: name, URL: rawURL}, nil
+}
+
+func fetchSubscriptionContent(ctx context.Context, rawURL string) ([]byte, error) {
+	client := &http.Client{
+		Timeout: 30 * time.Second,
+		Transport: &http.Transport{
+			Proxy:               http.ProxyFromEnvironment,
+			DisableKeepAlives:   true,
+			ForceAttemptHTTP2:   false,
+			TLSHandshakeTimeout: 10 * time.Second,
+		},
+	}
+	var lastErr error
+	for attempt := 0; attempt < 2; attempt++ {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
+		if err != nil {
+			return nil, err
+		}
+		req.Header.Set("User-Agent", defaultProviderUserAgent)
+		resp, err := client.Do(req)
+		if err == nil {
+			content, readErr := readSubscriptionResponse(resp)
+			if readErr == nil {
+				return content, nil
+			}
+			err = readErr
+		}
+		lastErr = err
+		if ctx.Err() != nil {
+			return nil, ctx.Err()
+		}
+		timer := time.NewTimer(time.Duration(attempt+1) * 300 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		case <-timer.C:
+		}
+	}
+	return nil, lastErr
+}
+
+func readSubscriptionResponse(resp *http.Response) ([]byte, error) {
+	defer resp.Body.Close()
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
+		return nil, fmt.Errorf("upstream returned HTTP %d", resp.StatusCode)
+	}
+	data, err := io.ReadAll(io.LimitReader(resp.Body, maxSubscriptionContentBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > maxSubscriptionContentBytes {
+		return nil, fmt.Errorf("content exceeds %d bytes", maxSubscriptionContentBytes)
+	}
+	if len(strings.TrimSpace(string(data))) == 0 {
+		return nil, errors.New("content is empty")
+	}
+	return data, nil
+}
+
+func writeSubscriptionProviderFile(path string, content []byte) error {
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".provider-*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpPath := tmp.Name()
+	defer func() { _ = os.Remove(tmpPath) }()
+	if _, err := tmp.Write(content); err != nil {
+		_ = tmp.Close()
+		return err
+	}
+	if err := tmp.Close(); err != nil {
+		return err
+	}
+	if err := os.Chmod(tmpPath, 0o600); err != nil {
+		return err
+	}
+	return os.Rename(tmpPath, path)
+}
+
+func regularFileExists(path string) bool {
+	info, err := os.Stat(path)
+	return err == nil && info.Mode().IsRegular()
+}
+
+func removeUnusedNativeProviderFiles(runtime *Runtime, existing map[string]string, used map[string]struct{}) {
+	providerDir := ""
+	if runtime != nil && strings.TrimSpace(runtime.cfg.Mihomo.ConfigDir) != "" {
+		providerDir = filepath.Join(runtime.cfg.Mihomo.ConfigDir, "providers")
+	}
+	for _, path := range existing {
+		path = strings.TrimSpace(path)
+		if path == "" {
+			continue
+		}
+		if _, ok := used[path]; ok {
+			continue
+		}
+		if providerDir == "" || !isPathWithin(path, providerDir) {
+			continue
+		}
+		_ = os.Remove(path)
+	}
+}
+
+func isPathWithin(path string, dir string) bool {
+	rel, err := filepath.Rel(dir, path)
+	if err != nil {
+		return false
+	}
+	return rel != "." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)) && rel != ".."
 }
 
 func mihomoNativeProxyFromURI(name string, rawURI string) (map[string]any, error) {

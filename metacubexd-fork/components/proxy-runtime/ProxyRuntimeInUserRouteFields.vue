@@ -6,7 +6,7 @@ import {
   ProxySessionMode,
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 
-const props = defineProps<{ runtime: ProxyRuntimeInUserRulesState }>()
+const props = defineProps<{ runtime: ProxyRuntimeInUserRulesState, dense?: boolean }>()
 
 const lineKinds = [
   [EgressProfileLineKind.EGRESS_PROFILE_LINE_KIND_DIRECT, '直连'],
@@ -50,6 +50,30 @@ const availableExitKinds = computed(() =>
       value !== EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_STATIC_IP,
   ),
 )
+const rootClass = computed(() => [
+  'grid',
+  props.dense ? 'gap-2 [&_.input]:input-sm [&_.select]:select-sm' : 'gap-4',
+])
+const sectionClass = computed(() =>
+  props.dense
+    ? 'flex flex-col gap-2'
+    : 'rounded-lg border border-base-content/10 p-3',
+)
+const titleClass = computed(() =>
+  props.dense
+    ? 'divider my-0 text-xs uppercase opacity-40'
+    : 'mb-2 text-sm font-medium',
+)
+const lineGridClass = computed(() =>
+  props.dense
+    ? 'grid gap-2 sm:grid-cols-3 xl:grid-cols-4'
+    : 'grid gap-2 sm:grid-cols-2',
+)
+const exitGridClass = computed(() =>
+  props.dense
+    ? 'grid gap-2 sm:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-6'
+    : 'grid gap-2 sm:grid-cols-2',
+)
 
 watch(lineUsesMihomoNode, (usesMihomoNode) => {
   if (
@@ -73,10 +97,10 @@ watch(
 </script>
 
 <template>
-  <div class="grid gap-4">
-    <section class="rounded-lg border border-base-content/10 p-3">
-      <div class="mb-2 text-sm font-medium">线路</div>
-      <div class="grid gap-2 sm:grid-cols-2">
+  <div :class="rootClass">
+    <section :class="sectionClass">
+      <div :class="titleClass">线路</div>
+      <div :class="lineGridClass">
         <select v-model="runtime.form.line_kind" class="select-bordered select w-full">
           <option v-for="[value, label] in lineKinds" :key="value" :value="value">
             {{ label }}
@@ -99,9 +123,9 @@ watch(
       </div>
     </section>
 
-    <section class="rounded-lg border border-base-content/10 p-3">
-      <div class="mb-2 text-sm font-medium">出口</div>
-      <div class="grid gap-2 sm:grid-cols-2">
+    <section :class="sectionClass">
+      <div :class="titleClass">出口</div>
+      <div :class="exitGridClass">
         <select v-model="runtime.form.exit_kind" class="select-bordered select w-full">
           <option v-for="[value, label] in availableExitKinds" :key="value" :value="value">
             {{ label }}

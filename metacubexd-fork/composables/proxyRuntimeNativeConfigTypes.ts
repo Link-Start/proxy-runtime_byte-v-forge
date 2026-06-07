@@ -1,10 +1,12 @@
 export interface ProxyRuntimeNativeFixedProxy {
+  id?: string
   name: string
   type?: string
   uri: string
 }
 
 export interface ProxyRuntimeNativeSubscription {
+  id?: string
   name: string
   url: string
 }

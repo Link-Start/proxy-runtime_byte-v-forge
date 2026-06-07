@@ -10,6 +10,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
+	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	mihomosource "github.com/byte-v-forge/proxy-runtime/internal/sourceplane/mihomo"
 )
@@ -26,6 +27,11 @@ func main() {
 	ipFraudProviders, err := ipfraud.NewDefaultRegistry()
 	if err != nil {
 		logger.Error("create IP fraud provider registry failed", "error", err)
+		os.Exit(1)
+	}
+	ipGeoProviders, err := ipgeo.NewDefaultRegistry()
+	if err != nil {
+		logger.Error("create IP geo provider registry failed", "error", err)
 		os.Exit(1)
 	}
 	proxyProviders, err := providerregistry.NewDefaultRegistry()
@@ -46,7 +52,7 @@ func main() {
 		DashboardDir: cfg.Mihomo.DashboardDir,
 		DashboardURL: cfg.Mihomo.DashboardURL,
 	}, logger)
-	store, err := app.NewPostgresStore(context.Background(), cfg, proxyProviders, logger)
+	store, err := app.NewControlStore(context.Background(), cfg, proxyProviders, logger)
 	if err != nil {
 		logger.Error("create store failed", "error", err)
 		os.Exit(1)
@@ -64,7 +70,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer providerConcurrency.Close()
-	runtime, err := app.NewRuntime(cfg, proxyProvider, proxyProviders, ipFraudProviders, dataPlane, store, leaseRuntimeLocks, providerConcurrency, logger)
+	runtime, err := app.NewRuntime(cfg, proxyProvider, proxyProviders, ipFraudProviders, ipGeoProviders, dataPlane, store, leaseRuntimeLocks, providerConcurrency, logger)
 	if err != nil {
 		logger.Error("create runtime failed", "error", err)
 		os.Exit(1)

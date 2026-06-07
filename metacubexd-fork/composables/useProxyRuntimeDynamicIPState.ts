@@ -43,6 +43,9 @@ export function useProxyRuntimeDynamicIPState() {
     return providerIDs.map((providerID) => ({
       provider_id: providerID,
       provider_name: providerName(providerID),
+      providers: dynamicIpProviders.value.filter(
+        (provider) => provider.provider_id === providerID,
+      ),
       endpoints: providerEndpoints(dynamicIpProviders.value, providerID),
       dynamic_provider_count: dynamicIpProviders.value.filter(
         (provider) => provider.provider_id === providerID,
@@ -61,6 +64,8 @@ export function useProxyRuntimeDynamicIPState() {
       dynamic_provider_id: provider.dynamic_provider_id,
       provider_id: provider.provider_id,
       display_name: provider.display_name,
+      rotating_concurrency_limit: provider.rotating_concurrency_limit || 10,
+      sticky_concurrency_limit: provider.sticky_concurrency_limit || 2,
     })
   }
 
@@ -87,8 +92,6 @@ export function useProxyRuntimeDynamicIPState() {
       username: account.username,
       original_password_value: account.password_value,
       password_value: account.password_value,
-      rotating_concurrency_limit: account.rotating_concurrency_limit || 10,
-      sticky_concurrency_limit: account.sticky_concurrency_limit || 2,
     })
   }
 

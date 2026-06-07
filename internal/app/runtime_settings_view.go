@@ -20,6 +20,18 @@ func runtimeSettingsView(settings *runtimeSettingsFile) *proxyruntimev1.ProxyRun
 			ProviderId:       provider.GetProviderId(),
 			Weight:           provider.GetWeight(),
 			Kind:             provider.GetKind(),
+			DisplayName:      provider.GetDisplayName(),
+			Anonymous:        provider.GetAnonymous(),
+			ApiKeyConfigured: len(provider.GetApiKeySecretRefs()) > 0,
+			ApiKeyCount:      uint32(len(provider.GetApiKeySecretRefs())),
+		})
+	}
+	for _, provider := range settings.GetIpGeoProviders() {
+		out.IpGeoProviders = append(out.IpGeoProviders, &proxyruntimev1.ProxyIPGeoProviderSettingsView{
+			ProviderId:       provider.GetProviderId(),
+			Weight:           provider.GetWeight(),
+			Kind:             provider.GetKind(),
+			DisplayName:      provider.GetDisplayName(),
 			Anonymous:        provider.GetAnonymous(),
 			ApiKeyConfigured: len(provider.GetApiKeySecretRefs()) > 0,
 			ApiKeyCount:      uint32(len(provider.GetApiKeySecretRefs())),

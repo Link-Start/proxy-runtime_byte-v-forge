@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ProxyProviderAccount } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 import { ProxyProviderAccountStatus } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import { IconKey, IconPencil, IconTrash } from '@tabler/icons-vue'
+import { IconPencil, IconTrash } from '@tabler/icons-vue'
 
 defineProps<{ accounts: ProxyProviderAccount[] }>()
 
@@ -20,18 +20,15 @@ function statusText(status: ProxyProviderAccountStatus) {
 
 <template>
   <section class="min-w-0">
-    <div class="mb-2 flex items-center gap-2 text-sm font-medium">
-      <IconKey :size="16" />
-      账号
-    </div>
-    <div v-if="accounts.length === 0" class="py-5 text-sm opacity-55">
+    <div class="divider my-0 text-xs uppercase opacity-40">账号</div>
+    <div v-if="accounts.length === 0" class="py-3 text-sm opacity-55">
       暂无账号
     </div>
-    <div v-else class="divide-y divide-base-content/8">
+    <div v-else class="grid gap-2">
       <div
         v-for="account in accounts"
         :key="account.account_id"
-        class="grid gap-2 py-3 md:grid-cols-[1fr_auto]"
+        class="grid gap-2 py-2 md:grid-cols-[1fr_auto]"
       >
         <div class="min-w-0 text-sm">
           <div class="truncate font-medium">
@@ -47,12 +44,6 @@ function statusText(status: ProxyProviderAccountStatus) {
               class="badge badge-ghost badge-sm"
             >
               已配置凭据
-            </span>
-            <span class="badge badge-ghost badge-sm">
-              轮转 {{ account.rotating_concurrency_limit || 10 }}
-            </span>
-            <span class="badge badge-ghost badge-sm">
-              粘性 {{ account.sticky_concurrency_limit || 2 }}
             </span>
           </div>
         </div>

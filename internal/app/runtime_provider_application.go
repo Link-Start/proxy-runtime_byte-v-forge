@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/jackc/pgx/v5"
 )
 
 type runtimeProviderApplication struct {
@@ -106,21 +105,20 @@ func (a runtimeProviderApplication) rejectActiveProviderAccountRuntimeMutation(c
 	if !active {
 		return nil
 	}
-	record, err := a.runtime.store.providerAccountRecord(ctx, providerAccountID)
+	state, err := a.runtime.store.ProviderAccountMutationState(ctx, providerAccountID)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if isStoreNotFound(err) {
 			return nil
 		}
 		return err
 	}
-	if providerID := strings.TrimSpace(req.GetProviderId()); providerID != "" && providerID != record.ProviderID {
+	if providerID := strings.TrimSpace(req.GetProviderId()); providerID != "" && providerID != state.ProviderID {
 		return failedPrecondition("provider account has active leases", nil)
 	}
-	if dynamicProviderID := runtimeSafeID(req.GetDynamicProviderId()); dynamicProviderID != "" && dynamicProviderID != record.DynamicProviderID {
+	if dynamicProviderID := runtimeSafeID(req.GetDynamicProviderId()); dynamicProviderID != "" && dynamicProviderID != state.DynamicProviderID {
 		return failedPrecondition("provider account has active leases", nil)
 	}
-	credential := credentialFromSecret(a.runtime.store.box, record.CredentialSecret)
-	if username := strings.TrimSpace(req.GetUsername()); username != "" && (credential == nil || username != credential.Username) {
+	if username := strings.TrimSpace(req.GetUsername()); username != "" && username != state.Username {
 		return failedPrecondition("provider account has active leases", nil)
 	}
 	if req.GetClearPassword() || secretRefConfigured(req.GetPasswordSecretRef()) || strings.TrimSpace(req.GetPasswordValue()) != "" {

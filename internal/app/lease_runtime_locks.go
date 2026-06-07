@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/byte-v-forge/common-lib/redisx"
@@ -31,11 +32,14 @@ type redisLeaseRuntimeLocks struct {
 }
 
 func NewLeaseRuntimeLocks(ctx context.Context, cfg config.Config) (leaseRuntimeLocks, error) {
+	if strings.TrimSpace(cfg.RedisURL) == "" {
+		return newLocalLeaseRuntimeLocks(), nil
+	}
 	return newRedisLeaseRuntimeLocks(ctx, cfg)
 }
 
 func newRedisLeaseRuntimeLocks(ctx context.Context, cfg config.Config) (*redisLeaseRuntimeLocks, error) {
-	client, err := redisx.NewRequiredClient(ctx, cfg.RedisURL, "PLATFORM_REDIS_URL is required")
+	client, err := redisx.NewRequiredClient(ctx, cfg.RedisURL, "PROXY_RUNTIME_REDIS_URL or PLATFORM_REDIS_URL is required")
 	if err != nil {
 		return nil, err
 	}

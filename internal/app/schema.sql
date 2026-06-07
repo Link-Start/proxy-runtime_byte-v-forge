@@ -4,8 +4,6 @@ CREATE TABLE IF NOT EXISTS proxy_runtime_provider_accounts (
   dynamic_provider_id text NOT NULL DEFAULT '',
   display_name text NOT NULL,
   enabled boolean NOT NULL DEFAULT true,
-  rotating_concurrency_limit bigint NOT NULL DEFAULT 10,
-  sticky_concurrency_limit bigint NOT NULL DEFAULT 2,
   credential_secret text NOT NULL DEFAULT '',
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
@@ -14,9 +12,9 @@ CREATE TABLE IF NOT EXISTS proxy_runtime_provider_accounts (
 ALTER TABLE proxy_runtime_provider_accounts
   ADD COLUMN IF NOT EXISTS dynamic_provider_id text NOT NULL DEFAULT '';
 ALTER TABLE proxy_runtime_provider_accounts
-  ADD COLUMN IF NOT EXISTS rotating_concurrency_limit bigint NOT NULL DEFAULT 10;
+  DROP COLUMN IF EXISTS rotating_concurrency_limit;
 ALTER TABLE proxy_runtime_provider_accounts
-  ADD COLUMN IF NOT EXISTS sticky_concurrency_limit bigint NOT NULL DEFAULT 2;
+  DROP COLUMN IF EXISTS sticky_concurrency_limit;
 
 DROP TABLE IF EXISTS proxy_runtime_sources;
 
@@ -42,15 +40,6 @@ CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_provider_status
 CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_expires_at
   ON proxy_runtime_dynamic_leases(expires_at);
 
-CREATE TABLE IF NOT EXISTS proxy_runtime_dynamic_profile_sessions (
-  profile_key text PRIMARY KEY,
-  generation bigint NOT NULL DEFAULT 0,
-  released boolean NOT NULL DEFAULT false,
-  updated_at timestamptz NOT NULL DEFAULT now()
-);
-
-ALTER TABLE proxy_runtime_dynamic_profile_sessions
-  ADD COLUMN IF NOT EXISTS released boolean NOT NULL DEFAULT false;
 
 CREATE TABLE IF NOT EXISTS proxy_runtime_secrets (
   secret_id text PRIMARY KEY,

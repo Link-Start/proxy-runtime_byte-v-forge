@@ -57,8 +57,13 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	if err != nil {
 		return err
 	}
+	settings, err := r.settings.load(ctx)
+	if err != nil {
+		return err
+	}
 	holder := leaseConcurrencyHolder(lease)
-	slot, err := r.acquireProviderAccountConcurrencySlot(ctx, providerAccount, leaseConcurrencyPolicy(lease), holder, leaseConcurrencySlotTTL(leaseConcurrencyPolicy(lease)))
+	policy := leaseConcurrencyPolicy(lease)
+	slot, err := r.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, leaseDynamicProviderID(lease), policy), policy, holder, leaseConcurrencySlotTTL(policy))
 	if err != nil {
 		return err
 	}
@@ -68,10 +73,6 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 			_ = slot.Release(ctx)
 		}
 	}()
-	settings, err := r.settings.load(ctx)
-	if err != nil {
-		return err
-	}
 	providerCfg.Gateways = endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerCfg.ProviderID)
 	providerClient, err := r.accountProviders.NewSessionProvider(providerCfg, BuildProviderHTTPClient(r.cfg))
 	if err != nil {
@@ -81,7 +82,7 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	if err != nil {
 		return err
 	}
-	dialerProxy, lineLabels := dynamicLeaseDialerProxy(settings, lease.GetSelectionPlan().GetSelectedEndpoint())
+	dialerProxy, lineLabels := dynamicLeaseDialerProxy(settings, lease.GetAccountId(), lease.GetSelectionPlan().GetSelectedEndpoint())
 	nodes = applyDynamicLeaseLineLabels(nodes, lineLabels)
 	route := dataplane.SessionRoute{
 		SessionID:   lease.GetSession().GetSessionId(),

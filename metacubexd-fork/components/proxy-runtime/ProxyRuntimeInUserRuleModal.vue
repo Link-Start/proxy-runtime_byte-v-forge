@@ -45,34 +45,24 @@ defineExpose({ open, close })
 </script>
 
 <template>
-  <Modal ref="modalRef" title="IN-USER规则">
+  <Modal ref="modalRef" title="入口用户">
     <template #icon>
       <IconKey :size="22" />
     </template>
 
     <form class="grid grid-cols-1 gap-4" @submit.prevent="save">
-      <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <input
-          v-model.trim="runtime.form.display_name"
-          class="input-bordered input w-full"
-          placeholder="显示名"
-          type="text"
-        />
-        <label class="flex h-12 items-center gap-2 text-sm">
-          <input
-            v-model="runtime.form.enabled"
-            class="toggle toggle-primary"
-            type="checkbox"
-          />
-          启用
-        </label>
-      </div>
+      <input
+        v-model.trim="runtime.form.display_name"
+        class="input-bordered input w-full"
+        placeholder="显示名"
+        type="text"
+      />
 
       <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <input
           v-model.trim="runtime.form.username"
           class="input-bordered input w-full"
-          placeholder="IN-USER"
+          placeholder="入口用户名"
           required
           type="text"
         />

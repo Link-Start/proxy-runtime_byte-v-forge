@@ -4,13 +4,18 @@ import type {
   ProxyIngressRuleSettings,
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 import type { MihomoConfigNode } from '~/composables/proxyRuntimeMihomoController'
+import { type MihomoEgressOwner, mihomoOwnersFromController } from '~/composables/proxyRuntimeMihomoOwnerHelpers'
 import {
-  type MihomoEgressOwner,
-  mihomoOwnersFromController,
+  exitText,
+  lineText,
   newEgressProfileForm,
   profileFormFromSettings,
-  profileRequest,
 } from '~/composables/proxyRuntimeEgressProfileHelpers'
+import {
+  inUserRuleFormRequest,
+  newInUserRuleForm,
+} from '~/composables/proxyRuntimeInUserRuleForm'
+import { isProxyRuntimePlaygroundRule } from '~/composables/proxyRuntimePlaygroundRule'
 
 export function useProxyRuntimeInUserRules() {
   const api = useProxyRuntimeApi()
@@ -24,8 +29,7 @@ export function useProxyRuntimeInUserRules() {
   const loading = ref(false)
   const saving = ref(false)
   const error = ref('')
-  const ruleCount = computed(() => rules.value.length)
-  const rows = computed(() =>
+  const allRows = computed(() =>
     rules.value.map((rule) => ({
       rule,
       profile: profiles.value.find(
@@ -33,6 +37,10 @@ export function useProxyRuntimeInUserRules() {
       ),
     })),
   )
+  const rows = computed(() =>
+    allRows.value.filter(({ rule }) => !isProxyRuntimePlaygroundRule(rule)),
+  )
+  const ruleCount = computed(() => rows.value.length)
 
   async function load() {
     loading.value = true
@@ -61,12 +69,11 @@ export function useProxyRuntimeInUserRules() {
     const profile = profiles.value.find(
       (item) => item.profile_id === rule.profile_id,
     )
-    const profileForm = profile
+    const { enabled: _enabled, ...profileForm } = profile
       ? profileFormFromSettings(profile)
       : newEgressProfileForm()
     Object.assign(form, newInUserRuleForm(), profileForm, {
       display_name: rule.display_name || profile?.display_name || rule.username,
-      enabled: rule.enabled,
       password_value: rule.password_value,
       profile_id: rule.profile_id,
       rule_id: rule.rule_id,
@@ -76,7 +83,7 @@ export function useProxyRuntimeInUserRules() {
 
   async function saveRule() {
     await withSave(async () => {
-      const next = formRequest(form)
+      const next = inUserRuleFormRequest(form)
       const nextProfiles = profiles.value.filter(
         (profile) => profile.profile_id !== next.profile.profile_id,
       )
@@ -93,6 +100,7 @@ export function useProxyRuntimeInUserRules() {
   }
 
   async function deleteRule(rule: ProxyIngressRuleSettings) {
+    if (isProxyRuntimePlaygroundRule(rule)) return
     await withSave(async () => {
       const nextRules = rules.value.filter((item) => item.rule_id !== rule.rule_id)
       const profileStillUsed = nextRules.some(
@@ -106,6 +114,10 @@ export function useProxyRuntimeInUserRules() {
       await api.updateInUserRules(nextProfiles, nextRules)
       await load()
     })
+  }
+
+  function findRuleRow(predicate: (item: (typeof allRows.value)[number]) => boolean) {
+    return allRows.value.find(predicate)
   }
 
   async function loadMihomoNodes(ownerID: string) {
@@ -128,7 +140,9 @@ export function useProxyRuntimeInUserRules() {
     editRule,
     error,
     form,
+    findRuleRow,
     lineSources: computed(() => owners.value),
+    lineText: (profile: EgressProfileSettings) => lineText(profile, owners.value),
     load,
     loading,
     loadMihomoNodes,
@@ -139,6 +153,7 @@ export function useProxyRuntimeInUserRules() {
     ruleCount,
     saveRule,
     saving,
+    exitText: (profile: EgressProfileSettings) => exitText(profile, owners.value),
     staticExitSources: computed(() => owners.value),
   }
 
@@ -155,44 +170,4 @@ export function useProxyRuntimeInUserRules() {
   }
 }
 
-function newInUserRuleForm() {
-  return {
-    ...newEgressProfileForm(),
-    password_value: '',
-    rule_id: '',
-    username: '',
-  }
-}
-
-function formRequest(form: ReturnType<typeof newInUserRuleForm>) {
-  const ruleID = form.rule_id.trim() || generatedRuleID(form.username)
-  const profileID = form.profile_id.trim() || `${ruleID}-egress`
-  const displayName = form.display_name.trim() || form.username.trim()
-  const profile = profileRequest({
-    ...form,
-    display_name: displayName,
-    profile_id: profileID,
-  })
-  const rule: ProxyIngressRuleSettings = {
-    rule_id: ruleID,
-    display_name: displayName,
-    enabled: form.enabled,
-    username: form.username.trim(),
-    password_value: form.password_value,
-    profile_id: profile.profile_id,
-  }
-  return { profile, rule }
-}
-
-function generatedRuleID(username: string) {
-  const slug = username
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_-]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-  return `in-user-${slug || 'user'}-${Date.now().toString(36)}`
-}
-
-export type ProxyRuntimeInUserRulesState = ReturnType<
-  typeof useProxyRuntimeInUserRules
->
+export type ProxyRuntimeInUserRulesState = ReturnType<typeof useProxyRuntimeInUserRules>

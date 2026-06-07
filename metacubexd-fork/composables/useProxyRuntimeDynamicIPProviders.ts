@@ -135,10 +135,6 @@ export function useProxyRuntimeDynamicIPProviders() {
         password_secret_ref: undefined,
         clear_password: false,
         password_value: passwordChanged ? state.accountForm.password_value : '',
-        rotating_concurrency_limit:
-          state.accountForm.rotating_concurrency_limit || 10,
-        sticky_concurrency_limit:
-          state.accountForm.sticky_concurrency_limit || 2,
       })
       state.resetAccountForm()
       await load()

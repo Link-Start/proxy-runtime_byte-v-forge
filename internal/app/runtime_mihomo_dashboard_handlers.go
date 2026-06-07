@@ -1,13 +1,16 @@
 package app
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"path"
+	"regexp"
 	"strings"
 )
 
@@ -86,8 +89,31 @@ func (api *runtimeHTTPAPI) mihomoReverseProxy(mountPrefix string, upstreamPrefix
 		proxy.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, err error) {
 			writeHTTPError(w, err, http.StatusBadGateway)
 		}
+		proxy.ModifyResponse = redactMihomoControllerErrorResponse
 		proxy.ServeHTTP(w, req)
 	})
+}
+
+func redactMihomoControllerErrorResponse(resp *http.Response) error {
+	if resp == nil || resp.StatusCode < http.StatusBadRequest || resp.Body == nil {
+		return nil
+	}
+	data, err := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
+	_ = resp.Body.Close()
+	if err != nil {
+		return err
+	}
+	data = redactURLCredentials(data)
+	resp.Body = io.NopCloser(bytes.NewReader(data))
+	resp.ContentLength = int64(len(data))
+	resp.Header.Set("Content-Length", fmt.Sprintf("%d", len(data)))
+	return nil
+}
+
+var sensitiveURLPattern = regexp.MustCompile(`https?://[^\s"'<>)\\]+`)
+
+func redactURLCredentials(data []byte) []byte {
+	return sensitiveURLPattern.ReplaceAll(data, []byte("[redacted-url]"))
 }
 
 func mihomoAPIURL(addr string) (*url.URL, error) {

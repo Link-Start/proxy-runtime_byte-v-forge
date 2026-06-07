@@ -12,14 +12,11 @@ func (c Config) validate() error {
 	if c.RuntimeAddr == "" {
 		return errors.New("PROXY_RUNTIME_ADDR is required")
 	}
-	if strings.TrimSpace(c.PostgresDSN) == "" {
-		return errors.New("PROXY_RUNTIME_POSTGRES_DSN or PG_DSN is required")
+	if strings.TrimSpace(c.PostgresDSN) == "" && strings.TrimSpace(c.DataDir) == "" {
+		return errors.New("PROXY_RUNTIME_DATA_DIR is required when PostgreSQL is not configured")
 	}
 	if strings.TrimSpace(c.EncryptionKey) == "" {
 		return errors.New("PROXY_RUNTIME_ENCRYPTION_KEY is required")
-	}
-	if strings.TrimSpace(c.RedisURL) == "" {
-		return errors.New("PLATFORM_REDIS_URL is required")
 	}
 	if err := c.Mihomo.validate(); err != nil {
 		return err

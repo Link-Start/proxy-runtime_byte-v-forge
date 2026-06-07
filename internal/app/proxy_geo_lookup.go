@@ -3,9 +3,11 @@ package app
 import (
 	"context"
 	"errors"
-	"net/http"
+	"log/slog"
+	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
+	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 )
 
 func (r *Runtime) lookupIPGeo(ctx context.Context, ip string) (proxyExitGeo, error) {
@@ -16,45 +18,33 @@ func (r *Runtime) lookupIPGeo(ctx context.Context, ip string) (proxyExitGeo, err
 	if err != nil {
 		return proxyExitGeo{}, err
 	}
-	timeout := proxyExitIPTimeout(settings)
-	lookupCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	client := runtimehttp.New(timeout)
-	defer client.CloseIdleConnections()
-	geo, err := firstSuccessfulIPGeo(lookupCtx, client, ipGeoLookupEndpoints(ip))
+	providers, err := ipGeoProviders(ctx, r.store, settings, r.ipGeoProviders)
 	if err != nil {
 		return proxyExitGeo{}, err
 	}
-	geo.IP = ip
-	r.geoCache.put(ip, geo)
-	return geo, nil
+	if len(providers) == 0 {
+		return proxyExitGeo{}, errors.New("IP geo provider is not configured")
+	}
+	lookupCtx, cancel := context.WithTimeout(ctx, proxyExitIPTimeout(settings))
+	defer cancel()
+	geo, err := newIPGeoLookup(r.ipGeoProviders, proxyExitIPTimeout(settings), providers, r.logger).Lookup(lookupCtx, ip)
+	if err != nil {
+		return proxyExitGeo{}, err
+	}
+	out := proxyExitGeoFromProto(ip, geo)
+	r.geoCache.put(ip, out)
+	return out, nil
 }
 
-func firstSuccessfulIPGeo(ctx context.Context, client *http.Client, endpoints []string) (proxyExitGeo, error) {
-	if len(endpoints) == 0 {
-		return proxyExitGeo{}, errors.New("ip geo endpoint unavailable")
+func newIPGeoLookup(registry *ipgeo.Registry, timeout time.Duration, providers []ipgeo.ProviderConfig, logger *slog.Logger) *ipgeo.Service {
+	return ipgeo.NewService(registry, ipgeo.Config{Providers: providers, Timeout: timeout}, logger)
+}
+
+func proxyExitGeoFromProto(ip string, geo *proxyruntimev1.ProxyExitGeo) proxyExitGeo {
+	return proxyExitGeo{
+		IP:          firstNonEmpty(geo.GetIp(), ip),
+		CountryCode: geo.GetCountryCode(),
+		Region:      geo.GetRegion(),
+		City:        geo.GetCity(),
 	}
-	type geoResult struct {
-		geo proxyExitGeo
-		err error
-	}
-	results := make(chan geoResult, len(endpoints))
-	for _, endpoint := range endpoints {
-		endpoint := endpoint
-		go func() {
-			geo, err := requestIPInfo(ctx, client, endpoint, false)
-			results <- geoResult{geo: geo, err: err}
-		}()
-	}
-	for range endpoints {
-		select {
-		case <-ctx.Done():
-			return proxyExitGeo{}, errors.New("lookup ip geo timed out")
-		case result := <-results:
-			if result.err == nil {
-				return result.geo, nil
-			}
-		}
-	}
-	return proxyExitGeo{}, errors.New("lookup ip geo failed")
 }

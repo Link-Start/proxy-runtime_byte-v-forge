@@ -13,6 +13,10 @@ import (
 )
 
 func (r *Runtime) checkIPListener(ctx context.Context, listenerID string) (config.EgressListener, error) {
+	listenerID = strings.TrimSpace(listenerID)
+	if strings.HasPrefix(listenerID, inUserCheckListenerPrefix) {
+		return r.inUserCheckListener(ctx, strings.TrimPrefix(listenerID, inUserCheckListenerPrefix))
+	}
 	configs := r.baseListenerConfigs()
 	leases, err := r.store.ListLeaseFacts(ctx, false)
 	if err != nil {
@@ -40,6 +44,33 @@ func (r *Runtime) checkIPListener(ctx context.Context, listenerID string) (confi
 		return config.EgressListener{}, errors.New("no egress listener is configured")
 	}
 	return configs[0], nil
+}
+
+const inUserCheckListenerPrefix = "in-user:"
+
+func (r *Runtime) inUserCheckListener(ctx context.Context, username string) (config.EgressListener, error) {
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return config.EgressListener{}, errors.New("in-user listener username is required")
+	}
+	settings, err := r.settings.load(ctx)
+	if err != nil {
+		return config.EgressListener{}, err
+	}
+	for _, rule := range settings.GetIngressRules() {
+		if !rule.GetEnabled() || strings.TrimSpace(rule.GetUsername()) != username {
+			continue
+		}
+		return config.EgressListener{
+			ID:       inUserCheckListenerPrefix + runtimeSafeID(username),
+			Addr:     r.cfg.LocalAddr,
+			Protocol: r.cfg.LocalProtocol,
+			Route:    config.ListenerRouteProvider,
+			Username: username,
+			Password: rule.GetPasswordValue(),
+		}, nil
+	}
+	return config.EgressListener{}, fmt.Errorf("in-user %q is not configured", username)
 }
 
 func (r *Runtime) localListenerEndpoint(listener config.EgressListener, advertisedHost string) (*proxyruntimev1.ProxyEndpoint, error) {

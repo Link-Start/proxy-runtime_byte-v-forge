@@ -63,6 +63,7 @@ type IPFraudConfig struct {
 
 type Config struct {
 	RuntimeAddr       string
+	DataDir           string
 	PostgresDSN       string
 	RedisURL          string
 	EncryptionKey     string

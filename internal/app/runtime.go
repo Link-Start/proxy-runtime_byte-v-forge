@@ -10,6 +10,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
+	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 )
@@ -19,8 +20,9 @@ type Runtime struct {
 	provider            provider.PoolProvider
 	accountProviders    *providerregistry.Registry
 	ipFraudProviders    *ipfraud.Registry
+	ipGeoProviders      *ipgeo.Registry
 	dataPlane           dataplane.Driver
-	store               *PostgresStore
+	store               controlStore
 	leaseLocks          leaseRuntimeLocks
 	providerConcurrency providerAccountConcurrencyLimiter
 	leaseCoordinator    leaseCoordinator
@@ -42,14 +44,14 @@ type Runtime struct {
 	reconcileCh chan struct{}
 }
 
-func NewRuntime(cfg config.Config, proxyProvider provider.PoolProvider, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, dataPlane dataplane.Driver, store *PostgresStore, leaseLocks leaseRuntimeLocks, providerConcurrency providerAccountConcurrencyLimiter, logger *slog.Logger) (*Runtime, error) {
+func NewRuntime(cfg config.Config, proxyProvider provider.PoolProvider, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry, dataPlane dataplane.Driver, store controlStore, leaseLocks leaseRuntimeLocks, providerConcurrency providerAccountConcurrencyLimiter, logger *slog.Logger) (*Runtime, error) {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	if dataPlane == nil {
 		return nil, fmt.Errorf("data plane driver is required")
 	}
-	runtime := &Runtime{cfg: cfg, provider: proxyProvider, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, dataPlane: dataPlane, store: store, leaseLocks: leaseLocks, providerConcurrency: providerConcurrency, settings: newRuntimeSettingsStore(store, accountProviders, ipFraudProviders, logger), logger: logger, reconcileCh: make(chan struct{}, 1)}
+	runtime := &Runtime{cfg: cfg, provider: proxyProvider, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, ipGeoProviders: ipGeoProviders, dataPlane: dataPlane, store: store, leaseLocks: leaseLocks, providerConcurrency: providerConcurrency, settings: newRuntimeSettingsStore(store, accountProviders, ipFraudProviders, ipGeoProviders, logger), logger: logger, reconcileCh: make(chan struct{}, 1)}
 	runtime.leaseCoordinator = newLeaseCoordinator(runtime)
 	runtime.dynamicIPSelector = newDynamicIPSelector(runtime)
 	runtime.appService = NewRuntimeService(runtime)
@@ -145,7 +147,7 @@ func (r *Runtime) refresh(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	r.refreshDynamicProfileExitIPs(ctx)
+	r.refreshDynamicProfileSelectionMetadata(ctx)
 	if err := r.leaseCoordinator.restoreActiveLeases(ctx); err != nil {
 		return err
 	}

@@ -45,15 +45,30 @@ type mihomoConfig struct {
 }
 
 type mihomoNativeConfig struct {
-	Proxies        []map[string]any          `json:"proxies,omitempty"`
-	ProxyProviders map[string]mihomoProvider `json:"proxy-providers,omitempty"`
-	ProxyGroups    []mihomoGroup             `json:"proxy-groups,omitempty"`
-	Rules          []string                  `json:"rules,omitempty"`
+	FixedProxies   []mihomoNativeFixedProxy   `json:"fixed_proxies,omitempty"`
+	Proxies        []map[string]any           `json:"proxies,omitempty"`
+	Subscriptions  []mihomoNativeSubscription `json:"subscriptions,omitempty"`
+	ProxyProviders map[string]mihomoProvider  `json:"proxy-providers,omitempty"`
+	ProxyGroups    []mihomoGroup              `json:"proxy-groups,omitempty"`
+	Rules          []string                   `json:"rules,omitempty"`
+}
+
+type mihomoNativeFixedProxy struct {
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name"`
+	Type string `json:"type,omitempty"`
+	URI  string `json:"uri,omitempty"`
+}
+
+type mihomoNativeSubscription struct {
+	ID   string `json:"id,omitempty"`
+	Name string `json:"name"`
+	URL  string `json:"url,omitempty"`
 }
 
 type mihomoProvider struct {
 	Type        string              `json:"type"`
-	URL         string              `json:"url"`
+	URL         string              `json:"url,omitempty"`
 	Path        string              `json:"path,omitempty"`
 	Interval    int                 `json:"interval,omitempty"`
 	Filter      string              `json:"filter,omitempty"`

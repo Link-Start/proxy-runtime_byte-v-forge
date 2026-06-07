@@ -28,7 +28,7 @@ func (r *Runtime) checkIPFraud(ctx context.Context, ip string, settings *runtime
 }
 
 func (r *Runtime) ipFraudChecker(settings *runtimeSettingsFile, providers []ipfraud.ProviderConfig) ipFraudChecker {
-	signature := runtimeSettingsSignature(settings, r.ipFraudProviders)
+	signature := runtimeSettingsSignature(settings, r.ipFraudProviders, r.ipGeoProviders)
 	return r.fraudChecker.get(signature, func() ipFraudChecker {
 		return newIPFraudChecker(r.ipFraudProviders, r.cfg.IPFraud, providers, r.logger)
 	})

@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"net/http"
 	"strings"
@@ -11,12 +12,14 @@ import (
 	"github.com/byte-v-forge/common-lib/randx"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
-	"github.com/jackc/pgx/v5"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Request, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
 	r := c.runtime
+	if req == nil {
+		return nil, errors.New("acquire request is required")
+	}
 	req.AccountId = strings.TrimSpace(req.GetAccountId())
 	if req.AccountId == "" {
 		return nil, errors.New("account_id is required")
@@ -28,6 +31,13 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 	defer func() { _ = lock.Unlock(ctx) }()
 	req.Purpose = firstNonEmpty(req.GetPurpose(), "general")
 	normalizeLeasePolicy(req)
+	settings, err := r.settings.load(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if err := validateLeaseProfileDynamicIP(settings, req); err != nil {
+		return nil, err
+	}
 	requestedSessionID := requestedLeaseSessionID(req)
 	existing, err := r.activeLeaseByRequest(ctx, req, requestedSessionID)
 	if err == nil && leaseActive(existing, time.Now().UTC()) {
@@ -55,7 +65,7 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 		return nil, err
 	}
 	concurrencyHolder := "lease:" + leaseID
-	concurrencySlot, err := r.acquireProviderAccountConcurrencySlot(ctx, providerAccount, req.GetPolicy(), concurrencyHolder, leaseConcurrencySlotTTL(req.GetPolicy()))
+	concurrencySlot, err := r.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, selection.plan.GetSelectedEndpoint().GetDynamicProviderId(), req.GetPolicy()), req.GetPolicy(), concurrencyHolder, leaseConcurrencySlotTTL(req.GetPolicy()))
 	if err != nil {
 		return nil, err
 	}
@@ -95,12 +105,7 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 		failure.beforeRoute("provider session fetch failed")
 		return nil, err
 	}
-	settings, err := r.settings.load(ctx)
-	if err != nil {
-		failure.beforeRoute("runtime settings load failed")
-		return nil, err
-	}
-	dialerProxy, lineLabels := dynamicLeaseDialerProxy(settings, selection.plan.GetSelectedEndpoint())
+	dialerProxy, lineLabels := dynamicLeaseDialerProxy(settings, req.GetAccountId(), selection.plan.GetSelectedEndpoint())
 	nodes = applyDynamicLeaseLineLabels(nodes, lineLabels)
 	listenerLock, err := r.leaseLocks.LockSessionListenerAllocation(ctx)
 	if err != nil {
@@ -151,11 +156,44 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 	return lease, nil
 }
 
+func validateLeaseProfileDynamicIP(settings *runtimeSettingsFile, req *proxyruntimev1.AcquireProxyLeaseRequest) error {
+	profile := egressProfileByID(settings, req.GetAccountId())
+	if profile == nil {
+		if req.GetPurpose() == "in-user-profile" {
+			return failedPrecondition("in-user profile dynamic IP is not configured", nil)
+		}
+		return nil
+	}
+	if !profile.GetEnabled() || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
+		return failedPrecondition("in-user profile dynamic IP is not configured", nil)
+	}
+	if profile.GetExit().GetDynamicIpPolicy().GetMode() != proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY {
+		return failedPrecondition("in-user profile lease requires sticky dynamic IP", nil)
+	}
+	if req.GetPolicy().GetMode() != proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY {
+		return invalidArgument("lease request must use sticky dynamic IP", nil)
+	}
+	return nil
+}
+
+func egressProfileByID(settings *runtimeSettingsFile, profileID string) *proxyruntimev1.EgressProfileSettings {
+	profileID = strings.TrimSpace(profileID)
+	if profileID == "" {
+		return nil
+	}
+	for _, profile := range settings.GetEgressProfiles() {
+		if profile.GetProfileId() == profileID {
+			return profile
+		}
+	}
+	return nil
+}
+
 func (r *Runtime) activeLeaseByRequest(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest, sessionID string) (*proxyruntimev1.ProxyDynamicLease, error) {
 	if strings.TrimSpace(sessionID) != "" {
 		return r.store.ActiveLeaseFactBySession(ctx, req.GetAccountId(), req.GetPurpose(), sessionID)
 	}
-	return nil, pgx.ErrNoRows
+	return nil, sql.ErrNoRows
 }
 
 func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
@@ -174,7 +212,7 @@ func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.
 	}
 	defer func() { _ = lock.Unlock(ctx) }()
 	current, err := r.store.LeaseFactByID(ctx, lease.GetLeaseId())
-	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+	if err != nil && !isStoreNotFound(err) {
 		return nil, err
 	}
 	if current != nil {
@@ -203,7 +241,7 @@ func (c leaseCoordinator) leaseByReleaseRequest(ctx context.Context, req *proxyr
 	if leaseID != "" {
 		lease, err := r.store.LeaseFactByID(ctx, leaseID)
 		if err != nil {
-			if errors.Is(err, pgx.ErrNoRows) {
+			if isStoreNotFound(err) {
 				return nil, errors.New("lease_id not found")
 			}
 			return nil, err
@@ -223,12 +261,12 @@ func (c leaseCoordinator) leaseByReleaseRequest(ctx context.Context, req *proxyr
 	if err == nil {
 		return lease, nil
 	}
-	if !errors.Is(err, pgx.ErrNoRows) {
+	if !isStoreNotFound(err) {
 		return nil, err
 	}
 	lease, err = r.store.LatestLeaseFactByAccount(ctx, accountID, purpose)
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if isStoreNotFound(err) {
 			return nil, errors.New("active lease not found")
 		}
 		return nil, err

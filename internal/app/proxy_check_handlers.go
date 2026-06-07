@@ -104,6 +104,19 @@ func (api *runtimeHTTPAPI) handleIPFraudProviders(w http.ResponseWriter, req *ht
 	api.writeProto(w, response)
 }
 
+func (api *runtimeHTTPAPI) handleIPGeoProviders(w http.ResponseWriter, req *http.Request) {
+	if req.Method != http.MethodGet {
+		methodNotAllowed(w, http.MethodGet)
+		return
+	}
+	response, err := api.service.ListProxyIPGeoProviders(req.Context(), &proxyruntimev1.ListProxyIPGeoProvidersRequest{})
+	if err != nil {
+		writeHTTPError(w, err, http.StatusInternalServerError)
+		return
+	}
+	api.writeProto(w, response)
+}
+
 func (api *runtimeHTTPAPI) handleDynamicIPProviders(w http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case http.MethodGet:

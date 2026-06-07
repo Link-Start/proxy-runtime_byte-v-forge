@@ -10,40 +10,43 @@ import (
 )
 
 const (
-	defaultProviderAccountRotatingConcurrencyLimit uint32 = 10
-	defaultProviderAccountStickyConcurrencyLimit   uint32 = 2
+	defaultDynamicProviderRotatingConcurrencyLimit uint32 = 10
+	defaultDynamicProviderStickyConcurrencyLimit   uint32 = 2
 	providerAccountConcurrencyTTLBuffer                   = 2 * time.Minute
 )
 
-func normalizeProviderAccountRotatingConcurrencyLimit(value uint32) uint32 {
+func normalizeDynamicProviderRotatingConcurrencyLimit(value uint32) uint32 {
 	if value == 0 {
-		return defaultProviderAccountRotatingConcurrencyLimit
+		return defaultDynamicProviderRotatingConcurrencyLimit
 	}
 	return value
 }
 
-func normalizeProviderAccountStickyConcurrencyLimit(value uint32) uint32 {
+func normalizeDynamicProviderStickyConcurrencyLimit(value uint32) uint32 {
 	if value == 0 {
-		return defaultProviderAccountStickyConcurrencyLimit
+		return defaultDynamicProviderStickyConcurrencyLimit
 	}
 	return value
 }
 
-func storedProviderAccountConcurrencyLimit(value int64) uint32 {
-	if value <= 0 {
-		return 0
-	}
-	if value > int64(^uint32(0)) {
-		return ^uint32(0)
-	}
-	return uint32(value)
-}
-
-func providerAccountConcurrencyLimit(account *proxyruntimev1.ProxyProviderAccount, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
+func dynamicProviderInstanceConcurrencyLimit(provider dynamicIPProviderInstance, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
 	if providerAccountConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
-		return normalizeProviderAccountRotatingConcurrencyLimit(account.GetRotatingConcurrencyLimit())
+		return normalizeDynamicProviderRotatingConcurrencyLimit(provider.rotatingConcurrencyLimit)
 	}
-	return normalizeProviderAccountStickyConcurrencyLimit(account.GetStickyConcurrencyLimit())
+	return normalizeDynamicProviderStickyConcurrencyLimit(provider.stickyConcurrencyLimit)
+}
+
+func dynamicProviderConcurrencyLimit(settings *runtimeSettingsFile, dynamicProviderID string, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
+	dynamicProviderID = runtimeSafeID(dynamicProviderID)
+	for _, provider := range dynamicIPProviderInstances(settings) {
+		if provider.dynamicProviderID == dynamicProviderID {
+			return dynamicProviderInstanceConcurrencyLimit(provider, policy)
+		}
+	}
+	if providerAccountConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
+		return defaultDynamicProviderRotatingConcurrencyLimit
+	}
+	return defaultDynamicProviderStickyConcurrencyLimit
 }
 
 func providerAccountConcurrencyMode(policy *proxyruntimev1.ProxySessionPolicy) proxyruntimev1.ProxySessionMode {
@@ -63,18 +66,11 @@ func providerAccountConcurrencyModeText(policy *proxyruntimev1.ProxySessionPolic
 	return "sticky"
 }
 
-func (r *Runtime) providerAccountConcurrencyAvailable(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, policy *proxyruntimev1.ProxySessionPolicy, holder string) (bool, error) {
-	if r.providerConcurrency == nil {
-		return true, nil
-	}
-	return r.providerConcurrency.Available(ctx, account.GetAccountId(), policy, providerAccountConcurrencyLimit(account, policy), holder)
-}
-
-func (r *Runtime) acquireProviderAccountConcurrencySlot(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (providerAccountConcurrencySlot, error) {
+func (r *Runtime) acquireProviderAccountConcurrencySlot(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, limit uint32, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (providerAccountConcurrencySlot, error) {
 	if r.providerConcurrency == nil {
 		return noopProviderAccountConcurrencySlot{}, nil
 	}
-	slot, err := r.providerConcurrency.Acquire(ctx, account.GetAccountId(), policy, providerAccountConcurrencyLimit(account, policy), holder, ttl)
+	slot, err := r.providerConcurrency.Acquire(ctx, account.GetAccountId(), policy, limit, holder, ttl)
 	if err != nil {
 		return nil, fmt.Errorf("provider account %q %s concurrency limit reached: %w", account.GetAccountId(), providerAccountConcurrencyModeText(policy), err)
 	}
@@ -109,7 +105,12 @@ func (r *Runtime) refreshLeaseConcurrencySlot(ctx context.Context, lease *proxyr
 	if err != nil {
 		return err
 	}
-	_, err = r.acquireProviderAccountConcurrencySlot(ctx, account, leaseConcurrencyPolicy(lease), holder, leaseConcurrencySlotTTL(leaseConcurrencyPolicy(lease)))
+	settings, err := r.settings.load(ctx)
+	if err != nil {
+		return err
+	}
+	policy := leaseConcurrencyPolicy(lease)
+	_, err = r.acquireProviderAccountConcurrencySlot(ctx, account, dynamicProviderConcurrencyLimit(settings, leaseDynamicProviderID(lease), policy), policy, holder, leaseConcurrencySlotTTL(policy))
 	return err
 }
 
@@ -139,30 +140,26 @@ func leaseConcurrencyHolder(lease *proxyruntimev1.ProxyDynamicLease) string {
 	return ""
 }
 
+func leaseDynamicProviderID(lease *proxyruntimev1.ProxyDynamicLease) string {
+	if lease == nil {
+		return ""
+	}
+	if dynamicProviderID := strings.TrimSpace(lease.GetEgress().GetLabels()["dynamic_provider_id"]); dynamicProviderID != "" {
+		return dynamicProviderID
+	}
+	if dynamicProviderID := strings.TrimSpace(lease.GetSession().GetLabels()["dynamic_provider_id"]); dynamicProviderID != "" {
+		return dynamicProviderID
+	}
+	if endpoint := lease.GetSelectionPlan().GetSelectedEndpoint(); endpoint != nil {
+		return endpoint.GetDynamicProviderId()
+	}
+	return ""
+}
+
 func leaseConcurrencySlotTTL(policy *proxyruntimev1.ProxySessionPolicy) time.Duration {
 	ttl := defaultDynamicIPStickyTTL
 	if policy != nil && policy.GetStickyTtl() != nil && policy.GetStickyTtl().AsDuration() > 0 {
 		ttl = policy.GetStickyTtl().AsDuration()
 	}
 	return ttl + providerAccountConcurrencyTTLBuffer
-}
-
-func dynamicProfileConcurrencySlotTTL(refreshInterval time.Duration, policy *proxyruntimev1.ProxySessionPolicy) time.Duration {
-	ttl := leaseConcurrencySlotTTL(policy)
-	minTTL := defaultProviderAccountConcurrencySlotTTL
-	if refreshInterval > 0 {
-		minTTL = refreshInterval*2 + time.Minute
-	}
-	if ttl < minTTL {
-		return minTTL
-	}
-	return ttl
-}
-
-func dynamicProfileConcurrencyHolder(sessionKey string) string {
-	sessionKey = strings.TrimSpace(sessionKey)
-	if sessionKey == "" {
-		return ""
-	}
-	return "dynamic-profile:" + sessionKey
 }

@@ -12,7 +12,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
 )
 
-func (r *Runtime) refreshDynamicProfileExitIPs(ctx context.Context) {
+func (r *Runtime) refreshDynamicProfileSelectionMetadata(ctx context.Context) {
 	settings, err := r.settings.load(ctx)
 	if err != nil {
 		return
@@ -22,12 +22,12 @@ func (r *Runtime) refreshDynamicProfileExitIPs(ctx context.Context) {
 		return
 	}
 	for _, profile := range settings.GetEgressProfiles() {
-		r.applyDynamicProfileExitIP(ctx, nodes, profile, settings)
+		r.applyDynamicProfileSelectionMetadata(ctx, nodes, profile)
 	}
 	r.setDynamicProfilePoolSnapshot(nodes)
 }
 
-func (r *Runtime) applyDynamicProfileExitIP(ctx context.Context, nodes []provider.Node, profile *proxyruntimev1.EgressProfileSettings, settings *runtimeSettingsFile) {
+func (r *Runtime) applyDynamicProfileSelectionMetadata(ctx context.Context, nodes []provider.Node, profile *proxyruntimev1.EgressProfileSettings) {
 	if !profile.GetEnabled() || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
 		return
 	}
@@ -37,8 +37,7 @@ func (r *Runtime) applyDynamicProfileExitIP(ctx context.Context, nodes []provide
 	if err != nil || selected == "" {
 		return
 	}
-	ip := r.probeProfileExitIP(ctx, profile.GetProfileId(), settings)
-	markDynamicProfileSelection(nodes, profile.GetProfileId(), selected, ip)
+	markDynamicProfileSelection(nodes, profile.GetProfileId(), selected)
 }
 
 func clearDynamicProfileExitIP(nodes []provider.Node, profileID string) {
@@ -54,7 +53,7 @@ func clearDynamicProfileExitIP(nodes []provider.Node, profileID string) {
 	}
 }
 
-func markDynamicProfileSelection(nodes []provider.Node, profileID string, selectedProxy string, exitIP string) {
+func markDynamicProfileSelection(nodes []provider.Node, profileID string, selectedProxy string) {
 	index := dynamicProfileNodeIndex(nodes, profileID, selectedProxy)
 	if index < 0 {
 		return
@@ -62,9 +61,6 @@ func markDynamicProfileSelection(nodes []provider.Node, profileID string, select
 	nodes[index].Labels = cloneLabels(nodes[index].Labels)
 	nodes[index].Labels["selected"] = "true"
 	nodes[index].Labels["mihomo_proxy_name"] = strings.TrimSpace(selectedProxy)
-	if strings.TrimSpace(exitIP) != "" {
-		nodes[index].Labels["exit_ip"] = strings.TrimSpace(exitIP)
-	}
 }
 
 func dynamicProfileNodeIndex(nodes []provider.Node, profileID string, selectedProxy string) int {
@@ -79,60 +75,6 @@ func dynamicProfileNodeIndex(nodes []provider.Node, profileID string, selectedPr
 		}
 	}
 	return -1
-}
-
-func (r *Runtime) probeProfileExitIP(ctx context.Context, profileID string, settings *runtimeSettingsFile) string {
-	rule := profileIngressRule(settings, profileID)
-	if rule == nil {
-		return ""
-	}
-	proxyURL, err := localProfileProxyURL(r.cfg.LocalAddr, r.cfg.LocalProtocol, rule)
-	if err != nil {
-		return ""
-	}
-	timeout := proxyExitIPTimeout(settings)
-	client, err := runtimehttp.NewWithProxy(timeout, proxyURL, runtimehttp.CommonProxySchemes...)
-	if err != nil {
-		return ""
-	}
-	defer client.CloseIdleConnections()
-	probeCtx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-	ip, err := r.probeExitIP(probeCtx, client)
-	if err != nil {
-		return ""
-	}
-	return ip
-}
-
-func profileIngressRule(settings *runtimeSettingsFile, profileID string) *proxyruntimev1.ProxyIngressRuleSettings {
-	profileID = runtimeSafeID(profileID)
-	for _, rule := range normalizeRuntimeSettings(settings).GetIngressRules() {
-		if !rule.GetEnabled() || runtimeSafeID(rule.GetProfileId()) != profileID {
-			continue
-		}
-		if strings.TrimSpace(rule.GetUsername()) == "" {
-			continue
-		}
-		return rule
-	}
-	return nil
-}
-
-func localProfileProxyURL(addr string, protocol string, rule *proxyruntimev1.ProxyIngressRuleSettings) (string, error) {
-	hostPort, err := localListenHostPort(addr)
-	if err != nil {
-		return "", err
-	}
-	proxyURL := &url.URL{
-		Scheme: strings.TrimSpace(protocol),
-		Host:   hostPort,
-		User:   url.UserPassword(rule.GetUsername(), rule.GetPasswordValue()),
-	}
-	if proxyURL.Scheme == "" {
-		proxyURL.Scheme = "socks5"
-	}
-	return proxyURL.String(), nil
 }
 
 func (r *Runtime) mihomoProxyGroupNow(ctx context.Context, groupName string) (string, error) {

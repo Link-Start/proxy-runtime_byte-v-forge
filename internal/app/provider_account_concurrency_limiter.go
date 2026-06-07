@@ -47,7 +47,10 @@ type redisProviderAccountConcurrencySlot struct {
 }
 
 func NewProviderAccountConcurrencyLimiter(ctx context.Context, cfg config.Config) (providerAccountConcurrencyLimiter, error) {
-	client, err := redisx.NewRequiredClient(ctx, cfg.RedisURL, "PLATFORM_REDIS_URL is required")
+	if strings.TrimSpace(cfg.RedisURL) == "" {
+		return newLocalProviderAccountConcurrencyLimiter(), nil
+	}
+	client, err := redisx.NewRequiredClient(ctx, cfg.RedisURL, "PROXY_RUNTIME_REDIS_URL or PLATFORM_REDIS_URL is required")
 	if err != nil {
 		return nil, err
 	}

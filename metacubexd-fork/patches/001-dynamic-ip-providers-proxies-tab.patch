@@ -1,24 +1,34 @@
 diff --git a/pages/proxies.vue b/pages/proxies.vue
-index 9af484c..e52a24e 100644
+index 9af484c..0d0d70a 100644
 --- a/pages/proxies.vue
 +++ b/pages/proxies.vue
-@@ -40,7 +40,11 @@ const nodeRecommendationStore = useNodeRecommendationStore()
+@@ -40,7 +40,16 @@ const nodeRecommendationStore = useNodeRecommendationStore()
  // Batch latency test
  const { isRunning: isBatchTesting, testMultipleGroups } = useBatchLatencyTest()
  
 -const activeTab = ref<'proxies' | 'proxyProviders'>('proxies')
 +const proxyRuntime = useProxyRuntimeDynamicIPProviders()
++const inUserRules = useProxyRuntimeInUserRules()
 +const nativeRuntime = useProxyRuntimeNativeConfig()
 +const activeTab = ref<
-+  'proxies' | 'proxyProviders' | 'dynamicIPProviders' | 'mihomoNative'
++  | 'proxies'
++  | 'proxyProviders'
++  | 'proxyRuntimeInUsers'
++  | 'dynamicIPProviders'
++  | 'mihomoNative'
 +>('proxies')
  const settingsModal = ref<{ open: () => void; close: () => void }>()
  const proxyGroupsWrapper = ref<{ isTwoColumns: boolean }>()
  const providersWrapper = ref<{ isTwoColumns: boolean }>()
-@@ -87,6 +91,16 @@ const tabs = computed(() => [
+@@ -87,6 +96,21 @@ const tabs = computed(() => [
      name: t('proxyProviders'),
      count: proxiesStore.proxyProviders.length,
    },
++  {
++    type: 'proxyRuntimeInUsers' as const,
++    name: '入口用户',
++    count: inUserRules.ruleCount.value,
++  },
 +  {
 +    type: 'dynamicIPProviders' as const,
 +    name: '动态IP提供商',
@@ -32,19 +42,36 @@ index 9af484c..e52a24e 100644
  ])
  
  function getSortedProxyNames(proxyGroup: ProxyType) {
-@@ -131,6 +145,8 @@ function getProviderProxyNames(
+@@ -131,6 +155,9 @@ function getProviderProxyNames(
  // Fetch proxies on mount
  onMounted(() => {
    proxiesStore.fetchProxies()
++  inUserRules.load()
 +  proxyRuntime.load()
 +  nativeRuntime.load()
  })
  
  // Enable window focus refetch for proxies data
-@@ -582,6 +598,38 @@ const ProviderProxyNodes = defineComponent({
+@@ -582,6 +609,54 @@ const ProviderProxyNodes = defineComponent({
              }"
            />
          </Button>
++
++        <Button
++          v-if="activeTab === 'proxyRuntimeInUsers'"
++          aria-label="刷新"
++          class="flex h-9 w-9 items-center justify-center rounded-[0.625rem] border border-base-content/10 bg-base-200/80 transition-all duration-200 hover:border-primary/30 hover:bg-primary/15 hover:text-primary"
++          :disabled="inUserRules.loading.value"
++          title="刷新"
++          @click="inUserRules.load"
++        >
++          <IconReload
++            :size="18"
++            :class="{
++              'animate-spin text-success': inUserRules.loading.value,
++            }"
++          />
++        </Button>
 +
 +        <Button
 +          v-if="activeTab === 'dynamicIPProviders'"
@@ -80,7 +107,7 @@ index 9af484c..e52a24e 100644
        </div>
  
        <!-- Settings Button -->
-@@ -677,7 +725,10 @@ const ProviderProxyNodes = defineComponent({
+@@ -677,7 +752,10 @@ const ProviderProxyNodes = defineComponent({
      </div>
  
      <!-- Proxy Providers Content -->
@@ -92,10 +119,18 @@ index 9af484c..e52a24e 100644
        <ProxiesRenderWrapper ref="providersWrapper">
          <template v-if="providersWrapper?.isTwoColumns" #even>
            <Collapse
-@@ -757,6 +808,19 @@ const ProviderProxyNodes = defineComponent({
+@@ -757,6 +835,27 @@ const ProviderProxyNodes = defineComponent({
        </ProxiesRenderWrapper>
      </div>
  
++    <!-- Proxy Runtime In-User Content -->
++    <div
++      v-else-if="activeTab === 'proxyRuntimeInUsers'"
++      class="min-h-0 flex-1 overflow-y-auto"
++    >
++      <ProxyRuntimeInUserRules :runtime="inUserRules" />
++    </div>
++
 +    <!-- Dynamic IP Providers Content -->
 +    <div
 +      v-else-if="activeTab === 'dynamicIPProviders'"

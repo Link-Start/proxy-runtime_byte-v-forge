@@ -41,3 +41,9 @@ func (c *ipGeoCache) put(ip string, geo proxyExitGeo) {
 	}
 	c.items[ip] = cachedIPGeo{geo: geo, expiresAt: time.Now().Add(ipGeoCacheTTL)}
 }
+
+func (c *ipGeoCache) clear() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.items = nil
+}

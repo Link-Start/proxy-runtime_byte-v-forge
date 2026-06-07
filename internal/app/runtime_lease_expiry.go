@@ -8,7 +8,6 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/jackc/pgx/v5"
 )
 
 const leaseExpirySweepInterval = 30 * time.Second
@@ -59,7 +58,7 @@ func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyrunti
 	defer func() { _ = lock.Unlock(ctx) }()
 	current, err := r.store.LeaseFactByID(ctx, lease.GetLeaseId())
 	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
+		if isStoreNotFound(err) {
 			return nil
 		}
 		return err

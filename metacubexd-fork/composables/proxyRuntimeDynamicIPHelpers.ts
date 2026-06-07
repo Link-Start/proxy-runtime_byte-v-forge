@@ -8,6 +8,8 @@ export function newDynamicProviderForm(providerID = '') {
     dynamic_provider_id: '',
     provider_id: providerID,
     display_name: '',
+    rotating_concurrency_limit: 10,
+    sticky_concurrency_limit: 2,
   }
 }
 
@@ -29,8 +31,6 @@ export function newAccountForm(dynamicProviderID = '', providerID = '') {
     username: '',
     original_password_value: '',
     password_value: '',
-    rotating_concurrency_limit: 10,
-    sticky_concurrency_limit: 2,
   }
 }
 
@@ -46,6 +46,8 @@ export function dynamicProviderFromForm(
     dynamic_provider_id: dynamicProviderID,
     provider_id: providerID,
     display_name: form.display_name.trim() || dynamicProviderID,
+    rotating_concurrency_limit: form.rotating_concurrency_limit || 10,
+    sticky_concurrency_limit: form.sticky_concurrency_limit || 2,
     endpoints: (
       sharedEndpoints.length > 0 ? sharedEndpoints : current?.endpoints || []
     ).map((endpoint) => ({ ...endpoint })),
@@ -67,6 +69,8 @@ export function cloneDynamicIPProvider(
     dynamic_provider_id: provider.dynamic_provider_id,
     provider_id: provider.provider_id,
     display_name: provider.display_name,
+    rotating_concurrency_limit: provider.rotating_concurrency_limit || 10,
+    sticky_concurrency_limit: provider.sticky_concurrency_limit || 2,
     endpoints: (provider.endpoints || []).map((endpoint) => ({ ...endpoint })),
   }
 }

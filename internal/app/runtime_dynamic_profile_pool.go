@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -39,11 +38,9 @@ func (r *Runtime) dynamicProfilePool(ctx context.Context, settings *runtimeSetti
 }
 
 type dynamicProfileEndpointSelection struct {
-	account           *proxyruntimev1.ProxyProviderAccount
-	accountID         string
-	concurrencyHolder string
-	config            accountproxy.Config
-	sessionKey        string
+	account   *proxyruntimev1.ProxyProviderAccount
+	accountID string
+	config    accountproxy.Config
 }
 
 func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http.Client, accounts []*proxyruntimev1.ProxyProviderAccount, instances []dynamicIPProviderInstance, endpointHealthScores map[string]int, profile *proxyruntimev1.EgressProfileSettings) []provider.Node {
@@ -73,26 +70,15 @@ func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http
 		if len(matchedInstances) == 0 {
 			continue
 		}
-		accountCandidates := r.dynamicIPSelector.dynamicIPEndpointCandidatesForAccount(ctx, account, accountIndex, matchedInstances, policy)
+		accountCandidates := r.dynamicIPSelector.dynamicIPEndpointCandidatesForAccount(ctx, account, accountIndex, matchedInstances, policy, exit.GetDynamicIpPolicy(), dynamicIPCandidateFilter{})
 		accountCandidates = dynamicProfileEndpointCandidates(accountCandidates, endpointID)
 		for _, candidate := range accountCandidates {
 			if candidate.proto == nil {
 				continue
 			}
-			sessionPolicy := dynamicProfileSessionPolicy(exit.GetDynamicIpPolicy(), candidate.proto.GetEndpointId())
-			sessionKey := dynamicProfileSessionStateKey(profileID, accountID, cfg.ProviderID, candidate.proto.GetEndpointId(), exit.GetDynamicIpPolicy())
-			holder := dynamicProfileConcurrencyHolder(sessionKey)
-			available, err := r.providerAccountConcurrencyAvailable(ctx, account, sessionPolicy, holder)
-			if err != nil {
-				r.logger.Warn("dynamic profile provider account concurrency skipped", "account_id", accountID, "provider_id", account.GetProviderId(), "error", err)
-				continue
-			}
-			if !available {
-				continue
-			}
 			key := dynamicProfileEndpointCandidateKey(candidate)
 			candidates = append(candidates, candidate)
-			selections[key] = dynamicProfileEndpointSelection{account: account, accountID: accountID, concurrencyHolder: holder, config: cfg, sessionKey: sessionKey}
+			selections[key] = dynamicProfileEndpointSelection{account: account, accountID: accountID, config: cfg}
 		}
 	}
 	applyDynamicIPEndpointHealthScores(candidates, endpointHealthScores)
@@ -113,27 +99,7 @@ func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *h
 		r.logger.Warn("dynamic profile provider account skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error", err)
 		return nil
 	}
-	sessionKey := firstNonEmpty(selection.sessionKey, dynamicProfileSessionStateKey(profileID, selection.accountID, cfg.ProviderID, selected.proto.GetEndpointId(), profile.GetExit().GetDynamicIpPolicy()))
-	state, err := r.dynamicProfileSessionState(ctx, sessionKey)
-	if err != nil {
-		r.logger.Warn("dynamic profile session state skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error", err)
-		return nil
-	}
-	if state.released {
-		return nil
-	}
-	session := dynamicProfileSession(profileID, selection.accountID, cfg.ProviderID, selected.proto.GetEndpointId(), profile.GetExit().GetDynamicIpPolicy(), state.generation)
-	slot, err := r.acquireProviderAccountConcurrencySlot(ctx, selection.account, session.GetPolicy(), dynamicProfileConcurrencyHolder(sessionKey), dynamicProfileConcurrencySlotTTL(r.cfg.RefreshInterval, session.GetPolicy()))
-	if err != nil {
-		r.logger.Warn("dynamic profile provider account concurrency skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error", err)
-		return nil
-	}
-	keepSlot := false
-	defer func() {
-		if !keepSlot {
-			_ = slot.Release(ctx)
-		}
-	}()
+	session := dynamicProfileSession(profileID, selection.accountID, cfg.ProviderID, selected.proto.GetEndpointId(), profile.GetExit().GetDynamicIpPolicy())
 	nodes, err := providerClient.FetchSession(ctx, session)
 	if err != nil {
 		r.logger.Warn("dynamic profile provider session skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error", err)
@@ -142,7 +108,6 @@ func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *h
 	for index, node := range nodes {
 		nodes[index] = dynamicProfileLabelNode(node, index, profile, selection, selected)
 	}
-	keepSlot = true
 	return nodes
 }
 
@@ -165,7 +130,6 @@ func dynamicProfileLabelNode(node provider.Node, index int, profile *proxyruntim
 	node.Labels["dynamic_provider_ids"] = selected.proto.GetDynamicProviderId()
 	node.Labels["dynamic_ip_endpoint_id"] = selected.proto.GetEndpointId()
 	node.Labels["dynamic_ip_endpoint_url"] = selected.proto.GetEndpointUrl()
-	node.Labels["provider_account_concurrency_holder"] = selection.concurrencyHolder
 	node.Labels["session_mode"] = policy.GetMode().String()
 	node.Labels["rotation_mode"] = policy.GetRotationMode().String()
 	node.Labels["region"] = strings.TrimSpace(policy.GetRegion())
@@ -210,16 +174,9 @@ func dynamicProfileProviderInstancesForAccount(instances []dynamicIPProviderInst
 	return out
 }
 
-func (r *Runtime) dynamicProfileSessionState(ctx context.Context, sessionKey string) (dynamicProfileSessionState, error) {
-	if r.store == nil {
-		return dynamicProfileSessionState{}, nil
-	}
-	return r.store.DynamicProfileSessionState(ctx, sessionKey)
-}
-
-func dynamicProfileSession(profileID string, accountID string, providerID string, endpointID string, input *proxyruntimev1.ProxySessionPolicy, generation int64) *proxyruntimev1.ProxySession {
+func dynamicProfileSession(profileID string, accountID string, providerID string, endpointID string, input *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxySession {
 	policy := dynamicProfileSessionPolicy(input, endpointID)
-	seed := dynamicProfileSessionSeed(profileID, accountID, providerID, endpointID, policy, generation)
+	seed := dynamicProfileSessionSeed(profileID, accountID, providerID, endpointID, policy)
 	return &proxyruntimev1.ProxySession{
 		SessionId:  dynamicProfileSessionID(seed),
 		ProviderId: strings.TrimSpace(providerID),
@@ -229,24 +186,8 @@ func dynamicProfileSession(profileID string, accountID string, providerID string
 	}
 }
 
-func dynamicProfileSessionStateKey(profileID string, accountID string, providerID string, endpointID string, input *proxyruntimev1.ProxySessionPolicy) string {
-	policy := dynamicProfileSessionPolicy(input, endpointID)
-	return strings.Join([]string{
-		"dynamic-profile",
-		runtimeSafeID(profileID),
-		strings.TrimSpace(accountID),
-		strings.TrimSpace(providerID),
-		strings.TrimSpace(endpointID),
-		dynamicProfilePolicySignature(policy),
-	}, ":")
-}
-
-func dynamicProfileSessionSeed(profileID string, accountID string, providerID string, endpointID string, policy *proxyruntimev1.ProxySessionPolicy, generation int64) string {
-	parts := []string{profileID, accountID, providerID, endpointID, dynamicProfilePolicySignature(policy)}
-	if generation > 0 {
-		parts = append(parts, "generation", strconv.FormatInt(generation, 10))
-	}
-	return strings.Join(parts, ":")
+func dynamicProfileSessionSeed(profileID string, accountID string, providerID string, endpointID string, policy *proxyruntimev1.ProxySessionPolicy) string {
+	return strings.Join([]string{profileID, accountID, providerID, endpointID, dynamicProfilePolicySignature(policy)}, ":")
 }
 
 func dynamicProfileSessionPolicy(input *proxyruntimev1.ProxySessionPolicy, endpointID string) *proxyruntimev1.ProxySessionPolicy {

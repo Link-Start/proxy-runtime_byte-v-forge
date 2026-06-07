@@ -9,6 +9,7 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
+	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 )
 
@@ -17,18 +18,19 @@ type runtimeSettingsFile = proxyruntimev1.ProxyRuntimePersistentSettings
 const defaultProxyExitIPTimeout = 5 * time.Second
 
 type runtimeSettingsStore struct {
-	store            *PostgresStore
+	store            controlStore
 	accountProviders *providerregistry.Registry
 	ipFraudProviders *ipfraud.Registry
+	ipGeoProviders   *ipgeo.Registry
 	logger           *slog.Logger
 	mu               sync.Mutex
 }
 
-func newRuntimeSettingsStore(store *PostgresStore, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, logger *slog.Logger) *runtimeSettingsStore {
+func newRuntimeSettingsStore(store controlStore, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry, logger *slog.Logger) *runtimeSettingsStore {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &runtimeSettingsStore{store: store, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, logger: logger}
+	return &runtimeSettingsStore{store: store, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, ipGeoProviders: ipGeoProviders, logger: logger}
 }
 
 func (s *runtimeSettingsStore) view(ctx context.Context) (*proxyruntimev1.ProxyRuntimeSettings, error) {
@@ -50,7 +52,7 @@ func (s *runtimeSettingsStore) update(ctx context.Context, req *proxyruntimev1.U
 	if err != nil {
 		return nil, err
 	}
-	settings, err := settingsFromRequest(ctx, s.store, req, current, s.accountProviders, s.ipFraudProviders, nativeResourceIDs)
+	settings, err := settingsFromRequest(ctx, s.store, req, current, s.accountProviders, s.ipFraudProviders, s.ipGeoProviders, nativeResourceIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -95,18 +97,18 @@ func (s *runtimeSettingsStore) load(ctx context.Context) (*runtimeSettingsFile, 
 
 func (s *runtimeSettingsStore) loadLocked(ctx context.Context) (*runtimeSettingsFile, error) {
 	if s.store == nil {
-		return normalizeRuntimeSettingsWithProviders(nil, s.ipFraudProviders), nil
+		return normalizeRuntimeSettingsWithProviders(nil, s.ipFraudProviders, s.ipGeoProviders), nil
 	}
 	settings, err := s.store.LoadRuntimeSettings(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return normalizeRuntimeSettingsWithProviders(settings, s.ipFraudProviders), nil
+	return normalizeRuntimeSettingsWithProviders(settings, s.ipFraudProviders, s.ipGeoProviders), nil
 }
 
 func (s *runtimeSettingsStore) saveLocked(ctx context.Context, settings *runtimeSettingsFile) error {
 	if s.store == nil {
 		return nil
 	}
-	return s.store.SaveRuntimeSettings(ctx, normalizeRuntimeSettingsWithProviders(settings, s.ipFraudProviders))
+	return s.store.SaveRuntimeSettings(ctx, normalizeRuntimeSettingsWithProviders(settings, s.ipFraudProviders, s.ipGeoProviders))
 }

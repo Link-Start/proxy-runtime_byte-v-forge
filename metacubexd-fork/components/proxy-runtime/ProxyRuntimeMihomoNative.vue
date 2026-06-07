@@ -1,163 +1,94 @@
 <script setup lang="ts">
-import type {
-  ProxyRuntimeNativeFixedProxy,
-  ProxyRuntimeNativeSubscription,
-} from '~/composables/proxyRuntimeNativeConfigTypes'
+import type { ProxyRuntimeNativeRow } from '~/composables/proxyRuntimeNativeRows'
 import type { ProxyRuntimeNativeConfigState } from '~/composables/useProxyRuntimeNativeConfig'
-import {
-  IconLink,
-  IconPencil,
-  IconPlus,
-  IconServer,
-  IconTrash,
-} from '@tabler/icons-vue'
+import { IconPlus } from '@tabler/icons-vue'
 
 const props = defineProps<{ runtime: ProxyRuntimeNativeConfigState }>()
-const fixedModal = ref<{ open: () => void; close: () => void }>()
-const subscriptionModal = ref<{ open: () => void; close: () => void }>()
+const modal = ref<{ open: () => void; close: () => void }>()
+const expanded = reactive<Record<string, boolean>>({})
 
-function addFixedProxy() {
-  props.runtime.resetFixedForm()
-  fixedModal.value?.open()
+const evenRows = computed(() =>
+  props.runtime.rows.value.filter((_, index) => index % 2 === 0),
+)
+const oddRows = computed(() =>
+  props.runtime.rows.value.filter((_, index) => index % 2 === 1),
+)
+
+function addItem() {
+  props.runtime.resetForm()
+  modal.value?.open()
 }
 
-function editFixedProxy(proxy: ProxyRuntimeNativeFixedProxy) {
-  props.runtime.editFixedProxy(proxy)
-  fixedModal.value?.open()
-}
-
-function addSubscription() {
-  props.runtime.resetSubscriptionForm()
-  subscriptionModal.value?.open()
-}
-
-function editSubscription(subscription: ProxyRuntimeNativeSubscription) {
-  props.runtime.editSubscription(subscription)
-  subscriptionModal.value?.open()
+function editItem(row: ProxyRuntimeNativeRow) {
+  props.runtime.editRow(row)
+  modal.value?.open()
 }
 </script>
 
 <template>
-  <section class="flex min-h-0 flex-col gap-4 p-2">
-    <div class="grid gap-4 xl:grid-cols-2">
-      <section class="min-w-0">
-        <div class="mb-2 flex items-center justify-between gap-3">
-          <h2 class="flex items-center gap-2 text-base font-semibold">
-            <IconServer :size="18" />
-            固定代理
-          </h2>
-          <button
-            aria-label="添加固定代理"
-            class="btn btn-primary btn-sm btn-square"
-            title="添加固定代理"
-            type="button"
-            @click="addFixedProxy"
-          >
-            <IconPlus :size="16" />
-          </button>
-        </div>
-        <div v-if="runtime.fixedProxies.value.length === 0" class="py-5 text-sm opacity-55">
-          暂无固定代理
-        </div>
-        <div v-else class="divide-y divide-base-content/8">
-          <div
-            v-for="proxy in runtime.fixedProxies.value"
-            :key="proxy.name"
-            class="grid gap-2 py-3 md:grid-cols-[1fr_auto]"
-          >
-            <div class="min-w-0 text-sm">
-              <div class="truncate font-medium">{{ proxy.name }}</div>
-              <div class="truncate text-xs opacity-60" :title="proxy.uri">
-                {{ proxy.type || 'proxy' }}
-              </div>
-            </div>
-            <div class="flex items-center gap-1">
-              <button
-                aria-label="编辑"
-                class="btn btn-ghost btn-sm btn-square"
-                title="编辑"
-                type="button"
-                @click="editFixedProxy(proxy)"
-              >
-                <IconPencil :size="16" />
-              </button>
-              <button
-                aria-label="删除"
-                class="btn btn-ghost btn-sm btn-square text-error"
-                :disabled="runtime.saving.value"
-                title="删除"
-                type="button"
-                @click="runtime.deleteFixedProxy(proxy)"
-              >
-                <IconTrash :size="16" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="min-w-0">
-        <div class="mb-2 flex items-center justify-between gap-3">
-          <h2 class="flex items-center gap-2 text-base font-semibold">
-            <IconLink :size="18" />
-            订阅
-          </h2>
-          <button
-            aria-label="添加订阅"
-            class="btn btn-primary btn-sm btn-square"
-            title="添加订阅"
-            type="button"
-            @click="addSubscription"
-          >
-            <IconPlus :size="16" />
-          </button>
-        </div>
-        <div v-if="runtime.subscriptions.value.length === 0" class="py-5 text-sm opacity-55">
-          暂无订阅
-        </div>
-        <div v-else class="divide-y divide-base-content/8">
-          <div
-            v-for="subscription in runtime.subscriptions.value"
-            :key="subscription.name"
-            class="grid gap-2 py-3 md:grid-cols-[1fr_auto]"
-          >
-            <div class="min-w-0 text-sm">
-              <div class="truncate font-medium">{{ subscription.name }}</div>
-              <div class="truncate text-xs opacity-60" :title="subscription.url">
-                proxy-provider
-              </div>
-            </div>
-            <div class="flex items-center gap-1">
-              <button
-                aria-label="编辑"
-                class="btn btn-ghost btn-sm btn-square"
-                title="编辑"
-                type="button"
-                @click="editSubscription(subscription)"
-              >
-                <IconPencil :size="16" />
-              </button>
-              <button
-                aria-label="删除"
-                class="btn btn-ghost btn-sm btn-square text-error"
-                :disabled="runtime.saving.value"
-                title="删除"
-                type="button"
-                @click="runtime.deleteSubscription(subscription)"
-              >
-                <IconTrash :size="16" />
-              </button>
-            </div>
-          </div>
-        </div>
-      </section>
+  <section class="flex min-h-0 w-full flex-col gap-3">
+    <div class="animate-fade-slide-in flex shrink-0 items-center justify-end gap-2">
+      <button
+        aria-label="添加原生配置"
+        class="btn btn-primary btn-sm btn-square"
+        title="添加原生配置"
+        type="button"
+        @click="addItem"
+      >
+        <IconPlus :size="16" />
+      </button>
     </div>
 
-    <p v-if="runtime.error.value" class="text-sm text-error">
+    <div v-if="runtime.error.value" class="alert alert-error text-sm">
       {{ runtime.error.value }}
-    </p>
+    </div>
 
-    <ProxyRuntimeNativeFixedProxyModal ref="fixedModal" :runtime="runtime" />
-    <ProxyRuntimeNativeSubscriptionModal ref="subscriptionModal" :runtime="runtime" />
+    <div v-if="runtime.rows.value.length === 0" class="py-8 text-center text-sm opacity-60">
+      暂无原生配置
+    </div>
+
+    <ProxiesRenderWrapper v-else>
+      <template #even>
+        <ProxyRuntimeNativeRowCard
+          v-for="(row, index) in evenRows"
+          :key="row.id"
+          :expanded="expanded[row.id] || false"
+          :index="index"
+          :row="row"
+          :saving="runtime.saving.value"
+          @collapse="expanded[row.id] = $event"
+          @delete="runtime.deleteRow(row)"
+          @edit="editItem(row)"
+        />
+      </template>
+      <template #odd>
+        <ProxyRuntimeNativeRowCard
+          v-for="(row, index) in oddRows"
+          :key="row.id"
+          :expanded="expanded[row.id] || false"
+          :index="index"
+          :row="row"
+          :saving="runtime.saving.value"
+          @collapse="expanded[row.id] = $event"
+          @delete="runtime.deleteRow(row)"
+          @edit="editItem(row)"
+        />
+      </template>
+      <template #default>
+        <ProxyRuntimeNativeRowCard
+          v-for="(row, index) in runtime.rows.value"
+          :key="row.id"
+          :expanded="expanded[row.id] || false"
+          :index="index"
+          :row="row"
+          :saving="runtime.saving.value"
+          @collapse="expanded[row.id] = $event"
+          @delete="runtime.deleteRow(row)"
+          @edit="editItem(row)"
+        />
+      </template>
+    </ProxiesRenderWrapper>
+
+    <ProxyRuntimeNativeItemModal ref="modal" :runtime="runtime" />
   </section>
 </template>

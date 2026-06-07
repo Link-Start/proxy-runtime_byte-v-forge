@@ -98,16 +98,18 @@ func renderMihomoNativeProfileTarget(opts renderOptions, profileID string, layer
 	if resourceID == "" {
 		return renderedProfileLayer{}, fmt.Errorf("resource_id is required")
 	}
-	nodeName := mihomoNativeNodeName(resourceID, layer.NodeID)
+	resolved := resolveMihomoNativeResource(opts.NativeConfig, resourceID, layer.NodeID)
+	resourceName := firstNonEmpty(resolved.ResourceName, resourceID)
+	nodeName := firstNonEmpty(resolved.NodeName, mihomoNativeNodeName(resourceName, layer.NodeID), mihomoNativeNodeName(resourceID, layer.NodeID))
 	if nodeName == "" {
 		return renderedProfileLayer{}, fmt.Errorf("node_id is required")
 	}
 	if mihomoProxyAvailable(opts.AvailableProxies, nodeName) {
 		return renderedProfileLayer{target: nodeName}, nil
 	}
-	if mihomoProviderAvailable(opts.AvailableProviders, resourceID) {
+	if mihomoProviderAvailable(opts.AvailableProviders, resourceName) {
 		group := profileLayerGroup(profileLineGroupName(profileID), layer, "select")
-		group.Use = []string{resourceID}
+		group.Use = []string{resourceName}
 		group.Filter = exactNodeFilter(nodeName)
 		return renderedProfileLayer{group: group, target: group.Name}, nil
 	}
@@ -119,7 +121,9 @@ func renderMihomoNativeProfileLayer(opts renderOptions, groupName string, layer 
 	if resourceID == "" {
 		return renderedProfileLayer{}, fmt.Errorf("resource_id is required")
 	}
-	nodeName := mihomoNativeNodeName(resourceID, layer.NodeID)
+	resolved := resolveMihomoNativeResource(opts.NativeConfig, resourceID, layer.NodeID)
+	resourceName := firstNonEmpty(resolved.ResourceName, resourceID)
+	nodeName := firstNonEmpty(resolved.NodeName, mihomoNativeNodeName(resourceName, layer.NodeID), mihomoNativeNodeName(resourceID, layer.NodeID))
 	if nodeName == "" {
 		return renderedProfileLayer{}, fmt.Errorf("node_id is required")
 	}
@@ -131,8 +135,8 @@ func renderMihomoNativeProfileLayer(opts renderOptions, groupName string, layer 
 		group.Proxies = []string{nodeName}
 		return renderedProfileLayer{group: group}, nil
 	}
-	if mihomoProviderAvailable(opts.AvailableProviders, resourceID) {
-		group.Use = []string{resourceID}
+	if mihomoProviderAvailable(opts.AvailableProviders, resourceName) {
+		group.Use = []string{resourceName}
 		group.Filter = exactNodeFilter(nodeName)
 		return renderedProfileLayer{group: group}, nil
 	}
@@ -151,6 +155,49 @@ func mihomoNativeNodeName(resourceID string, nodeID string) string {
 		return strings.TrimSpace(strings.TrimPrefix(nodeID, prefix))
 	}
 	return nodeID
+}
+
+type resolvedMihomoNativeResource struct {
+	ResourceName string
+	NodeName     string
+}
+
+func resolveMihomoNativeResource(config mihomoNativeConfig, resourceID string, nodeID string) resolvedMihomoNativeResource {
+	resourceID = strings.TrimSpace(resourceID)
+	nodeID = strings.TrimSpace(nodeID)
+	for _, proxy := range config.FixedProxies {
+		id := strings.TrimSpace(proxy.ID)
+		name := strings.TrimSpace(proxy.Name)
+		if name == "" {
+			continue
+		}
+		if resourceID == id || resourceID == name {
+			return resolvedMihomoNativeResource{ResourceName: name, NodeName: name}
+		}
+	}
+	for _, subscription := range config.Subscriptions {
+		id := strings.TrimSpace(subscription.ID)
+		name := strings.TrimSpace(subscription.Name)
+		if name == "" {
+			continue
+		}
+		if resourceID == id || resourceID == name {
+			return resolvedMihomoNativeResource{ResourceName: name, NodeName: mihomoNativeProviderNodeName(id, name, nodeID)}
+		}
+	}
+	return resolvedMihomoNativeResource{}
+}
+
+func mihomoNativeProviderNodeName(resourceID string, providerName string, nodeID string) string {
+	for _, prefix := range []string{strings.TrimSpace(resourceID), strings.TrimSpace(providerName)} {
+		if prefix == "" {
+			continue
+		}
+		if strings.HasPrefix(nodeID, prefix+"/") {
+			return strings.TrimSpace(strings.TrimPrefix(nodeID, prefix+"/"))
+		}
+	}
+	return strings.TrimSpace(nodeID)
 }
 
 func renderDynamicProfileExit(profileID string, groupName string, exit sourceplane.EgressProfileExit, dialerProxy string, nodes []provider.Node) (renderedProfileLayer, error) {

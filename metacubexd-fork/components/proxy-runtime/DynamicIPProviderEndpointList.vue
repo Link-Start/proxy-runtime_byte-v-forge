@@ -2,7 +2,7 @@
 import type {
   ProxyDynamicIPEndpointSettings,
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import { IconCloud, IconPencil, IconTrash } from '@tabler/icons-vue'
+import { IconPencil, IconTrash } from '@tabler/icons-vue'
 
 defineProps<{
   providerId: string
@@ -20,14 +20,11 @@ defineEmits<{
 
 <template>
   <section class="min-w-0">
-    <div class="mb-2 flex items-center gap-2 text-sm font-medium">
-      <IconCloud :size="16" />
-      端点
-    </div>
-    <div v-if="endpoints.length === 0" class="py-5 text-sm opacity-55">
+    <div class="divider my-0 text-xs uppercase opacity-40">端点</div>
+    <div v-if="endpoints.length === 0" class="py-3 text-sm opacity-55">
       暂无端点
     </div>
-    <div v-else class="flex flex-wrap gap-2">
+    <div v-else class="flex flex-wrap gap-2 py-2">
       <div
         v-for="endpoint in endpoints"
         :key="endpoint.endpoint_url"

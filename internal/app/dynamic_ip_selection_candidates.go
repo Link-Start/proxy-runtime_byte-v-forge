@@ -15,6 +15,7 @@ func (p *dynamicIPSelector) dynamicIPEndpointCandidates(ctx context.Context, set
 		return nil, err
 	}
 	providerInstances := dynamicIPProviderInstances(settings)
+	filter := dynamicIPCandidateFilterFromPolicy(sessionPolicy)
 	out := make([]scoredDynamicIPEndpointCandidate, 0)
 	for accountIndex, account := range accounts {
 		if account.GetStatus() != proxyruntimev1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED || !account.GetCredentialConfigured() {
@@ -23,23 +24,33 @@ func (p *dynamicIPSelector) dynamicIPEndpointCandidates(ctx context.Context, set
 		if !p.accountProviders.IsSupported(account.GetProviderId()) {
 			continue
 		}
-		if ok, err := p.providerAccountConcurrencyAvailable(ctx, account, sessionPolicy); err != nil || !ok {
-			continue
-		}
-		out = append(out, p.dynamicIPEndpointCandidatesForAccount(ctx, account, accountIndex, providerInstances, policy)...)
+		out = append(out, p.dynamicIPEndpointCandidatesForAccount(ctx, account, accountIndex, providerInstances, policy, sessionPolicy, filter)...)
 	}
 	applyDynamicIPEndpointHealthScores(out, p.dynamicIPEndpointHealthScores(ctx))
 	return out, nil
 }
 
-func (p *dynamicIPSelector) providerAccountConcurrencyAvailable(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, policy *proxyruntimev1.ProxySessionPolicy) (bool, error) {
+type dynamicIPCandidateFilter struct {
+	dynamicProviderID string
+	endpointID        string
+}
+
+func dynamicIPCandidateFilterFromPolicy(policy *proxyruntimev1.ProxySessionPolicy) dynamicIPCandidateFilter {
+	labels := policy.GetLabels()
+	return dynamicIPCandidateFilter{
+		dynamicProviderID: runtimeSafeID(labels["dynamic_provider_id"]),
+		endpointID:        strings.TrimSpace(labels["dynamic_ip_endpoint_id"]),
+	}
+}
+
+func (p *dynamicIPSelector) providerAccountConcurrencyAvailable(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, provider dynamicIPProviderInstance, policy *proxyruntimev1.ProxySessionPolicy) (bool, error) {
 	if p.concurrency == nil {
 		return true, nil
 	}
-	return p.concurrency.Available(ctx, account.GetAccountId(), policy, providerAccountConcurrencyLimit(account, policy), "")
+	return p.concurrency.Available(ctx, account.GetAccountId(), policy, dynamicProviderInstanceConcurrencyLimit(provider, policy), "")
 }
 
-func (p *dynamicIPSelector) dynamicIPEndpointCandidatesForAccount(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, accountIndex int, providerInstances []dynamicIPProviderInstance, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) []scoredDynamicIPEndpointCandidate {
+func (p *dynamicIPSelector) dynamicIPEndpointCandidatesForAccount(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, accountIndex int, providerInstances []dynamicIPProviderInstance, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxyruntimev1.ProxySessionPolicy, filter dynamicIPCandidateFilter) []scoredDynamicIPEndpointCandidate {
 	accountDynamicProviderID := runtimeSafeID(account.GetDynamicProviderId())
 	out := []scoredDynamicIPEndpointCandidate{}
 	for providerIndex, providerInstance := range providerInstances {
@@ -49,11 +60,20 @@ func (p *dynamicIPSelector) dynamicIPEndpointCandidatesForAccount(ctx context.Co
 		if accountDynamicProviderID != "" && accountDynamicProviderID != providerInstance.dynamicProviderID {
 			continue
 		}
+		if filter.dynamicProviderID != "" && filter.dynamicProviderID != providerInstance.dynamicProviderID {
+			continue
+		}
+		if ok, err := p.providerAccountConcurrencyAvailable(ctx, account, providerInstance, sessionPolicy); err != nil || !ok {
+			continue
+		}
 		for endpointIndex, endpoint := range providerInstance.endpoints {
 			if strings.TrimSpace(endpoint.EndpointURL) == "" {
 				continue
 			}
 			endpointID := firstNonEmpty(endpoint.ID, endpointIDFromURL(endpoint.EndpointURL))
+			if filter.endpointID != "" && filter.endpointID != endpointID {
+				continue
+			}
 			regions := p.endpointRegionCodes(ctx, endpoint, policy)
 			candidate := &proxyruntimev1.ProxyDynamicIPEndpointCandidate{
 				ProviderAccountId: account.GetAccountId(),

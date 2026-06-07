@@ -33,14 +33,7 @@ func NewRegistry(plugins ...Plugin) (*Registry, error) {
 }
 
 func NewDefaultRegistry() (*Registry, error) {
-	return NewRegistry(
-		ipQualityScorePlugin{},
-		ipapiPlugin{},
-		ipinfoPlugin{},
-		abuseIPDBPlugin{},
-		ip2LocationPlugin{},
-		ipAPIComPlugin{},
-	)
+	return NewRegistry(ipQualityScorePlugin{}, ipapiPlugin{}, abuseIPDBPlugin{})
 }
 
 func (r *Registry) PluginForKind(kind proxyruntimev1.ProxyIPFraudProviderKind) (Plugin, bool) {

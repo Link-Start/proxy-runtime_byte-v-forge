@@ -29,10 +29,10 @@ defineExpose({ open, close })
       <IconServer :size="22" />
     </template>
 
-    <form class="grid grid-cols-1 gap-3" @submit.prevent="save">
+    <form class="grid grid-cols-1 gap-3 sm:grid-cols-2" @submit.prevent="save">
       <select
         v-model="runtime.providerForm.provider_id"
-        class="select-bordered select w-full"
+        class="select-bordered select w-full sm:col-span-2"
         :disabled="editing"
         required
       >
@@ -49,6 +49,20 @@ defineExpose({ open, close })
         class="input-bordered input w-full"
         placeholder="显示名"
         type="text"
+      />
+      <input
+        v-model.number="runtime.providerForm.rotating_concurrency_limit"
+        class="input-bordered input w-full"
+        min="1"
+        placeholder="轮转并发上限"
+        type="number"
+      />
+      <input
+        v-model.number="runtime.providerForm.sticky_concurrency_limit"
+        class="input-bordered input w-full"
+        min="1"
+        placeholder="粘性并发上限"
+        type="number"
       />
     </form>
 

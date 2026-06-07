@@ -2,19 +2,28 @@ import type {
   ProxyRuntimeNativeFixedProxy,
   ProxyRuntimeNativeSubscription,
 } from '~/composables/proxyRuntimeNativeConfigTypes'
+import {
+  type ProxyRuntimeNativeItemType,
+  type ProxyRuntimeNativeRow,
+  nativeRows,
+} from '~/composables/proxyRuntimeNativeRows'
 
 export function useProxyRuntimeNativeConfig() {
   const api = useProxyRuntimeApi()
   const fixedProxies = ref<ProxyRuntimeNativeFixedProxy[]>([])
   const subscriptions = ref<ProxyRuntimeNativeSubscription[]>([])
-  const fixedForm = reactive({ original_name: '', name: '', uri: '' })
-  const subscriptionForm = reactive({ original_name: '', name: '', url: '' })
+  const form = reactive({
+    editing: false,
+    original_id: '',
+    name: '',
+    type: 'fixed_proxy' as ProxyRuntimeNativeItemType,
+    value: '',
+  })
   const loading = ref(false)
   const saving = ref(false)
   const error = ref('')
-  const itemCount = computed(
-    () => fixedProxies.value.length + subscriptions.value.length,
-  )
+  const rows = computed(() => nativeRows(fixedProxies.value, subscriptions.value))
+  const itemCount = computed(() => rows.value.length)
 
   async function load() {
     loading.value = true
@@ -30,66 +39,60 @@ export function useProxyRuntimeNativeConfig() {
     }
   }
 
-  function resetFixedForm() {
-    Object.assign(fixedForm, { original_name: '', name: '', uri: '' })
-  }
-
-  function editFixedProxy(proxy: ProxyRuntimeNativeFixedProxy) {
-    Object.assign(fixedForm, {
-      original_name: proxy.name,
-      name: proxy.name,
-      uri: proxy.uri,
+  function resetForm(type: ProxyRuntimeNativeItemType = 'fixed_proxy') {
+    Object.assign(form, {
+      editing: false,
+      name: '',
+      original_id: '',
+      type,
+      value: '',
     })
   }
 
-  function resetSubscriptionForm() {
-    Object.assign(subscriptionForm, { original_name: '', name: '', url: '' })
-  }
-
-  function editSubscription(subscription: ProxyRuntimeNativeSubscription) {
-    Object.assign(subscriptionForm, {
-      original_name: subscription.name,
-      name: subscription.name,
-      url: subscription.url,
+  function editRow(row: ProxyRuntimeNativeRow) {
+    Object.assign(form, {
+      editing: true,
+      original_id: row.id.replace(`${row.type}:`, ''),
+      name: row.name,
+      type: row.type,
+      value: row.value,
     })
   }
 
-  async function saveFixedProxy() {
-    const item = { name: fixedForm.name.trim(), uri: fixedForm.uri.trim() }
-    await saveConfig(
-      fixedProxies.value
-        .filter((proxy) => proxy.name !== fixedForm.original_name)
-        .concat(item),
-      subscriptions.value,
-    )
-    resetFixedForm()
-  }
-
-  async function saveSubscription() {
-    const item = {
-      name: subscriptionForm.name.trim(),
-      url: subscriptionForm.url.trim(),
+  async function saveRow() {
+    if (form.type === 'fixed_proxy') {
+      const fixed = fixedProxies.value.filter(
+        (item) => itemKey(item) !== form.original_id,
+      )
+      fixed.push({
+        id: form.original_id,
+        name: form.name.trim(),
+        uri: form.value.trim(),
+      })
+      await saveConfig(fixed, subscriptions.value)
+    } else {
+      const subs = subscriptions.value.filter(
+        (item) => itemKey(item) !== form.original_id,
+      )
+      subs.push({
+        id: form.original_id,
+        name: form.name.trim(),
+        url: form.value.trim(),
+      })
+      await saveConfig(fixedProxies.value, subs)
     }
-    await saveConfig(
-      fixedProxies.value,
-      subscriptions.value
-        .filter((subscription) => subscription.name !== subscriptionForm.original_name)
-        .concat(item),
-    )
-    resetSubscriptionForm()
+    resetForm(form.type)
   }
 
-  async function deleteFixedProxy(proxy: ProxyRuntimeNativeFixedProxy) {
+  async function deleteRow(row: ProxyRuntimeNativeRow) {
+    const key = row.id.replace(`${row.type}:`, '')
     await saveConfig(
-      fixedProxies.value.filter((item) => item.name !== proxy.name),
-      subscriptions.value,
-    )
-  }
-
-  async function deleteSubscription(subscription: ProxyRuntimeNativeSubscription) {
-    await saveConfig(
-      fixedProxies.value,
-      subscriptions.value.filter((item) => item.name !== subscription.name),
+      fixedProxies.value.filter(
+        (item) => row.type !== 'fixed_proxy' || itemKey(item) !== key,
+      ),
+      subscriptions.value.filter(
+        (item) => row.type !== 'subscription' || itemKey(item) !== key,
+      ),
     )
   }
 
@@ -114,24 +117,22 @@ export function useProxyRuntimeNativeConfig() {
   }
 
   return {
-    deleteFixedProxy,
-    deleteSubscription,
-    editFixedProxy,
-    editSubscription,
+    deleteRow,
+    editRow,
     error,
-    fixedForm,
-    fixedProxies,
+    form,
     itemCount,
     load,
     loading,
-    resetFixedForm,
-    resetSubscriptionForm,
-    saveFixedProxy,
-    saveSubscription,
+    resetForm,
+    rows,
+    saveRow,
     saving,
-    subscriptionForm,
-    subscriptions,
   }
+}
+
+function itemKey(item: { id?: string; name: string }) {
+  return item.id || item.name
 }
 
 export type ProxyRuntimeNativeConfigState = ReturnType<typeof useProxyRuntimeNativeConfig>

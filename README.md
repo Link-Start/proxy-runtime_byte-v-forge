@@ -45,9 +45,15 @@ Runtime environment variables are intentionally small. Dynamic IP provider, prox
 
 Required bootstrap:
 
-- `PROXY_RUNTIME_POSTGRES_DSN` or `PG_DSN`: proxy-runtime control-plane PostgreSQL DSN.
-- `PLATFORM_REDIS_URL`: Redis URL for lease runtime locks.
 - `PROXY_RUNTIME_ENCRYPTION_KEY`: encryption key for stored provider credentials and settings secrets.
+
+Storage and runtime coordination:
+
+- `PROXY_RUNTIME_POSTGRES_DSN` or `PG_DSN`: optional PostgreSQL DSN. When omitted, `proxy-runtime` uses its embedded SQLite control store.
+- `PROXY_RUNTIME_DATA_DIR`: local data directory for embedded SQLite and runtime files when PostgreSQL is omitted. Default `/var/lib/byte-v-forge/proxy-runtime`.
+- `PROXY_RUNTIME_REDIS_URL`: optional Redis URL for distributed lease locks and provider-account concurrency slots.
+- `PLATFORM_REDIS_URL`: accepted as a deployment-level fallback for `PROXY_RUNTIME_REDIS_URL`.
+- When Redis is omitted, lease locks and concurrency slots use an in-process adapter. This is suitable for standalone single-replica runtime; multi-replica deployments should configure Redis.
 
 Optional bootstrap with defaults:
 
@@ -61,7 +67,7 @@ Optional bootstrap with defaults:
 
 Optional local bootstrap:
 
-- `PROXY_RUNTIME_LOCAL_PASSWORD`: password used for dynamic lease proxy users returned by `AcquireProxyLease`.
+- `PROXY_RUNTIME_LOCAL_PASSWORD`: password used only by the explicit lease API for temporary proxy users. Business applications should prefer fixed gateway IN-USER rules.
 - `PROXY_RUNTIME_PROXY_USERS_JSON`: initial registered proxy users for fixed entry routing. Only `direct` and `profile` routes are accepted; prefer API/UI after boot.
 
 Example proxy users:
@@ -102,8 +108,8 @@ All endpoints are exposed under both `/proxy/*` and `/api/proxy-runtime/*`.
 - `GET /proxy/providers`: provider capability descriptors.
 - `GET /proxy/provider-accounts` / `PUT /proxy/provider-accounts` / `DELETE /proxy/provider-accounts`: upstream provider accounts.
 - `GET /proxy/leases`: dynamic IP leases.
-- `POST /proxy/leases/acquire`: create or replace a sticky dynamic IP lease; returns the fixed entry endpoint and proxy user route.
-- `POST /proxy/leases/release`: release a dynamic IP lease idempotently.
+- `POST /proxy/leases/acquire`: explicit lease tooling endpoint. Business applications should not depend on it for normal egress.
+- `POST /proxy/leases/release`: release an explicit lease or profile lease view idempotently.
 - `POST /proxy/proxy_exit_ip`: check the exit IP through a configured listener.
 - `POST /proxy/proxy_exit_geo`: lookup geo for an IP without proxy egress.
 - `POST /proxy/ip_fraud_check`: check IP fraud risk.
@@ -120,7 +126,7 @@ All endpoints are exposed under both `/proxy/*` and `/api/proxy-runtime/*`.
 The dashboard uses a project-owned MetaCubeXD fork as the main frontend:
 
 - Upstream MetaCubeXD pages remain the Mihomo operations surface: overview, proxies, proxy providers, rules, connections, logs, config, fixed proxies, subscriptions, and provider updates.
-- The project overlay adds `动态IP提供商` inside MetaCubeXD `proxies` for dynamic provider endpoints/accounts and `IN-USER规则` inside `rules` for proxy username/password, line, and exit bindings.
+- The project overlay adds `入口用户` and `动态IP提供商` inside MetaCubeXD `proxies` for proxy username/password routing plus dynamic provider endpoints/accounts.
 - The project overlay adds `动态租约` inside MetaCubeXD `connections` for active dynamic lease runtime state.
 
 The forked MetaCubeXD assets are built into the `proxy-runtime` image and served full-page through same-origin routes. The Byte-V dashboard no longer loads a `proxy-runtime` module-federation frontend. Browsers do not need direct access to the loopback-only Mihomo API.

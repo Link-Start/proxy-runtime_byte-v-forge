@@ -21,6 +21,10 @@ func (s *RuntimeService) ListProxyIPFraudProviders(ctx context.Context, _ *proxy
 	return s.settings.ListProxyIPFraudProviders(ctx)
 }
 
+func (s *RuntimeService) ListProxyIPGeoProviders(ctx context.Context, _ *proxyruntimev1.ListProxyIPGeoProvidersRequest) (*proxyruntimev1.ListProxyIPGeoProvidersResponse, error) {
+	return s.settings.ListProxyIPGeoProviders(ctx)
+}
+
 func (s *RuntimeService) GetProxyRuntimeSettings(ctx context.Context, _ *proxyruntimev1.GetProxyRuntimeSettingsRequest) (*proxyruntimev1.GetProxyRuntimeSettingsResponse, error) {
 	return s.settings.GetProxyRuntimeSettings(ctx)
 }
@@ -41,6 +45,10 @@ func (a runtimeSettingsApplication) ListProxyIPFraudProviders(context.Context) (
 	return &proxyruntimev1.ListProxyIPFraudProvidersResponse{Providers: a.runtime.ipFraudProviders.ProviderDescriptors()}, nil
 }
 
+func (a runtimeSettingsApplication) ListProxyIPGeoProviders(context.Context) (*proxyruntimev1.ListProxyIPGeoProvidersResponse, error) {
+	return &proxyruntimev1.ListProxyIPGeoProvidersResponse{Providers: a.runtime.ipGeoProviders.ProviderDescriptors()}, nil
+}
+
 func (a runtimeSettingsApplication) GetProxyRuntimeSettings(ctx context.Context) (*proxyruntimev1.GetProxyRuntimeSettingsResponse, error) {
 	settings, err := a.runtime.settings.view(ctx)
 	if err != nil {
@@ -58,6 +66,7 @@ func (a runtimeSettingsApplication) UpdateProxyRuntimeSettings(ctx context.Conte
 		return nil, err
 	}
 	a.runtime.resetIPFraudChecker()
+	a.runtime.geoCache.clear()
 	a.runtime.requestReconcile()
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }

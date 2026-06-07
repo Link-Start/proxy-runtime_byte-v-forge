@@ -34,6 +34,7 @@ func (api *runtimeHTTPAPI) controlPlaneHTTPRoutes() []runtimeHTTPRoute {
 		{path: "/settings/in-user-rules", handler: api.handleInUserRules},
 		{path: "/settings/mihomo-native", handler: api.handleMihomoNativeConfig},
 		{path: "/settings/ip-fraud-providers", handler: api.handleIPFraudProviders},
+		{path: "/settings/ip-geo-providers", handler: api.handleIPGeoProviders},
 		{path: "/settings", handler: api.handleRuntimeSettings},
 	}
 }

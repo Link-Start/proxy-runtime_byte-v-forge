@@ -8,6 +8,8 @@ import type {
   CheckProxyEdgeAccessResponse,
   CheckProxyIPFraudRequest,
   CheckProxyIPFraudResponse,
+  GetProxyExitCheckSnapshotRequest,
+  GetProxyExitCheckSnapshotResponse,
   GetProxyExitIPRequest,
   GetProxyExitIPResponse,
   GetProxyExitGeoRequest,
@@ -120,6 +122,14 @@ export function useProxyRuntimeApi() {
     checkProxyEdgeAccess: (req: CheckProxyEdgeAccessRequest) =>
       proxyRuntimeRequest<CheckProxyEdgeAccessResponse>(
         '/check_cf_access_risk',
+        {
+          method: 'POST',
+          body: jsonBody(req),
+        },
+      ),
+    getProxyExitCheckSnapshot: (req: GetProxyExitCheckSnapshotRequest) =>
+      proxyRuntimeRequest<GetProxyExitCheckSnapshotResponse>(
+        '/proxy_exit_check_snapshot',
         {
           method: 'POST',
           body: jsonBody(req),

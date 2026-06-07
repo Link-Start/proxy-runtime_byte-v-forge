@@ -75,6 +75,7 @@ func (a runtimeSettingsApplication) UpdateProxyRuntimeSettings(ctx context.Conte
 	}
 	a.runtime.resetIPFraudChecker()
 	a.runtime.geoCache.clear()
+	a.runtime.exitCheckCache.clear()
 	if err := a.runtime.runReconcile(ctx); err != nil {
 		return nil, err
 	}
@@ -90,6 +91,7 @@ func (a runtimeSettingsApplication) UpdateProxyDynamicIPProviders(ctx context.Co
 	if err := a.runtime.runReconcile(ctx); err != nil {
 		return nil, err
 	}
+	a.runtime.exitCheckCache.clear()
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }
 
@@ -112,6 +114,7 @@ func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, 
 	if err := a.runtime.runReconcile(ctx); err != nil {
 		return nil, err
 	}
+	a.runtime.exitCheckCache.clear()
 	a.runtime.closeMihomoInUserConnections(ctx, changedInUserConnectionUsernames(before, after))
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }

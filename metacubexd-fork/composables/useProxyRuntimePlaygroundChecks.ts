@@ -18,6 +18,30 @@ export function useProxyRuntimePlaygroundChecks(
   const geo = ref<ProxyExitGeo>()
   const fraud = ref<ProxyIPFraudCheck>()
 
+  async function load() {
+    const username = runtime.form.username.trim()
+    if (!username) {
+      resetResults()
+      return
+    }
+    try {
+      const result = await api.getProxyExitCheckSnapshot({
+        listener_id: `in-user:${username}`,
+      })
+      const snapshot = result.snapshot
+      if (!snapshot?.proxy_exit_ip?.ip) {
+        resetResults()
+        return
+      }
+      exitIP.value = snapshot.proxy_exit_ip
+      geo.value = snapshot.proxy_exit_geo
+      fraud.value = snapshot.ip_fraud_check
+      error.value = ''
+    } catch {
+      resetResults()
+    }
+  }
+
   async function run() {
     if (!canSave.value) {
       error.value = '先补全并保存 PlayGround 配置'
@@ -80,6 +104,7 @@ export function useProxyRuntimePlaygroundChecks(
     exitIP,
     fraud,
     geo,
+    load,
     run,
   }
 }

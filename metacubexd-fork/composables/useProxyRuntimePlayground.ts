@@ -35,6 +35,7 @@ export function useProxyRuntimePlayground() {
       return
     }
     await leases.load()
+    await checks.load()
   }
 
   function hydratePlayground() {

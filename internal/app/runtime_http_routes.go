@@ -30,6 +30,7 @@ func (api *runtimeHTTPAPI) controlPlaneHTTPRoutes() []runtimeHTTPRoute {
 		{path: "/ip_fraud_check", handler: api.handleCheckIPFraud},
 		{path: "/check_cf_access_risk", handler: api.handleCheckEdgeAccessRisk},
 		{path: "/target_connectivity_check", handler: api.handleCheckTargetConnectivity},
+		{path: "/proxy_exit_check_snapshot", handler: api.handleGetProxyExitCheckSnapshot},
 		{path: "/settings/dynamic-ip-providers", handler: api.handleDynamicIPProviders},
 		{path: "/settings/in-user-rules", handler: api.handleInUserRules},
 		{path: "/settings/mihomo-native", handler: api.handleMihomoNativeConfig},

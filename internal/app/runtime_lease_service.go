@@ -155,6 +155,7 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 		failure.afterRoute(route, "lease fact save failed")
 		return nil, err
 	}
+	r.exitCheckCache.clear()
 	if req.GetAccountId() == playgroundProfileID {
 		r.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
 	}
@@ -296,6 +297,7 @@ func (c leaseCoordinator) retireLeaseRoute(ctx context.Context, lease *proxyrunt
 		_ = c.saveLeaseReleaseCleanupFailure(ctx, lease, true, false, "lease route cleanup failed")
 		return err
 	}
+	r.exitCheckCache.clear()
 	if lease.GetAccountId() == playgroundProfileID {
 		r.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
 	}

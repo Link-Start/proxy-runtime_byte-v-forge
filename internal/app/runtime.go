@@ -36,6 +36,7 @@ type Runtime struct {
 	reconcileState runtimeReconcileState
 	fraudChecker   ipFraudCheckerCache
 	geoCache       ipGeoCache
+	exitCheckCache proxyExitCheckCache
 
 	dynamicProfileMu        sync.RWMutex
 	dynamicProfilePoolNodes []provider.Node

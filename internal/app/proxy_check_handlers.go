@@ -91,6 +91,27 @@ func (api *runtimeHTTPAPI) handleCheckTargetConnectivity(w http.ResponseWriter, 
 	api.writeProto(w, response)
 }
 
+func (api *runtimeHTTPAPI) handleGetProxyExitCheckSnapshot(w http.ResponseWriter, req *http.Request) {
+	var checkReq proxyruntimev1.GetProxyExitCheckSnapshotRequest
+	switch req.Method {
+	case http.MethodGet:
+		checkReq.ListenerId = req.URL.Query().Get("listener_id")
+	case http.MethodPost:
+		if !api.readOptionalProto(w, req, &checkReq) {
+			return
+		}
+	default:
+		methodNotAllowed(w, http.MethodGet+", "+http.MethodPost)
+		return
+	}
+	response, err := api.service.GetProxyExitCheckSnapshot(req.Context(), &checkReq)
+	if err != nil {
+		writeHTTPError(w, err, http.StatusBadGateway)
+		return
+	}
+	api.writeProto(w, response)
+}
+
 func (api *runtimeHTTPAPI) handleIPFraudProviders(w http.ResponseWriter, req *http.Request) {
 	if req.Method != http.MethodGet {
 		methodNotAllowed(w, http.MethodGet)

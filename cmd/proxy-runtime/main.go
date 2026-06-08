@@ -39,7 +39,12 @@ func main() {
 		logger.Error("create provider registry failed", "error", err)
 		os.Exit(1)
 	}
-	proxyProvider, err := proxyProviders.NewPoolProvider(cfg, app.BuildProviderHTTPClient(cfg))
+	providerHTTPClient, err := app.NewProviderHTTPClient(cfg)
+	if err != nil {
+		logger.Error("create provider HTTP client failed", "error", err)
+		os.Exit(1)
+	}
+	proxyProvider, err := proxyProviders.NewPoolProvider(cfg, providerHTTPClient)
 	if err != nil {
 		logger.Error("create provider failed", "error", err)
 		os.Exit(1)
@@ -70,7 +75,19 @@ func main() {
 		os.Exit(1)
 	}
 	defer providerConcurrency.Close()
-	runtime, err := app.NewRuntime(cfg, proxyProvider, proxyProviders, ipFraudProviders, ipGeoProviders, dataPlane, store, leaseRuntimeLocks, providerConcurrency, logger)
+	runtime, err := app.NewRuntime(app.RuntimeDeps{
+		Config:              cfg,
+		ProxyProvider:       proxyProvider,
+		AccountProviders:    proxyProviders,
+		IPFraudProviders:    ipFraudProviders,
+		IPGeoProviders:      ipGeoProviders,
+		DataPlane:           dataPlane,
+		Store:               store,
+		LeaseLocks:          leaseRuntimeLocks,
+		ProviderConcurrency: providerConcurrency,
+		ProviderHTTPClient:  providerHTTPClient,
+		Logger:              logger,
+	})
 	if err != nil {
 		logger.Error("create runtime failed", "error", err)
 		os.Exit(1)

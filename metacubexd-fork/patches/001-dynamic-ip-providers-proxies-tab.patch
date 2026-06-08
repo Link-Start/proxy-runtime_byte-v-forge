@@ -9,7 +9,7 @@ index 9af484c..0d0d70a 100644
 -const activeTab = ref<'proxies' | 'proxyProviders'>('proxies')
 +const proxyRuntime = useProxyRuntimeDynamicIPProviders()
 +const inUserRules = useProxyRuntimeInUserRules()
-+const nativeRuntime = useProxyRuntimeNativeConfig()
++const nativeRuntime = useProxyRuntimeMihomoNativeConfig()
 +const activeTab = ref<
 +  | 'proxies'
 +  | 'proxyProviders'

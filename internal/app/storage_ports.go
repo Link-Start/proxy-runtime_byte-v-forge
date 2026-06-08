@@ -10,12 +10,21 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 )
 
-type controlStore interface {
+type storeCloser interface {
+	Close()
+}
+
+type secretStore interface {
 	secretref.Writer
 	secretref.Resolver
-	Close()
+}
+
+type runtimeSettingsPersistence interface {
 	LoadRuntimeSettings(context.Context) (*runtimeSettingsFile, error)
 	SaveRuntimeSettings(context.Context, *runtimeSettingsFile) error
+}
+
+type providerAccountStore interface {
 	ListProviderAccounts(context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error)
 	UpsertProviderAccount(context.Context, *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.ProxyProviderAccount, error)
 	DeleteProviderAccount(context.Context, string) error
@@ -23,6 +32,9 @@ type controlStore interface {
 	ProviderAccountMutationState(context.Context, string) (providerAccountMutationState, error)
 	ProviderConfig(context.Context, string) (accountproxy.Config, string, error)
 	DefaultProviderAccountID(context.Context) (string, error)
+}
+
+type leaseFactStore interface {
 	SaveLeaseFact(context.Context, *proxyruntimev1.ProxyDynamicLease) error
 	ListLeaseFacts(context.Context, bool) ([]*proxyruntimev1.ProxyDynamicLease, error)
 	RecentLeaseFacts(context.Context, time.Time, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
@@ -36,6 +48,33 @@ type controlStore interface {
 	ActiveLeaseFactBySession(context.Context, string, string, string) (*proxyruntimev1.ProxyDynamicLease, error)
 	ActiveLeaseFactByAccount(context.Context, string, string) (*proxyruntimev1.ProxyDynamicLease, error)
 	LatestLeaseFactByAccount(context.Context, string, string) (*proxyruntimev1.ProxyDynamicLease, error)
+}
+
+type RuntimeStores struct {
+	runtimeSettingsPersistence
+	providerAccountStore
+	leaseFactStore
+	secretStore
+	storeCloser
+}
+
+func newRuntimeStores(store interface {
+	runtimeSettingsPersistence
+	providerAccountStore
+	leaseFactStore
+	secretStore
+	storeCloser
+}) *RuntimeStores {
+	if store == nil {
+		return nil
+	}
+	return &RuntimeStores{
+		runtimeSettingsPersistence: store,
+		providerAccountStore:       store,
+		leaseFactStore:             store,
+		secretStore:                store,
+		storeCloser:                store,
+	}
 }
 
 type providerAccountMutationState struct {

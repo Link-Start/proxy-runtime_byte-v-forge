@@ -74,7 +74,7 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 		}
 	}()
 	providerCfg.Gateways = endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerCfg.ProviderID)
-	providerClient, err := r.accountProviders.NewSessionProvider(providerCfg, BuildProviderHTTPClient(r.cfg))
+	providerClient, err := r.accountProviders.NewSessionProvider(providerCfg, r.providerHTTPClient)
 	if err != nil {
 		return err
 	}

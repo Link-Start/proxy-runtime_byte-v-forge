@@ -14,6 +14,7 @@ import type {
   GetProxyExitIPResponse,
   GetProxyExitGeoRequest,
   GetProxyExitGeoResponse,
+  GetProxyRuntimeMihomoNativeConfigResponse,
   GetProxyRuntimeSettingsResponse,
   ListProxyIPFraudProvidersResponse,
   ListProxyIPGeoProvidersResponse,
@@ -22,14 +23,15 @@ import type {
   ListProxyProvidersResponse,
   ProxyDynamicIPProviderSettings,
   ProxyIngressRuleSettings,
+  ProxyRuntimeMihomoNativeConfig,
   ReleaseProxyLeaseRequest,
   ReleaseProxyLeaseResponse,
+  UpdateProxyRuntimeMihomoNativeConfigResponse,
   UpdateProxyRuntimeSettingsRequest,
   UpdateProxyRuntimeSettingsResponse,
   UpsertProxyProviderAccountRequest,
   UpsertProxyProviderAccountResponse,
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import type { ProxyRuntimeNativeConfig } from '~/composables/proxyRuntimeNativeConfigTypes'
 import {
   listMihomoConfigNodes,
   listMihomoEgressOwners,
@@ -64,6 +66,11 @@ async function proxyRuntimeRequest<T>(
 }
 
 const jsonBody = (value: unknown) => JSON.stringify(value)
+
+const emptyMihomoNativeConfig = (): ProxyRuntimeMihomoNativeConfig => ({
+  fixed_proxies: [],
+  subscriptions: [],
+})
 
 export function useProxyRuntimeApi() {
   return {
@@ -136,12 +143,17 @@ export function useProxyRuntimeApi() {
         },
       ),
     getNativeConfig: () =>
-      proxyRuntimeRequest<ProxyRuntimeNativeConfig>('/settings/mihomo-native'),
-    updateNativeConfig: (config: ProxyRuntimeNativeConfig) =>
-      proxyRuntimeRequest<ProxyRuntimeNativeConfig>('/settings/mihomo-native', {
-        method: 'PUT',
-        body: jsonBody(config),
-      }),
+      proxyRuntimeRequest<GetProxyRuntimeMihomoNativeConfigResponse>(
+        '/settings/mihomo-native',
+      ).then((response) => response.config || emptyMihomoNativeConfig()),
+    updateNativeConfig: (config: ProxyRuntimeMihomoNativeConfig) =>
+      proxyRuntimeRequest<UpdateProxyRuntimeMihomoNativeConfigResponse>(
+        '/settings/mihomo-native',
+        {
+          method: 'PUT',
+          body: jsonBody({ config }),
+        },
+      ).then((response) => response.config || emptyMihomoNativeConfig()),
     listMihomoEgressOwners,
     listMihomoConfigNodes,
     updateDynamicIPProviders: (

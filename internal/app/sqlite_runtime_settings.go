@@ -6,7 +6,6 @@ import (
 	"errors"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 )
 
@@ -19,11 +18,7 @@ func (s *SQLiteStore) LoadRuntimeSettings(ctx context.Context) (*runtimeSettings
 	if err != nil {
 		return nil, err
 	}
-	settings := &proxyruntimev1.ProxyRuntimePersistentSettings{}
-	if raw != "" {
-		_ = protojsoncodec.Unmarshal([]byte(raw), settings)
-	}
-	return normalizeRuntimeSettings(settings), nil
+	return decodeRuntimeSettings(raw)
 }
 
 func (s *SQLiteStore) SaveRuntimeSettings(ctx context.Context, settings *runtimeSettingsFile) error {

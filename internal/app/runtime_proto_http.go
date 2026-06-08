@@ -11,6 +11,8 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+const maxRuntimeHTTPRequestBodyBytes = 1 << 20
+
 func (api *runtimeHTTPAPI) readProto(ctx *gin.Context, message proto.Message) bool {
 	if ctx.Request.Body == nil {
 		writeHTTPError(ctx.Writer, invalidArgument("request body is required", nil), http.StatusBadRequest)
@@ -62,7 +64,14 @@ func (api *runtimeHTTPAPI) writeProto(ctx *gin.Context, message proto.Message) {
 
 func readRequestBody(req *http.Request) ([]byte, error) {
 	defer req.Body.Close()
-	return io.ReadAll(io.LimitReader(req.Body, 1<<20))
+	data, err := io.ReadAll(io.LimitReader(req.Body, maxRuntimeHTTPRequestBodyBytes+1))
+	if err != nil {
+		return nil, err
+	}
+	if len(data) > maxRuntimeHTTPRequestBodyBytes {
+		return nil, resourceExhausted("request body exceeds 1MiB", nil)
+	}
+	return data, nil
 }
 
 func writeHTTPError(w http.ResponseWriter, err error, fallbackStatus int) {

@@ -1,5 +1,5 @@
 import type { MihomoConfigNode } from '~/composables/proxyRuntimeMihomoController'
-import type { ProxyRuntimeNativeConfig } from '~/composables/proxyRuntimeNativeConfigTypes'
+import type { ProxyRuntimeMihomoNativeConfig } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 
 export interface MihomoEgressOwner {
   owner_id: string
@@ -10,7 +10,7 @@ export interface MihomoEgressOwner {
 interface MihomoOwnerSource {
   proxies: Record<string, { type?: string }>
   providers: Record<string, { name?: string; proxies?: unknown[] }>
-  nativeConfig?: ProxyRuntimeNativeConfig
+  nativeConfig?: ProxyRuntimeMihomoNativeConfig
 }
 
 const unsupportedProxyTypes = new Set([

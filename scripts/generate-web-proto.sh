@@ -19,7 +19,7 @@ if [[ -z "${PLUGIN}" || ! -x "${PLUGIN}" ]]; then
   exit 1
 fi
 
-rm -rf "${OUT_DIR}/byte"
+rm -rf "${OUT_DIR}/byte" "${OUT_DIR}/google"
 mkdir -p "${OUT_DIR}"
 
 protoc -I "${PROTO_DIR}" \

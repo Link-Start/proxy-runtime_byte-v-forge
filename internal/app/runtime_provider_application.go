@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -130,27 +129,29 @@ func (a runtimeProviderApplication) rejectActiveProviderAccountRuntimeMutation(c
 func (a runtimeProviderApplication) deleteProviderAccount(ctx context.Context, providerAccountID string) error {
 	providerAccountID = strings.TrimSpace(providerAccountID)
 	if providerAccountID == "" {
-		return errors.New("provider account_id is required")
+		return invalidArgument("provider account_id is required", nil)
 	}
 	for {
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		lock, err := a.runtime.leaseLocks.LockProviderAccount(ctx, providerAccountID)
-		if err != nil {
+		var leases []*proxyruntimev1.ProxyDynamicLease
+		deleted := false
+		err := a.runtime.leaseLocks.WithProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
+			var err error
+			leases, err = a.runtime.store.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID)
+			if err != nil {
+				return fmt.Errorf("list blocking proxy leases for provider account %q: %w", providerAccountID, err)
+			}
+			if len(leases) == 0 {
+				deleted = true
+				return a.runtime.store.DeleteProviderAccount(ctx, providerAccountID)
+			}
+			return nil
+		})
+		if err != nil || deleted {
 			return err
 		}
-		leases, err := a.runtime.store.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID)
-		if err != nil {
-			_ = lock.Unlock(ctx)
-			return fmt.Errorf("list blocking proxy leases for provider account %q: %w", providerAccountID, err)
-		}
-		if len(leases) == 0 {
-			err = a.runtime.store.DeleteProviderAccount(ctx, providerAccountID)
-			_ = lock.Unlock(ctx)
-			return err
-		}
-		_ = lock.Unlock(ctx)
 		for _, lease := range leases {
 			if leaseCleanupPending(lease) {
 				if err := a.runtime.leaseCoordinator.cleanupPendingLeaseFact(ctx, lease); err != nil {

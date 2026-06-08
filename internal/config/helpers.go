@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -32,16 +33,16 @@ func envStringDefault(name string, fallback string) string {
 	return fallback
 }
 
-func envDurationSeconds(name string, fallback time.Duration) time.Duration {
+func envDurationSeconds(name string, fallback time.Duration) (time.Duration, error) {
 	value := envString(name)
 	if value == "" {
-		return fallback
+		return fallback, nil
 	}
 	seconds, err := strconv.Atoi(value)
 	if err != nil {
-		return fallback
+		return 0, fmt.Errorf("%s must be integer seconds: %w", name, err)
 	}
-	return time.Duration(seconds) * time.Second
+	return time.Duration(seconds) * time.Second, nil
 }
 
 func envList(name string) []string {

@@ -41,6 +41,14 @@ func (s *RuntimeService) UpdateProxyInUserRules(ctx context.Context, req *proxyr
 	return s.settings.UpdateProxyInUserRules(ctx, req)
 }
 
+func (s *RuntimeService) GetProxyRuntimeMihomoNativeConfig(ctx context.Context, req *proxyruntimev1.GetProxyRuntimeMihomoNativeConfigRequest) (*proxyruntimev1.GetProxyRuntimeMihomoNativeConfigResponse, error) {
+	return s.settings.GetProxyRuntimeMihomoNativeConfig(ctx, req)
+}
+
+func (s *RuntimeService) UpdateProxyRuntimeMihomoNativeConfig(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeMihomoNativeConfigRequest) (*proxyruntimev1.UpdateProxyRuntimeMihomoNativeConfigResponse, error) {
+	return s.settings.UpdateProxyRuntimeMihomoNativeConfig(ctx, req)
+}
+
 func (a runtimeSettingsApplication) ListProxyIPFraudProviders(context.Context) (*proxyruntimev1.ListProxyIPFraudProvidersResponse, error) {
 	return &proxyruntimev1.ListProxyIPFraudProvidersResponse{Providers: a.runtime.ipFraudProviders.ProviderDescriptors()}, nil
 }
@@ -117,6 +125,22 @@ func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, 
 	a.runtime.exitCheckCache.clear()
 	a.runtime.closeMihomoInUserConnections(ctx, changedInUserConnectionUsernames(before, after))
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
+}
+
+func (a runtimeSettingsApplication) GetProxyRuntimeMihomoNativeConfig(_ context.Context, _ *proxyruntimev1.GetProxyRuntimeMihomoNativeConfigRequest) (*proxyruntimev1.GetProxyRuntimeMihomoNativeConfigResponse, error) {
+	config, err := mihomoNativeSettings(a.runtime)
+	if err != nil {
+		return nil, internalError("load mihomo native config", err)
+	}
+	return &proxyruntimev1.GetProxyRuntimeMihomoNativeConfigResponse{Config: config}, nil
+}
+
+func (a runtimeSettingsApplication) UpdateProxyRuntimeMihomoNativeConfig(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeMihomoNativeConfigRequest) (*proxyruntimev1.UpdateProxyRuntimeMihomoNativeConfigResponse, error) {
+	config, err := updateMihomoNativeSettings(ctx, a.runtime, req.GetConfig())
+	if err != nil {
+		return nil, err
+	}
+	return &proxyruntimev1.UpdateProxyRuntimeMihomoNativeConfigResponse{Config: config}, nil
 }
 
 func rejectMissingProxyUserProfiles(users []config.ProxyUserRoute, profiles []*proxyruntimev1.EgressProfileSettings) error {

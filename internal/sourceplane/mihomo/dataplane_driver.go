@@ -64,10 +64,6 @@ func cloneDataPlaneConfig(cfg dataplane.Config) dataplane.Config {
 	cfg.EgressProfiles = cloneEgressProfiles(cfg.EgressProfiles)
 	cfg.Pool = cloneProviderNodes(cfg.Pool)
 	cfg.ProxyUsers = append([]dataplane.ProxyUserRoute(nil), cfg.ProxyUsers...)
-	if cfg.Common != nil {
-		common := *cfg.Common
-		cfg.Common = &common
-	}
 	return cfg
 }
 

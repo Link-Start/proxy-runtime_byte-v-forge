@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"sync"
 	"time"
 
@@ -22,7 +23,7 @@ type Runtime struct {
 	ipFraudProviders    *ipfraud.Registry
 	ipGeoProviders      *ipgeo.Registry
 	dataPlane           dataplane.Driver
-	store               controlStore
+	store               *RuntimeStores
 	leaseLocks          leaseRuntimeLocks
 	providerConcurrency providerAccountConcurrencyLimiter
 	leaseCoordinator    leaseCoordinator
@@ -30,6 +31,7 @@ type Runtime struct {
 	settings            *runtimeSettingsStore
 	appService          *RuntimeService
 	logger              *slog.Logger
+	providerHTTPClient  *http.Client
 
 	refreshMu      sync.Mutex
 	reconcileMu    sync.RWMutex
@@ -45,14 +47,46 @@ type Runtime struct {
 	reconcileCh chan struct{}
 }
 
-func NewRuntime(cfg config.Config, proxyProvider provider.PoolProvider, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry, dataPlane dataplane.Driver, store controlStore, leaseLocks leaseRuntimeLocks, providerConcurrency providerAccountConcurrencyLimiter, logger *slog.Logger) (*Runtime, error) {
+type RuntimeDeps struct {
+	Config              config.Config
+	ProxyProvider       provider.PoolProvider
+	AccountProviders    *providerregistry.Registry
+	IPFraudProviders    *ipfraud.Registry
+	IPGeoProviders      *ipgeo.Registry
+	DataPlane           dataplane.Driver
+	Store               *RuntimeStores
+	LeaseLocks          leaseRuntimeLocks
+	ProviderConcurrency providerAccountConcurrencyLimiter
+	ProviderHTTPClient  *http.Client
+	Logger              *slog.Logger
+}
+
+func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
+	logger := deps.Logger
 	if logger == nil {
 		logger = slog.Default()
 	}
-	if dataPlane == nil {
+	if deps.DataPlane == nil {
 		return nil, fmt.Errorf("data plane driver is required")
 	}
-	runtime := &Runtime{cfg: cfg, provider: proxyProvider, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, ipGeoProviders: ipGeoProviders, dataPlane: dataPlane, store: store, leaseLocks: leaseLocks, providerConcurrency: providerConcurrency, settings: newRuntimeSettingsStore(store, accountProviders, ipFraudProviders, ipGeoProviders, logger), logger: logger, reconcileCh: make(chan struct{}, 1)}
+	if deps.ProviderHTTPClient == nil {
+		return nil, fmt.Errorf("provider HTTP client is required")
+	}
+	runtime := &Runtime{
+		cfg:                 deps.Config,
+		provider:            deps.ProxyProvider,
+		accountProviders:    deps.AccountProviders,
+		ipFraudProviders:    deps.IPFraudProviders,
+		ipGeoProviders:      deps.IPGeoProviders,
+		dataPlane:           deps.DataPlane,
+		store:               deps.Store,
+		leaseLocks:          deps.LeaseLocks,
+		providerConcurrency: deps.ProviderConcurrency,
+		providerHTTPClient:  deps.ProviderHTTPClient,
+		settings:            newRuntimeSettingsStore(deps.Store, deps.AccountProviders, deps.IPFraudProviders, deps.IPGeoProviders, logger),
+		logger:              logger,
+		reconcileCh:         make(chan struct{}, 1),
+	}
 	runtime.leaseCoordinator = newLeaseCoordinator(runtime)
 	runtime.dynamicIPSelector = newDynamicIPSelector(runtime)
 	runtime.appService = NewRuntimeService(runtime)
@@ -64,6 +98,9 @@ func (r *Runtime) Run(ctx context.Context) error {
 		return err
 	}
 	defer r.dataPlane.Stop()
+	if err := r.leaseCoordinator.restoreActiveLeases(ctx); err != nil {
+		return err
+	}
 	errCh := make(chan error, 2)
 	go r.reconcileLoop(ctx)
 	go r.leaseExpiryLoop(ctx)
@@ -141,17 +178,11 @@ func (r *Runtime) refresh(ctx context.Context) error {
 	}
 	dynamicProfileNodes := len(sourceCfg.Pool)
 	sourceCfg.Pool = append(sourceCfg.Pool, nodes...)
-	sourceCfg.Common = r.commonEgressService()
-	sourceCfg.Local = r.defaultLocalService()
-	sourceCfg.DynamicViaCommon = r.cfg.CommonEgressAddr != ""
 	sourceNodes, err := r.dataPlane.ReconcileBase(ctx, sourceCfg)
 	if err != nil {
 		return err
 	}
 	r.refreshDynamicProfileSelectionMetadata(ctx)
-	if err := r.leaseCoordinator.restoreActiveLeases(ctx); err != nil {
-		return err
-	}
 	r.logger.Info("proxy runtime base refreshed", "provider_nodes", len(nodes), "dynamic_profile_nodes", dynamicProfileNodes, "mihomo_nodes", len(sourceNodes), "data_plane", r.dataPlane.Name())
 	return nil
 }

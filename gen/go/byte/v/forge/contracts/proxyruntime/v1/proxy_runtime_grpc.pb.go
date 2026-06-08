@@ -19,25 +19,27 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	ProxyRuntimeService_ListProxyProviders_FullMethodName           = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ListProxyProviders"
-	ProxyRuntimeService_ListProxyProviderAccounts_FullMethodName    = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ListProxyProviderAccounts"
-	ProxyRuntimeService_UpsertProxyProviderAccount_FullMethodName   = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/UpsertProxyProviderAccount"
-	ProxyRuntimeService_DeleteProxyProviderAccount_FullMethodName   = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/DeleteProxyProviderAccount"
-	ProxyRuntimeService_ListProxyDynamicLeases_FullMethodName       = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ListProxyDynamicLeases"
-	ProxyRuntimeService_AcquireProxyLease_FullMethodName            = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/AcquireProxyLease"
-	ProxyRuntimeService_ReleaseProxyLease_FullMethodName            = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ReleaseProxyLease"
-	ProxyRuntimeService_GetProxyExitIP_FullMethodName               = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/GetProxyExitIP"
-	ProxyRuntimeService_GetProxyExitGeo_FullMethodName              = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/GetProxyExitGeo"
-	ProxyRuntimeService_CheckProxyIPFraud_FullMethodName            = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/CheckProxyIPFraud"
-	ProxyRuntimeService_CheckProxyEdgeAccess_FullMethodName         = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/CheckProxyEdgeAccess"
-	ProxyRuntimeService_CheckProxyTargetConnectivity_FullMethodName = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/CheckProxyTargetConnectivity"
-	ProxyRuntimeService_GetProxyExitCheckSnapshot_FullMethodName    = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/GetProxyExitCheckSnapshot"
-	ProxyRuntimeService_ListProxyIPFraudProviders_FullMethodName    = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ListProxyIPFraudProviders"
-	ProxyRuntimeService_ListProxyIPGeoProviders_FullMethodName      = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ListProxyIPGeoProviders"
-	ProxyRuntimeService_GetProxyRuntimeSettings_FullMethodName      = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/GetProxyRuntimeSettings"
-	ProxyRuntimeService_UpdateProxyRuntimeSettings_FullMethodName   = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/UpdateProxyRuntimeSettings"
-	ProxyRuntimeService_UpdateProxyEgressProfiles_FullMethodName    = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/UpdateProxyEgressProfiles"
-	ProxyRuntimeService_UpdateProxyIngressRules_FullMethodName      = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/UpdateProxyIngressRules"
+	ProxyRuntimeService_ListProxyProviders_FullMethodName                   = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ListProxyProviders"
+	ProxyRuntimeService_ListProxyProviderAccounts_FullMethodName            = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ListProxyProviderAccounts"
+	ProxyRuntimeService_UpsertProxyProviderAccount_FullMethodName           = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/UpsertProxyProviderAccount"
+	ProxyRuntimeService_DeleteProxyProviderAccount_FullMethodName           = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/DeleteProxyProviderAccount"
+	ProxyRuntimeService_ListProxyDynamicLeases_FullMethodName               = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ListProxyDynamicLeases"
+	ProxyRuntimeService_AcquireProxyLease_FullMethodName                    = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/AcquireProxyLease"
+	ProxyRuntimeService_ReleaseProxyLease_FullMethodName                    = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ReleaseProxyLease"
+	ProxyRuntimeService_GetProxyExitIP_FullMethodName                       = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/GetProxyExitIP"
+	ProxyRuntimeService_GetProxyExitGeo_FullMethodName                      = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/GetProxyExitGeo"
+	ProxyRuntimeService_CheckProxyIPFraud_FullMethodName                    = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/CheckProxyIPFraud"
+	ProxyRuntimeService_CheckProxyEdgeAccess_FullMethodName                 = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/CheckProxyEdgeAccess"
+	ProxyRuntimeService_CheckProxyTargetConnectivity_FullMethodName         = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/CheckProxyTargetConnectivity"
+	ProxyRuntimeService_GetProxyExitCheckSnapshot_FullMethodName            = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/GetProxyExitCheckSnapshot"
+	ProxyRuntimeService_ListProxyIPFraudProviders_FullMethodName            = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ListProxyIPFraudProviders"
+	ProxyRuntimeService_ListProxyIPGeoProviders_FullMethodName              = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ListProxyIPGeoProviders"
+	ProxyRuntimeService_GetProxyRuntimeSettings_FullMethodName              = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/GetProxyRuntimeSettings"
+	ProxyRuntimeService_UpdateProxyRuntimeSettings_FullMethodName           = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/UpdateProxyRuntimeSettings"
+	ProxyRuntimeService_UpdateProxyEgressProfiles_FullMethodName            = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/UpdateProxyEgressProfiles"
+	ProxyRuntimeService_UpdateProxyIngressRules_FullMethodName              = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/UpdateProxyIngressRules"
+	ProxyRuntimeService_GetProxyRuntimeMihomoNativeConfig_FullMethodName    = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/GetProxyRuntimeMihomoNativeConfig"
+	ProxyRuntimeService_UpdateProxyRuntimeMihomoNativeConfig_FullMethodName = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/UpdateProxyRuntimeMihomoNativeConfig"
 )
 
 // ProxyRuntimeServiceClient is the client API for ProxyRuntimeService service.
@@ -63,6 +65,8 @@ type ProxyRuntimeServiceClient interface {
 	UpdateProxyRuntimeSettings(ctx context.Context, in *UpdateProxyRuntimeSettingsRequest, opts ...grpc.CallOption) (*UpdateProxyRuntimeSettingsResponse, error)
 	UpdateProxyEgressProfiles(ctx context.Context, in *UpdateProxyEgressProfilesRequest, opts ...grpc.CallOption) (*UpdateProxyEgressProfilesResponse, error)
 	UpdateProxyIngressRules(ctx context.Context, in *UpdateProxyIngressRulesRequest, opts ...grpc.CallOption) (*UpdateProxyIngressRulesResponse, error)
+	GetProxyRuntimeMihomoNativeConfig(ctx context.Context, in *GetProxyRuntimeMihomoNativeConfigRequest, opts ...grpc.CallOption) (*GetProxyRuntimeMihomoNativeConfigResponse, error)
+	UpdateProxyRuntimeMihomoNativeConfig(ctx context.Context, in *UpdateProxyRuntimeMihomoNativeConfigRequest, opts ...grpc.CallOption) (*UpdateProxyRuntimeMihomoNativeConfigResponse, error)
 }
 
 type proxyRuntimeServiceClient struct {
@@ -263,6 +267,26 @@ func (c *proxyRuntimeServiceClient) UpdateProxyIngressRules(ctx context.Context,
 	return out, nil
 }
 
+func (c *proxyRuntimeServiceClient) GetProxyRuntimeMihomoNativeConfig(ctx context.Context, in *GetProxyRuntimeMihomoNativeConfigRequest, opts ...grpc.CallOption) (*GetProxyRuntimeMihomoNativeConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProxyRuntimeMihomoNativeConfigResponse)
+	err := c.cc.Invoke(ctx, ProxyRuntimeService_GetProxyRuntimeMihomoNativeConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *proxyRuntimeServiceClient) UpdateProxyRuntimeMihomoNativeConfig(ctx context.Context, in *UpdateProxyRuntimeMihomoNativeConfigRequest, opts ...grpc.CallOption) (*UpdateProxyRuntimeMihomoNativeConfigResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateProxyRuntimeMihomoNativeConfigResponse)
+	err := c.cc.Invoke(ctx, ProxyRuntimeService_UpdateProxyRuntimeMihomoNativeConfig_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ProxyRuntimeServiceServer is the server API for ProxyRuntimeService service.
 // All implementations must embed UnimplementedProxyRuntimeServiceServer
 // for forward compatibility.
@@ -286,6 +310,8 @@ type ProxyRuntimeServiceServer interface {
 	UpdateProxyRuntimeSettings(context.Context, *UpdateProxyRuntimeSettingsRequest) (*UpdateProxyRuntimeSettingsResponse, error)
 	UpdateProxyEgressProfiles(context.Context, *UpdateProxyEgressProfilesRequest) (*UpdateProxyEgressProfilesResponse, error)
 	UpdateProxyIngressRules(context.Context, *UpdateProxyIngressRulesRequest) (*UpdateProxyIngressRulesResponse, error)
+	GetProxyRuntimeMihomoNativeConfig(context.Context, *GetProxyRuntimeMihomoNativeConfigRequest) (*GetProxyRuntimeMihomoNativeConfigResponse, error)
+	UpdateProxyRuntimeMihomoNativeConfig(context.Context, *UpdateProxyRuntimeMihomoNativeConfigRequest) (*UpdateProxyRuntimeMihomoNativeConfigResponse, error)
 	mustEmbedUnimplementedProxyRuntimeServiceServer()
 }
 
@@ -352,6 +378,12 @@ func (UnimplementedProxyRuntimeServiceServer) UpdateProxyEgressProfiles(context.
 }
 func (UnimplementedProxyRuntimeServiceServer) UpdateProxyIngressRules(context.Context, *UpdateProxyIngressRulesRequest) (*UpdateProxyIngressRulesResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateProxyIngressRules not implemented")
+}
+func (UnimplementedProxyRuntimeServiceServer) GetProxyRuntimeMihomoNativeConfig(context.Context, *GetProxyRuntimeMihomoNativeConfigRequest) (*GetProxyRuntimeMihomoNativeConfigResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetProxyRuntimeMihomoNativeConfig not implemented")
+}
+func (UnimplementedProxyRuntimeServiceServer) UpdateProxyRuntimeMihomoNativeConfig(context.Context, *UpdateProxyRuntimeMihomoNativeConfigRequest) (*UpdateProxyRuntimeMihomoNativeConfigResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateProxyRuntimeMihomoNativeConfig not implemented")
 }
 func (UnimplementedProxyRuntimeServiceServer) mustEmbedUnimplementedProxyRuntimeServiceServer() {}
 func (UnimplementedProxyRuntimeServiceServer) testEmbeddedByValue()                             {}
@@ -716,6 +748,42 @@ func _ProxyRuntimeService_UpdateProxyIngressRules_Handler(srv interface{}, ctx c
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProxyRuntimeService_GetProxyRuntimeMihomoNativeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProxyRuntimeMihomoNativeConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProxyRuntimeServiceServer).GetProxyRuntimeMihomoNativeConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProxyRuntimeService_GetProxyRuntimeMihomoNativeConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProxyRuntimeServiceServer).GetProxyRuntimeMihomoNativeConfig(ctx, req.(*GetProxyRuntimeMihomoNativeConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ProxyRuntimeService_UpdateProxyRuntimeMihomoNativeConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateProxyRuntimeMihomoNativeConfigRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProxyRuntimeServiceServer).UpdateProxyRuntimeMihomoNativeConfig(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProxyRuntimeService_UpdateProxyRuntimeMihomoNativeConfig_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProxyRuntimeServiceServer).UpdateProxyRuntimeMihomoNativeConfig(ctx, req.(*UpdateProxyRuntimeMihomoNativeConfigRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ProxyRuntimeService_ServiceDesc is the grpc.ServiceDesc for ProxyRuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -798,6 +866,14 @@ var ProxyRuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateProxyIngressRules",
 			Handler:    _ProxyRuntimeService_UpdateProxyIngressRules_Handler,
+		},
+		{
+			MethodName: "GetProxyRuntimeMihomoNativeConfig",
+			Handler:    _ProxyRuntimeService_GetProxyRuntimeMihomoNativeConfig_Handler,
+		},
+		{
+			MethodName: "UpdateProxyRuntimeMihomoNativeConfig",
+			Handler:    _ProxyRuntimeService_UpdateProxyRuntimeMihomoNativeConfig_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

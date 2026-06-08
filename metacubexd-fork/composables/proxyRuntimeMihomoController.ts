@@ -1,4 +1,7 @@
-import type { ProxyRuntimeNativeConfig } from '~/composables/proxyRuntimeNativeConfigTypes'
+import type {
+  GetProxyRuntimeMihomoNativeConfigResponse,
+  ProxyRuntimeMihomoNativeConfig,
+} from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 
 const mihomoControllerBase = '/mihomo/controller'
 const proxyRuntimeBase = '/api'
@@ -46,7 +49,7 @@ export async function listMihomoEgressOwners() {
   const [proxies, providers, nativeConfig] = await Promise.all([
     mihomoControllerRequest<MihomoProxiesResponse>('/proxies'),
     mihomoControllerRequest<MihomoProvidersResponse>('/providers/proxies'),
-    proxyRuntimeRequest<ProxyRuntimeNativeConfig>('/settings/mihomo-native'),
+    getMihomoNativeConfig(),
   ])
   return {
     proxies: proxies.proxies || {},
@@ -59,9 +62,16 @@ export async function listMihomoConfigNodes(ownerId: string) {
   const [{ proxies }, { providers }, nativeConfig] = await Promise.all([
     mihomoControllerRequest<MihomoProxiesResponse>('/proxies'),
     mihomoControllerRequest<MihomoProvidersResponse>('/providers/proxies'),
-    proxyRuntimeRequest<ProxyRuntimeNativeConfig>('/settings/mihomo-native'),
+    getMihomoNativeConfig(),
   ])
   return nodesFromMihomo(ownerId, proxies || {}, providers || {}, nativeConfig)
+}
+
+async function getMihomoNativeConfig(): Promise<ProxyRuntimeMihomoNativeConfig> {
+  const response = await proxyRuntimeRequest<GetProxyRuntimeMihomoNativeConfigResponse>(
+    '/settings/mihomo-native',
+  )
+  return response.config || { fixed_proxies: [], subscriptions: [] }
 }
 
 async function mihomoControllerRequest<T>(path: string): Promise<T> {
@@ -100,7 +110,7 @@ function nodesFromMihomo(
   ownerId: string,
   proxies: Record<string, MihomoProxyState>,
   providers: Record<string, MihomoProviderState>,
-  nativeConfig: ProxyRuntimeNativeConfig,
+  nativeConfig: ProxyRuntimeMihomoNativeConfig,
 ): MihomoConfigNodesResponse {
   const key = ownerId.trim()
   const owner = nativeOwner(key, nativeConfig)
@@ -153,10 +163,17 @@ function mihomoNode(
   }
 }
 
-function nativeOwner(ownerId: string, nativeConfig: ProxyRuntimeNativeConfig) {
+function nativeOwner(
+  ownerId: string,
+  nativeConfig: ProxyRuntimeMihomoNativeConfig,
+) {
   for (const proxy of nativeConfig.fixed_proxies || []) {
     if (proxy.id === ownerId || proxy.name === ownerId) {
-      return { id: proxy.id || proxy.name, name: proxy.name, kind: 'static_proxy' as const }
+      return {
+        id: proxy.id || proxy.name,
+        name: proxy.name,
+        kind: 'static_proxy' as const,
+      }
     }
   }
   for (const subscription of nativeConfig.subscriptions || []) {

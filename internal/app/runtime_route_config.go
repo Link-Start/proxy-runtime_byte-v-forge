@@ -8,18 +8,6 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 )
 
-func (r *Runtime) commonEgressService() *dataplane.LocalService {
-	if r.cfg.CommonEgressAddr == "" {
-		return nil
-	}
-	service := localServiceFromListener(config.EgressListener{ID: "common-egress", Addr: r.cfg.CommonEgressAddr, Protocol: r.cfg.LocalProtocol, Route: config.ListenerRouteDirect}, r.cfg.LocalProtocol)
-	return &service
-}
-
-func (r *Runtime) defaultLocalService() dataplane.LocalService {
-	return dataplane.LocalService{Name: "dynamic-egress", Addr: r.cfg.LocalAddr, Protocol: r.cfg.LocalProtocol, Username: r.cfg.LocalUsername, Password: r.cfg.LocalPassword}
-}
-
 func (r *Runtime) baseListenerConfigs() []config.EgressListener {
 	return r.defaultListenerConfigs()
 }

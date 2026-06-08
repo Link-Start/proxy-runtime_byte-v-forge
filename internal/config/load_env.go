@@ -10,6 +10,42 @@ import (
 
 func LoadFromEnv() (Config, error) {
 	mihomoConfigDir := envStringDefault("PROXY_RUNTIME_MIHOMO_CONFIG_DIR", "/var/lib/proxy-runtime/mihomo")
+	mihomoHealthCheckInterval, err := envDurationSeconds("PROXY_RUNTIME_MIHOMO_HEALTH_CHECK_INTERVAL_SECONDS", 300*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	mihomoHealthCheckTimeout, err := envDurationSeconds("PROXY_RUNTIME_MIHOMO_HEALTH_CHECK_TIMEOUT_SECONDS", 5*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	proxyUsers, err := envProxyUsers("PROXY_RUNTIME_PROXY_USERS_JSON")
+	if err != nil {
+		return Config{}, err
+	}
+	refreshInterval, err := envDurationSeconds("PROXY_RUNTIME_REFRESH_SECONDS", 300*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	requestTimeout, err := envDurationSeconds("PROXY_RUNTIME_REQUEST_TIMEOUT_SECONDS", 10*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	edgeCanaryTimeout, err := envDurationSeconds("PROXY_RUNTIME_EDGE_CANARY_TIMEOUT_SECONDS", 10*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	ipFraudTimeout, err := envDurationSeconds("PROXY_RUNTIME_IP_FRAUD_TIMEOUT_SECONDS", 10*time.Second)
+	if err != nil {
+		return Config{}, err
+	}
+	ipFraudCacheTTL, err := envDurationSeconds("PROXY_RUNTIME_IP_FRAUD_CACHE_TTL_SECONDS", 10*time.Minute)
+	if err != nil {
+		return Config{}, err
+	}
+	ipFraudKeyCooldown, err := envDurationSeconds("PROXY_RUNTIME_IP_FRAUD_KEY_COOLDOWN_SECONDS", 24*time.Hour)
+	if err != nil {
+		return Config{}, err
+	}
 	cfg := Config{
 		RuntimeAddr:   envStringDefault("PROXY_RUNTIME_ADDR", ":8080"),
 		DataDir:       envStringDefault("PROXY_RUNTIME_DATA_DIR", "/var/lib/proxy-runtime"),
@@ -23,28 +59,27 @@ func LoadFromEnv() (Config, error) {
 			DashboardDir:        envStringDefault("PROXY_RUNTIME_MIHOMO_DASHBOARD_DIR", "/app/dashboard/metacubexd"),
 			DashboardURL:        strings.TrimSpace(os.Getenv("PROXY_RUNTIME_MIHOMO_DASHBOARD_URL")),
 			HealthCheckURL:      envStringDefault("PROXY_RUNTIME_MIHOMO_HEALTH_CHECK_URL", "https://www.gstatic.com/generate_204"),
-			HealthCheckInterval: envDurationSeconds("PROXY_RUNTIME_MIHOMO_HEALTH_CHECK_INTERVAL_SECONDS", 300*time.Second),
-			HealthCheckTimeout:  envDurationSeconds("PROXY_RUNTIME_MIHOMO_HEALTH_CHECK_TIMEOUT_SECONDS", 5*time.Second),
+			HealthCheckInterval: mihomoHealthCheckInterval,
+			HealthCheckTimeout:  mihomoHealthCheckTimeout,
 		},
-		CommonEgressAddr: strings.TrimSpace(os.Getenv("PROXY_RUNTIME_COMMON_EGRESS_ADDR")),
-		LocalAddr:        envStringDefault("PROXY_RUNTIME_DYNAMIC_EGRESS_ADDR", envStringDefault("PROXY_RUNTIME_LOCAL_ADDR", ":1080")),
-		LocalProtocol:    normalizeConfigToken(envStringDefault("PROXY_RUNTIME_LOCAL_PROTOCOL", "http")),
-		LocalUsername:    strings.TrimSpace(os.Getenv("PROXY_RUNTIME_LOCAL_USERNAME")),
-		LocalPassword:    strings.TrimSpace(os.Getenv("PROXY_RUNTIME_LOCAL_PASSWORD")),
+		LocalAddr:     envStringDefault("PROXY_RUNTIME_DYNAMIC_EGRESS_ADDR", envStringDefault("PROXY_RUNTIME_LOCAL_ADDR", ":1080")),
+		LocalProtocol: normalizeConfigToken(envStringDefault("PROXY_RUNTIME_LOCAL_PROTOCOL", "http")),
+		LocalUsername: strings.TrimSpace(os.Getenv("PROXY_RUNTIME_LOCAL_USERNAME")),
+		LocalPassword: strings.TrimSpace(os.Getenv("PROXY_RUNTIME_LOCAL_PASSWORD")),
 		SessionListener: SessionListenerConfig{
 			AdvertisedHost: strings.TrimSpace(os.Getenv("PROXY_RUNTIME_SESSION_ADVERTISED_HOST")),
 		},
 		ProviderHTTPProxy: strings.TrimSpace(os.Getenv("PROXY_RUNTIME_PROVIDER_HTTP_PROXY")),
 		Provider:          normalizeConfigToken(envStringDefault("PROXY_RUNTIME_PROVIDER", ProviderTen24)),
-		ProxyUsers:        envProxyUsers("PROXY_RUNTIME_PROXY_USERS_JSON"),
-		RefreshInterval:   envDurationSeconds("PROXY_RUNTIME_REFRESH_SECONDS", 300*time.Second),
-		RequestTimeout:    envDurationSeconds("PROXY_RUNTIME_REQUEST_TIMEOUT_SECONDS", 10*time.Second),
+		ProxyUsers:        proxyUsers,
+		RefreshInterval:   refreshInterval,
+		RequestTimeout:    requestTimeout,
 		ProxyExitGeoURLs:  proxyExitGeoURLs("PROXY_RUNTIME_PROXY_EXIT_GEO_URLS"),
-		EdgeCanaryTimeout: envDurationSeconds("PROXY_RUNTIME_EDGE_CANARY_TIMEOUT_SECONDS", 10*time.Second),
+		EdgeCanaryTimeout: edgeCanaryTimeout,
 		IPFraud: IPFraudConfig{
-			Timeout:     envDurationSeconds("PROXY_RUNTIME_IP_FRAUD_TIMEOUT_SECONDS", 10*time.Second),
-			CacheTTL:    envDurationSeconds("PROXY_RUNTIME_IP_FRAUD_CACHE_TTL_SECONDS", 10*time.Minute),
-			KeyCooldown: envDurationSeconds("PROXY_RUNTIME_IP_FRAUD_KEY_COOLDOWN_SECONDS", 24*time.Hour),
+			Timeout:     ipFraudTimeout,
+			CacheTTL:    ipFraudCacheTTL,
+			KeyCooldown: ipFraudKeyCooldown,
 		},
 		Ten24: ten24.Config{
 			APIURL:    strings.TrimSpace(os.Getenv("PROXY_RUNTIME_1024_API_URL")),

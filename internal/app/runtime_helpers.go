@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
@@ -27,22 +28,6 @@ func hashModulo(value string, modulo uint32) uint32 {
 	return h
 }
 
-func providerHTTPProxyRef(raw string) string {
-	parsed, err := proxyurl.Parse(raw, "http")
-	if err != nil {
-		return ""
-	}
-	return parsed.Scheme + "://" + parsed.Host
-}
-
-func providerHTTPProxyURL(raw string) string {
-	parsed, err := proxyurl.Parse(raw, "http")
-	if err != nil {
-		return ""
-	}
-	return parsed.String()
-}
-
 func cloneLabels(labels map[string]string) map[string]string {
 	cloned := map[string]string{}
 	for k, v := range labels {
@@ -65,10 +50,18 @@ func cloneNodes(in []provider.Node) []provider.Node {
 	return out
 }
 
-func BuildProviderHTTPClient(cfg config.Config) *http.Client {
-	client, err := runtimehttp.NewWithProxy(cfg.RequestTimeout, providerHTTPProxyURL(cfg.ProviderHTTPProxy), runtimehttp.HTTPProxySchemes...)
-	if err != nil {
-		return runtimehttp.New(cfg.RequestTimeout)
+func NewProviderHTTPClient(cfg config.Config) (*http.Client, error) {
+	proxyURL := ""
+	if strings.TrimSpace(cfg.ProviderHTTPProxy) != "" {
+		parsed, err := proxyurl.Parse(cfg.ProviderHTTPProxy, "http")
+		if err != nil {
+			return nil, fmt.Errorf("parse provider HTTP proxy: %w", err)
+		}
+		proxyURL = parsed.String()
 	}
-	return client
+	client, err := runtimehttp.NewWithProxy(cfg.RequestTimeout, proxyURL, runtimehttp.HTTPProxySchemes...)
+	if err != nil {
+		return nil, err
+	}
+	return client, nil
 }

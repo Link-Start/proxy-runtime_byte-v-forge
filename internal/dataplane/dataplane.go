@@ -31,10 +31,7 @@ type Config struct {
 	HealthCheckWait   time.Duration
 	DashboardDir      string
 	DashboardURL      string
-	Common            *LocalService
-	Local             LocalService
 	Pool              []provider.Node
-	DynamicViaCommon  bool
 	ProxyUsers        []ProxyUserRoute
 }
 

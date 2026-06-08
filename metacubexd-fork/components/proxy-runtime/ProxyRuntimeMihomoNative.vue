@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import type { ProxyRuntimeNativeRow } from '~/composables/proxyRuntimeNativeRows'
-import type { ProxyRuntimeNativeConfigState } from '~/composables/useProxyRuntimeNativeConfig'
+import type { ProxyRuntimeMihomoNativeState } from '~/composables/useProxyRuntimeMihomoNativeConfig'
 import { IconPlus } from '@tabler/icons-vue'
 
-const props = defineProps<{ runtime: ProxyRuntimeNativeConfigState }>()
+const props = defineProps<{ runtime: ProxyRuntimeMihomoNativeState }>()
 const modal = ref<{ open: () => void; close: () => void }>()
 const expanded = reactive<Record<string, boolean>>({})
 

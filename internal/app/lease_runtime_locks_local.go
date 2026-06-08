@@ -23,27 +23,39 @@ func newLocalLeaseRuntimeLocks() *localLeaseRuntimeLocks {
 
 func (s *localLeaseRuntimeLocks) Close() error { return nil }
 
-func (s *localLeaseRuntimeLocks) LockAccount(ctx context.Context, accountID string) (leaseRuntimeLock, error) {
+func (s *localLeaseRuntimeLocks) WithAccountLock(ctx context.Context, accountID string, fn leaseRuntimeLockFunc) error {
 	accountID = strings.TrimSpace(accountID)
 	if accountID == "" {
-		return nil, errors.New("lease account_id is required")
+		return errors.New("lease account_id is required")
 	}
-	return s.lock(ctx, "account:"+accountID)
+	return s.withLock(ctx, "account:"+accountID, fn)
 }
 
-func (s *localLeaseRuntimeLocks) LockProviderAccount(ctx context.Context, providerAccountID string) (leaseRuntimeLock, error) {
+func (s *localLeaseRuntimeLocks) WithProviderAccountLock(ctx context.Context, providerAccountID string, fn leaseRuntimeLockFunc) error {
 	providerAccountID = strings.TrimSpace(providerAccountID)
 	if providerAccountID == "" {
-		return nil, errors.New("provider account id is required")
+		return errors.New("provider account id is required")
 	}
-	return s.lock(ctx, "provider-account:"+providerAccountID)
+	return s.withLock(ctx, "provider-account:"+providerAccountID, fn)
 }
 
-func (s *localLeaseRuntimeLocks) LockSessionListenerAllocation(ctx context.Context) (leaseRuntimeLock, error) {
-	return s.lock(ctx, "session-listener-allocation")
+func (s *localLeaseRuntimeLocks) WithSessionListenerAllocationLock(ctx context.Context, fn leaseRuntimeLockFunc) error {
+	return s.withLock(ctx, "session-listener-allocation", fn)
 }
 
-func (s *localLeaseRuntimeLocks) lock(ctx context.Context, key string) (leaseRuntimeLock, error) {
+func (s *localLeaseRuntimeLocks) withLock(ctx context.Context, key string, fn leaseRuntimeLockFunc) error {
+	if fn == nil {
+		return errors.New("lease runtime lock function is required")
+	}
+	lock, err := s.lock(ctx, key)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = lock.Unlock(context.Background()) }()
+	return fn(ctx)
+}
+
+func (s *localLeaseRuntimeLocks) lock(ctx context.Context, key string) (*localLeaseRuntimeLock, error) {
 	ch := s.lockChannel(key)
 	select {
 	case ch <- struct{}{}:

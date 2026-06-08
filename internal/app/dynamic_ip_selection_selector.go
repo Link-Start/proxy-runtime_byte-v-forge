@@ -25,12 +25,17 @@ type scoredDynamicIPEndpointCandidate struct {
 }
 
 type dynamicIPSelector struct {
-	store            controlStore
+	store            dynamicIPSelectionStore
 	settings         *runtimeSettingsStore
 	accountProviders *providerregistry.Registry
 	concurrency      providerAccountConcurrencyLimiter
 	logger           *slog.Logger
 	lookupIPGeo      func(context.Context, string) (proxyExitGeo, error)
+}
+
+type dynamicIPSelectionStore interface {
+	ListProviderAccounts(context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error)
+	RecentLeaseFacts(context.Context, time.Time, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 }
 
 func newDynamicIPSelector(runtime *Runtime) *dynamicIPSelector {

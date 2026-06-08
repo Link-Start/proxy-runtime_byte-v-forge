@@ -9,9 +9,17 @@ import (
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 )
 
-func NewControlStore(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger) (controlStore, error) {
+func NewControlStore(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger) (*RuntimeStores, error) {
 	if strings.TrimSpace(cfg.PostgresDSN) != "" {
-		return NewPostgresStore(ctx, cfg, accountProviders, logger)
+		store, err := NewPostgresStore(ctx, cfg, accountProviders, logger)
+		if err != nil {
+			return nil, err
+		}
+		return newRuntimeStores(store), nil
 	}
-	return NewSQLiteStore(ctx, cfg, accountProviders, logger)
+	store, err := NewSQLiteStore(ctx, cfg, accountProviders, logger)
+	if err != nil {
+		return nil, err
+	}
+	return newRuntimeStores(store), nil
 }

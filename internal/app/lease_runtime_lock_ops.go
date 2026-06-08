@@ -6,22 +6,22 @@ import (
 	"strings"
 )
 
-func (s *redisLeaseRuntimeLocks) LockAccount(ctx context.Context, accountID string) (leaseRuntimeLock, error) {
+func (s *redisLeaseRuntimeLocks) WithAccountLock(ctx context.Context, accountID string, fn leaseRuntimeLockFunc) error {
 	accountID = strings.TrimSpace(accountID)
 	if accountID == "" {
-		return nil, errors.New("lease account_id is required")
+		return errors.New("lease account_id is required")
 	}
-	return s.lock(ctx, "account:"+accountID)
+	return s.withLock(ctx, "account:"+accountID, fn)
 }
 
-func (s *redisLeaseRuntimeLocks) LockProviderAccount(ctx context.Context, providerAccountID string) (leaseRuntimeLock, error) {
+func (s *redisLeaseRuntimeLocks) WithProviderAccountLock(ctx context.Context, providerAccountID string, fn leaseRuntimeLockFunc) error {
 	providerAccountID = strings.TrimSpace(providerAccountID)
 	if providerAccountID == "" {
-		return nil, errors.New("provider account id is required")
+		return errors.New("provider account id is required")
 	}
-	return s.lock(ctx, "provider-account:"+providerAccountID)
+	return s.withLock(ctx, "provider-account:"+providerAccountID, fn)
 }
 
-func (s *redisLeaseRuntimeLocks) LockSessionListenerAllocation(ctx context.Context) (leaseRuntimeLock, error) {
-	return s.lock(ctx, "session-listener-allocation")
+func (s *redisLeaseRuntimeLocks) WithSessionListenerAllocationLock(ctx context.Context, fn leaseRuntimeLockFunc) error {
+	return s.withLock(ctx, "session-listener-allocation", fn)
 }

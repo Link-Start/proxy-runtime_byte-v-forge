@@ -1,7 +1,7 @@
 import type {
-  ProxyRuntimeNativeFixedProxy,
-  ProxyRuntimeNativeSubscription,
-} from '~/composables/proxyRuntimeNativeConfigTypes'
+  ProxyRuntimeMihomoNativeFixedProxy,
+  ProxyRuntimeMihomoNativeSubscription,
+} from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 
 export type ProxyRuntimeNativeItemType = 'fixed_proxy' | 'subscription'
 
@@ -15,8 +15,8 @@ export interface ProxyRuntimeNativeRow {
 }
 
 export function nativeRows(
-  fixedProxies: ProxyRuntimeNativeFixedProxy[],
-  subscriptions: ProxyRuntimeNativeSubscription[],
+  fixedProxies: ProxyRuntimeMihomoNativeFixedProxy[],
+  subscriptions: ProxyRuntimeMihomoNativeSubscription[],
 ) {
   return [
     ...fixedProxies.map((item) => fixedProxyRow(item)),
@@ -24,7 +24,7 @@ export function nativeRows(
   ].sort((a, b) => a.name.localeCompare(b.name))
 }
 
-export function fixedProxyRow(item: ProxyRuntimeNativeFixedProxy) {
+export function fixedProxyRow(item: ProxyRuntimeMihomoNativeFixedProxy) {
   return {
     id: nativeItemID('fixed_proxy', item.id || item.name),
     name: item.name,
@@ -35,7 +35,7 @@ export function fixedProxyRow(item: ProxyRuntimeNativeFixedProxy) {
   }
 }
 
-export function subscriptionRow(item: ProxyRuntimeNativeSubscription) {
+export function subscriptionRow(item: ProxyRuntimeMihomoNativeSubscription) {
   return {
     id: nativeItemID('subscription', item.id || item.name),
     name: item.name,

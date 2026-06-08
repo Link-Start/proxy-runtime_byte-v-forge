@@ -13,7 +13,7 @@ func (s *PostgresStore) seedFromConfig(ctx context.Context, cfg config.Config) e
 	return seedStoreFromConfig(ctx, s, cfg)
 }
 
-func seedStoreFromConfig(ctx context.Context, store controlStore, cfg config.Config) error {
+func seedStoreFromConfig(ctx context.Context, store providerAccountStore, cfg config.Config) error {
 	accounts, err := store.ListProviderAccounts(ctx)
 	if err != nil {
 		return err

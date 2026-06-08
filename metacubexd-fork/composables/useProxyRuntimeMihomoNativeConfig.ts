@@ -1,17 +1,17 @@
 import type {
-  ProxyRuntimeNativeFixedProxy,
-  ProxyRuntimeNativeSubscription,
-} from '~/composables/proxyRuntimeNativeConfigTypes'
+  ProxyRuntimeMihomoNativeFixedProxy,
+  ProxyRuntimeMihomoNativeSubscription,
+} from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 import {
   type ProxyRuntimeNativeItemType,
   type ProxyRuntimeNativeRow,
   nativeRows,
 } from '~/composables/proxyRuntimeNativeRows'
 
-export function useProxyRuntimeNativeConfig() {
+export function useProxyRuntimeMihomoNativeConfig() {
   const api = useProxyRuntimeApi()
-  const fixedProxies = ref<ProxyRuntimeNativeFixedProxy[]>([])
-  const subscriptions = ref<ProxyRuntimeNativeSubscription[]>([])
+  const fixedProxies = ref<ProxyRuntimeMihomoNativeFixedProxy[]>([])
+  const subscriptions = ref<ProxyRuntimeMihomoNativeSubscription[]>([])
   const form = reactive({
     editing: false,
     original_id: '',
@@ -97,8 +97,8 @@ export function useProxyRuntimeNativeConfig() {
   }
 
   async function saveConfig(
-    nextFixed: ProxyRuntimeNativeFixedProxy[],
-    nextSubscriptions: ProxyRuntimeNativeSubscription[],
+    nextFixed: ProxyRuntimeMihomoNativeFixedProxy[],
+    nextSubscriptions: ProxyRuntimeMihomoNativeSubscription[],
   ) {
     saving.value = true
     error.value = ''
@@ -135,4 +135,4 @@ function itemKey(item: { id?: string; name: string }) {
   return item.id || item.name
 }
 
-export type ProxyRuntimeNativeConfigState = ReturnType<typeof useProxyRuntimeNativeConfig>
+export type ProxyRuntimeMihomoNativeState = ReturnType<typeof useProxyRuntimeMihomoNativeConfig>

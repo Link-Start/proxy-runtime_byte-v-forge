@@ -535,6 +535,24 @@ message ProxyRuntimePersistentSettings {
   repeated ProxyIPGeoProviderSettings ip_geo_providers = 7;
 }
 
+message ProxyRuntimeMihomoNativeFixedProxy {
+  string id = 1;
+  string name = 2;
+  string type = 3;
+  string uri = 4;
+}
+
+message ProxyRuntimeMihomoNativeSubscription {
+  string id = 1;
+  string name = 2;
+  string url = 3;
+}
+
+message ProxyRuntimeMihomoNativeConfig {
+  repeated ProxyRuntimeMihomoNativeFixedProxy fixed_proxies = 1;
+  repeated ProxyRuntimeMihomoNativeSubscription subscriptions = 2;
+}
+
 message EgressListener {
   string listener_id = 1;
   EgressListenerKind kind = 2;
@@ -656,6 +674,10 @@ message UpdateProxyEgressProfilesRequest { repeated EgressProfileSettings egress
 message UpdateProxyEgressProfilesResponse { ProxyRuntimeSettings settings = 1; }
 message UpdateProxyIngressRulesRequest { repeated ProxyIngressRuleSettings ingress_rules = 1; }
 message UpdateProxyIngressRulesResponse { ProxyRuntimeSettings settings = 1; }
+message GetProxyRuntimeMihomoNativeConfigRequest {}
+message GetProxyRuntimeMihomoNativeConfigResponse { ProxyRuntimeMihomoNativeConfig config = 1; }
+message UpdateProxyRuntimeMihomoNativeConfigRequest { ProxyRuntimeMihomoNativeConfig config = 1; }
+message UpdateProxyRuntimeMihomoNativeConfigResponse { ProxyRuntimeMihomoNativeConfig config = 1; }
 
 service ProxyRuntimeService {
   rpc ListProxyProviders(ListProxyProvidersRequest) returns (ListProxyProvidersResponse);
@@ -677,4 +699,6 @@ service ProxyRuntimeService {
   rpc UpdateProxyRuntimeSettings(UpdateProxyRuntimeSettingsRequest) returns (UpdateProxyRuntimeSettingsResponse);
   rpc UpdateProxyEgressProfiles(UpdateProxyEgressProfilesRequest) returns (UpdateProxyEgressProfilesResponse);
   rpc UpdateProxyIngressRules(UpdateProxyIngressRulesRequest) returns (UpdateProxyIngressRulesResponse);
+  rpc GetProxyRuntimeMihomoNativeConfig(GetProxyRuntimeMihomoNativeConfigRequest) returns (GetProxyRuntimeMihomoNativeConfigResponse);
+  rpc UpdateProxyRuntimeMihomoNativeConfig(UpdateProxyRuntimeMihomoNativeConfigRequest) returns (UpdateProxyRuntimeMihomoNativeConfigResponse);
 }

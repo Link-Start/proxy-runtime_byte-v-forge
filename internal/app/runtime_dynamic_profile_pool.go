@@ -24,7 +24,7 @@ func (r *Runtime) dynamicProfilePool(ctx context.Context, settings *runtimeSetti
 	if err != nil {
 		return nil, err
 	}
-	client := BuildProviderHTTPClient(r.cfg)
+	client := r.providerHTTPClient
 	endpointHealthScores := r.dynamicIPSelector.dynamicIPEndpointHealthScores(ctx)
 	out := []provider.Node{}
 	for _, profile := range settings.GetEgressProfiles() {

@@ -51,43 +51,39 @@ func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyrunti
 	if lease == nil || strings.TrimSpace(lease.GetLeaseId()) == "" {
 		return nil
 	}
-	lock, err := r.leaseLocks.LockAccount(ctx, lease.GetAccountId())
-	if err != nil {
-		return err
-	}
-	defer func() { _ = lock.Unlock(ctx) }()
-	current, err := r.store.LeaseFactByID(ctx, lease.GetLeaseId())
-	if err != nil {
-		if isStoreNotFound(err) {
-			return nil
-		}
-		return err
-	}
-	if leaseActive(current, time.Now().UTC()) {
-		return nil
-	}
-	if current.GetStatus() != proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE {
-		return nil
-	}
-	if err := c.deleteLeaseRoute(ctx, current); err != nil {
-		_ = c.saveLeaseExpiredCleanupFailure(ctx, current, true, false, "expired lease route cleanup failed")
-		return err
-	}
-	var providerLock leaseRuntimeLock
-	if strings.TrimSpace(current.GetProviderAccountId()) != "" {
-		providerLock, err = r.leaseLocks.LockProviderAccount(ctx, current.GetProviderAccountId())
+	return r.leaseLocks.WithAccountLock(ctx, lease.GetAccountId(), func(ctx context.Context) error {
+		current, err := r.store.LeaseFactByID(ctx, lease.GetLeaseId())
 		if err != nil {
-			_ = c.saveLeaseExpiredCleanupFailure(ctx, current, false, true, "expired provider session cleanup lock failed")
+			if isStoreNotFound(err) {
+				return nil
+			}
 			return err
 		}
-	}
-	releaseErr := c.releaseLeaseProviderSession(ctx, current)
-	if providerLock != nil {
-		_ = providerLock.Unlock(ctx)
-	}
-	if releaseErr != nil {
-		_ = c.saveLeaseExpiredCleanupFailure(ctx, current, false, true, "expired provider session cleanup failed")
-		return releaseErr
-	}
-	return c.saveLeaseExpired(ctx, current)
+		if leaseActive(current, time.Now().UTC()) {
+			return nil
+		}
+		if current.GetStatus() != proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE {
+			return nil
+		}
+		if err := c.deleteLeaseRoute(ctx, current); err != nil {
+			_ = c.saveLeaseExpiredCleanupFailure(ctx, current, true, false, "expired lease route cleanup failed")
+			return err
+		}
+		releaseProvider := func(ctx context.Context) error {
+			if releaseErr := c.releaseLeaseProviderSession(ctx, current); releaseErr != nil {
+				_ = c.saveLeaseExpiredCleanupFailure(ctx, current, false, true, "expired provider session cleanup failed")
+				return releaseErr
+			}
+			return nil
+		}
+		if strings.TrimSpace(current.GetProviderAccountId()) != "" {
+			if err := r.leaseLocks.WithProviderAccountLock(ctx, current.GetProviderAccountId(), releaseProvider); err != nil {
+				_ = c.saveLeaseExpiredCleanupFailure(ctx, current, false, true, "expired provider session cleanup lock failed")
+				return err
+			}
+		} else if err := releaseProvider(ctx); err != nil {
+			return err
+		}
+		return c.saveLeaseExpired(ctx, current)
+	})
 }

@@ -30,17 +30,14 @@ func validateProxyUsers(users []ProxyUserRoute) error {
 	return nil
 }
 
-func envProxyUsers(name string) []ProxyUserRoute {
+func envProxyUsers(name string) ([]ProxyUserRoute, error) {
 	raw := strings.TrimSpace(os.Getenv(name))
 	if raw == "" {
-		return nil
+		return nil, nil
 	}
 	var users []ProxyUserRoute
 	if err := json.Unmarshal([]byte(raw), &users); err != nil {
-		return []ProxyUserRoute{{
-			Username: "__invalid__",
-			Route:    fmt.Sprintf("invalid JSON: %v", err),
-		}}
+		return nil, fmt.Errorf("%s must be valid JSON array: %w", name, err)
 	}
 	for index := range users {
 		users[index].ID = strings.TrimSpace(users[index].ID)
@@ -49,7 +46,7 @@ func envProxyUsers(name string) []ProxyUserRoute {
 		users[index].Route = normalizeConfigToken(users[index].Route)
 		users[index].ProfileID = strings.TrimSpace(users[index].ProfileID)
 	}
-	return users
+	return users, nil
 }
 
 func isLocalProtocol(protocol string) bool {

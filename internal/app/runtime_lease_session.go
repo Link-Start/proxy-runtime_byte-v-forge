@@ -32,7 +32,7 @@ func (c leaseCoordinator) releaseLeaseProviderSession(ctx context.Context, lease
 		return err
 	}
 	providerCfg.Gateways = endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerCfg.ProviderID)
-	providerClient, err := r.accountProviders.NewSessionProvider(providerCfg, BuildProviderHTTPClient(r.cfg))
+	providerClient, err := r.accountProviders.NewSessionProvider(providerCfg, r.providerHTTPClient)
 	if err != nil {
 		return err
 	}

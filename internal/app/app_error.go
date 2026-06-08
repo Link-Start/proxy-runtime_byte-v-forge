@@ -14,6 +14,7 @@ const (
 	errCodeInvalidArgument    appErrorCode = "invalid_argument"
 	errCodeNotFound           appErrorCode = "not_found"
 	errCodeFailedPrecondition appErrorCode = "failed_precondition"
+	errCodeResourceExhausted  appErrorCode = "resource_exhausted"
 	errCodeUnavailable        appErrorCode = "unavailable"
 	errCodeInternal           appErrorCode = "internal"
 )
@@ -47,6 +48,10 @@ func failedPrecondition(message string, cause error) error {
 	return newAppError(errCodeFailedPrecondition, message, cause)
 }
 
+func resourceExhausted(message string, cause error) error {
+	return newAppError(errCodeResourceExhausted, message, cause)
+}
+
 func unavailable(message string, cause error) error {
 	return newAppError(errCodeUnavailable, message, cause)
 }
@@ -65,6 +70,8 @@ func httpErrorDetails(err error, fallbackStatus int) (int, codes.Code, string) {
 			return http.StatusNotFound, codes.NotFound, appErr.message
 		case errCodeFailedPrecondition:
 			return http.StatusPreconditionFailed, codes.FailedPrecondition, appErr.message
+		case errCodeResourceExhausted:
+			return http.StatusRequestEntityTooLarge, codes.ResourceExhausted, appErr.message
 		case errCodeUnavailable:
 			return http.StatusBadGateway, codes.Unavailable, appErr.message
 		case errCodeInternal:

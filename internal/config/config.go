@@ -68,7 +68,6 @@ type Config struct {
 	RedisURL          string
 	EncryptionKey     string
 	Mihomo            MihomoConfig
-	CommonEgressAddr  string
 	LocalAddr         string
 	LocalProtocol     string
 	LocalUsername     string

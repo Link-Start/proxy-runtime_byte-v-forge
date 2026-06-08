@@ -10,7 +10,7 @@
 - provider adapter 只表达 provider 的协议、认证、地区、会话、代理池和取号能力，不感知业务资源类型。
 - `route`/`hop` 表达链路拓扑；`endpoint.upstream_kind` 表达上游资源类型。不得把 chain 建模成资源类型，因为链路中的任意 hop 都可能是简单代理、动态 IP 或代理池。
 - provider 控制面访问和数据面出口分开建模；代理商 API 需要先走代理时，用 control plane route 表达，不混入业务出口链路。
-- 1024Proxy 对接只封装其动态住宅代理的 HTTP(S)/SOCKS5、用户名参数和 API 取号模式；账号、密码、API 链接和白名单属于 secret/config。
+- 1024Proxy 对接只封装其动态住宅代理的 HTTP(S)/SOCKS5、用户名参数和 API 取号模式；控制台前端可按契约展示和编辑代理配置值。
 - 代理公开模型真源位于本仓 `proto/byte/v/forge/contracts/proxyruntime/v1/`；生成物位于本仓 `gen/go/` 与 `metacubexd-fork/types/`。
 - Mihomo 配置由本仓统一生成；不得在业务仓手写等价运行时配置结构或 provider 参数拼装逻辑。
 - 日志、指标和错误信息不得输出代理密码、API 链接 token、用户名中的可复用会话材料或完整代理 URL。

@@ -3,8 +3,8 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 	"github.com/jackc/pgx/v5"
 )
@@ -20,9 +20,15 @@ func (s *PostgresStore) LoadRuntimeSettings(ctx context.Context) (*runtimeSettin
 	if err != nil {
 		return nil, err
 	}
-	settings := &proxyruntimev1.ProxyRuntimePersistentSettings{}
+	return decodeRuntimeSettings(raw)
+}
+
+func decodeRuntimeSettings(raw string) (*runtimeSettingsFile, error) {
+	settings := &runtimeSettingsFile{}
 	if raw != "" {
-		_ = protojsoncodec.Unmarshal([]byte(raw), settings)
+		if err := protojsoncodec.Unmarshal([]byte(raw), settings); err != nil {
+			return nil, fmt.Errorf("decode runtime settings: %w", err)
+		}
 	}
 	return normalizeRuntimeSettings(settings), nil
 }

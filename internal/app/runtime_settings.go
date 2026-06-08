@@ -11,6 +11,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
+	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 )
 
 type runtimeSettingsFile = proxyruntimev1.ProxyRuntimePersistentSettings
@@ -18,7 +19,8 @@ type runtimeSettingsFile = proxyruntimev1.ProxyRuntimePersistentSettings
 const defaultProxyExitIPTimeout = 5 * time.Second
 
 type runtimeSettingsStore struct {
-	store            controlStore
+	store            runtimeSettingsPersistence
+	secretWriter     secretref.Writer
 	accountProviders *providerregistry.Registry
 	ipFraudProviders *ipfraud.Registry
 	ipGeoProviders   *ipgeo.Registry
@@ -26,11 +28,17 @@ type runtimeSettingsStore struct {
 	mu               sync.Mutex
 }
 
-func newRuntimeSettingsStore(store controlStore, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry, logger *slog.Logger) *runtimeSettingsStore {
+func newRuntimeSettingsStore(stores *RuntimeStores, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry, logger *slog.Logger) *runtimeSettingsStore {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &runtimeSettingsStore{store: store, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, ipGeoProviders: ipGeoProviders, logger: logger}
+	var store runtimeSettingsPersistence
+	var secretWriter secretref.Writer
+	if stores != nil {
+		store = stores.runtimeSettingsPersistence
+		secretWriter = stores.secretStore
+	}
+	return &runtimeSettingsStore{store: store, secretWriter: secretWriter, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, ipGeoProviders: ipGeoProviders, logger: logger}
 }
 
 func (s *runtimeSettingsStore) view(ctx context.Context) (*proxyruntimev1.ProxyRuntimeSettings, error) {
@@ -52,7 +60,7 @@ func (s *runtimeSettingsStore) update(ctx context.Context, req *proxyruntimev1.U
 	if err != nil {
 		return nil, err
 	}
-	settings, err := settingsFromRequest(ctx, s.store, req, current, s.accountProviders, s.ipFraudProviders, s.ipGeoProviders, nativeResourceIDs)
+	settings, err := settingsFromRequest(ctx, s.secretWriter, req, current, s.accountProviders, s.ipFraudProviders, s.ipGeoProviders, nativeResourceIDs)
 	if err != nil {
 		return nil, err
 	}
@@ -117,4 +125,10 @@ func (s *runtimeSettingsStore) saveLocked(ctx context.Context, settings *runtime
 		return nil
 	}
 	return s.store.SaveRuntimeSettings(ctx, normalizeRuntimeSettingsWithProviders(settings, s.ipFraudProviders, s.ipGeoProviders))
+}
+
+func (s *runtimeSettingsStore) replace(ctx context.Context, settings *runtimeSettingsFile) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.saveLocked(ctx, settings)
 }

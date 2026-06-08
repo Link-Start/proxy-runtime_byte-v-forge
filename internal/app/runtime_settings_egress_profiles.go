@@ -188,15 +188,15 @@ type mihomoNativeResourceReplacement struct {
 	FixedProxy bool
 }
 
-func (s *runtimeSettingsStore) replaceMihomoResourceRefs(ctx context.Context, replacements map[string]mihomoNativeResourceReplacement) error {
+func (s *runtimeSettingsStore) replaceMihomoResourceRefs(ctx context.Context, replacements map[string]mihomoNativeResourceReplacement) (bool, error) {
 	if len(replacements) == 0 {
-		return nil
+		return false, nil
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	settings, err := s.loadLocked(ctx)
 	if err != nil {
-		return err
+		return false, err
 	}
 	changed := false
 	for _, profile := range settings.GetEgressProfiles() {
@@ -208,9 +208,12 @@ func (s *runtimeSettingsStore) replaceMihomoResourceRefs(ctx context.Context, re
 		}
 	}
 	if !changed {
-		return nil
+		return false, nil
 	}
-	return s.saveLocked(ctx, settings)
+	if err := s.saveLocked(ctx, settings); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func replaceMihomoNodeRef(ref *proxyruntimev1.EgressProfileMihomoNodeRef, replacements map[string]mihomoNativeResourceReplacement) bool {

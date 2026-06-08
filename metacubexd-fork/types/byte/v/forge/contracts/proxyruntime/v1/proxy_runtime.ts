@@ -523,6 +523,24 @@ export interface ProxyRuntimePersistentSettings {
   ip_geo_providers: ProxyIPGeoProviderSettings[];
 }
 
+export interface ProxyRuntimeMihomoNativeFixedProxy {
+  id: string;
+  name: string;
+  type: string;
+  uri: string;
+}
+
+export interface ProxyRuntimeMihomoNativeSubscription {
+  id: string;
+  name: string;
+  url: string;
+}
+
+export interface ProxyRuntimeMihomoNativeConfig {
+  fixed_proxies: ProxyRuntimeMihomoNativeFixedProxy[];
+  subscriptions: ProxyRuntimeMihomoNativeSubscription[];
+}
+
 export interface EgressListener {
   listener_id: string;
   kind: EgressListenerKind;
@@ -706,4 +724,19 @@ export interface UpdateProxyIngressRulesRequest {
 
 export interface UpdateProxyIngressRulesResponse {
   settings: ProxyRuntimeSettings | undefined;
+}
+
+export interface GetProxyRuntimeMihomoNativeConfigRequest {
+}
+
+export interface GetProxyRuntimeMihomoNativeConfigResponse {
+  config: ProxyRuntimeMihomoNativeConfig | undefined;
+}
+
+export interface UpdateProxyRuntimeMihomoNativeConfigRequest {
+  config: ProxyRuntimeMihomoNativeConfig | undefined;
+}
+
+export interface UpdateProxyRuntimeMihomoNativeConfigResponse {
+  config: ProxyRuntimeMihomoNativeConfig | undefined;
 }

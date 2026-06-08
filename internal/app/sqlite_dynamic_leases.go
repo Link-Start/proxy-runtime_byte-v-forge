@@ -39,33 +39,28 @@ ON CONFLICT(lease_id) DO UPDATE SET account_id=excluded.account_id, purpose=excl
 }
 
 func (s *SQLiteStore) ListLeaseFacts(ctx context.Context, includeInactive bool) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	leases, err := s.allLeaseFacts(ctx)
-	if err != nil {
-		return nil, err
-	}
 	if includeInactive {
-		return leases, nil
+		return s.allLeaseFacts(ctx)
 	}
-	now := time.Now().UTC()
-	return filterLeaseFacts(leases, func(lease *proxyruntimev1.ProxyDynamicLease) bool { return leaseActive(lease, now) }), nil
+	return s.leaseFactsByQuery(ctx, `
+SELECT lease_json
+FROM proxy_runtime_dynamic_leases
+WHERE status=? AND (expires_at='' OR expires_at>?)
+ORDER BY acquired_at DESC, updated_at DESC, lease_id
+`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()))
 }
 
 func (s *SQLiteStore) RecentLeaseFacts(ctx context.Context, since time.Time, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	leases, err := s.allLeaseFacts(ctx)
-	if err != nil {
-		return nil, err
-	}
-	out := filterLeaseFacts(leases, func(lease *proxyruntimev1.ProxyDynamicLease) bool {
-		return lease.GetAcquiredAt() != nil && !lease.GetAcquiredAt().AsTime().Before(since)
-	})
-	sortLeaseFactsByAcquiredDesc(out)
 	if limit <= 0 {
 		limit = 100
 	}
-	if len(out) > limit {
-		out = out[:limit]
-	}
-	return out, nil
+	return s.leaseFactsByQuery(ctx, `
+SELECT lease_json
+FROM proxy_runtime_dynamic_leases
+WHERE acquired_at!='' AND acquired_at>=?
+ORDER BY acquired_at DESC, updated_at DESC, lease_id
+LIMIT ?
+`, sqliteTime(since.UTC()), limit)
 }
 
 func (s *SQLiteStore) ProviderAccountHasBlockingLease(ctx context.Context, providerAccountID string) (bool, error) {
@@ -81,7 +76,16 @@ func (s *SQLiteStore) BlockingLeaseFactsByProviderAccount(ctx context.Context, p
 	if providerAccountID == "" {
 		return nil, nil
 	}
-	leases, err := s.allLeaseFacts(ctx)
+	leases, err := s.leaseFactsByQuery(ctx, `
+SELECT lease_json
+FROM proxy_runtime_dynamic_leases
+WHERE provider_account_id=?
+  AND (
+    (status=? AND (expires_at='' OR expires_at>?))
+    OR status=?
+  )
+ORDER BY acquired_at DESC, updated_at DESC, lease_id
+`, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String())
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +98,12 @@ func (s *SQLiteStore) BlockingLeaseFactsByProviderAccount(ctx context.Context, p
 }
 
 func (s *SQLiteStore) CleanupPendingLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	leases, err := s.allLeaseFacts(ctx)
+	leases, err := s.leaseFactsByQuery(ctx, `
+SELECT lease_json
+FROM proxy_runtime_dynamic_leases
+WHERE status=?
+ORDER BY acquired_at ASC, updated_at ASC, lease_id
+`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String())
 	if err != nil {
 		return nil, err
 	}
@@ -102,25 +111,21 @@ func (s *SQLiteStore) CleanupPendingLeaseFacts(ctx context.Context) ([]*proxyrun
 }
 
 func (s *SQLiteStore) ListRestorableLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	leases, err := s.allLeaseFacts(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return filterLeaseFacts(leases, func(lease *proxyruntimev1.ProxyDynamicLease) bool {
-		return lease.GetStatus() == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE
-	}), nil
+	return s.leaseFactsByQuery(ctx, `
+SELECT lease_json
+FROM proxy_runtime_dynamic_leases
+WHERE status=?
+ORDER BY acquired_at DESC, updated_at DESC, lease_id
+`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String())
 }
 
 func (s *SQLiteStore) ExpiredActiveLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	leases, err := s.allLeaseFacts(ctx)
-	if err != nil {
-		return nil, err
-	}
-	now := time.Now().UTC()
-	return filterLeaseFacts(leases, func(lease *proxyruntimev1.ProxyDynamicLease) bool {
-		expiresAt := lease.GetExpiresAt()
-		return lease.GetStatus() == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE && expiresAt != nil && !expiresAt.AsTime().After(now)
-	}), nil
+	return s.leaseFactsByQuery(ctx, `
+SELECT lease_json
+FROM proxy_runtime_dynamic_leases
+WHERE status=? AND expires_at!='' AND expires_at<=?
+ORDER BY expires_at ASC, acquired_at ASC, updated_at ASC, lease_id
+`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()))
 }
 
 func (s *SQLiteStore) LeaseFactByID(ctx context.Context, leaseID string) (*proxyruntimev1.ProxyDynamicLease, error) {
@@ -158,46 +163,48 @@ func (s *SQLiteStore) LatestLeaseFactByAccount(ctx context.Context, accountID st
 }
 
 func (s *SQLiteStore) leaseFactByAccount(ctx context.Context, accountID string, purpose string, activeOnly bool) (*proxyruntimev1.ProxyDynamicLease, error) {
-	leases, err := s.allLeaseFacts(ctx)
-	if err != nil {
-		return nil, err
-	}
 	accountID = strings.TrimSpace(accountID)
 	purpose = strings.TrimSpace(purpose)
-	now := time.Now().UTC()
-	out := filterLeaseFacts(leases, func(lease *proxyruntimev1.ProxyDynamicLease) bool {
-		if strings.TrimSpace(lease.GetAccountId()) != accountID {
-			return false
-		}
-		if purpose != "" && strings.TrimSpace(lease.GetPurpose()) != purpose {
-			return false
-		}
-		return !activeOnly || leaseActive(lease, now)
-	})
-	sortLeaseFactsByAcquiredDesc(out)
-	if len(out) == 0 {
-		return nil, sql.ErrNoRows
+	query := `
+SELECT lease_json
+FROM proxy_runtime_dynamic_leases
+WHERE account_id=?`
+	args := []any{accountID}
+	if purpose != "" {
+		query += ` AND purpose=?`
+		args = append(args, purpose)
 	}
-	return out[0], nil
+	if activeOnly {
+		query += ` AND status=? AND (expires_at='' OR expires_at>?)`
+		args = append(args, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()))
+	}
+	query += ` ORDER BY acquired_at DESC, updated_at DESC, lease_id LIMIT 1`
+	row := s.db.QueryRowContext(ctx, query, args...)
+	return scanSQLiteLeaseFact(row)
 }
 
 func (s *SQLiteStore) activeLeaseFactsByAccount(ctx context.Context, accountID string, purpose string) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	leases, err := s.allLeaseFacts(ctx)
-	if err != nil {
-		return nil, err
-	}
 	accountID = strings.TrimSpace(accountID)
 	purpose = strings.TrimSpace(purpose)
-	now := time.Now().UTC()
-	out := filterLeaseFacts(leases, func(lease *proxyruntimev1.ProxyDynamicLease) bool {
-		return strings.TrimSpace(lease.GetAccountId()) == accountID && (purpose == "" || strings.TrimSpace(lease.GetPurpose()) == purpose) && leaseActive(lease, now)
-	})
-	sortLeaseFactsByAcquiredDesc(out)
-	return out, nil
+	query := `
+SELECT lease_json
+FROM proxy_runtime_dynamic_leases
+WHERE account_id=? AND status=? AND (expires_at='' OR expires_at>?)`
+	args := []any{accountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC())}
+	if purpose != "" {
+		query += ` AND purpose=?`
+		args = append(args, purpose)
+	}
+	query += ` ORDER BY acquired_at DESC, updated_at DESC, lease_id`
+	return s.leaseFactsByQuery(ctx, query, args...)
 }
 
 func (s *SQLiteStore) allLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT lease_json FROM proxy_runtime_dynamic_leases ORDER BY updated_at DESC, lease_id`)
+	return s.leaseFactsByQuery(ctx, `SELECT lease_json FROM proxy_runtime_dynamic_leases ORDER BY updated_at DESC, lease_id`)
+}
+
+func (s *SQLiteStore) leaseFactsByQuery(ctx context.Context, query string, args ...any) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
 	}

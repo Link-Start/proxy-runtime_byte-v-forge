@@ -10,7 +10,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const proxyExitCheckCacheTTL = 30 * time.Minute
+const proxyExitCheckCacheTTL = ipGeoCacheTTL
 
 type proxyExitCheckCache struct {
 	mu        sync.Mutex

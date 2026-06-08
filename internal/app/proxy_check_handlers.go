@@ -3,187 +3,153 @@ package app
 import (
 	"net/http"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/gin-gonic/gin"
 )
 
-func (api *runtimeHTTPAPI) handleGetProxyExitIP(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		methodNotAllowed(w, http.MethodPost)
-		return
-	}
+func (api *runtimeHTTPAPI) handleGetProxyExitIP(ctx *gin.Context) {
 	var checkReq proxyruntimev1.GetProxyExitIPRequest
-	if !api.readOptionalProto(w, req, &checkReq) {
+	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
-	response, err := api.service.GetProxyExitIP(req.Context(), &checkReq)
+	response, err := api.service.GetProxyExitIP(ctx.Request.Context(), &checkReq)
 	if err != nil {
-		writeHTTPError(w, err, http.StatusBadGateway)
+		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
 	}
-	api.writeProto(w, response)
+	api.writeProto(ctx, response)
 }
 
-func (api *runtimeHTTPAPI) handleGetProxyExitGeo(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		methodNotAllowed(w, http.MethodPost)
-		return
-	}
+func (api *runtimeHTTPAPI) handleGetProxyExitGeo(ctx *gin.Context) {
 	var checkReq proxyruntimev1.GetProxyExitGeoRequest
-	if !api.readOptionalProto(w, req, &checkReq) {
+	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
-	response, err := api.service.GetProxyExitGeo(req.Context(), &checkReq)
+	response, err := api.service.GetProxyExitGeo(ctx.Request.Context(), &checkReq)
 	if err != nil {
-		writeHTTPError(w, err, http.StatusBadGateway)
+		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
 	}
-	api.writeProto(w, response)
+	api.writeProto(ctx, response)
 }
 
-func (api *runtimeHTTPAPI) handleCheckIPFraud(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		methodNotAllowed(w, http.MethodPost)
-		return
-	}
+func (api *runtimeHTTPAPI) handleCheckIPFraud(ctx *gin.Context) {
 	var checkReq proxyruntimev1.CheckProxyIPFraudRequest
-	if !api.readOptionalProto(w, req, &checkReq) {
+	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
-	response, err := api.service.CheckProxyIPFraud(req.Context(), &checkReq)
+	response, err := api.service.CheckProxyIPFraud(ctx.Request.Context(), &checkReq)
 	if err != nil {
-		writeHTTPError(w, err, http.StatusBadGateway)
+		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
 	}
-	api.writeProto(w, response)
+	api.writeProto(ctx, response)
 }
 
-func (api *runtimeHTTPAPI) handleCheckEdgeAccessRisk(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		methodNotAllowed(w, http.MethodPost)
-		return
-	}
+func (api *runtimeHTTPAPI) handleCheckEdgeAccessRisk(ctx *gin.Context) {
 	var checkReq proxyruntimev1.CheckProxyEdgeAccessRequest
-	if !api.readOptionalProto(w, req, &checkReq) {
+	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
-	response, err := api.service.CheckProxyEdgeAccess(req.Context(), &checkReq)
+	response, err := api.service.CheckProxyEdgeAccess(ctx.Request.Context(), &checkReq)
 	if err != nil {
-		writeHTTPError(w, err, http.StatusBadGateway)
+		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
 	}
-	api.writeProto(w, response)
+	api.writeProto(ctx, response)
 }
 
-func (api *runtimeHTTPAPI) handleCheckTargetConnectivity(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		methodNotAllowed(w, http.MethodPost)
-		return
-	}
+func (api *runtimeHTTPAPI) handleCheckTargetConnectivity(ctx *gin.Context) {
 	var checkReq proxyruntimev1.CheckProxyTargetConnectivityRequest
-	if !api.readOptionalProto(w, req, &checkReq) {
+	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
-	response, err := api.service.CheckProxyTargetConnectivity(req.Context(), &checkReq)
+	response, err := api.service.CheckProxyTargetConnectivity(ctx.Request.Context(), &checkReq)
 	if err != nil {
-		writeHTTPError(w, err, http.StatusBadGateway)
+		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
 	}
-	api.writeProto(w, response)
+	api.writeProto(ctx, response)
 }
 
-func (api *runtimeHTTPAPI) handleGetProxyExitCheckSnapshot(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleGetProxyExitCheckSnapshot(ctx *gin.Context) {
 	var checkReq proxyruntimev1.GetProxyExitCheckSnapshotRequest
-	switch req.Method {
+	switch ctx.Request.Method {
 	case http.MethodGet:
-		checkReq.ListenerId = req.URL.Query().Get("listener_id")
+		checkReq.ListenerId = ctx.Query("listener_id")
 	case http.MethodPost:
-		if !api.readOptionalProto(w, req, &checkReq) {
+		if !api.readOptionalProto(ctx, &checkReq) {
 			return
 		}
-	default:
-		methodNotAllowed(w, http.MethodGet+", "+http.MethodPost)
-		return
 	}
-	response, err := api.service.GetProxyExitCheckSnapshot(req.Context(), &checkReq)
+	response, err := api.service.GetProxyExitCheckSnapshot(ctx.Request.Context(), &checkReq)
 	if err != nil {
-		writeHTTPError(w, err, http.StatusBadGateway)
+		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
 	}
-	api.writeProto(w, response)
+	api.writeProto(ctx, response)
 }
 
-func (api *runtimeHTTPAPI) handleIPFraudProviders(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		methodNotAllowed(w, http.MethodGet)
-		return
-	}
-	response, err := api.service.ListProxyIPFraudProviders(req.Context(), &proxyruntimev1.ListProxyIPFraudProvidersRequest{})
+func (api *runtimeHTTPAPI) handleIPFraudProviders(ctx *gin.Context) {
+	response, err := api.service.ListProxyIPFraudProviders(ctx.Request.Context(), &proxyruntimev1.ListProxyIPFraudProvidersRequest{})
 	if err != nil {
-		writeHTTPError(w, err, http.StatusInternalServerError)
+		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
 	}
-	api.writeProto(w, response)
+	api.writeProto(ctx, response)
 }
 
-func (api *runtimeHTTPAPI) handleIPGeoProviders(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		methodNotAllowed(w, http.MethodGet)
-		return
-	}
-	response, err := api.service.ListProxyIPGeoProviders(req.Context(), &proxyruntimev1.ListProxyIPGeoProvidersRequest{})
+func (api *runtimeHTTPAPI) handleIPGeoProviders(ctx *gin.Context) {
+	response, err := api.service.ListProxyIPGeoProviders(ctx.Request.Context(), &proxyruntimev1.ListProxyIPGeoProvidersRequest{})
 	if err != nil {
-		writeHTTPError(w, err, http.StatusInternalServerError)
+		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
 	}
-	api.writeProto(w, response)
+	api.writeProto(ctx, response)
 }
 
-func (api *runtimeHTTPAPI) handleDynamicIPProviders(w http.ResponseWriter, req *http.Request) {
-	switch req.Method {
+func (api *runtimeHTTPAPI) handleDynamicIPProviders(ctx *gin.Context) {
+	switch ctx.Request.Method {
 	case http.MethodGet:
-		response, err := api.service.GetProxyRuntimeSettings(req.Context(), &proxyruntimev1.GetProxyRuntimeSettingsRequest{})
+		response, err := api.service.GetProxyRuntimeSettings(ctx.Request.Context(), &proxyruntimev1.GetProxyRuntimeSettingsRequest{})
 		if err != nil {
-			writeHTTPError(w, err, http.StatusInternalServerError)
+			writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 			return
 		}
-		api.writeProto(w, response)
+		api.writeProto(ctx, response)
 	case http.MethodPost, http.MethodPut:
 		var updateReq proxyruntimev1.UpdateProxyRuntimeSettingsRequest
-		if !api.readProto(w, req, &updateReq) {
+		if !api.readProto(ctx, &updateReq) {
 			return
 		}
-		response, err := api.service.UpdateProxyDynamicIPProviders(req.Context(), &updateReq)
+		response, err := api.service.UpdateProxyDynamicIPProviders(ctx.Request.Context(), &updateReq)
 		if err != nil {
-			writeHTTPError(w, err, http.StatusBadRequest)
+			writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 			return
 		}
-		api.writeProto(w, response)
-	default:
-		methodNotAllowed(w, http.MethodGet+", "+http.MethodPost+", "+http.MethodPut)
+		api.writeProto(ctx, response)
 	}
 }
 
-func (api *runtimeHTTPAPI) handleRuntimeSettings(w http.ResponseWriter, req *http.Request) {
-	switch req.Method {
+func (api *runtimeHTTPAPI) handleRuntimeSettings(ctx *gin.Context) {
+	switch ctx.Request.Method {
 	case http.MethodGet:
-		response, err := api.service.GetProxyRuntimeSettings(req.Context(), &proxyruntimev1.GetProxyRuntimeSettingsRequest{})
+		response, err := api.service.GetProxyRuntimeSettings(ctx.Request.Context(), &proxyruntimev1.GetProxyRuntimeSettingsRequest{})
 		if err != nil {
-			writeHTTPError(w, err, http.StatusInternalServerError)
+			writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 			return
 		}
-		api.writeProto(w, response)
+		api.writeProto(ctx, response)
 	case http.MethodPost, http.MethodPut:
 		var updateReq proxyruntimev1.UpdateProxyRuntimeSettingsRequest
-		if !api.readProto(w, req, &updateReq) {
+		if !api.readProto(ctx, &updateReq) {
 			return
 		}
-		response, err := api.service.UpdateProxyRuntimeSettings(req.Context(), &updateReq)
+		response, err := api.service.UpdateProxyRuntimeSettings(ctx.Request.Context(), &updateReq)
 		if err != nil {
-			writeHTTPError(w, err, http.StatusBadRequest)
+			writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 			return
 		}
-		api.writeProto(w, response)
-	default:
-		methodNotAllowed(w, http.MethodGet+", "+http.MethodPost+", "+http.MethodPut)
+		api.writeProto(ctx, response)
 	}
 }

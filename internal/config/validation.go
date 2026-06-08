@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/byte-v-forge/common-lib/proxyurl"
+	"github.com/byte-v-forge/proxy-runtime/internal/proxyurl"
 )
 
 func (c Config) validate() error {

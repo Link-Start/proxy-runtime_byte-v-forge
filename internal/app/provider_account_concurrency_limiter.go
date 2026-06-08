@@ -8,14 +8,13 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/common-lib/redisx"
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/redis/go-redis/v9"
 )
 
 const (
-	providerAccountConcurrencyKeyPrefix      = "byte-v-forge:proxy-runtime:provider-account-concurrency"
+	providerAccountConcurrencyKeyPrefix      = "proxy-runtime:provider-account-concurrency"
 	defaultProviderAccountConcurrencySlotTTL = 15 * time.Minute
 )
 
@@ -33,8 +32,7 @@ type providerAccountConcurrencySlot interface {
 type noopProviderAccountConcurrencySlot struct{}
 
 type redisProviderAccountConcurrencyLimiter struct {
-	client   *redis.Client
-	keyspace redisx.Keyspace
+	client *redis.Client
 }
 
 func (noopProviderAccountConcurrencySlot) Release(context.Context) error { return nil }
@@ -50,14 +48,11 @@ func NewProviderAccountConcurrencyLimiter(ctx context.Context, cfg config.Config
 	if strings.TrimSpace(cfg.RedisURL) == "" {
 		return newLocalProviderAccountConcurrencyLimiter(), nil
 	}
-	client, err := redisx.NewRequiredClient(ctx, cfg.RedisURL, "PROXY_RUNTIME_REDIS_URL or PLATFORM_REDIS_URL is required")
+	client, err := newRedisClient(ctx, cfg.RedisURL)
 	if err != nil {
 		return nil, err
 	}
-	return &redisProviderAccountConcurrencyLimiter{
-		client:   client,
-		keyspace: redisx.NewKeyspace(providerAccountConcurrencyKeyPrefix),
-	}, nil
+	return &redisProviderAccountConcurrencyLimiter{client: client}, nil
 }
 
 func (l *redisProviderAccountConcurrencyLimiter) Close() error {
@@ -122,7 +117,7 @@ func (l *redisProviderAccountConcurrencyLimiter) key(accountID string, policy *p
 	if holder == "" {
 		holder = "_probe"
 	}
-	key, ok := l.keyspace.Key(accountID + ":" + providerAccountConcurrencyModeText(policy))
+	key, ok := redisKey(providerAccountConcurrencyKeyPrefix, accountID+":"+providerAccountConcurrencyModeText(policy))
 	if !ok {
 		return "", "", errors.New("provider account concurrency key is required")
 	}

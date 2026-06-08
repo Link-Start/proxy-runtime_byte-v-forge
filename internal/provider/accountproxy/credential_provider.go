@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/common-lib/randx"
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	"github.com/byte-v-forge/proxy-runtime/internal/random"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -58,7 +58,7 @@ func (p *CredentialProvider) sessionID() (string, error) {
 	if p.definition.GenerateSessionID != nil {
 		return p.definition.GenerateSessionID()
 	}
-	return randx.Hex(8)
+	return random.Hex(8)
 }
 
 func (p *CredentialProvider) node(session *proxyruntimev1.ProxySession) (provider.Node, error) {

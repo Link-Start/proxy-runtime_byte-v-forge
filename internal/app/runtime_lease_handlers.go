@@ -3,53 +3,42 @@ package app
 import (
 	"net/http"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/gin-gonic/gin"
 )
 
-func (api *runtimeHTTPAPI) handleLeases(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		methodNotAllowed(w, http.MethodGet)
-		return
-	}
-	includeInactive := req.URL.Query().Get("include_inactive") == "true"
-	response, err := api.service.listProxyDynamicLeases(req.Context(), includeInactive)
+func (api *runtimeHTTPAPI) handleLeases(ctx *gin.Context) {
+	includeInactive := ctx.Query("include_inactive") == "true"
+	response, err := api.service.listProxyDynamicLeases(ctx.Request.Context(), includeInactive)
 	if err != nil {
-		writeHTTPError(w, err, http.StatusInternalServerError)
+		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
 	}
-	api.writeProto(w, response)
+	api.writeProto(ctx, response)
 }
 
-func (api *runtimeHTTPAPI) handleAcquireLease(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		methodNotAllowed(w, http.MethodPost)
-		return
-	}
+func (api *runtimeHTTPAPI) handleAcquireLease(ctx *gin.Context) {
 	var body proxyruntimev1.AcquireProxyLeaseRequest
-	if !api.readProto(w, req, &body) {
+	if !api.readProto(ctx, &body) {
 		return
 	}
-	response, err := api.service.acquireProxyLease(req.Context(), req, &body)
+	response, err := api.service.acquireProxyLease(ctx.Request.Context(), ctx.Request, &body)
 	if err != nil {
-		writeHTTPError(w, err, http.StatusBadGateway)
+		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
 	}
-	api.writeProto(w, response)
+	api.writeProto(ctx, response)
 }
 
-func (api *runtimeHTTPAPI) handleReleaseLease(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodPost {
-		methodNotAllowed(w, http.MethodPost)
-		return
-	}
+func (api *runtimeHTTPAPI) handleReleaseLease(ctx *gin.Context) {
 	var body proxyruntimev1.ReleaseProxyLeaseRequest
-	if !api.readProto(w, req, &body) {
+	if !api.readProto(ctx, &body) {
 		return
 	}
-	response, err := api.service.ReleaseProxyLease(req.Context(), &body)
+	response, err := api.service.ReleaseProxyLease(ctx.Request.Context(), &body)
 	if err != nil {
-		writeHTTPError(w, err, http.StatusBadGateway)
+		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
 	}
-	api.writeProto(w, response)
+	api.writeProto(ctx, response)
 }

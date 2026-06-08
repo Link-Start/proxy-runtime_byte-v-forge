@@ -4,58 +4,58 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func (api *runtimeHTTPAPI) handleMihomoNativeConfig(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) handleMihomoNativeConfig(ctx *gin.Context) {
 	runtime := api.service.settings.runtime
-	switch req.Method {
+	switch ctx.Request.Method {
 	case http.MethodGet:
 		settings, err := mihomoNativeSettings(runtime)
 		if err != nil {
-			writeHTTPError(w, err, http.StatusInternalServerError)
+			writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 			return
 		}
-		writeJSON(w, settings)
+		writeJSON(ctx, settings)
 	case http.MethodPost, http.MethodPut:
 		var settings mihomoNativeSettingsView
-		if !readJSON(w, req, &settings) {
+		if !readJSON(ctx, &settings) {
 			return
 		}
-		next, err := updateMihomoNativeSettings(req.Context(), runtime, settings)
+		next, err := updateMihomoNativeSettings(ctx.Request.Context(), runtime, settings)
 		if err != nil {
-			writeHTTPError(w, err, http.StatusBadRequest)
+			writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 			return
 		}
-		writeJSON(w, next)
-	default:
-		methodNotAllowed(w, http.MethodGet+", "+http.MethodPost+", "+http.MethodPut)
+		writeJSON(ctx, next)
 	}
 }
 
-func readJSON(w http.ResponseWriter, req *http.Request, dst any) bool {
-	defer req.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(req.Body, 1<<20))
+func readJSON(ctx *gin.Context, dst any) bool {
+	defer ctx.Request.Body.Close()
+	body, err := io.ReadAll(io.LimitReader(ctx.Request.Body, 1<<20))
 	if err != nil {
-		writeHTTPError(w, invalidArgument("read request body", err), http.StatusBadRequest)
+		writeHTTPError(ctx.Writer, invalidArgument("read request body", err), http.StatusBadRequest)
 		return false
 	}
 	if len(body) == 0 {
-		writeHTTPError(w, invalidArgument("request body is required", nil), http.StatusBadRequest)
+		writeHTTPError(ctx.Writer, invalidArgument("request body is required", nil), http.StatusBadRequest)
 		return false
 	}
 	if err := json.Unmarshal(body, dst); err != nil {
-		writeHTTPError(w, invalidArgument("parse request body", err), http.StatusBadRequest)
+		writeHTTPError(ctx.Writer, invalidArgument("parse request body", err), http.StatusBadRequest)
 		return false
 	}
 	return true
 }
 
-func writeJSON(w http.ResponseWriter, value any) {
+func writeJSON(ctx *gin.Context, value any) {
 	data, err := json.Marshal(value)
 	if err != nil {
-		writeHTTPError(w, internalError("marshal response", err), http.StatusInternalServerError)
+		writeHTTPError(ctx.Writer, internalError("marshal response", err), http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(data)
+	ctx.Header("Content-Type", "application/json")
+	_, _ = ctx.Writer.Write(data)
 }

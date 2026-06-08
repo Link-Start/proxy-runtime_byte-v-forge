@@ -4,8 +4,8 @@ import (
 	"strings"
 	"time"
 
-	commonv1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/common/v1"
-	"github.com/byte-v-forge/common-lib/secretref"
+	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 

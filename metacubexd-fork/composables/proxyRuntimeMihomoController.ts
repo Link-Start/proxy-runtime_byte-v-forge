@@ -1,7 +1,7 @@
 import type { ProxyRuntimeNativeConfig } from '~/composables/proxyRuntimeNativeConfigTypes'
 
-const mihomoControllerBase = '/api/proxy-runtime/mihomo/controller'
-const proxyRuntimeBase = '/api/proxy-runtime'
+const mihomoControllerBase = '/mihomo/controller'
+const proxyRuntimeBase = '/api'
 
 export interface MihomoConfigNode {
   owner_id: string

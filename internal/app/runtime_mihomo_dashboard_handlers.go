@@ -12,40 +12,41 @@ import (
 	"path"
 	"regexp"
 	"strings"
+
+	"github.com/gin-gonic/gin"
 )
 
 const mihomoDashboardEndpointID = "proxy-runtime-mihomo"
 
-func (api *runtimeHTTPAPI) registerMihomoDashboardRoutes(mux *http.ServeMux, prefix string) {
-	mux.HandleFunc(prefix+"/mihomo/dashboard", api.handleMihomoDashboard)
-	mux.HandleFunc(prefix+"/mihomo/ui", redirectToTrailingSlash)
-	mux.Handle(prefix+"/mihomo/ui/", api.mihomoReverseProxy(prefix+"/mihomo/ui/", "/ui/"))
-	mux.Handle(prefix+"/mihomo/controller", api.mihomoReverseProxy(prefix+"/mihomo/controller", "/"))
-	mux.Handle(prefix+"/mihomo/controller/", api.mihomoReverseProxy(prefix+"/mihomo/controller/", "/"))
+func (api *runtimeHTTPAPI) registerMihomoDashboardRoutes(router *gin.Engine) {
+	router.GET("/mihomo/dashboard", api.handleMihomoDashboard)
+	router.GET("/mihomo/ui", redirectToTrailingSlash)
+	router.Any("/mihomo/ui/*path", api.mihomoReverseProxy("/mihomo/ui/", "/ui/"))
+	router.Any("/mihomo/controller", api.mihomoReverseProxy("/mihomo/controller", "/"))
+	router.Any("/mihomo/controller/*path", api.mihomoReverseProxy("/mihomo/controller/", "/"))
 }
 
-func (api *runtimeHTTPAPI) handleMihomoDashboard(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		methodNotAllowed(w, http.MethodGet)
-		return
-	}
-	basePath := strings.TrimSuffix(req.URL.Path, "/mihomo/dashboard")
+func (api *runtimeHTTPAPI) handleMihomoDashboard(ctx *gin.Context) {
+	api.writeMihomoDashboardBootstrap(ctx, "/mihomo/controller", "/mihomo/ui/#/proxies")
+}
+
+func (api *runtimeHTTPAPI) writeMihomoDashboardBootstrap(ctx *gin.Context, endpointURL string, uiURL string) {
 	payload, err := json.Marshal(struct {
 		EndpointID  string `json:"endpointID"`
 		EndpointURL string `json:"endpointURL"`
 		UIURL       string `json:"uiURL"`
 	}{
 		EndpointID:  mihomoDashboardEndpointID,
-		EndpointURL: basePath + "/mihomo/controller",
-		UIURL:       basePath + "/mihomo/ui/#/proxies",
+		EndpointURL: endpointURL,
+		UIURL:       uiURL,
 	})
 	if err != nil {
-		writeHTTPError(w, err, http.StatusInternalServerError)
+		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.Header().Set("Cache-Control", "no-store")
-	_, _ = fmt.Fprintf(w, `<!doctype html>
+	ctx.Header("Content-Type", "text/html; charset=utf-8")
+	ctx.Header("Cache-Control", "no-store")
+	_, _ = fmt.Fprintf(ctx.Writer, `<!doctype html>
 <html>
 <head><meta charset="utf-8"><title>Proxy Runtime</title></head>
 <body>
@@ -71,28 +72,28 @@ window.location.replace(new URL(config.uiURL, window.location.origin).href);
 </html>`, payload)
 }
 
-func (api *runtimeHTTPAPI) mihomoReverseProxy(mountPrefix string, upstreamPrefix string) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+func (api *runtimeHTTPAPI) mihomoReverseProxy(mountPrefix string, upstreamPrefix string) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
 		target, err := mihomoAPIURL(api.mihomoAPIAddr)
 		if err != nil {
-			writeHTTPError(w, err, http.StatusBadGateway)
+			writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 			return
 		}
 		proxy := httputil.NewSingleHostReverseProxy(target)
 		proxy.Director = func(out *http.Request) {
 			out.URL.Scheme = target.Scheme
 			out.URL.Host = target.Host
-			out.URL.Path = joinMihomoProxyPath(upstreamPrefix, strings.TrimPrefix(req.URL.Path, mountPrefix))
+			out.URL.Path = joinMihomoProxyPath(upstreamPrefix, strings.TrimPrefix(ctx.Request.URL.Path, mountPrefix))
 			out.Host = target.Host
-			out.Header.Set("X-Forwarded-Host", req.Host)
-			out.Header.Set("X-Forwarded-Proto", forwardedProto(req))
+			out.Header.Set("X-Forwarded-Host", ctx.Request.Host)
+			out.Header.Set("X-Forwarded-Proto", forwardedProto(ctx.Request))
 		}
 		proxy.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, err error) {
 			writeHTTPError(w, err, http.StatusBadGateway)
 		}
 		proxy.ModifyResponse = redactMihomoControllerErrorResponse
-		proxy.ServeHTTP(w, req)
-	})
+		proxy.ServeHTTP(ctx.Writer, ctx.Request)
+	}
 }
 
 func redactMihomoControllerErrorResponse(resp *http.Response) error {
@@ -161,8 +162,8 @@ func forwardedProto(req *http.Request) string {
 	return "http"
 }
 
-func redirectToTrailingSlash(w http.ResponseWriter, req *http.Request) {
-	target := *req.URL
+func redirectToTrailingSlash(ctx *gin.Context) {
+	target := *ctx.Request.URL
 	target.Path += "/"
-	http.Redirect(w, req, target.String(), http.StatusTemporaryRedirect)
+	ctx.Redirect(http.StatusTemporaryRedirect, target.String())
 }

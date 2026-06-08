@@ -4,8 +4,8 @@ import (
 	"strconv"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/common-lib/randx"
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/random"
 )
 
 func passthroughUsername(base string, _ *proxyruntimev1.ProxySessionPolicy, _ string) string {
@@ -38,5 +38,5 @@ func firstNonEmpty(values ...string) string {
 }
 
 func numericSessionID() (string, error) {
-	return randx.String("0123456789", 8)
+	return random.String("0123456789", 8)
 }

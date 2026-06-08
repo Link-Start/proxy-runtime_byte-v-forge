@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	commonv1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/common/v1"
-	"github.com/byte-v-forge/common-lib/randx"
-	"github.com/byte-v-forge/common-lib/secretref"
+	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/random"
+	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 )
@@ -93,7 +93,7 @@ WHERE secret_id=$1
 }
 
 func generatedSecretID(provider string, purpose string) (string, error) {
-	suffix, err := randx.Hex(12)
+	suffix, err := random.Hex(12)
 	if err != nil {
 		return "", err
 	}

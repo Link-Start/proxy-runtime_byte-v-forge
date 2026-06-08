@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/common-lib/protojsonx"
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -22,13 +22,13 @@ func (s *PostgresStore) LoadRuntimeSettings(ctx context.Context) (*runtimeSettin
 	}
 	settings := &proxyruntimev1.ProxyRuntimePersistentSettings{}
 	if raw != "" {
-		_ = protojsonx.Unmarshal([]byte(raw), settings)
+		_ = protojsoncodec.Unmarshal([]byte(raw), settings)
 	}
 	return normalizeRuntimeSettings(settings), nil
 }
 
 func (s *PostgresStore) SaveRuntimeSettings(ctx context.Context, settings *runtimeSettingsFile) error {
-	data, err := protojsonx.Marshal(normalizeRuntimeSettings(settings))
+	data, err := protojsoncodec.Marshal(normalizeRuntimeSettings(settings))
 	if err != nil {
 		return err
 	}

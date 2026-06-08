@@ -35,7 +35,7 @@ import {
   listMihomoEgressOwners,
 } from '~/composables/proxyRuntimeMihomoController'
 
-const base = '/api/proxy-runtime'
+const base = '/api'
 
 async function proxyRuntimeRequest<T>(
   path: string,

@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/common-lib/randx"
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	"github.com/byte-v-forge/proxy-runtime/internal/random"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -59,7 +59,7 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 	if err != nil {
 		return nil, err
 	}
-	leaseID, err := randx.Hex(12)
+	leaseID, err := random.Hex(12)
 	if err != nil {
 		return nil, err
 	}

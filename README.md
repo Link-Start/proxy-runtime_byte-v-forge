@@ -1,6 +1,6 @@
 # proxy-runtime
 
-`proxy-runtime` is the proxy control plane for Byte-V Forge. It exposes a stable proxy entry and uses Mihomo as the only data plane.
+`proxy-runtime` is an independent proxy control plane and gateway. It exposes a stable proxy entry and uses Mihomo as the only data plane.
 
 ## Responsibilities
 
@@ -50,16 +50,15 @@ Required bootstrap:
 Storage and runtime coordination:
 
 - `PROXY_RUNTIME_POSTGRES_DSN` or `PG_DSN`: optional PostgreSQL DSN. When omitted, `proxy-runtime` uses its embedded SQLite control store.
-- `PROXY_RUNTIME_DATA_DIR`: local data directory for embedded SQLite and runtime files when PostgreSQL is omitted. Default `/var/lib/byte-v-forge/proxy-runtime`.
+- `PROXY_RUNTIME_DATA_DIR`: local data directory for embedded SQLite and runtime files when PostgreSQL is omitted. Default `/var/lib/proxy-runtime`.
 - `PROXY_RUNTIME_REDIS_URL`: optional Redis URL for distributed lease locks and provider-account concurrency slots.
-- `PLATFORM_REDIS_URL`: accepted as a deployment-level fallback for `PROXY_RUNTIME_REDIS_URL`.
 - When Redis is omitted, lease locks and concurrency slots use an in-process adapter. This is suitable for standalone single-replica runtime; multi-replica deployments should configure Redis.
 
 Optional bootstrap with defaults:
 
 - `PROXY_RUNTIME_ADDR`: HTTP control plane address. Default `:8080`.
 - `PROXY_RUNTIME_MIHOMO_PATH`: Mihomo executable path. Default `mihomo`.
-- `PROXY_RUNTIME_MIHOMO_CONFIG_DIR`: generated Mihomo config directory. Default `/var/lib/byte-v-forge/proxy-runtime/mihomo`.
+- `PROXY_RUNTIME_MIHOMO_CONFIG_DIR`: generated Mihomo config directory. Default `/var/lib/proxy-runtime/mihomo`.
 - `PROXY_RUNTIME_MIHOMO_API_ADDR`: Mihomo external-controller address. Default `127.0.0.1:18901`.
 - `PROXY_RUNTIME_LOCAL_ADDR`: fixed entry listener address. Default `:1080`.
 - `PROXY_RUNTIME_LOCAL_PROTOCOL`: fixed entry protocol, `http` or `socks5`. Default `http`.
@@ -96,30 +95,44 @@ Provider bootstrap is optional and kept for local bring-up. Production dynamic p
 - `PROXY_RUNTIME_1024_API_URL`: API URL copied from the provider console.
 - `PROXY_RUNTIME_1024_API_REGION` / `PROXY_RUNTIME_1024_API_FORMAT` / `PROXY_RUNTIME_1024_API_TIME` / `PROXY_RUNTIME_1024_API_NUM` / `PROXY_RUNTIME_1024_API_TYPE`: API query overrides.
 
-IP fraud, Cloudflare canary, dynamic provider endpoints, and proxy exit IP check settings are managed through `GET/PUT /proxy/settings`. Secret values are write-only inputs and are stored in the service-owned secret store.
+IP fraud, Cloudflare canary, dynamic provider endpoints, and proxy exit IP check settings are managed through `GET/PUT /api/settings`. Secret values are write-only inputs and are stored in the service-owned secret store.
+
+
+## Standalone Image
+
+The repository Dockerfile is self-contained and does not require a sibling checkout. Build and deployment validation for the Byte-V Forge environment still happen on the remote host, but a standalone image can run with SQLite by default:
+
+```sh
+docker run --rm \
+  -p 8080:8080 \
+  -p 1080:1080 \
+  -v proxy-runtime-data:/var/lib/proxy-runtime \
+  -e PROXY_RUNTIME_ENCRYPTION_KEY=change-me-at-least-32-characters \
+  proxy-runtime:local
+```
 
 ## HTTP Endpoints
 
-All endpoints are exposed under both `/proxy/*` and `/api/proxy-runtime/*`.
+The standalone HTTP surface uses root UI, `/api/*` control-plane routes, and `/mihomo/*` Mihomo reverse-proxy routes.
 
+- `GET /`: MetaCubeXD fork frontend entry.
 - `GET /healthz`: process liveness.
 - `GET /readyz`: Mihomo data plane readiness.
-- `GET /proxy-runtime`: full-page entry that redirects to the forked MetaCubeXD frontend.
-- `GET /proxy/providers`: provider capability descriptors.
-- `GET /proxy/provider-accounts` / `PUT /proxy/provider-accounts` / `DELETE /proxy/provider-accounts`: upstream provider accounts.
-- `GET /proxy/leases`: dynamic IP leases.
-- `POST /proxy/leases/acquire`: explicit lease tooling endpoint. Business applications and PlayGround sticky profiles should not depend on it for normal egress.
-- `POST /proxy/leases/release`: release an explicit lease idempotently.
-- `POST /proxy/proxy_exit_ip`: check the exit IP through a configured listener.
-- `POST /proxy/proxy_exit_geo`: lookup geo for an IP without proxy egress.
-- `POST /proxy/ip_fraud_check`: check IP fraud risk.
-- `POST /proxy/check_cf_access_risk`: check edge access risk through the selected egress.
-- `POST /proxy/target_connectivity_check`: check target connectivity through the selected egress.
-- `GET /proxy/settings` / `PUT /proxy/settings`: runtime settings; responses do not echo token/API key values.
-- `GET /proxy/settings/in-user-rules` / `PUT /proxy/settings/in-user-rules`: proxy username/password rules with line and exit settings.
-- `GET /proxy/mihomo/dashboard`: forked MetaCubeXD main frontend bootstrap. It registers the loopback Mihomo controller endpoint and opens the MetaCubeXD `proxies` page.
-- `/proxy/mihomo/ui/*`: same-origin reverse proxy to Mihomo `external-ui`.
-- `/proxy/mihomo/controller/*`: same-origin reverse proxy to Mihomo external-controller for MetaCubeXD.
+- `GET /api/providers`: provider capability descriptors.
+- `GET /api/provider-accounts` / `PUT /api/provider-accounts` / `DELETE /api/provider-accounts`: upstream provider accounts.
+- `GET /api/leases`: dynamic IP leases.
+- `POST /api/leases/acquire`: explicit lease tooling endpoint. Business applications and PlayGround sticky profiles should not depend on it for normal egress.
+- `POST /api/leases/release`: release an explicit lease idempotently.
+- `POST /api/proxy_exit_ip`: check the exit IP through a configured listener.
+- `POST /api/proxy_exit_geo`: lookup geo for an IP without proxy egress.
+- `POST /api/ip_fraud_check`: check IP fraud risk.
+- `POST /api/check_cf_access_risk`: check edge access risk through the selected egress.
+- `POST /api/target_connectivity_check`: check target connectivity through the selected egress.
+- `GET /api/settings` / `PUT /api/settings`: runtime settings; responses do not echo token/API key values.
+- `GET /api/settings/in-user-rules` / `PUT /api/settings/in-user-rules`: proxy username/password rules with line and exit settings.
+- `GET /mihomo/dashboard`: MetaCubeXD controller bootstrap.
+- `/mihomo/ui/*`: same-origin reverse proxy to Mihomo `external-ui`.
+- `/mihomo/controller/*`: same-origin reverse proxy to Mihomo external-controller for MetaCubeXD.
 
 ## Dashboard
 
@@ -129,17 +142,17 @@ The dashboard uses a project-owned MetaCubeXD fork as the main frontend:
 - The project overlay adds `入口用户` and `动态IP提供商` inside MetaCubeXD `proxies` for proxy username/password routing plus dynamic provider endpoints/accounts.
 - The project overlay adds `动态租约` inside MetaCubeXD `connections` for active dynamic lease runtime state. PlayGround also shows its own single active lease in the PlayGround page.
 
-The forked MetaCubeXD assets are built into the `proxy-runtime` image and served full-page through same-origin routes. The Byte-V dashboard no longer loads a `proxy-runtime` module-federation frontend. Browsers do not need direct access to the loopback-only Mihomo API.
+The forked MetaCubeXD assets are built into the `proxy-runtime` image and served full-page through same-origin routes. Browsers do not need direct access to the loopback-only Mihomo API.
 
 ## Generation
 
-Public proto contracts and generated Go/TypeScript types are owned by `common-lib`:
+Proto contracts and generated Go/TypeScript types are owned by this repository:
 
-- Source: `common-lib/proto/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime.proto`
-- Go generated package: `common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1`
-- TypeScript generated package: `common-lib/ui/src/proto/byte/v/forge/contracts/proxyruntime/v1`
+- Source: `proto/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime.proto`
+- Go generated package: `gen/go/byte/v/forge/contracts/proxyruntime/v1`
+- TypeScript generated package: `metacubexd-fork/types/byte/v/forge/contracts/proxyruntime/v1`
 
-Do not edit generated files manually.
+Do not edit generated files manually. Run `sh scripts/generate-proto.sh` after proto changes; run `sh scripts/generate-web-proto.sh` when the frontend type output must be regenerated.
 
 ## Verification
 

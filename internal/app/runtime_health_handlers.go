@@ -3,44 +3,33 @@ package app
 import (
 	"net/http"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/gin-gonic/gin"
 )
 
-func (api *runtimeHTTPAPI) handleHealth(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		methodNotAllowed(w, http.MethodGet)
-		return
-	}
-	w.WriteHeader(http.StatusNoContent)
+func (api *runtimeHTTPAPI) handleHealth(ctx *gin.Context) {
+	ctx.Status(http.StatusNoContent)
 }
 
-func (api *runtimeHTTPAPI) handleReady(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		methodNotAllowed(w, http.MethodGet)
-		return
-	}
+func (api *runtimeHTTPAPI) handleReady(ctx *gin.Context) {
 	if api.ready != nil {
 		ready, msg := api.ready()
 		if ready {
-			w.WriteHeader(http.StatusNoContent)
+			ctx.Status(http.StatusNoContent)
 			return
 		}
 		msg = firstNonEmpty(msg, "route runtime is not running")
-		writeHTTPError(w, unavailable(msg, nil), http.StatusServiceUnavailable)
+		writeHTTPError(ctx.Writer, unavailable(msg, nil), http.StatusServiceUnavailable)
 		return
 	}
-	w.WriteHeader(http.StatusNoContent)
+	ctx.Status(http.StatusNoContent)
 }
 
-func (api *runtimeHTTPAPI) handleProviders(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet {
-		methodNotAllowed(w, http.MethodGet)
-		return
-	}
-	response, err := api.service.ListProxyProviders(req.Context(), &proxyruntimev1.ListProxyProvidersRequest{})
+func (api *runtimeHTTPAPI) handleProviders(ctx *gin.Context) {
+	response, err := api.service.ListProxyProviders(ctx.Request.Context(), &proxyruntimev1.ListProxyProvidersRequest{})
 	if err != nil {
-		writeHTTPError(w, err, http.StatusInternalServerError)
+		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
 	}
-	api.writeProto(w, response)
+	api.writeProto(ctx, response)
 }

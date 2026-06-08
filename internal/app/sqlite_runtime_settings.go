@@ -6,8 +6,8 @@ import (
 	"errors"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/common-lib/protojsonx"
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 )
 
 func (s *SQLiteStore) LoadRuntimeSettings(ctx context.Context) (*runtimeSettingsFile, error) {
@@ -21,13 +21,13 @@ func (s *SQLiteStore) LoadRuntimeSettings(ctx context.Context) (*runtimeSettings
 	}
 	settings := &proxyruntimev1.ProxyRuntimePersistentSettings{}
 	if raw != "" {
-		_ = protojsonx.Unmarshal([]byte(raw), settings)
+		_ = protojsoncodec.Unmarshal([]byte(raw), settings)
 	}
 	return normalizeRuntimeSettings(settings), nil
 }
 
 func (s *SQLiteStore) SaveRuntimeSettings(ctx context.Context, settings *runtimeSettingsFile) error {
-	data, err := protojsonx.Marshal(normalizeRuntimeSettings(settings))
+	data, err := protojsoncodec.Marshal(normalizeRuntimeSettings(settings))
 	if err != nil {
 		return err
 	}

@@ -34,7 +34,7 @@ No GOST runtime is retained. Chain-style egress is represented only as two-layer
 - Provider credentials and dynamic session parameters stay inside the control plane and generated Mihomo config.
 - Mihomo-native fixed proxies, subscriptions, proxy providers, rules, groups, and node health are managed by Mihomo and MetaCubeXD.
 - A forked MetaCubeXD is the primary UI. It is served full-page, not embedded as an iframe and not duplicated as a Byte-V dashboard tab.
-- The existing Byte-V dashboard module is removed. `/proxy-runtime` is a direct service route that redirects to the forked MetaCubeXD frontend.
+- The existing Byte-V dashboard module is removed. The proxy-runtime frontend is served as a standalone app on its own host root, for example `proxy-runtime.<byte-v-forge-host>/`, and redirects to the forked MetaCubeXD frontend.
 - The added project tabs edit only proxy-runtime-owned facts through same-origin HTTP APIs. The backend renders profiles, ingress rules, dynamic provider endpoints, accounts, and leases into Mihomo config.
 - Mihomo config changes hot-reload through the external-controller whenever possible. Restart is only a fallback when the process is not running or the listener endpoint changes.
 

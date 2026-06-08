@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/common-lib/protojsonx"
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -25,7 +25,7 @@ func (s *SQLiteStore) SaveLeaseFact(ctx context.Context, lease *proxyruntimev1.P
 		status = proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE
 		lease.Status = status
 	}
-	data, err := protojsonx.Marshal(lease)
+	data, err := protojsoncodec.Marshal(lease)
 	if err != nil {
 		return err
 	}
@@ -225,7 +225,7 @@ func scanSQLiteLeaseFact(row interface{ Scan(...any) error }) (*proxyruntimev1.P
 	if strings.TrimSpace(raw) == "" {
 		return lease, nil
 	}
-	if err := protojsonx.Unmarshal([]byte(raw), lease); err != nil {
+	if err := protojsoncodec.Unmarshal([]byte(raw), lease); err != nil {
 		return nil, err
 	}
 	return lease, nil

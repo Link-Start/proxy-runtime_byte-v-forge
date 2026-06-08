@@ -1,78 +1,73 @@
 package app
 
 import (
-	"errors"
+	"io"
 	"net/http"
 	"strings"
 
-	"github.com/byte-v-forge/common-lib/httpx"
-	"github.com/byte-v-forge/common-lib/protojsonx"
+	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
+	"github.com/gin-gonic/gin"
 	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
-func (api *runtimeHTTPAPI) readProto(w http.ResponseWriter, req *http.Request, message proto.Message) bool {
-	if req.Body == nil {
-		writeHTTPError(w, invalidArgument("request body is required", nil), http.StatusBadRequest)
+func (api *runtimeHTTPAPI) readProto(ctx *gin.Context, message proto.Message) bool {
+	if ctx.Request.Body == nil {
+		writeHTTPError(ctx.Writer, invalidArgument("request body is required", nil), http.StatusBadRequest)
 		return false
 	}
-	body, err := readRequestBody(req)
+	body, err := readRequestBody(ctx.Request)
 	if err != nil {
-		writeHTTPError(w, err, http.StatusBadRequest)
+		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return false
 	}
 	if len(strings.TrimSpace(string(body))) == 0 {
 		return true
 	}
-	if err := protojsonx.Unmarshal(body, message); err != nil {
-		writeHTTPError(w, err, http.StatusBadRequest)
+	if err := protojsoncodec.Unmarshal(body, message); err != nil {
+		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return false
 	}
 	return true
 }
 
-func (api *runtimeHTTPAPI) readOptionalProto(w http.ResponseWriter, req *http.Request, message proto.Message) bool {
-	if req.Body == nil || req.ContentLength == 0 {
+func (api *runtimeHTTPAPI) readOptionalProto(ctx *gin.Context, message proto.Message) bool {
+	if ctx.Request.Body == nil || ctx.Request.ContentLength == 0 {
 		return true
 	}
-	body, err := readRequestBody(req)
+	body, err := readRequestBody(ctx.Request)
 	if err != nil {
-		writeHTTPError(w, err, http.StatusBadRequest)
+		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return false
 	}
 	if len(strings.TrimSpace(string(body))) == 0 {
 		return true
 	}
-	if err := protojsonx.Unmarshal(body, message); err != nil {
-		writeHTTPError(w, err, http.StatusBadRequest)
+	if err := protojsoncodec.Unmarshal(body, message); err != nil {
+		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return false
 	}
 	return true
 }
 
-func (api *runtimeHTTPAPI) writeProto(w http.ResponseWriter, message proto.Message) {
-	data, err := protojsonx.Marshal(message)
+func (api *runtimeHTTPAPI) writeProto(ctx *gin.Context, message proto.Message) {
+	data, err := protojsoncodec.Marshal(message)
 	if err != nil {
-		writeHTTPError(w, err, http.StatusInternalServerError)
+		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
 	}
-	w.Header().Set("Content-Type", "application/json")
-	_, _ = w.Write(data)
+	ctx.Header("Content-Type", "application/json")
+	_, _ = ctx.Writer.Write(data)
 }
 
 func readRequestBody(req *http.Request) ([]byte, error) {
 	defer req.Body.Close()
-	return httpx.ReadLimited(req.Body, 1<<20)
-}
-
-func methodNotAllowed(w http.ResponseWriter, allow string) {
-	w.Header().Set("Allow", allow)
-	writeHTTPError(w, errors.New("method not allowed"), http.StatusMethodNotAllowed)
+	return io.ReadAll(io.LimitReader(req.Body, 1<<20))
 }
 
 func writeHTTPError(w http.ResponseWriter, err error, fallbackStatus int) {
 	httpStatus, code, message := httpErrorDetails(err, fallbackStatus)
-	data, marshalErr := protojsonx.Marshal(grpcstatus.New(code, message).Proto())
+	data, marshalErr := protojsoncodec.Marshal(grpcstatus.New(code, message).Proto())
 	if marshalErr != nil {
 		httpStatus = http.StatusInternalServerError
 		data = []byte(`{"code":13,"message":"internal server error"}`)

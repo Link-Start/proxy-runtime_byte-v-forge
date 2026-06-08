@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 
-	"github.com/byte-v-forge/common-lib/httpx"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
@@ -26,7 +26,7 @@ func (p *Provider) fetchAPI(ctx context.Context) ([]provider.Node, error) {
 	}
 	defer resp.Body.Close()
 
-	body, err := httpx.ReadLimited(resp.Body, 1<<20)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
 		return nil, fmt.Errorf("read 1024proxy API response: %w", err)
 	}

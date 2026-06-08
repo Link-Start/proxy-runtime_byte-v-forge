@@ -1,0 +1,680 @@
+syntax = "proto3";
+
+package byte.v.forge.contracts.proxyruntime.v1;
+
+import "byte/v/forge/contracts/common/v1/common.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1;proxyruntimev1";
+
+enum ProxyProtocol {
+  PROXY_PROTOCOL_UNSPECIFIED = 0;
+  PROXY_PROTOCOL_HTTP = 1;
+  PROXY_PROTOCOL_SOCKS5 = 2;
+}
+
+enum ProxyCapability {
+  reserved 1, 9;
+  reserved "PROXY_CAPABILITY_CHAINING", "PROXY_CAPABILITY_SUBSCRIPTION_PROVIDER";
+
+  PROXY_CAPABILITY_UNSPECIFIED = 0;
+  PROXY_CAPABILITY_POOL_REFRESH = 2;
+  PROXY_CAPABILITY_API_POOL = 3;
+  PROXY_CAPABILITY_STICKY_SESSION = 4;
+  PROXY_CAPABILITY_ACTIVE_SESSION_ROTATION = 5;
+  PROXY_CAPABILITY_USERNAME_PARAMETER_SESSION = 6;
+  PROXY_CAPABILITY_UNIFIED_EGRESS_GATEWAY = 7;
+  PROXY_CAPABILITY_DYNAMIC_LEASE = 8;
+}
+
+enum ProxySessionMode {
+  PROXY_SESSION_MODE_UNSPECIFIED = 0;
+  PROXY_SESSION_MODE_ROTATING = 1;
+  PROXY_SESSION_MODE_STICKY = 2;
+}
+
+enum ProxyUpstreamKind {
+  PROXY_UPSTREAM_KIND_UNSPECIFIED = 0;
+  PROXY_UPSTREAM_KIND_SIMPLE_PROXY = 1;
+  PROXY_UPSTREAM_KIND_DYNAMIC_IP = 2;
+  PROXY_UPSTREAM_KIND_PROXY_POOL = 3;
+}
+
+enum ProxyRotationMode {
+  PROXY_ROTATION_MODE_UNSPECIFIED = 0;
+  PROXY_ROTATION_MODE_NONE = 1;
+  PROXY_ROTATION_MODE_PER_REQUEST = 2;
+  PROXY_ROTATION_MODE_STICKY_SESSION = 3;
+  PROXY_ROTATION_MODE_SCHEDULED_POOL_REFRESH = 4;
+}
+
+enum ProxyProviderAccountStatus {
+  PROXY_PROVIDER_ACCOUNT_STATUS_UNSPECIFIED = 0;
+  PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED = 1;
+  PROXY_PROVIDER_ACCOUNT_STATUS_DISABLED = 2;
+}
+
+enum ProxyDynamicLeaseStatus {
+  PROXY_DYNAMIC_LEASE_STATUS_UNSPECIFIED = 0;
+  PROXY_DYNAMIC_LEASE_STATUS_ACTIVE = 1;
+  PROXY_DYNAMIC_LEASE_STATUS_EXPIRED = 2;
+  PROXY_DYNAMIC_LEASE_STATUS_FAILED = 3;
+  PROXY_DYNAMIC_LEASE_STATUS_RELEASED = 4;
+}
+
+enum ProxyIPNetworkKind {
+  PROXY_IP_NETWORK_KIND_UNSPECIFIED = 0;
+  PROXY_IP_NETWORK_KIND_UNKNOWN = 1;
+  PROXY_IP_NETWORK_KIND_RESIDENTIAL = 2;
+  PROXY_IP_NETWORK_KIND_DATACENTER = 3;
+  PROXY_IP_NETWORK_KIND_MOBILE = 4;
+  PROXY_IP_NETWORK_KIND_ISP = 5;
+  PROXY_IP_NETWORK_KIND_BUSINESS = 6;
+  PROXY_IP_NETWORK_KIND_SATELLITE = 7;
+  PROXY_IP_NETWORK_KIND_BROADCAST = 8;
+  PROXY_IP_NETWORK_KIND_ANYCAST = 9;
+}
+
+enum ProxyIPAnonymizerKind {
+  PROXY_IP_ANONYMIZER_KIND_UNSPECIFIED = 0;
+  PROXY_IP_ANONYMIZER_KIND_UNKNOWN = 1;
+  PROXY_IP_ANONYMIZER_KIND_NONE = 2;
+  PROXY_IP_ANONYMIZER_KIND_PROXY = 3;
+  PROXY_IP_ANONYMIZER_KIND_VPN = 4;
+  PROXY_IP_ANONYMIZER_KIND_TOR = 5;
+  PROXY_IP_ANONYMIZER_KIND_CRAWLER = 6;
+}
+
+enum ProxyIPFraudRiskLevel {
+  PROXY_IP_FRAUD_RISK_LEVEL_UNSPECIFIED = 0;
+  PROXY_IP_FRAUD_RISK_LEVEL_UNKNOWN = 1;
+  PROXY_IP_FRAUD_RISK_LEVEL_LOW = 2;
+  PROXY_IP_FRAUD_RISK_LEVEL_MEDIUM = 3;
+  PROXY_IP_FRAUD_RISK_LEVEL_HIGH = 4;
+  PROXY_IP_FRAUD_RISK_LEVEL_CRITICAL = 5;
+  PROXY_IP_FRAUD_RISK_LEVEL_UNSUPPORTED = 6;
+}
+
+enum ProxyIPFraudSignal {
+  PROXY_IP_FRAUD_SIGNAL_UNSPECIFIED = 0;
+  PROXY_IP_FRAUD_SIGNAL_BOGON = 1;
+  PROXY_IP_FRAUD_SIGNAL_DATACENTER = 2;
+  PROXY_IP_FRAUD_SIGNAL_HOSTING = 3;
+  PROXY_IP_FRAUD_SIGNAL_PROXY = 4;
+  PROXY_IP_FRAUD_SIGNAL_VPN = 5;
+  PROXY_IP_FRAUD_SIGNAL_TOR = 6;
+  PROXY_IP_FRAUD_SIGNAL_ABUSER = 7;
+  PROXY_IP_FRAUD_SIGNAL_CRAWLER = 8;
+  PROXY_IP_FRAUD_SIGNAL_MOBILE = 9;
+  PROXY_IP_FRAUD_SIGNAL_SATELLITE = 10;
+  PROXY_IP_FRAUD_SIGNAL_BROADCAST = 11;
+  PROXY_IP_FRAUD_SIGNAL_ANYCAST = 12;
+  PROXY_IP_FRAUD_SIGNAL_FRAUD_CHECK_UNSUPPORTED = 13;
+}
+
+enum ProxyIPFraudProviderKind {
+  PROXY_IP_FRAUD_PROVIDER_KIND_UNSPECIFIED = 0;
+  reserved 1;
+  reserved "PROXY_IP_FRAUD_PROVIDER_KIND_FFRAUD";
+  PROXY_IP_FRAUD_PROVIDER_KIND_IPAPI = 2;
+  reserved 3 to 5;
+  reserved "PROXY_IP_FRAUD_PROVIDER_KIND_IPINFO", "PROXY_IP_FRAUD_PROVIDER_KIND_IP2LOCATION", "PROXY_IP_FRAUD_PROVIDER_KIND_IP_API_COM";
+  PROXY_IP_FRAUD_PROVIDER_KIND_IPQUALITYSCORE = 6;
+  PROXY_IP_FRAUD_PROVIDER_KIND_ABUSEIPDB = 7;
+}
+
+enum ProxyIPGeoProviderKind {
+  PROXY_IP_GEO_PROVIDER_KIND_UNSPECIFIED = 0;
+  reserved 1;
+  reserved "PROXY_IP_GEO_PROVIDER_KIND_IPAPI";
+  PROXY_IP_GEO_PROVIDER_KIND_IPINFO = 2;
+  PROXY_IP_GEO_PROVIDER_KIND_IP2LOCATION = 3;
+  PROXY_IP_GEO_PROVIDER_KIND_IP_API_COM = 4;
+}
+
+enum ProxyEdgeAccessRiskLevel {
+  PROXY_EDGE_ACCESS_RISK_LEVEL_UNSPECIFIED = 0;
+  PROXY_EDGE_ACCESS_RISK_LEVEL_UNKNOWN = 1;
+  PROXY_EDGE_ACCESS_RISK_LEVEL_LOW = 2;
+  PROXY_EDGE_ACCESS_RISK_LEVEL_MEDIUM = 3;
+  PROXY_EDGE_ACCESS_RISK_LEVEL_HIGH = 4;
+  PROXY_EDGE_ACCESS_RISK_LEVEL_CHALLENGE_LIKELY = 5;
+  PROXY_EDGE_ACCESS_RISK_LEVEL_BLOCK_LIKELY = 6;
+  PROXY_EDGE_ACCESS_RISK_LEVEL_UNSUPPORTED = 7;
+}
+
+enum ProxyEdgeAccessRiskSignal {
+  PROXY_EDGE_ACCESS_RISK_SIGNAL_UNSPECIFIED = 0;
+  PROXY_EDGE_ACCESS_RISK_SIGNAL_IP_REPUTATION_RISK = 1;
+  PROXY_EDGE_ACCESS_RISK_SIGNAL_DATACENTER_NETWORK = 2;
+  PROXY_EDGE_ACCESS_RISK_SIGNAL_ANONYMIZER_DETECTED = 3;
+  PROXY_EDGE_ACCESS_RISK_SIGNAL_GEO_MISMATCH = 4;
+  PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_ACCESS_PASSED = 5;
+  PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_CHALLENGE_DETECTED = 6;
+  PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_BLOCK_DETECTED = 7;
+  PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_RATE_LIMIT_DETECTED = 8;
+  PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_UNAVAILABLE = 9;
+  PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_ACCESS_UNSUPPORTED = 10;
+}
+
+enum EgressProfileLineKind {
+  EGRESS_PROFILE_LINE_KIND_UNSPECIFIED = 0;
+  EGRESS_PROFILE_LINE_KIND_DIRECT = 1;
+  EGRESS_PROFILE_LINE_KIND_MIHOMO_NODE = 2;
+}
+
+enum EgressProfileExitKind {
+  EGRESS_PROFILE_EXIT_KIND_UNSPECIFIED = 0;
+  EGRESS_PROFILE_EXIT_KIND_DIRECT = 1;
+  EGRESS_PROFILE_EXIT_KIND_STATIC_IP = 2;
+  EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP = 3;
+}
+
+enum EgressListenerKind {
+  EGRESS_LISTENER_KIND_UNSPECIFIED = 0;
+  EGRESS_LISTENER_KIND_DIRECT = 1;
+  EGRESS_LISTENER_KIND_PROVIDER_ROUTE = 2;
+  EGRESS_LISTENER_KIND_DYNAMIC_LEASE = 3;
+}
+
+message ProxyProviderDescriptor {
+  string provider_id = 1;
+  reserved 2;
+  reserved "provider";
+  string display_name = 3;
+  repeated ProxyCapability capabilities = 4;
+  repeated ProxyProtocol protocols = 5;
+  google.protobuf.Duration min_sticky_ttl = 7;
+  google.protobuf.Duration max_sticky_ttl = 8;
+  repeated ProxyUpstreamKind upstream_kinds = 9;
+  repeated ProxyRotationMode rotation_modes = 10;
+}
+
+message ProxyProviderAccount {
+  reserved 6 to 12, 18, 19;
+  reserved "proxy_addr", "protocol", "default_region", "default_state", "default_city", "default_asn", "default_sticky_ttl", "rotating_concurrency_limit", "sticky_concurrency_limit";
+
+  string account_id = 1;
+  string provider_id = 2;
+  string display_name = 3;
+  ProxyProviderAccountStatus status = 4;
+  bool credential_configured = 5;
+  google.protobuf.Timestamp created_at = 13;
+  google.protobuf.Timestamp updated_at = 14;
+  string username = 15;
+  string password_value = 16;
+  string dynamic_provider_id = 17;
+}
+
+message ProxyDynamicIPEndpointCandidate {
+  string provider_account_id = 1;
+  string provider_id = 2;
+  string endpoint_id = 3;
+  string endpoint_url = 4;
+  repeated string geo_codes = 5;
+  ProxyProtocol protocol = 6;
+  uint32 priority = 7;
+  string dynamic_provider_id = 8;
+}
+
+message ProxyDynamicIPSelectionPolicy {
+  reserved 4, 6 to 8;
+  reserved "strategy", "require_dynamic_exit", "allow_direct_dynamic_gateway", "prefer_line_proxy";
+
+  string country_code = 1;
+  string region = 2;
+  string purpose = 3;
+  uint32 max_attempts = 5;
+}
+
+message ProxyDynamicIPSelectionPlan {
+  reserved 3, 7;
+  reserved "line", "route", "dynamic_gateway";
+
+  string selection_id = 1;
+  ProxyDynamicIPSelectionPolicy policy = 2;
+  ProxyDynamicIPEndpointCandidate selected_endpoint = 4;
+  repeated string selection_reasons = 5;
+  google.protobuf.Timestamp selected_at = 6;
+}
+
+message ProxySessionPolicy {
+  ProxySessionMode mode = 1;
+  string region = 2;
+  string state = 3;
+  string city = 4;
+  string asn = 5;
+  google.protobuf.Duration sticky_ttl = 6;
+  map<string, string> labels = 7;
+  ProxyUpstreamKind upstream_kind = 8;
+  ProxyRotationMode rotation_mode = 9;
+}
+
+message ProxySession {
+  string session_id = 1;
+  reserved 2;
+  reserved "provider";
+  ProxySessionPolicy policy = 3;
+  google.protobuf.Timestamp created_at = 4;
+  google.protobuf.Timestamp expires_at = 5;
+  map<string, string> labels = 6;
+  string provider_id = 7;
+  ProxyEndpoint egress = 8;
+  string account_id = 9;
+  string purpose = 10;
+}
+
+message ProxyEndpoint {
+  string id = 1;
+  reserved 2;
+  reserved "provider";
+  ProxyProtocol protocol = 3;
+  string host = 4;
+  uint32 port = 5;
+  string session_id = 6;
+  ProxyUpstreamKind upstream_kind = 7;
+  ProxyRotationMode rotation_mode = 8;
+  map<string, string> labels = 9;
+  string provider_id = 10;
+}
+
+message ProxyDynamicLease {
+  string lease_id = 1;
+  string account_id = 2;
+  string purpose = 3;
+  string provider_account_id = 4;
+  ProxyDynamicLeaseStatus status = 5;
+  ProxySession session = 6;
+  ProxyEndpoint egress = 7;
+  EgressListener listener = 8;
+  ProxyIPFraudCheck ip_fraud_check = 9;
+  ProxyEdgeAccessCheck edge_access_check = 10;
+  google.protobuf.Timestamp acquired_at = 11;
+  google.protobuf.Timestamp expires_at = 12;
+  string error_message = 13;
+  ProxyDynamicIPSelectionPlan selection_plan = 14;
+}
+
+message ProxyExitGeo {
+  string ip = 1;
+  string country_code = 2;
+  google.protobuf.Timestamp checked_at = 3;
+  string error_message = 4;
+  string region = 5;
+  string city = 6;
+}
+
+message ProxyExitIP {
+  string ip = 1;
+  google.protobuf.Timestamp checked_at = 2;
+  string error_message = 3;
+}
+
+message ProxyTargetConnectivityCheck {
+  string target_url = 1;
+  string host = 2;
+  bool reachable = 3;
+  uint32 status_code = 4;
+  uint32 latency_ms = 5;
+  google.protobuf.Timestamp checked_at = 6;
+  string error_message = 7;
+}
+
+message ProxyIPFraudCheck {
+  string ip = 1;
+  ProxyIPNetworkKind network_kind = 2;
+  ProxyIPAnonymizerKind anonymizer_kind = 3;
+  ProxyIPFraudRiskLevel risk_level = 4;
+  double risk_score = 5;
+  repeated ProxyIPFraudSignal risk_signals = 6;
+  string country_code = 7;
+  string region = 8;
+  string city = 9;
+  string asn = 10;
+  string organization = 11;
+  string isp = 12;
+  google.protobuf.Timestamp checked_at = 13;
+  string error_message = 14;
+  string provider_id = 15;
+  string provider_display_name = 16;
+}
+
+message ProxyEdgeAccessCheck {
+  string ip = 1;
+  ProxyEdgeAccessRiskLevel risk_level = 2;
+  double risk_score = 3;
+  repeated ProxyEdgeAccessRiskSignal risk_signals = 4;
+  ProxyIPFraudCheck ip_fraud_check = 5;
+  google.protobuf.Timestamp checked_at = 6;
+  string error_message = 7;
+}
+
+message ProxyExitCheckSnapshot {
+  string listener_id = 1;
+  ProxyExitIP proxy_exit_ip = 2;
+  ProxyExitGeo proxy_exit_geo = 3;
+  ProxyIPFraudCheck ip_fraud_check = 4;
+  ProxyEdgeAccessCheck edge_access_check = 5;
+  google.protobuf.Timestamp updated_at = 6;
+  google.protobuf.Timestamp expires_at = 7;
+}
+
+message ProxyEdgeCanarySettings {
+  string url = 1;
+  byte.v.forge.contracts.common.v1.SecretRef token_secret_ref = 2;
+  bool clear_token = 3;
+  bool enabled = 4;
+  string token_value = 5;
+}
+
+message ProxyEdgeCanarySettingsView {
+  string url = 1;
+  bool token_configured = 2;
+  bool enabled = 3;
+}
+
+message ProxyIPFraudProviderSettings {
+  string provider_id = 1;
+  uint32 weight = 2;
+  ProxyIPFraudProviderKind kind = 3;
+  reserved 4;
+  reserved "url_template";
+  bool anonymous = 5;
+  repeated byte.v.forge.contracts.common.v1.SecretRef api_key_secret_refs = 6;
+  bool clear_api_keys = 7;
+  repeated string api_key_values = 8;
+  string display_name = 9;
+}
+
+message ProxyIPFraudProviderSettingsView {
+  string provider_id = 1;
+  uint32 weight = 2;
+  ProxyIPFraudProviderKind kind = 3;
+  reserved 4;
+  reserved "url_template";
+  bool anonymous = 5;
+  bool api_key_configured = 6;
+  uint32 api_key_count = 7;
+  string display_name = 8;
+}
+
+message ProxyIPFraudProviderDescriptor {
+  string provider_id = 1;
+  uint32 default_weight = 2;
+  ProxyIPFraudProviderKind kind = 3;
+  bool supports_anonymous = 4;
+  bool supports_api_key = 5;
+  string display_name = 6;
+}
+
+message ProxyIPGeoProviderSettings {
+  string provider_id = 1;
+  uint32 weight = 2;
+  ProxyIPGeoProviderKind kind = 3;
+  bool anonymous = 4;
+  repeated byte.v.forge.contracts.common.v1.SecretRef api_key_secret_refs = 5;
+  bool clear_api_keys = 6;
+  repeated string api_key_values = 7;
+  string display_name = 8;
+}
+
+message ProxyIPGeoProviderSettingsView {
+  string provider_id = 1;
+  uint32 weight = 2;
+  ProxyIPGeoProviderKind kind = 3;
+  bool anonymous = 4;
+  bool api_key_configured = 5;
+  uint32 api_key_count = 6;
+  string display_name = 7;
+}
+
+message ProxyIPGeoProviderDescriptor {
+  string provider_id = 1;
+  uint32 default_weight = 2;
+  ProxyIPGeoProviderKind kind = 3;
+  bool supports_anonymous = 4;
+  bool supports_api_key = 5;
+  string display_name = 6;
+}
+
+message ProxyDynamicIPEndpointSettings {
+  reserved 1 to 6;
+  reserved "gateway_id", "display_name", "addr", "region_codes", "protocols", "default_protocol";
+
+  string endpoint_url = 7;
+}
+
+message ProxyDynamicIPProviderSettings {
+  reserved 3;
+  reserved "line_proxy";
+
+  string provider_id = 1;
+  repeated ProxyDynamicIPEndpointSettings endpoints = 2;
+  string dynamic_provider_id = 4;
+  string display_name = 5;
+  uint32 rotating_concurrency_limit = 6;
+  uint32 sticky_concurrency_limit = 7;
+}
+
+message ProxyRuntimeCheckSettings {
+  google.protobuf.Duration proxy_exit_ip_timeout = 1;
+}
+
+message EgressProfileMihomoNodeRef {
+  reserved 3;
+  reserved "node_filter";
+
+  string resource_id = 1;
+  string node_id = 2;
+}
+
+message EgressProfileLineSettings {
+  reserved 3;
+  reserved "strategy";
+
+  EgressProfileLineKind kind = 1;
+  EgressProfileMihomoNodeRef mihomo_node = 2;
+  string health_check_url = 4;
+  google.protobuf.Duration health_interval = 5;
+  google.protobuf.Duration health_timeout = 6;
+  uint32 expected_status = 7;
+}
+
+message EgressProfileExitSettings {
+  reserved 3;
+  reserved "strategy";
+
+  EgressProfileExitKind kind = 1;
+  EgressProfileMihomoNodeRef mihomo_node = 2;
+  string health_check_url = 4;
+  google.protobuf.Duration health_interval = 5;
+  google.protobuf.Duration health_timeout = 6;
+  uint32 expected_status = 7;
+  string dynamic_provider_id = 8;
+  ProxySessionPolicy dynamic_ip_policy = 9;
+}
+
+message EgressProfileSettings {
+  reserved 4;
+  reserved "hops";
+
+  string profile_id = 1;
+  string display_name = 2;
+  bool enabled = 3;
+  EgressProfileLineSettings line = 5;
+  EgressProfileExitSettings exit = 6;
+}
+
+message ProxyIngressRuleSettings {
+  string rule_id = 1;
+  string display_name = 2;
+  bool enabled = 3;
+  string username = 4;
+  string password_value = 5;
+  string profile_id = 6;
+}
+
+message ProxyRuntimeSettings {
+  ProxyEdgeCanarySettingsView edge_canary = 1;
+  repeated ProxyIPFraudProviderSettingsView ip_fraud_providers = 2;
+  repeated ProxyDynamicIPProviderSettings dynamic_ip_providers = 3;
+  ProxyRuntimeCheckSettings check_settings = 4;
+  repeated EgressProfileSettings egress_profiles = 5;
+  repeated ProxyIngressRuleSettings ingress_rules = 6;
+  repeated ProxyIPGeoProviderSettingsView ip_geo_providers = 7;
+}
+
+message ProxyRuntimePersistentSettings {
+  ProxyEdgeCanarySettings edge_canary = 1;
+  repeated ProxyIPFraudProviderSettings ip_fraud_providers = 2;
+  repeated ProxyDynamicIPProviderSettings dynamic_ip_providers = 3;
+  ProxyRuntimeCheckSettings check_settings = 4;
+  repeated EgressProfileSettings egress_profiles = 5;
+  repeated ProxyIngressRuleSettings ingress_rules = 6;
+  repeated ProxyIPGeoProviderSettings ip_geo_providers = 7;
+}
+
+message EgressListener {
+  string listener_id = 1;
+  EgressListenerKind kind = 2;
+  string listen_addr = 3;
+  ProxyProtocol protocol = 4;
+  string route_id = 5;
+  bool managed = 6;
+  map<string, string> labels = 7;
+}
+
+message ListProxyProvidersRequest {}
+message ListProxyProvidersResponse { repeated ProxyProviderDescriptor providers = 1; }
+
+message ListProxyProviderAccountsRequest {}
+message ListProxyProviderAccountsResponse { repeated ProxyProviderAccount accounts = 1; }
+message UpsertProxyProviderAccountRequest {
+  reserved 5 to 11, 17, 18;
+  reserved "proxy_addr", "protocol", "default_region", "default_state", "default_city", "default_asn", "default_sticky_ttl", "rotating_concurrency_limit", "sticky_concurrency_limit";
+
+  string account_id = 1;
+  string provider_id = 2;
+  string display_name = 3;
+  bool enabled = 4;
+  string username = 12;
+  byte.v.forge.contracts.common.v1.SecretRef password_secret_ref = 13;
+  bool clear_password = 14;
+  string password_value = 15;
+  string dynamic_provider_id = 16;
+}
+message UpsertProxyProviderAccountResponse { ProxyProviderAccount account = 1; }
+message DeleteProxyProviderAccountRequest { string account_id = 1; }
+message DeleteProxyProviderAccountResponse {}
+
+message ListProxyDynamicLeasesRequest {}
+message ListProxyDynamicLeasesResponse { repeated ProxyDynamicLease leases = 1; }
+message AcquireProxyLeaseRequest {
+  reserved 3;
+  reserved "provider_account_id";
+
+  string account_id = 1;
+  string purpose = 2;
+  ProxySessionPolicy policy = 4;
+  bool force_new = 5;
+  ProxyDynamicIPSelectionPolicy selection_policy = 6;
+}
+message AcquireProxyLeaseResponse {
+  reserved 2;
+  reserved "pool";
+
+  ProxyDynamicLease lease = 1;
+  ProxyEndpoint egress = 3;
+  ProxyDynamicIPSelectionPlan selection_plan = 4;
+}
+message ReleaseProxyLeaseRequest {
+  string lease_id = 1;
+  string account_id = 2;
+  string purpose = 3;
+}
+message ReleaseProxyLeaseResponse { ProxyDynamicLease lease = 1; }
+
+message GetProxyExitIPRequest {
+  reserved 1, 2;
+  reserved "pool_id", "provider_id";
+
+  string listener_id = 3;
+}
+message GetProxyExitIPResponse { ProxyExitIP proxy_exit_ip = 1; }
+
+message GetProxyExitGeoRequest {
+  reserved 1, 2, 3;
+  reserved "pool_id", "provider_id", "listener_id";
+  string ip = 4;
+}
+message GetProxyExitGeoResponse { ProxyExitGeo proxy_exit_geo = 1; }
+message CheckProxyIPFraudRequest {
+  reserved 1, 2, 3;
+  reserved "pool_id", "provider_id", "listener_id";
+  string ip = 4;
+}
+message CheckProxyIPFraudResponse { ProxyIPFraudCheck check = 1; }
+message CheckProxyEdgeAccessRequest {
+  reserved 1, 2;
+  reserved "pool_id", "provider_id";
+
+  string listener_id = 3;
+  string expected_country_code = 4;
+  string ip = 5;
+}
+message CheckProxyEdgeAccessResponse { ProxyEdgeAccessCheck check = 1; }
+message CheckProxyTargetConnectivityRequest {
+  reserved 1, 2;
+  reserved "pool_id", "provider_id";
+
+  string listener_id = 3;
+  string target_url = 4;
+}
+message CheckProxyTargetConnectivityResponse { ProxyTargetConnectivityCheck check = 1; }
+
+message GetProxyExitCheckSnapshotRequest { string listener_id = 1; }
+message GetProxyExitCheckSnapshotResponse { ProxyExitCheckSnapshot snapshot = 1; }
+
+message GetProxyRuntimeSettingsRequest {}
+message GetProxyRuntimeSettingsResponse { ProxyRuntimeSettings settings = 1; }
+message ListProxyIPFraudProvidersRequest {}
+message ListProxyIPFraudProvidersResponse { repeated ProxyIPFraudProviderDescriptor providers = 1; }
+message ListProxyIPGeoProvidersRequest {}
+message ListProxyIPGeoProvidersResponse { repeated ProxyIPGeoProviderDescriptor providers = 1; }
+message UpdateProxyRuntimeSettingsRequest {
+  ProxyEdgeCanarySettings edge_canary = 1;
+  repeated ProxyIPFraudProviderSettings ip_fraud_providers = 2;
+  repeated ProxyDynamicIPProviderSettings dynamic_ip_providers = 3;
+  ProxyRuntimeCheckSettings check_settings = 4;
+  repeated EgressProfileSettings egress_profiles = 5;
+  repeated ProxyIngressRuleSettings ingress_rules = 6;
+  repeated ProxyIPGeoProviderSettings ip_geo_providers = 7;
+}
+message UpdateProxyRuntimeSettingsResponse { ProxyRuntimeSettings settings = 1; }
+message UpdateProxyEgressProfilesRequest { repeated EgressProfileSettings egress_profiles = 1; }
+message UpdateProxyEgressProfilesResponse { ProxyRuntimeSettings settings = 1; }
+message UpdateProxyIngressRulesRequest { repeated ProxyIngressRuleSettings ingress_rules = 1; }
+message UpdateProxyIngressRulesResponse { ProxyRuntimeSettings settings = 1; }
+
+service ProxyRuntimeService {
+  rpc ListProxyProviders(ListProxyProvidersRequest) returns (ListProxyProvidersResponse);
+  rpc ListProxyProviderAccounts(ListProxyProviderAccountsRequest) returns (ListProxyProviderAccountsResponse);
+  rpc UpsertProxyProviderAccount(UpsertProxyProviderAccountRequest) returns (UpsertProxyProviderAccountResponse);
+  rpc DeleteProxyProviderAccount(DeleteProxyProviderAccountRequest) returns (DeleteProxyProviderAccountResponse);
+  rpc ListProxyDynamicLeases(ListProxyDynamicLeasesRequest) returns (ListProxyDynamicLeasesResponse);
+  rpc AcquireProxyLease(AcquireProxyLeaseRequest) returns (AcquireProxyLeaseResponse);
+  rpc ReleaseProxyLease(ReleaseProxyLeaseRequest) returns (ReleaseProxyLeaseResponse);
+  rpc GetProxyExitIP(GetProxyExitIPRequest) returns (GetProxyExitIPResponse);
+  rpc GetProxyExitGeo(GetProxyExitGeoRequest) returns (GetProxyExitGeoResponse);
+  rpc CheckProxyIPFraud(CheckProxyIPFraudRequest) returns (CheckProxyIPFraudResponse);
+  rpc CheckProxyEdgeAccess(CheckProxyEdgeAccessRequest) returns (CheckProxyEdgeAccessResponse);
+  rpc CheckProxyTargetConnectivity(CheckProxyTargetConnectivityRequest) returns (CheckProxyTargetConnectivityResponse);
+  rpc GetProxyExitCheckSnapshot(GetProxyExitCheckSnapshotRequest) returns (GetProxyExitCheckSnapshotResponse);
+  rpc ListProxyIPFraudProviders(ListProxyIPFraudProvidersRequest) returns (ListProxyIPFraudProvidersResponse);
+  rpc ListProxyIPGeoProviders(ListProxyIPGeoProvidersRequest) returns (ListProxyIPGeoProvidersResponse);
+  rpc GetProxyRuntimeSettings(GetProxyRuntimeSettingsRequest) returns (GetProxyRuntimeSettingsResponse);
+  rpc UpdateProxyRuntimeSettings(UpdateProxyRuntimeSettingsRequest) returns (UpdateProxyRuntimeSettingsResponse);
+  rpc UpdateProxyEgressProfiles(UpdateProxyEgressProfilesRequest) returns (UpdateProxyEgressProfilesResponse);
+  rpc UpdateProxyIngressRules(UpdateProxyIngressRulesRequest) returns (UpdateProxyIngressRulesResponse);
+}

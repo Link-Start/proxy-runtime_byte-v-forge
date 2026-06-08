@@ -1,6 +1,6 @@
 package accountproxy
 
-import proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+import proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 
 func Ten24Plugin() Plugin {
 	return NewDefinitionPlugin(Definition{

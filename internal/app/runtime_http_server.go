@@ -9,7 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/byte-v-forge/common-lib/randx"
+	"github.com/byte-v-forge/proxy-runtime/internal/random"
+	"github.com/gin-gonic/gin"
 )
 
 func (r *Runtime) serveHTTP(ctx context.Context, errCh chan<- error) {
@@ -61,70 +62,58 @@ func newRuntimeHTTPAPI(service *RuntimeService, mihomoAPIAddr string, ready runt
 }
 
 func (api *runtimeHTTPAPI) handler() http.Handler {
-	mux := http.NewServeMux()
-	api.registerPublicHTTPRoutes(mux)
-	api.registerControlPlaneHTTPRoutes(mux)
-	return api.withMiddleware(mux)
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+	router.HandleMethodNotAllowed = true
+	router.Use(api.ginMiddleware())
+	api.registerPublicHTTPRoutes(router)
+	api.registerControlPlaneHTTPRoutes(router)
+	router.NoMethod(api.handleGinMethodNotAllowed)
+	router.NoRoute(api.handleGinNoRoute)
+	return router
 }
 
-func (api *runtimeHTTPAPI) registerPublicHTTPRoutes(mux *http.ServeMux) {
-	mux.HandleFunc("/healthz", api.handleHealth)
-	mux.HandleFunc("/readyz", api.handleReady)
-	mux.HandleFunc("/proxy-runtime", api.handleDashboardEntry)
-	mux.HandleFunc("/proxy-runtime/", api.handleDashboardEntry)
+func (api *runtimeHTTPAPI) registerPublicHTTPRoutes(router *gin.Engine) {
+	router.GET("/healthz", api.handleHealth)
+	router.GET("/readyz", api.handleReady)
+	router.GET("/", api.handleDashboardEntry)
+	router.HEAD("/", api.handleDashboardEntry)
 }
 
-func (api *runtimeHTTPAPI) handleDashboardEntry(w http.ResponseWriter, req *http.Request) {
-	if req.Method != http.MethodGet && req.Method != http.MethodHead {
-		methodNotAllowed(w, http.MethodGet)
+func (api *runtimeHTTPAPI) handleDashboardEntry(ctx *gin.Context) {
+	api.writeMihomoDashboardBootstrap(ctx, "/mihomo/controller", "/mihomo/ui/#/proxies")
+}
+
+func (api *runtimeHTTPAPI) handleGinMethodNotAllowed(ctx *gin.Context) {
+	writeHTTPError(ctx.Writer, errors.New("method not allowed"), http.StatusMethodNotAllowed)
+}
+
+func (api *runtimeHTTPAPI) handleGinNoRoute(ctx *gin.Context) {
+	path := ctx.Request.URL.Path
+	if strings.HasPrefix(path, "/api") || strings.HasPrefix(path, "/mihomo") {
+		writeHTTPError(ctx.Writer, errors.New("not found"), http.StatusNotFound)
 		return
 	}
-	http.Redirect(w, req, "/api/proxy-runtime/mihomo/dashboard", http.StatusFound)
+	api.mihomoReverseProxy("/", "/ui/")(ctx)
 }
 
-func (api *runtimeHTTPAPI) withMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		requestID := httpRequestID(req)
-		w.Header().Set("X-Request-Id", requestID)
+func (api *runtimeHTTPAPI) ginMiddleware() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		requestID := httpRequestID(ctx.Request)
+		ctx.Header("X-Request-Id", requestID)
 		start := time.Now()
-		recorder := &httpStatusRecorder{ResponseWriter: w, status: http.StatusOK}
 		defer func() {
 			if recovered := recover(); recovered != nil {
-				if !recorder.wrote {
-					writeHTTPError(recorder, internalError("", nil), http.StatusInternalServerError)
+				if !ctx.Writer.Written() {
+					writeHTTPError(ctx.Writer, internalError("", nil), http.StatusInternalServerError)
 				}
-				api.logger.Error("proxy-runtime http panic", "request_id", requestID, "method", req.Method, "path", req.URL.Path, "error", recovered)
+				ctx.Abort()
+				api.logger.Error("proxy-runtime http panic", "request_id", requestID, "method", ctx.Request.Method, "path", ctx.Request.URL.Path, "error", recovered)
 			}
-			api.logger.Info("proxy-runtime http request", "request_id", requestID, "method", req.Method, "path", req.URL.Path, "status", recorder.status, "duration_ms", time.Since(start).Milliseconds())
+			api.logger.Info("proxy-runtime http request", "request_id", requestID, "method", ctx.Request.Method, "path", ctx.Request.URL.Path, "status", ctx.Writer.Status(), "duration_ms", time.Since(start).Milliseconds())
 		}()
-		next.ServeHTTP(recorder, req)
-	})
-}
-
-type httpStatusRecorder struct {
-	http.ResponseWriter
-	status int
-	wrote  bool
-}
-
-func (r *httpStatusRecorder) WriteHeader(status int) {
-	if r.wrote {
-		return
+		ctx.Next()
 	}
-	r.status = status
-	r.wrote = true
-	r.ResponseWriter.WriteHeader(status)
-}
-
-func (r *httpStatusRecorder) Write(data []byte) (int, error) {
-	if !r.wrote {
-		r.WriteHeader(http.StatusOK)
-	}
-	return r.ResponseWriter.Write(data)
-}
-
-func (r *httpStatusRecorder) Unwrap() http.ResponseWriter {
-	return r.ResponseWriter
 }
 
 func httpRequestID(req *http.Request) string {
@@ -133,7 +122,7 @@ func httpRequestID(req *http.Request) string {
 			return value
 		}
 	}
-	value, err := randx.Hex(8)
+	value, err := random.Hex(8)
 	if err != nil {
 		return fmt.Sprintf("%d", time.Now().UnixNano())
 	}

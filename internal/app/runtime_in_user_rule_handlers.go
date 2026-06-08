@@ -3,30 +3,29 @@ package app
 import (
 	"net/http"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/gin-gonic/gin"
 )
 
-func (api *runtimeHTTPAPI) handleInUserRules(w http.ResponseWriter, req *http.Request) {
-	switch req.Method {
+func (api *runtimeHTTPAPI) handleInUserRules(ctx *gin.Context) {
+	switch ctx.Request.Method {
 	case http.MethodGet:
-		response, err := api.service.GetProxyRuntimeSettings(req.Context(), &proxyruntimev1.GetProxyRuntimeSettingsRequest{})
+		response, err := api.service.GetProxyRuntimeSettings(ctx.Request.Context(), &proxyruntimev1.GetProxyRuntimeSettingsRequest{})
 		if err != nil {
-			writeHTTPError(w, err, http.StatusInternalServerError)
+			writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 			return
 		}
-		api.writeProto(w, response)
+		api.writeProto(ctx, response)
 	case http.MethodPost, http.MethodPut:
 		var updateReq proxyruntimev1.UpdateProxyRuntimeSettingsRequest
-		if !api.readProto(w, req, &updateReq) {
+		if !api.readProto(ctx, &updateReq) {
 			return
 		}
-		response, err := api.service.UpdateProxyInUserRules(req.Context(), &updateReq)
+		response, err := api.service.UpdateProxyInUserRules(ctx.Request.Context(), &updateReq)
 		if err != nil {
-			writeHTTPError(w, err, http.StatusBadRequest)
+			writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 			return
 		}
-		api.writeProto(w, response)
-	default:
-		methodNotAllowed(w, http.MethodGet+", "+http.MethodPost+", "+http.MethodPut)
+		api.writeProto(ctx, response)
 	}
 }

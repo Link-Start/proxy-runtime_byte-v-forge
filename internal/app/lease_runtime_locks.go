@@ -2,16 +2,18 @@ package app
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"errors"
 	"strings"
 	"time"
 
-	"github.com/byte-v-forge/common-lib/redisx"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/redis/go-redis/v9"
 )
 
 const (
-	leaseRuntimeLockPrefix = "byte-v-forge:proxy-runtime:lease-locks"
+	leaseRuntimeLockPrefix = "proxy-runtime:lease-locks"
 	leaseRuntimeLockTTL    = 2 * time.Minute
 )
 
@@ -28,7 +30,6 @@ type leaseRuntimeLock interface {
 
 type redisLeaseRuntimeLocks struct {
 	client *redis.Client
-	locks  *redisx.BestEffortLocker
 }
 
 func NewLeaseRuntimeLocks(ctx context.Context, cfg config.Config) (leaseRuntimeLocks, error) {
@@ -39,14 +40,11 @@ func NewLeaseRuntimeLocks(ctx context.Context, cfg config.Config) (leaseRuntimeL
 }
 
 func newRedisLeaseRuntimeLocks(ctx context.Context, cfg config.Config) (*redisLeaseRuntimeLocks, error) {
-	client, err := redisx.NewRequiredClient(ctx, cfg.RedisURL, "PROXY_RUNTIME_REDIS_URL or PLATFORM_REDIS_URL is required")
+	client, err := newRedisClient(ctx, cfg.RedisURL)
 	if err != nil {
 		return nil, err
 	}
-	return &redisLeaseRuntimeLocks{
-		client: client,
-		locks:  redisx.NewBestEffortLocker(client, leaseRuntimeLockPrefix, leaseRuntimeLockTTL, 100*time.Millisecond),
-	}, nil
+	return &redisLeaseRuntimeLocks{client: client}, nil
 }
 
 func (s *redisLeaseRuntimeLocks) Close() error {
@@ -55,3 +53,61 @@ func (s *redisLeaseRuntimeLocks) Close() error {
 	}
 	return s.client.Close()
 }
+
+type redisLeaseRuntimeLock struct {
+	client *redis.Client
+	key    string
+	token  string
+}
+
+func (l *redisLeaseRuntimeLock) Unlock(ctx context.Context) error {
+	if l == nil || l.client == nil || l.key == "" || l.token == "" {
+		return nil
+	}
+	return redisLeaseRuntimeUnlockScript.Run(ctx, l.client, []string{l.key}, l.token).Err()
+}
+
+func (s *redisLeaseRuntimeLocks) lock(ctx context.Context, key string) (leaseRuntimeLock, error) {
+	if s == nil || s.client == nil {
+		return nil, errors.New("redis lease lock client is not configured")
+	}
+	redisKeyValue, ok := redisKey(leaseRuntimeLockPrefix, key)
+	if !ok {
+		return nil, errors.New("redis lease lock key is required")
+	}
+	token, err := redisLeaseRuntimeLockToken()
+	if err != nil {
+		return nil, err
+	}
+	for {
+		locked, err := s.client.SetNX(ctx, redisKeyValue, token, leaseRuntimeLockTTL).Result()
+		if err != nil {
+			return nil, err
+		}
+		if locked {
+			return &redisLeaseRuntimeLock{client: s.client, key: redisKeyValue, token: token}, nil
+		}
+		timer := time.NewTimer(100 * time.Millisecond)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		case <-timer.C:
+		}
+	}
+}
+
+func redisLeaseRuntimeLockToken() (string, error) {
+	var raw [16]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(raw[:]), nil
+}
+
+var redisLeaseRuntimeUnlockScript = redis.NewScript(`
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("DEL", KEYS[1])
+end
+return 0
+`)

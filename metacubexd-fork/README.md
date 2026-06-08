@@ -11,7 +11,7 @@ Only project-owned additions live here:
 - `components/proxy-runtime/ProxyRuntimeInUserRules.vue`
 - `components/proxy-runtime/DynamicIPProvider*.vue`
 - `composables/useProxyRuntime*.ts`
-- generated proto contracts copied from `common-lib` during Docker build
+- generated proto contracts from `metacubexd-fork/types/`
 
 The fork keeps upstream MetaCubeXD as the Mihomo UI. Mihomo-native fixed proxies, subscriptions, proxy providers, rules, groups, and config editing stay in upstream pages.
 
@@ -21,4 +21,4 @@ The project overlay adds:
 - `动态IP提供商` inside MetaCubeXD `proxies` for proxy-runtime-only dynamic provider instances, endpoints, and provider accounts.
 - `动态租约` inside MetaCubeXD `connections` for active dynamic lease runtime state.
 
-Both use `/api/proxy-runtime/*`. They do not hand-edit the generated Mihomo runtime projection.
+Both use `/api/*`. They do not hand-edit the generated Mihomo runtime projection.

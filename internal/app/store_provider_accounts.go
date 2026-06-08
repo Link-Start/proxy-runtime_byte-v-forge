@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/common-lib/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/common-lib/randx"
-	"github.com/byte-v-forge/common-lib/secretref"
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	"github.com/byte-v-forge/proxy-runtime/internal/random"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretbox"
+	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 	"github.com/jackc/pgx/v5"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -142,7 +142,7 @@ func credentialFromSecret(box secretbox.Box, secret string) *providerCredential 
 }
 
 func generatedID(prefix string) (string, error) {
-	suffix, err := randx.Hex(6)
+	suffix, err := random.Hex(6)
 	if err != nil {
 		return "", err
 	}

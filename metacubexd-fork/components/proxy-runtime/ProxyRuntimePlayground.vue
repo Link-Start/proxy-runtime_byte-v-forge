@@ -48,7 +48,6 @@ const {
         </template>
         <template #odd>
           <ProxyRuntimePlaygroundConfig
-            :allow-dynamic-exit="true"
             :can-save="canSave"
             :regenerate-password="regeneratePassword"
             :runtime="runtime"
@@ -67,7 +66,6 @@ const {
             :username="runtime.form.username"
           />
           <ProxyRuntimePlaygroundConfig
-            :allow-dynamic-exit="true"
             :can-save="canSave"
             :regenerate-password="regeneratePassword"
             :runtime="runtime"

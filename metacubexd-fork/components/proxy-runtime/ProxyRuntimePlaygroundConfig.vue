@@ -3,7 +3,6 @@ import type { ProxyRuntimeInUserRulesState } from '~/composables/useProxyRuntime
 import { IconDeviceFloppy, IconKey, IconReload, IconRoute } from '@tabler/icons-vue'
 
 defineProps<{
-  allowDynamicExit?: boolean
   canSave: boolean
   regeneratePassword: () => void
   runtime: ProxyRuntimeInUserRulesState
@@ -64,11 +63,7 @@ const expanded = ref(true)
         </div>
       </div>
 
-      <ProxyRuntimeInUserRouteFields
-        :allow-dynamic-exit="allowDynamicExit"
-        :runtime="runtime"
-        dense
-      />
+      <ProxyRuntimeInUserRouteFields :runtime="runtime" dense />
     </div>
   </Collapse>
 </template>

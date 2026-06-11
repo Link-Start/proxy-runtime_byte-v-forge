@@ -55,15 +55,17 @@ func normalizeNativeConfigPaths(configDir string, config *mihomoNativeConfig) {
 }
 
 func normalizeNativeGroups(config *mihomoNativeConfig) {
-	if config == nil {
+	if config == nil || len(config.ProxyGroups) == 0 {
 		return
 	}
-	for index, group := range config.ProxyGroups {
+	groups := make([]mihomoGroup, 0, len(config.ProxyGroups))
+	for _, group := range config.ProxyGroups {
 		if isNativeFixedProxyGroup(group) {
-			group.Hidden = true
+			continue
 		}
-		config.ProxyGroups[index] = group
+		groups = append(groups, group)
 	}
+	config.ProxyGroups = groups
 }
 
 func isNativeFixedProxyGroup(group mihomoGroup) bool {

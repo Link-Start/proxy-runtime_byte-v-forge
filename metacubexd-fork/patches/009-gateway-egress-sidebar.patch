@@ -1,0 +1,26 @@
+diff --git a/components/MobileBottomNav.vue b/components/MobileBottomNav.vue
+index 57761d5..f8535f8 100644
+--- a/components/MobileBottomNav.vue
++++ b/components/MobileBottomNav.vue
+@@ -30,6 +30,8 @@ const rightPrimaryItems = computed(() => primaryItems.value.slice(2, 4))
+ // Secondary items in the FAB popup
+ const secondaryItems = computed(() => [
+   { href: '/playground', name: 'PlayGround', icon: IconBolt },
++  { href: '/gateway', name: '接入', icon: IconNetwork },
++  { href: '/egress', name: '出口', icon: IconGlobe },
+   { href: '/plugins', name: '插件', icon: IconPlug },
+   { href: '/traffic', name: t('dataUsage'), icon: IconChartAreaLine },
+   { href: '/logs', name: t('logs'), icon: IconFileStack },
+diff --git a/components/Sidebar.vue b/components/Sidebar.vue
+index ed1596a..e887d52 100644
+--- a/components/Sidebar.vue
++++ b/components/Sidebar.vue
+@@ -21,6 +21,8 @@ const configStore = useConfigStore()
+ const navItems = computed(() => [
+   { href: '/overview', name: t('overview'), icon: IconHome },
+   { href: '/proxies', name: t('proxies'), icon: IconGlobe },
++  { href: '/gateway', name: '接入', icon: IconNetwork },
++  { href: '/egress', name: '出口', icon: IconGlobe },
+   { href: '/rules', name: t('rules'), icon: IconRuler },
+   { href: '/connections', name: t('connections'), icon: IconNetwork },
+   { href: '/playground', name: 'PlayGround', icon: IconBolt },

@@ -29,9 +29,9 @@ function editItem(row: ProxyRuntimeNativeRow) {
   <section class="flex min-h-0 w-full flex-col gap-3">
     <div class="animate-fade-slide-in flex shrink-0 items-center justify-end gap-2">
       <button
-        aria-label="添加原生配置"
+        aria-label="添加 Mihomo 资源"
         class="btn btn-primary btn-sm btn-square"
-        title="添加原生配置"
+        title="添加 Mihomo 资源"
         type="button"
         @click="addItem"
       >
@@ -44,7 +44,7 @@ function editItem(row: ProxyRuntimeNativeRow) {
     </div>
 
     <div v-if="runtime.rows.value.length === 0" class="py-8 text-center text-sm opacity-60">
-      暂无原生配置
+      暂无 Mihomo 资源
     </div>
 
     <ProxiesRenderWrapper v-else>

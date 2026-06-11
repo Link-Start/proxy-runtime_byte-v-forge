@@ -40,9 +40,9 @@ export function subscriptionRow(item: ProxyRuntimeMihomoNativeSubscription) {
     id: nativeItemID('subscription', item.id || item.name),
     name: item.name,
     type: 'subscription' as const,
-    typeLabel: '订阅',
+    typeLabel: '代理集合订阅源',
     value: item.url,
-    valueLabel: 'proxy-provider',
+    valueLabel: '代理集合',
   }
 }
 

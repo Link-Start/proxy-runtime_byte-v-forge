@@ -6,13 +6,13 @@ const props = defineProps<{ runtime: ProxyRuntimeMihomoNativeState }>()
 const modalRef = ref<{ open: () => void; close: () => void }>()
 const typeOptions = [
   ['fixed_proxy', '固定代理'],
-  ['subscription', '订阅'],
+  ['subscription', '代理集合订阅源'],
 ] as const
 const currentTypeLabel = computed(
   () => typeOptions.find(([type]) => type === props.runtime.form.type)?.[1] || '类型',
 )
 const valuePlaceholder = computed(() =>
-  props.runtime.form.type === 'fixed_proxy' ? 'vless://...' : '订阅 URL',
+  props.runtime.form.type === 'fixed_proxy' ? 'vless://...' : '代理集合订阅 URL',
 )
 const valueInputType = computed(() =>
   props.runtime.form.type === 'fixed_proxy' ? 'text' : 'url',
@@ -39,7 +39,7 @@ defineExpose({ open, close })
 </script>
 
 <template>
-  <Modal ref="modalRef" title="原生配置">
+  <Modal ref="modalRef" title="Mihomo 资源">
     <template #icon>
       <IconServer :size="22" />
     </template>

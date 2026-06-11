@@ -338,7 +338,6 @@ func updateMihomoNativeSettings(ctx context.Context, runtime *Runtime, view *pro
 			usedProviderPaths[provider.Path] = struct{}{}
 		}
 	}
-	next.ProxyGroups = withFixedProxyGroup(next.ProxyGroups, next.Proxies)
 	if err := saveMihomoNativeConfig(runtime, next); err != nil {
 		return fail(internalError("save mihomo native config", err))
 	}
@@ -412,20 +411,6 @@ func preserveNativeGroups(groups []mihomoNativeGroup) []mihomoNativeGroup {
 		out = append(out, group)
 	}
 	return out
-}
-
-func withFixedProxyGroup(groups []mihomoNativeGroup, proxies []map[string]any) []mihomoNativeGroup {
-	names := make([]string, 0, len(proxies))
-	for _, proxy := range proxies {
-		if name := jsonStringValue(proxy["name"]); name != "" {
-			names = append(names, name)
-		}
-	}
-	if len(names) == 0 {
-		return groups
-	}
-	group := mihomoNativeGroup{Name: mihomoFixedProxyGroupName, Type: "select", Proxies: names, Lazy: true}
-	return append([]mihomoNativeGroup{group}, groups...)
 }
 
 func currentFixedProxyIndexes(config mihomoNativeConfigFile) (map[string]mihomoNativeFixedProxy, map[string]mihomoNativeFixedProxy) {

@@ -8,6 +8,7 @@ FROM docker.m.daocloud.io/library/node:22-bookworm-slim AS metacubexd_fork_build
 
 ARG METACUBEXD_REPO
 ARG METACUBEXD_REF
+ARG METACUBEXD_GIT_PROXY
 
 WORKDIR /metacubexd
 RUN sed -i \
@@ -19,7 +20,19 @@ RUN sed -i \
     && rm -rf /var/lib/apt/lists/*
 RUN git init \
     && git remote add origin "${METACUBEXD_REPO}" \
-    && git -c http.lowSpeedLimit=1000 -c http.lowSpeedTime=60 fetch --depth 1 origin "${METACUBEXD_REF}" \
+    && if [ -n "${METACUBEXD_GIT_PROXY}" ]; then \
+         git \
+           -c http.proxy="${METACUBEXD_GIT_PROXY}" \
+           -c https.proxy="${METACUBEXD_GIT_PROXY}" \
+           -c http.lowSpeedLimit=1000 \
+           -c http.lowSpeedTime=60 \
+           fetch --depth 1 origin "${METACUBEXD_REF}"; \
+       else \
+         git \
+           -c http.lowSpeedLimit=1000 \
+           -c http.lowSpeedTime=60 \
+           fetch --depth 1 origin "${METACUBEXD_REF}"; \
+       fi \
     && git checkout --detach FETCH_HEAD
 RUN npm config set registry https://repo.huaweicloud.com/repository/npm/ \
     && npm install -g pnpm@10.34.1 \

@@ -9,7 +9,12 @@ import (
 	"strings"
 )
 
-const nativeConfigFileName = "native.json"
+const (
+	nativeConfigFileName       = "native.json"
+	nativeFixedProxyGroupName  = "固定代理"
+	nativeFixedProxyGroupKind  = "select"
+	nativeFixedProxyGroupProxy = "DIRECT"
+)
 
 const (
 	defaultProviderFetchProxy      = "DIRECT"
@@ -46,6 +51,29 @@ func normalizeNativeConfigPaths(configDir string, config *mihomoNativeConfig) {
 		normalizeNativeProviderHeaders(&provider)
 		config.ProxyProviders[name] = provider
 	}
+	normalizeNativeGroups(config)
+}
+
+func normalizeNativeGroups(config *mihomoNativeConfig) {
+	if config == nil {
+		return
+	}
+	for index, group := range config.ProxyGroups {
+		if isNativeFixedProxyGroup(group) {
+			group.Hidden = true
+		}
+		config.ProxyGroups[index] = group
+	}
+}
+
+func isNativeFixedProxyGroup(group mihomoGroup) bool {
+	if strings.TrimSpace(group.Name) != nativeFixedProxyGroupName {
+		return false
+	}
+	if strings.TrimSpace(group.Type) != "" && !strings.EqualFold(strings.TrimSpace(group.Type), nativeFixedProxyGroupKind) {
+		return false
+	}
+	return len(group.Use) == 0 && len(group.Proxies) > 0 && group.Proxies[0] != nativeFixedProxyGroupProxy
 }
 
 func normalizeNativeProviderPath(configDir string, providerPath string) string {

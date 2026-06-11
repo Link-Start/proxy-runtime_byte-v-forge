@@ -1,0 +1,124 @@
+diff --git a/composables/useApi.ts b/composables/useApi.ts
+index f16712d..14bf31a 100644
+--- a/composables/useApi.ts
++++ b/composables/useApi.ts
+@@ -312,7 +312,9 @@ export function fetchProxiesAPI() {
+ export function updateProxyProviderAPI(providerName: string) {
+   const request = useRequest()
+
+-  return request.put(`providers/proxies/${encodeURIComponent(providerName)}`)
++  return request.put(`providers/proxies/${encodeURIComponent(providerName)}`, {
++    timeout: 60 * 1000,
++  })
+ }
+
+ export function proxyProviderHealthCheckAPI(providerName: string) {
+diff --git a/pages/proxies.vue b/pages/proxies.vue
+index 378f03a..369f8be 100644
+--- a/pages/proxies.vue
++++ b/pages/proxies.vue
+@@ -422,6 +422,9 @@ const ProxyProviderTitle = defineComponent({
+                   class:
+                     'flex items-center justify-center w-9 h-9 rounded-lg bg-base-content/6 border border-base-content/8 text-base-content/60 transition-all duration-200 hover:bg-primary/15 hover:border-primary/30 hover:text-primary hover:-translate-y-px hover:shadow-lg hover:shadow-primary/15 active:translate-y-0 disabled:bg-success/15 disabled:border-success/30 disabled:cursor-not-allowed disabled:opacity-100',
+                   disabled: proxiesStore.updatingMap[props.provider.name],
++                  title:
++                    proxiesStore.providerUpdateErrorMap[props.provider.name] ||
++                    '刷新订阅',
+                   onClick: (e: MouseEvent) => {
+                     e.stopPropagation()
+                     proxiesStore.updateProviderByProviderName(
+@@ -473,6 +476,16 @@ const ProxyProviderTitle = defineComponent({
+         h(SubscriptionInfo, {
+           subscriptionInfo: props.provider.subscriptionInfo,
+         }),
++        proxiesStore.providerUpdateErrorMap[props.provider.name] &&
++          h(
++            'div',
++            {
++              class:
++                'rounded-lg border border-error/25 bg-error/10 px-2.5 py-1.5 text-xs text-error',
++              title: proxiesStore.providerUpdateErrorMap[props.provider.name],
++            },
++            `刷新失败：${proxiesStore.providerUpdateErrorMap[props.provider.name]}`,
++          ),
+         h('div', { class: 'flex flex-col gap-2.5 pt-1' }, [
+           h(
+             'div',
+diff --git a/stores/proxies.ts b/stores/proxies.ts
+index 0317ab4..077b489 100644
+--- a/stores/proxies.ts
++++ b/stores/proxies.ts
+@@ -44,6 +44,7 @@ export const useProxiesStore = defineStore('proxies', () => {
+   const proxyGroupLatencyTestingMap = ref<Record<string, boolean>>({})
+   const proxyProviderLatencyTestingMap = ref<Record<string, boolean>>({})
+   const updatingMap = ref<Record<string, boolean>>({})
++  const providerUpdateErrorMap = ref<Record<string, string>>({})
+   const isAllProviderUpdating = ref(false)
+
+   // Collapsed map for UI state
+@@ -494,18 +495,25 @@ export const useProxiesStore = defineStore('proxies', () => {
+     }
+   }
+
++  const providerUpdateErrorMessage = (error: unknown) => {
++    const message =
++      error instanceof Error && error.message
++        ? error.message
++        : 'Provider update failed'
++    return message.replace(/https?:\/\/[^\s"'<>)\\]+/g, '[redacted-url]')
++  }
++
+   // Update provider
+   const updateProviderByProviderName = async (providerName: string) => {
+     updatingMap.value[providerName] = true
++    providerUpdateErrorMap.value[providerName] = ''
+
+     try {
+       await updateProxyProviderAPI(providerName)
+-    } catch {
+-      /* empty */
+-    }
+-
+-    try {
+       await fetchProxies()
++    } catch (error) {
++      providerUpdateErrorMap.value[providerName] =
++        providerUpdateErrorMessage(error)
+     } finally {
+       updatingMap.value[providerName] = false
+     }
+@@ -514,13 +522,22 @@ export const useProxiesStore = defineStore('proxies', () => {
+   // Update all providers
+   const updateAllProvider = async () => {
+     isAllProviderUpdating.value = true
++    const providers = [...proxyProviders.value]
+
+     try {
+-      await Promise.allSettled(
+-        proxyProviders.value.map((provider) =>
+-          updateProxyProviderAPI(provider.name),
+-        ),
++      const results = await Promise.allSettled(
++        providers.map(async (provider) => {
++          providerUpdateErrorMap.value[provider.name] = ''
++          await updateProxyProviderAPI(provider.name)
++        }),
+       )
++      results.forEach((result, index) => {
++        if (result.status !== 'rejected') return
++        const provider = providers[index]
++        if (!provider) return
++        providerUpdateErrorMap.value[provider.name] =
++          providerUpdateErrorMessage(result.reason)
++      })
+       await fetchProxies()
+     } finally {
+       isAllProviderUpdating.value = false
+@@ -597,6 +614,7 @@ export const useProxiesStore = defineStore('proxies', () => {
+     proxyGroupLatencyTestingMap,
+     proxyProviderLatencyTestingMap,
+     updatingMap,
++    providerUpdateErrorMap,
+     isAllProviderUpdating,
+     collapsedMap,
+     fetchProxies,

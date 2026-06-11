@@ -70,6 +70,7 @@ type mihomoProvider struct {
 	Type        string              `json:"type"`
 	URL         string              `json:"url,omitempty"`
 	Path        string              `json:"path,omitempty"`
+	Proxy       string              `json:"proxy,omitempty"`
 	Interval    int                 `json:"interval,omitempty"`
 	Filter      string              `json:"filter,omitempty"`
 	Exclude     string              `json:"exclude-filter,omitempty"`

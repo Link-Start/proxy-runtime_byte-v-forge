@@ -2,6 +2,13 @@
 import type { ProxyRuntimeDynamicIPProvidersState } from '~/composables/useProxyRuntimeDynamicIPProviders'
 
 defineProps<{ runtime: ProxyRuntimeDynamicIPProvidersState }>()
+const catalog = ref<{ openCreate: () => void }>()
+
+function openCreate() {
+  catalog.value?.openCreate()
+}
+
+defineExpose({ openCreate })
 </script>
 
 <template>
@@ -10,6 +17,6 @@ defineProps<{ runtime: ProxyRuntimeDynamicIPProvidersState }>()
       {{ runtime.error.value }}
     </div>
 
-    <DynamicIPProviderCatalog :runtime="runtime" />
+    <DynamicIPProviderCatalog ref="catalog" :runtime="runtime" />
   </div>
 </template>

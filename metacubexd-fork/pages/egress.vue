@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { IconReload } from '@tabler/icons-vue'
+import { IconPlus, IconReload } from '@tabler/icons-vue'
 
 const nativeRuntime = useProxyRuntimeMihomoNativeConfig()
 const dynamicRuntime = useProxyRuntimeDynamicIPProviders()
 const activeTab = ref<'mihomo' | 'dynamic-ip'>('mihomo')
+const nativePanel = ref<{ openCreate: () => void }>()
+const dynamicPanel = ref<{ openCreate: () => void }>()
 
 const tabs = computed(() => [
   {
@@ -22,6 +24,14 @@ const activeLoading = computed(() =>
     ? nativeRuntime.loading.value
     : dynamicRuntime.loading.value,
 )
+const activeSaving = computed(() =>
+  activeTab.value === 'mihomo'
+    ? nativeRuntime.saving.value
+    : dynamicRuntime.saving.value,
+)
+const addTitle = computed(() =>
+  activeTab.value === 'mihomo' ? '添加 Mihomo 资源' : '添加动态代理提供商',
+)
 
 function refreshActive() {
   void (
@@ -29,6 +39,14 @@ function refreshActive() {
       ? nativeRuntime.load()
       : dynamicRuntime.load()
   )
+}
+
+function openCreate() {
+  if (activeTab.value === 'mihomo') {
+    nativePanel.value?.openCreate()
+    return
+  }
+  dynamicPanel.value?.openCreate()
 }
 
 useHead({ title: '出口' })
@@ -60,6 +78,17 @@ onMounted(() => {
       </div>
 
       <button
+        :aria-label="addTitle"
+        class="btn btn-primary btn-sm btn-square"
+        :disabled="activeSaving"
+        :title="addTitle"
+        type="button"
+        @click="openCreate"
+      >
+        <IconPlus :size="16" />
+      </button>
+
+      <button
         aria-label="刷新出口资源"
         class="flex h-9 w-9 items-center justify-center rounded-[0.625rem] border border-base-content/10 bg-base-200/80 transition-all duration-200 hover:border-primary/30 hover:bg-primary/15 hover:text-primary"
         :disabled="activeLoading"
@@ -74,9 +103,14 @@ onMounted(() => {
     <div class="min-h-0 flex-1 overflow-y-auto">
       <ProxyRuntimeMihomoNative
         v-if="activeTab === 'mihomo'"
+        ref="nativePanel"
         :runtime="nativeRuntime"
       />
-      <ProxyRuntimeDynamicIPProviders v-else :runtime="dynamicRuntime" />
+      <ProxyRuntimeDynamicIPProviders
+        v-else
+        ref="dynamicPanel"
+        :runtime="dynamicRuntime"
+      />
     </div>
   </main>
 </template>

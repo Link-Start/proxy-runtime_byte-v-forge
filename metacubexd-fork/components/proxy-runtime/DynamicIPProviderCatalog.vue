@@ -5,7 +5,6 @@ import type {
   ProxyDynamicIPProviderSettings,
   ProxyProviderAccount,
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import { IconPlus } from '@tabler/icons-vue'
 
 const props = defineProps<{ runtime: ProxyRuntimeDynamicIPProvidersState }>()
 const providerModal = ref<{ open: () => void; close: () => void }>()
@@ -47,22 +46,12 @@ function editAccount(account: ProxyProviderAccount) {
   props.runtime.editAccount(account)
   accountModal.value?.open()
 }
+
+defineExpose({ openCreate: addProvider })
 </script>
 
 <template>
   <section class="flex min-h-0 w-full flex-col gap-3">
-    <div class="animate-fade-slide-in flex shrink-0 items-center justify-end gap-2">
-      <button
-        aria-label="添加动态代理提供商"
-        class="btn btn-primary btn-sm btn-square"
-        title="添加动态代理提供商"
-        type="button"
-        @click="addProvider"
-      >
-        <IconPlus :size="16" />
-      </button>
-    </div>
-
     <div v-if="groups.length === 0" class="py-8 text-center text-sm opacity-60">
       暂无动态IP提供商
     </div>

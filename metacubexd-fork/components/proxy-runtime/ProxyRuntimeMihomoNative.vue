@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { ProxyRuntimeNativeRow } from '~/composables/proxyRuntimeNativeRows'
 import type { ProxyRuntimeMihomoNativeState } from '~/composables/useProxyRuntimeMihomoNativeConfig'
-import { IconPlus } from '@tabler/icons-vue'
 
 const props = defineProps<{ runtime: ProxyRuntimeMihomoNativeState }>()
 const modal = ref<{ open: () => void; close: () => void }>()
@@ -23,22 +22,12 @@ function editItem(row: ProxyRuntimeNativeRow) {
   props.runtime.editRow(row)
   modal.value?.open()
 }
+
+defineExpose({ openCreate: addItem })
 </script>
 
 <template>
   <section class="flex min-h-0 w-full flex-col gap-3">
-    <div class="animate-fade-slide-in flex shrink-0 items-center justify-end gap-2">
-      <button
-        aria-label="添加 Mihomo 资源"
-        class="btn btn-primary btn-sm btn-square"
-        title="添加 Mihomo 资源"
-        type="button"
-        @click="addItem"
-      >
-        <IconPlus :size="16" />
-      </button>
-    </div>
-
     <div v-if="runtime.error.value" class="alert alert-error text-sm">
       {{ runtime.error.value }}
     </div>

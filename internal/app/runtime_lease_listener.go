@@ -13,12 +13,15 @@ func (r *Runtime) leaseListener(ctx context.Context, settings *runtimeSettingsFi
 	leaseID = firstNonEmpty(leaseID, accountID)
 	id := "lease-" + shortHash(leaseID)
 	username := proxyRouteUsername(leaseID)
-	password := r.cfg.LocalPassword
+	password := leaseListenerPassword(settings, accountID, r.cfg.LocalPassword)
 	if accountID == playgroundProfileID {
 		if rule := playgroundIngressRule(settings); rule != nil {
 			username = rule.GetUsername()
-			password = rule.GetPasswordValue()
+			password = firstNonEmpty(rule.GetPasswordValue(), password)
 		}
+	}
+	if strings.TrimSpace(password) == "" {
+		return config.EgressListener{}, failedPrecondition("dynamic lease listener password is not configured", nil)
 	}
 	return config.EgressListener{
 		ID:       id,
@@ -33,6 +36,30 @@ func (r *Runtime) leaseListener(ctx context.Context, settings *runtimeSettingsFi
 			"lease_id":   leaseID,
 		},
 	}, nil
+}
+
+func leaseListenerPassword(settings *runtimeSettingsFile, profileID string, fallback string) string {
+	if password := strings.TrimSpace(fallback); password != "" {
+		return password
+	}
+	if rule := ingressRuleForProfile(settings, profileID); rule != nil {
+		return rule.GetPasswordValue()
+	}
+	return ""
+}
+
+func ingressRuleForProfile(settings *runtimeSettingsFile, profileID string) *proxyruntimev1.ProxyIngressRuleSettings {
+	profileID = strings.TrimSpace(profileID)
+	if profileID == "" || settings == nil {
+		return nil
+	}
+	for _, rule := range settings.GetIngressRules() {
+		if !rule.GetEnabled() || strings.TrimSpace(rule.GetProfileId()) != profileID || strings.TrimSpace(rule.GetPasswordValue()) == "" {
+			continue
+		}
+		return rule
+	}
+	return nil
 }
 
 func (r *Runtime) listenerReservedLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {

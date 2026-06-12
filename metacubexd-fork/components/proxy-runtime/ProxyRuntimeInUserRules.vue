@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import type { ProxyIngressRuleSettings } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 import type { ProxyRuntimeInUserRulesState } from '~/composables/useProxyRuntimeInUserRules'
-import { IconKey, IconPencil, IconPlus, IconRoute, IconTrash } from '@tabler/icons-vue'
+import type { ProxyIngressRuleSettings } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import { IconKey, IconPlus } from '@tabler/icons-vue'
 
 const props = defineProps<{ runtime: ProxyRuntimeInUserRulesState }>()
 const modal = ref<{ open: () => void; close: () => void }>()
 const expandedRules = reactive<Record<string, boolean>>({})
+const evenRows = computed(() =>
+  props.runtime.rows.value.filter((_, index) => index % 2 === 0),
+)
+const oddRows = computed(() =>
+  props.runtime.rows.value.filter((_, index) => index % 2 === 1),
+)
 
 function addRule() {
   props.runtime.resetForm()
@@ -19,7 +25,7 @@ function editRule(rule: ProxyIngressRuleSettings) {
 </script>
 
 <template>
-  <section class="mx-auto flex w-full max-w-5xl min-h-0 flex-col gap-4 px-2 py-2">
+  <section class="flex min-h-0 w-full flex-col gap-3">
     <div v-if="runtime.error.value" class="alert alert-error text-sm">
       {{ runtime.error.value }}
     </div>
@@ -49,71 +55,47 @@ function editRule(rule: ProxyIngressRuleSettings) {
     >
       暂无入口用户
     </div>
-    <div v-else class="grid gap-3">
-      <Collapse
-        v-for="{ rule, profile } in runtime.rows.value"
-        :key="rule.rule_id"
-        :is-open="!!expandedRules[rule.rule_id]"
-        @collapse="expandedRules[rule.rule_id] = $event"
-      >
-        <template #title>
-          <div class="flex min-w-0 flex-1 items-center justify-between gap-3">
-            <div class="min-w-0">
-              <h3 class="truncate text-base font-semibold">
-                {{ rule.display_name || rule.username }}
-              </h3>
-              <div class="mt-2 flex flex-wrap gap-1">
-                <span class="badge badge-ghost badge-sm">
-                  <IconKey :size="12" />
-                  {{ rule.username }}
-                </span>
-                <span class="badge badge-ghost badge-sm">
-                  <IconRoute :size="12" />
-                  {{ profile ? runtime.exitText(profile) : '出口' }}
-                </span>
-              </div>
-            </div>
-
-            <div class="flex shrink-0 items-center gap-1" @click.stop>
-              <button
-                aria-label="编辑"
-                class="btn btn-ghost btn-sm btn-square"
-                title="编辑"
-                type="button"
-                @click="editRule(rule)"
-              >
-                <IconPencil :size="16" />
-              </button>
-              <button
-                aria-label="删除"
-                class="btn btn-ghost btn-sm btn-square text-error"
-                :disabled="runtime.saving.value"
-                title="删除"
-                type="button"
-                @click="runtime.deleteRule(rule)"
-              >
-                <IconTrash :size="16" />
-              </button>
-            </div>
-          </div>
-        </template>
-
-        <div class="col-span-full grid gap-3 text-sm sm:grid-cols-2">
-          <div class="min-w-0">
-            <div class="mb-1 text-xs opacity-60">线路</div>
-            <div class="truncate font-medium" :title="profile ? runtime.lineText(profile) : ''">
-              {{ profile ? runtime.lineText(profile) : '未配置' }}
-            </div>
-          </div>
-          <div class="min-w-0">
-            <div class="mb-1 text-xs opacity-60">出口</div>
-            <div class="truncate font-medium" :title="profile ? runtime.exitText(profile) : ''">
-              {{ profile ? runtime.exitText(profile) : '未配置' }}
-            </div>
-          </div>
-        </div>
-      </Collapse>
-    </div>
+    <ProxiesRenderWrapper v-else>
+      <template #even>
+        <ProxyRuntimeInUserRuleCard
+          v-for="(row, index) in evenRows"
+          :key="row.rule.rule_id"
+          :expanded="expandedRules[row.rule.rule_id] || false"
+          :index="index"
+          :profile="row.profile"
+          :rule="row.rule"
+          :runtime="runtime"
+          @collapse="expandedRules[row.rule.rule_id] = $event"
+          @edit="editRule"
+        />
+      </template>
+      <template #odd>
+        <ProxyRuntimeInUserRuleCard
+          v-for="(row, index) in oddRows"
+          :key="row.rule.rule_id"
+          :expanded="expandedRules[row.rule.rule_id] || false"
+          :index="index"
+          :profile="row.profile"
+          :rule="row.rule"
+          :runtime="runtime"
+          @collapse="expandedRules[row.rule.rule_id] = $event"
+          @edit="editRule"
+        />
+      </template>
+      <template #default>
+        <ProxyRuntimeInUserRuleCard
+          v-for="(row, index) in runtime.rows.value"
+          :key="row.rule.rule_id"
+          :expanded="expandedRules[row.rule.rule_id] || false"
+          :index="index"
+          :profile="row.profile"
+          :rule="row.rule"
+          :runtime="runtime"
+          @collapse="expandedRules[row.rule.rule_id] = $event"
+          @edit="editRule"
+        />
+      </template>
+    </ProxiesRenderWrapper>
 
     <ProxyRuntimeInUserRuleModal ref="modal" :runtime="runtime" />
   </section>

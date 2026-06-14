@@ -31,6 +31,25 @@ type SelectedAcquireAttempt struct {
 
 type SelectedAcquireAttemptAction func(context.Context, SelectedAcquireAttempt) (*proxyruntimev1.ProxyDynamicLease, error)
 
+type SelectedAcquireAttemptLimitFunc func(*proxyruntimev1.ProxyDynamicIPSelectionPlan, *proxyruntimev1.ProxySessionPolicy) uint32
+
+type SelectedAcquireAttemptRunner struct {
+	Store          OrchestrationStore
+	IDs            IDGenerator
+	Limiter        ProviderAccountConcurrencyLimiter
+	Locks          LockManager
+	Limit          SelectedAcquireAttemptLimitFunc
+	DefaultTTL     time.Duration
+	TTLBuffer      time.Duration
+	ReleaseTimeout time.Duration
+	Action         SelectedAcquireAttemptAction
+}
+
+type SelectedAcquireAttemptRunnerInput struct {
+	SelectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Policy        *proxyruntimev1.ProxySessionPolicy
+}
+
 type SelectedAcquireAttemptRunInput struct {
 	Store          OrchestrationStore
 	IDs            IDGenerator
@@ -43,6 +62,29 @@ type SelectedAcquireAttemptRunInput struct {
 	TTLBuffer      time.Duration
 	ReleaseTimeout time.Duration
 	Action         SelectedAcquireAttemptAction
+}
+
+func (r SelectedAcquireAttemptRunner) Run(ctx context.Context, input SelectedAcquireAttemptRunnerInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+	return RunSelectedAcquireAttempt(ctx, SelectedAcquireAttemptRunInput{
+		Store:          r.Store,
+		IDs:            r.IDs,
+		Limiter:        r.Limiter,
+		Locks:          r.Locks,
+		SelectionPlan:  input.SelectionPlan,
+		Limit:          r.limit(input.SelectionPlan, input.Policy),
+		Policy:         input.Policy,
+		DefaultTTL:     r.DefaultTTL,
+		TTLBuffer:      r.TTLBuffer,
+		ReleaseTimeout: r.ReleaseTimeout,
+		Action:         r.Action,
+	})
+}
+
+func (r SelectedAcquireAttemptRunner) limit(selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
+	if r.Limit == nil {
+		return 0
+	}
+	return r.Limit(selectionPlan, policy)
 }
 
 func RunSelectedAcquireAttempt(ctx context.Context, input SelectedAcquireAttemptRunInput) (*proxyruntimev1.ProxyDynamicLease, error) {

@@ -161,3 +161,32 @@ func (c leaseCoordinator) providerAccountAcquireRunner(settings *runtimeSettings
 		},
 	}
 }
+
+func (c leaseCoordinator) selectedAcquireAttemptRunner(settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, selection dynamicIPSelection) leaseapp.SelectedAcquireAttemptRunner {
+	return leaseapp.SelectedAcquireAttemptRunner{
+		Store:          c.deps.store,
+		IDs:            c.deps.ids,
+		Limiter:        c.deps.providerConcurrency,
+		Locks:          c.deps.locks,
+		DefaultTTL:     leaseapp.DefaultDynamicIPStickyTTL,
+		TTLBuffer:      providerAccountConcurrencyTTLBuffer,
+		ReleaseTimeout: leaseAcquireSlotReleaseTimeout,
+		Limit: func(selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
+			return dynamicProviderConcurrencyLimit(settings, leaseapp.SelectedDynamicProviderID(selectionPlan), policy)
+		},
+		Action: func(ctx context.Context, attempt leaseapp.SelectedAcquireAttempt) (*proxyruntimev1.ProxyDynamicLease, error) {
+			runner := c.providerAccountAcquireRunner(settings, advertisedHost, req, selection.plan, attempt.LeaseID, attempt.ConcurrencyHolder)
+			lease, err := runner.Acquire(ctx, leaseapp.ProviderAccountAcquireRunInput{
+				ProviderAccountID: attempt.ProviderAccountID,
+				Gateway:           selection.endpoint,
+				Request:           req,
+				SelectionPlan:     selection.plan,
+				ConcurrencyHolder: attempt.ConcurrencyHolder,
+			})
+			if err != nil {
+				return nil, providerSessionAcquireError(err)
+			}
+			return lease, nil
+		},
+	}
+}

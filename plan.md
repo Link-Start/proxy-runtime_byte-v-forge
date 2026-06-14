@@ -981,6 +981,7 @@ Completed user-visible/runtime batches:
 - Acquired route apply dependencies are now composed through a lease-owned `AcquiredRouteApplier`; the app-level acquired-route flow struct and apply wrapper were removed.
 - Provider-account acquire dependencies are now composed through a lease-owned `ProviderAccountAcquireRunner`; selected acquire attempts call the runner directly and the app-level provider-account acquire wrapper was removed.
 - Runtime settings repository adapter now centralizes repository availability checks instead of repeating nil checks across every settings operation.
+- Selected acquire attempt dependencies are now composed through a lease-owned `SelectedAcquireAttemptRunner`; the coordinator only selects a dynamic endpoint and maps app-specific errors.
 
 Still open:
 

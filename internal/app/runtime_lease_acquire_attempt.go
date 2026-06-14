@@ -15,31 +15,10 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 	if err != nil {
 		return nil, failedPrecondition("no dynamic IP endpoint candidate", err)
 	}
-	lease, err := leaseapp.RunSelectedAcquireAttempt(ctx, leaseapp.SelectedAcquireAttemptRunInput{
-		Store:          c.deps.store,
-		IDs:            c.deps.ids,
-		Limiter:        c.deps.providerConcurrency,
-		Locks:          c.deps.locks,
-		SelectionPlan:  selection.plan,
-		Limit:          dynamicProviderConcurrencyLimit(settings, leaseapp.SelectedDynamicProviderID(selection.plan), req.GetPolicy()),
-		Policy:         req.GetPolicy(),
-		DefaultTTL:     leaseapp.DefaultDynamicIPStickyTTL,
-		TTLBuffer:      providerAccountConcurrencyTTLBuffer,
-		ReleaseTimeout: leaseAcquireSlotReleaseTimeout,
-		Action: func(ctx context.Context, attempt leaseapp.SelectedAcquireAttempt) (*proxyruntimev1.ProxyDynamicLease, error) {
-			runner := c.providerAccountAcquireRunner(settings, advertisedHost, req, selection.plan, attempt.LeaseID, attempt.ConcurrencyHolder)
-			lease, err := runner.Acquire(ctx, leaseapp.ProviderAccountAcquireRunInput{
-				ProviderAccountID: attempt.ProviderAccountID,
-				Gateway:           selection.endpoint,
-				Request:           req,
-				SelectionPlan:     selection.plan,
-				ConcurrencyHolder: attempt.ConcurrencyHolder,
-			})
-			if err != nil {
-				return nil, providerSessionAcquireError(err)
-			}
-			return lease, nil
-		},
+	runner := c.selectedAcquireAttemptRunner(settings, advertisedHost, req, selection)
+	lease, err := runner.Run(ctx, leaseapp.SelectedAcquireAttemptRunnerInput{
+		SelectionPlan: selection.plan,
+		Policy:        req.GetPolicy(),
 	})
 	if err != nil {
 		return nil, acquireAttemptSlotError(err)

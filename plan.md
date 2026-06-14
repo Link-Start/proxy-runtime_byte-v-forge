@@ -756,6 +756,7 @@ Completed user-visible/runtime batches:
 - Runtime secret reference resolution and shared default provider weighting are split from IP-fraud-specific settings helpers.
 - IP fraud and IP geo provider request conversion plus raw-secret persistence are split from provider runtime config/auth helpers.
 - IP fraud and IP geo provider validation and supported-provider filtering are split from provider runtime config/auth helpers.
+- IP fraud and IP geo provider runtime auth/config construction is split from provider settings normalization, with shared secret purpose constants instead of repeated literals.
 
 Still open:
 

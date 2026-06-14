@@ -834,6 +834,7 @@ Completed user-visible/runtime batches:
 - Mihomo egress naming helpers now separate profile group construction, profile display-name mapping, and rule target/node filter sanitization into focused files.
 - Mihomo native config normalization now separates provider path/header normalization and fixed native group cleanup from the top-level normalization flow.
 - Mihomo proxy URL rendering now separates provider-node list rendering, URL-to-node config rendering, and port resolution helpers.
+- Mihomo driver projection now separates reconcile orchestration, render-option assembly, and JSON projection/signature rendering into focused files.
 
 Still open:
 

@@ -1,24 +1,6 @@
 package sourceplane
 
-import (
-	"context"
-	"time"
-
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-)
-
-type Driver interface {
-	Name() string
-	Reconcile(ctx context.Context, cfg Config) ([]provider.Node, error)
-	Stop()
-	Status() Status
-}
-
-type Status struct {
-	Running    bool
-	ConfigPath string
-	LastError  string
-}
+import "time"
 
 type Config struct {
 	EgressProfiles      []EgressProfile
@@ -55,10 +37,3 @@ type EgressProfileLayer struct {
 type EgressProfileLine = EgressProfileLayer
 
 type EgressProfileExit = EgressProfileLayer
-
-type Empty struct{}
-
-func (Empty) Name() string                                               { return "none" }
-func (Empty) Reconcile(context.Context, Config) ([]provider.Node, error) { return nil, nil }
-func (Empty) Stop()                                                      {}
-func (Empty) Status() Status                                             { return Status{LastError: "disabled"} }

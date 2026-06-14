@@ -11,12 +11,6 @@ CREATE TABLE IF NOT EXISTS proxy_runtime_provider_accounts (
 
 ALTER TABLE proxy_runtime_provider_accounts
   ADD COLUMN IF NOT EXISTS dynamic_provider_id text NOT NULL DEFAULT '';
-ALTER TABLE proxy_runtime_provider_accounts
-  DROP COLUMN IF EXISTS rotating_concurrency_limit;
-ALTER TABLE proxy_runtime_provider_accounts
-  DROP COLUMN IF EXISTS sticky_concurrency_limit;
-
-DROP TABLE IF EXISTS proxy_runtime_sources;
 
 CREATE TABLE IF NOT EXISTS proxy_runtime_dynamic_leases (
   lease_id text PRIMARY KEY,

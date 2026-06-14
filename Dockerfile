@@ -56,7 +56,9 @@ ENV GOPROXY=https://goproxy.cn,direct
 COPY go.mod go.sum ./
 RUN go mod download
 
-COPY . ./
+COPY cmd ./cmd
+COPY gen ./gen
+COPY internal ./internal
 RUN go build -o proxy-runtime ./cmd/proxy-runtime
 
 FROM ${MIHOMO_IMAGE} AS mihomo

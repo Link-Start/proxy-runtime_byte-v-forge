@@ -33,6 +33,7 @@ func (p *dynamicIPSelector) dynamicIPEndpointCandidates(ctx context.Context, set
 type dynamicIPCandidateFilter struct {
 	dynamicProviderID string
 	endpointID        string
+	concurrencyHolder string
 }
 
 func dynamicIPCandidateFilterFromPolicy(policy *proxyruntimev1.ProxySessionPolicy) dynamicIPCandidateFilter {
@@ -43,11 +44,11 @@ func dynamicIPCandidateFilterFromPolicy(policy *proxyruntimev1.ProxySessionPolic
 	}
 }
 
-func (p *dynamicIPSelector) providerAccountConcurrencyAvailable(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, provider dynamicIPProviderInstance, policy *proxyruntimev1.ProxySessionPolicy) (bool, error) {
+func (p *dynamicIPSelector) providerAccountConcurrencyAvailable(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, provider dynamicIPProviderInstance, policy *proxyruntimev1.ProxySessionPolicy, holder string) (bool, error) {
 	if p.concurrency == nil {
 		return true, nil
 	}
-	return p.concurrency.Available(ctx, account.GetAccountId(), policy, dynamicProviderInstanceConcurrencyLimit(provider, policy), "")
+	return p.concurrency.Available(ctx, account.GetAccountId(), policy, dynamicProviderInstanceConcurrencyLimit(provider, policy), holder)
 }
 
 func (p *dynamicIPSelector) dynamicIPEndpointCandidatesForAccount(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, accountIndex int, providerInstances []dynamicIPProviderInstance, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxyruntimev1.ProxySessionPolicy, filter dynamicIPCandidateFilter) []scoredDynamicIPEndpointCandidate {
@@ -63,7 +64,7 @@ func (p *dynamicIPSelector) dynamicIPEndpointCandidatesForAccount(ctx context.Co
 		if filter.dynamicProviderID != "" && filter.dynamicProviderID != providerInstance.dynamicProviderID {
 			continue
 		}
-		if ok, err := p.providerAccountConcurrencyAvailable(ctx, account, providerInstance, sessionPolicy); err != nil || !ok {
+		if ok, err := p.providerAccountConcurrencyAvailable(ctx, account, providerInstance, sessionPolicy, filter.concurrencyHolder); err != nil || !ok {
 			continue
 		}
 		for endpointIndex, endpoint := range providerInstance.endpoints {

@@ -10,7 +10,7 @@ import (
 
 type Driver interface {
 	Name() string
-	ReconcileBase(ctx context.Context, cfg Config) ([]provider.Node, error)
+	ApplyDesiredConfig(ctx context.Context, cfg Config) ([]provider.Node, error)
 	UpsertSessionRoute(ctx context.Context, route SessionRoute) error
 	DeleteSessionRoute(ctx context.Context, route SessionRoute) error
 	Stop()

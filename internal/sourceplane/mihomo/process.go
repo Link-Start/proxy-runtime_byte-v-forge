@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -59,7 +58,10 @@ func (d *Driver) startLocked(ctx context.Context, dir string, configPath string)
 	if path == "" {
 		return errors.New("mihomo path is required")
 	}
-	process, err := processruntime.Start(ctx, processruntime.Config{Path: path, Args: []string{"-f", configPath}, Dir: dir, Env: append(os.Environ(), "SAFE_PATHS="+d.safePaths(dir)), Stdout: io.Discard, Stderr: io.Discard})
+	if d.processLogs == nil {
+		d.processLogs = newProcessLogRing(d.logger, defaultProcessLogRingLimit)
+	}
+	process, err := processruntime.Start(ctx, processruntime.Config{Path: path, Args: []string{"-f", configPath}, Dir: dir, Env: append(os.Environ(), "SAFE_PATHS="+d.safePaths(dir)), Stdout: d.processLogs.Writer("stdout"), Stderr: d.processLogs.Writer("stderr")})
 	if err != nil {
 		return err
 	}
@@ -135,8 +137,19 @@ func (d *Driver) wait(process *processruntime.Process) {
 	}
 	d.running = false
 	if err != nil {
-		d.lastError = err.Error()
+		d.lastError = processExitMessage(err, d.processLogs)
 	}
+}
+
+func processExitMessage(err error, logs *processLogRing) string {
+	message := strings.TrimSpace(err.Error())
+	if logs == nil {
+		return message
+	}
+	if tail := logs.Tail(); tail != "" {
+		return message + ": " + tail
+	}
+	return message
 }
 
 func (d *Driver) stopLocked() {

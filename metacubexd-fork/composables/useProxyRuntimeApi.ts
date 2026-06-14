@@ -37,10 +37,9 @@ import {
   listMihomoEgressOwners,
 } from '~/composables/proxyRuntimeMihomoController'
 import {
-  isUnauthorizedStatus,
-  proxyRuntimeAuthHeaders,
-  redirectToProxyRuntimeSetup,
-} from '~/composables/proxyRuntimeEndpointAuth'
+  proxyRuntimeFetchJson,
+  proxyRuntimeJsonBody,
+} from '~/composables/proxyRuntimeFetch'
 
 const base = '/api'
 
@@ -48,34 +47,7 @@ async function proxyRuntimeRequest<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<T> {
-  const response = await fetch(`${base}${path}`, {
-    ...init,
-    headers: proxyRuntimeHeaders(init.headers),
-  })
-  if (!response.ok) {
-    if (isUnauthorizedStatus(response.status)) {
-      redirectToProxyRuntimeSetup()
-    }
-    let message = `${response.status} ${response.statusText}`
-    try {
-      const body = await response.json()
-      if (body?.message) message = body.message
-    } catch {
-      const body = await response.text()
-      if (body) message = body
-    }
-    throw new Error(message)
-  }
-  if (response.status === 204) return {} as T
-  return (await response.json()) as T
-}
-
-const jsonBody = (value: unknown) => JSON.stringify(value)
-
-function proxyRuntimeHeaders(init?: HeadersInit) {
-  const headers = proxyRuntimeAuthHeaders(init)
-  headers.set('Content-Type', 'application/json')
-  return headers
+  return proxyRuntimeFetchJson<T>(base, path, init, { json: true })
 }
 
 const emptyMihomoNativeConfig = (): ProxyRuntimeMihomoNativeConfig => ({
@@ -96,7 +68,7 @@ export function useProxyRuntimeApi() {
         '/provider-accounts',
         {
           method: 'PUT',
-          body: jsonBody(req),
+          body: proxyRuntimeJsonBody(req),
         },
       ),
     deleteProviderAccount: (req: DeleteProxyProviderAccountRequest) =>
@@ -104,7 +76,7 @@ export function useProxyRuntimeApi() {
         '/provider-accounts',
         {
           method: 'DELETE',
-          body: jsonBody(req),
+          body: proxyRuntimeJsonBody(req),
         },
       ),
     getSettings: () =>
@@ -112,7 +84,7 @@ export function useProxyRuntimeApi() {
     updateRuntimeSettings: (req: UpdateProxyRuntimeSettingsRequest) =>
       proxyRuntimeRequest<UpdateProxyRuntimeSettingsResponse>('/settings', {
         method: 'PUT',
-        body: jsonBody(req),
+        body: proxyRuntimeJsonBody(req),
       }),
     listIPFraudProviders: () =>
       proxyRuntimeRequest<ListProxyIPFraudProvidersResponse>(
@@ -125,24 +97,24 @@ export function useProxyRuntimeApi() {
     checkProxyIPFraud: (req: CheckProxyIPFraudRequest) =>
       proxyRuntimeRequest<CheckProxyIPFraudResponse>('/ip_fraud_check', {
         method: 'POST',
-        body: jsonBody(req),
+        body: proxyRuntimeJsonBody(req),
       }),
     getProxyExitIP: (req: GetProxyExitIPRequest) =>
       proxyRuntimeRequest<GetProxyExitIPResponse>('/proxy_exit_ip', {
         method: 'POST',
-        body: jsonBody(req),
+        body: proxyRuntimeJsonBody(req),
       }),
     checkProxyExitGeo: (req: GetProxyExitGeoRequest) =>
       proxyRuntimeRequest<GetProxyExitGeoResponse>('/proxy_exit_geo', {
         method: 'POST',
-        body: jsonBody(req),
+        body: proxyRuntimeJsonBody(req),
       }),
     checkProxyEdgeAccess: (req: CheckProxyEdgeAccessRequest) =>
       proxyRuntimeRequest<CheckProxyEdgeAccessResponse>(
         '/check_cf_access_risk',
         {
           method: 'POST',
-          body: jsonBody(req),
+          body: proxyRuntimeJsonBody(req),
         },
       ),
     getProxyExitCheckSnapshot: (req: GetProxyExitCheckSnapshotRequest) =>
@@ -150,7 +122,7 @@ export function useProxyRuntimeApi() {
         '/proxy_exit_check_snapshot',
         {
           method: 'POST',
-          body: jsonBody(req),
+          body: proxyRuntimeJsonBody(req),
         },
       ),
     getNativeConfig: () =>
@@ -162,7 +134,7 @@ export function useProxyRuntimeApi() {
         '/settings/mihomo-native',
         {
           method: 'PUT',
-          body: jsonBody({ config }),
+          body: proxyRuntimeJsonBody({ config }),
         },
       ).then((response) => response.config || emptyMihomoNativeConfig()),
     listMihomoEgressOwners,
@@ -174,7 +146,9 @@ export function useProxyRuntimeApi() {
         '/settings/dynamic-ip-providers',
         {
           method: 'PUT',
-          body: jsonBody({ dynamic_ip_providers: dynamicIpProviders }),
+          body: proxyRuntimeJsonBody({
+            dynamic_ip_providers: dynamicIpProviders,
+          }),
         },
       ),
     updateInUserRules: (
@@ -185,7 +159,7 @@ export function useProxyRuntimeApi() {
         '/settings/in-user-rules',
         {
           method: 'PUT',
-          body: jsonBody({
+          body: proxyRuntimeJsonBody({
             egress_profiles: egressProfiles,
             ingress_rules: ingressRules,
           }),
@@ -198,12 +172,12 @@ export function useProxyRuntimeApi() {
     acquireLease: (req: AcquireProxyLeaseRequest) =>
       proxyRuntimeRequest<AcquireProxyLeaseResponse>('/leases/acquire', {
         method: 'POST',
-        body: jsonBody(req),
+        body: proxyRuntimeJsonBody(req),
       }),
     releaseLease: (req: ReleaseProxyLeaseRequest) =>
       proxyRuntimeRequest<ReleaseProxyLeaseResponse>('/leases/release', {
         method: 'POST',
-        body: jsonBody(req),
+        body: proxyRuntimeJsonBody(req),
       }),
   }
 }

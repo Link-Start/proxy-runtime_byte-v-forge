@@ -21,14 +21,15 @@ func New(timeout time.Duration) *http.Client {
 }
 
 func NewWithProxy(timeout time.Duration, proxyRawURL string, schemes ...string) (*http.Client, error) {
-	transport, err := transportWithProxy(proxyRawURL, schemes...)
+	timeout = normalizeTimeout(timeout)
+	transport, err := transportWithProxy(timeout, proxyRawURL, schemes...)
 	if err != nil {
 		return nil, err
 	}
-	return &http.Client{Timeout: normalizeTimeout(timeout), Transport: transport}, nil
+	return &http.Client{Timeout: timeout, Transport: transport}, nil
 }
 
-func transportWithProxy(proxyRawURL string, schemes ...string) (*http.Transport, error) {
+func transportWithProxy(timeout time.Duration, proxyRawURL string, schemes ...string) (*http.Transport, error) {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	proxyRawURL = strings.TrimSpace(proxyRawURL)
 	if proxyRawURL == "" {
@@ -55,12 +56,17 @@ func transportWithProxy(proxyRawURL string, schemes ...string) (*http.Transport,
 			password, _ := parsed.User.Password()
 			auth = &xproxy.Auth{User: parsed.User.Username(), Password: password}
 		}
-		dialer, err := xproxy.SOCKS5("tcp", parsed.Host, auth, xproxy.Direct)
+		forward := &net.Dialer{Timeout: timeout}
+		dialer, err := xproxy.SOCKS5("tcp", parsed.Host, auth, forward)
 		if err != nil {
 			return nil, err
 		}
+		contextDialer, ok := dialer.(xproxy.ContextDialer)
+		if !ok {
+			return nil, fmt.Errorf("proxy_url: socks5 dialer does not support context")
+		}
 		transport.DialContext = func(ctx context.Context, network, address string) (net.Conn, error) {
-			return dialer.Dial(network, address)
+			return contextDialer.DialContext(ctx, network, address)
 		}
 	default:
 		return nil, unsupportedProxyScheme(scheme, allowed)

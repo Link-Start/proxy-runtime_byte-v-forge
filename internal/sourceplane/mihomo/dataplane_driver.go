@@ -9,7 +9,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 )
 
-func (d *Driver) ReconcileBase(ctx context.Context, cfg dataplane.Config) ([]provider.Node, error) {
+func (d *Driver) ApplyDesiredConfig(ctx context.Context, cfg dataplane.Config) ([]provider.Node, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	previous := cloneDataPlaneConfig(d.baseCfg)

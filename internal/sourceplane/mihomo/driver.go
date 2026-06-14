@@ -37,6 +37,7 @@ type Driver struct {
 
 	mu           sync.Mutex
 	process      *processruntime.Process
+	processLogs  *processLogRing
 	apiClient    *http.Client
 	configDir    string
 	configPath   string
@@ -54,16 +55,10 @@ func New(cfg Config, logger *slog.Logger) *Driver {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &Driver{cfg: cfg, logger: logger, apiClient: runtimehttp.New(5 * time.Second), sessions: map[string]dataplane.SessionRoute{}}
+	return &Driver{cfg: cfg, logger: logger, processLogs: newProcessLogRing(logger, defaultProcessLogRingLimit), apiClient: runtimehttp.New(5 * time.Second), sessions: map[string]dataplane.SessionRoute{}}
 }
 
 func (d *Driver) Name() string { return ProviderID }
-
-func (d *Driver) Reconcile(ctx context.Context, cfg sourceplane.Config) ([]provider.Node, error) {
-	d.mu.Lock()
-	defer d.mu.Unlock()
-	return d.reconcileLocked(ctx, cfg)
-}
 
 func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([]provider.Node, error) {
 	endpoint, err := normalizeEndpoint(cfg.Endpoint)

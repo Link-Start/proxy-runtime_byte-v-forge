@@ -2,11 +2,7 @@ import type {
   GetProxyRuntimeMihomoNativeConfigResponse,
   ProxyRuntimeMihomoNativeConfig,
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import {
-  isUnauthorizedStatus,
-  proxyRuntimeAuthHeaders,
-  redirectToProxyRuntimeSetup,
-} from '~/composables/proxyRuntimeEndpointAuth'
+import { proxyRuntimeFetchJson } from '~/composables/proxyRuntimeFetch'
 
 const mihomoControllerBase = '/mihomo/controller'
 const proxyRuntimeBase = '/api'
@@ -80,45 +76,11 @@ async function getMihomoNativeConfig(): Promise<ProxyRuntimeMihomoNativeConfig> 
 }
 
 async function mihomoControllerRequest<T>(path: string): Promise<T> {
-  const response = await fetch(`${mihomoControllerBase}${path}`, {
-    headers: proxyRuntimeAuthHeaders(),
-  })
-  if (!response.ok) {
-    if (isUnauthorizedStatus(response.status)) {
-      redirectToProxyRuntimeSetup()
-    }
-    let message = `${response.status} ${response.statusText}`
-    try {
-      const body = await response.json()
-      if (body?.message) message = body.message
-    } catch {
-      const body = await response.text()
-      if (body) message = body
-    }
-    throw new Error(message)
-  }
-  return (await response.json()) as T
+  return proxyRuntimeFetchJson<T>(mihomoControllerBase, path)
 }
 
 async function proxyRuntimeRequest<T>(path: string): Promise<T> {
-  const response = await fetch(`${proxyRuntimeBase}${path}`, {
-    headers: proxyRuntimeAuthHeaders(),
-  })
-  if (!response.ok) {
-    if (isUnauthorizedStatus(response.status)) {
-      redirectToProxyRuntimeSetup()
-    }
-    let message = `${response.status} ${response.statusText}`
-    try {
-      const body = await response.json()
-      if (body?.message) message = body.message
-    } catch {
-      const body = await response.text()
-      if (body) message = body
-    }
-    throw new Error(message)
-  }
-  return (await response.json()) as T
+  return proxyRuntimeFetchJson<T>(proxyRuntimeBase, path)
 }
 
 function nodesFromMihomo(

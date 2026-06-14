@@ -181,7 +181,7 @@ func (r *Runtime) refresh(ctx context.Context) error {
 	}
 	dynamicProfileNodes := len(sourceCfg.Pool)
 	sourceCfg.Pool = append(sourceCfg.Pool, nodes...)
-	sourceNodes, err := r.dataPlane.ReconcileBase(ctx, sourceCfg)
+	sourceNodes, err := r.dataPlane.ApplyDesiredConfig(ctx, sourceCfg)
 	if err != nil {
 		return err
 	}

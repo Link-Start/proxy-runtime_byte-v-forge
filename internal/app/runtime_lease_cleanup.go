@@ -63,7 +63,14 @@ func (c leaseCoordinator) cleanupPendingLeaseFacts(ctx context.Context) error {
 	}
 	cleanupErrors := make([]error, 0)
 	for _, lease := range leases {
-		if err := c.cleanupPendingLeaseFact(ctx, lease); err != nil {
+		if err := ctx.Err(); err != nil {
+			cleanupErrors = append(cleanupErrors, err)
+			break
+		}
+		attemptCtx, cancel := context.WithTimeout(ctx, leaseCleanupAttemptTimeout)
+		err := c.cleanupPendingLeaseFact(attemptCtx, lease)
+		cancel()
+		if err != nil {
 			r.logger.Warn("cleanup proxy lease fact failed", "lease_id", lease.GetLeaseId(), "account_id", lease.GetAccountId(), "provider_account_id", lease.GetProviderAccountId())
 			cleanupErrors = append(cleanupErrors, fmt.Errorf("cleanup lease fact %q: %w", lease.GetLeaseId(), err))
 		}

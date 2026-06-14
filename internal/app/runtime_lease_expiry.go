@@ -11,7 +11,10 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
-const leaseExpirySweepInterval = 30 * time.Second
+const (
+	leaseExpirySweepInterval   = 30 * time.Second
+	leaseCleanupAttemptTimeout = 20 * time.Second
+)
 
 func (r *Runtime) leaseExpiryLoop(ctx context.Context) {
 	ticker := time.NewTicker(leaseExpirySweepInterval)
@@ -42,7 +45,14 @@ func (c leaseCoordinator) expireDueLeaseFacts(ctx context.Context) error {
 	}
 	expireErrors := make([]error, 0)
 	for _, lease := range leases {
-		if err := c.expireLeaseFact(ctx, lease); err != nil {
+		if err := ctx.Err(); err != nil {
+			expireErrors = append(expireErrors, err)
+			break
+		}
+		attemptCtx, cancel := context.WithTimeout(ctx, leaseCleanupAttemptTimeout)
+		err := c.expireLeaseFact(attemptCtx, lease)
+		cancel()
+		if err != nil {
 			r.logger.Warn("expire proxy lease failed", "lease_id", lease.GetLeaseId(), "account_id", lease.GetAccountId(), "provider_account_id", lease.GetProviderAccountId())
 			expireErrors = append(expireErrors, fmt.Errorf("expire lease fact %q: %w", lease.GetLeaseId(), err))
 		}

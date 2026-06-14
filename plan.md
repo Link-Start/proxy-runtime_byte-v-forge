@@ -877,6 +877,7 @@ Completed user-visible/runtime batches:
 - Lease finalization now calls a lease-owned concurrency-slot release helper directly; the app-level release wrapper was removed.
 - Release request lease lookup now lives in `internal/app/lease`, including lease-id/account fallback, release match validation, and not-found classification.
 - Release lock-window state refresh and route-retire eligibility now live in `internal/app/lease`; release orchestration only locks and executes route/provider cleanup side effects.
+- Lease route deletion from persisted lease facts now lives in `internal/app/lease`; release, expiry, and cleanup paths share the same session-route reconstruction and dataplane delete helper.
 
 Still open:
 

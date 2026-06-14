@@ -11,7 +11,7 @@ func (c leaseCoordinator) retireLeaseRoute(ctx context.Context, lease *proxyrunt
 	if lease == nil {
 		return nil
 	}
-	if err := c.deleteLeaseRoute(ctx, lease); err != nil {
+	if err := leaseapp.DeleteLeaseRoute(ctx, c.deps.dataPlane, lease, c.deps.cfg.LocalProtocol); err != nil {
 		_ = c.saveLeaseReleaseCleanupFailure(ctx, lease, true, false, "lease route cleanup failed")
 		return err
 	}
@@ -34,12 +34,4 @@ func (c leaseCoordinator) releaseLeaseProviderSessionWithLock(ctx context.Contex
 	return leaseapp.WithProviderAccountLock(ctx, c.deps.locks, lease.GetProviderAccountId(), func(ctx context.Context) error {
 		return c.releaseLeaseProviderSession(ctx, lease)
 	})
-}
-
-func (c leaseCoordinator) deleteLeaseRoute(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	route, ok := leaseapp.SessionRouteFromLease(lease, nil, "", c.deps.cfg.LocalProtocol)
-	if !ok {
-		return nil
-	}
-	return leaseapp.DeleteSessionRoute(ctx, c.deps.dataPlane, route)
 }

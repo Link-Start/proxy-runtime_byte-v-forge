@@ -23,7 +23,7 @@ func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *pr
 			return nil
 		}
 		if leaseapp.RouteCleanupPending(current) {
-			if err := c.deleteLeaseRoute(ctx, current); err != nil {
+			if err := leaseapp.DeleteLeaseRoute(ctx, c.deps.dataPlane, current, c.deps.cfg.LocalProtocol); err != nil {
 				_ = c.saveLeaseCleanupRetry(ctx, current, "lease route cleanup failed")
 				return err
 			}

@@ -22,7 +22,7 @@ func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyrunti
 		if !leaseapp.NeedsExpiryCleanup(current, c.now().UTC()) {
 			return nil
 		}
-		if err := c.deleteLeaseRoute(ctx, current); err != nil {
+		if err := leaseapp.DeleteLeaseRoute(ctx, c.deps.dataPlane, current, c.deps.cfg.LocalProtocol); err != nil {
 			_ = c.saveLeaseExpiredCleanupFailure(ctx, current, true, false, "expired lease route cleanup failed")
 			return err
 		}

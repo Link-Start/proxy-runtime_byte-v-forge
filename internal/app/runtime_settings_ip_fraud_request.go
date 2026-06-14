@@ -24,7 +24,7 @@ func ipFraudProviderFromRequest(ctx context.Context, writer secretref.Writer, in
 		return nil, err
 	}
 	if len(apiKeySecretRefs) == 0 && !in.GetClearApiKeys() && !in.GetAnonymous() {
-		apiKeySecretRefs = current[providerSecretKey(in.GetKind(), id)]
+		apiKeySecretRefs = current[ipFraudProviderSecretKey(in.GetKind(), id)]
 	}
 	weight := in.GetWeight()
 	if weight == 0 {

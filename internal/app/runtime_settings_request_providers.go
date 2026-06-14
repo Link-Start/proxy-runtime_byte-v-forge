@@ -23,7 +23,7 @@ func ipFraudProvidersFromRequest(ctx context.Context, writer secretref.Writer, r
 		if err := validateIPFraudProvider(item, index, registry); err != nil {
 			return nil, err
 		}
-		key := providerSecretKey(item.GetKind(), item.GetProviderId())
+		key := ipFraudProviderSecretKey(item.GetKind(), item.GetProviderId())
 		if _, exists := seenProviders[key]; exists {
 			return nil, fmt.Errorf("ip_fraud_providers[%d] duplicates provider %q", index, item.GetProviderId())
 		}

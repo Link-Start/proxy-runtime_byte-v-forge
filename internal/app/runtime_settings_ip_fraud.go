@@ -14,12 +14,12 @@ const ipFraudAPIKeyPurpose = "ip_fraud_api_key"
 func ipFraudProviderSecrets(settings *runtimeSettingsFile, providers *ipfraud.Registry) map[string][]*commonv1.SecretRef {
 	secrets := map[string][]*commonv1.SecretRef{}
 	for _, item := range normalizeRuntimeSettingsWithProviders(settings, providers, nil).GetIpFraudProviders() {
-		secrets[providerSecretKey(item.GetKind(), item.GetProviderId())] = cleanIPFraudSecretRefs(item.GetApiKeySecretRefs())
+		secrets[ipFraudProviderSecretKey(item.GetKind(), item.GetProviderId())] = cleanIPFraudSecretRefs(item.GetApiKeySecretRefs())
 	}
 	return secrets
 }
 
-func providerSecretKey(kind proxyruntimev1.ProxyIPFraudProviderKind, id string) string {
+func ipFraudProviderSecretKey(kind proxyruntimev1.ProxyIPFraudProviderKind, id string) string {
 	return fmt.Sprintf("%d:%s", kind, strings.TrimSpace(id))
 }
 

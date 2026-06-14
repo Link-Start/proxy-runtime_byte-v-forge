@@ -1,6 +1,8 @@
 package app
 
 import (
+	"context"
+
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
@@ -21,7 +23,7 @@ func NewRuntimeService(runtime *Runtime) *RuntimeService {
 		providers: newRuntimeProviderApplication(runtimeProviderDependencies(runtime)),
 		leases:    newRuntimeLeaseApplication(runtimeLeaseDependencies(runtime)),
 		checks:    newRuntimeCheckApplication(runtimeCheckDependencies(runtime)),
-		settings:  newRuntimeSettingsApplication(runtime),
+		settings:  newRuntimeSettingsApplication(runtimeSettingsDependencies(runtime)),
 		status:    newRuntimeStatusApplication(runtime),
 	}
 }
@@ -74,6 +76,46 @@ func runtimeCheckDependencies(runtime *Runtime) runtimeCheckApplicationDependenc
 		CheckFraud:     runtime.checkIPFraud,
 		RunEdgeCanary:  runtime.runEdgeCanary,
 		ExitCheckCache: &runtime.exitCheckCache,
+	}
+}
+
+func runtimeSettingsDependencies(runtime *Runtime) runtimeSettingsApplicationDependencies {
+	if runtime == nil {
+		return runtimeSettingsApplicationDependencies{}
+	}
+	return runtimeSettingsApplicationDependencies{
+		Logger:     runtime.logger,
+		Settings:   runtime.settings,
+		ProxyUsers: runtime.cfg.ProxyUsers,
+		IPFraudProviderViews: func() []*proxyruntimev1.ProxyIPFraudProviderDescriptor {
+			if runtime.ipFraudProviders == nil {
+				return nil
+			}
+			return runtime.ipFraudProviders.ProviderDescriptors()
+		},
+		IPGeoProviderViews: func() []*proxyruntimev1.ProxyIPGeoProviderDescriptor {
+			if runtime.ipGeoProviders == nil {
+				return nil
+			}
+			return runtime.ipGeoProviders.ProviderDescriptors()
+		},
+		LoadMihomoNativeSettings: func(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+			if runtime.settings == nil {
+				return normalizeMihomoNativeSettings(nil), nil
+			}
+			return runtime.settings.loadMihomoNative(ctx)
+		},
+		UpdateMihomoNativeSettings: func(ctx context.Context, config *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+			return updateMihomoNativeSettings(ctx, mihomoNativeUpdateDependencies{
+				Repository: runtime.settings,
+				ConfigDir:  runtime.cfg.Mihomo.ConfigDir,
+				AfterApply: func() {
+					runtime.exitCheckCache.clear()
+					runtime.requestReconcile()
+				},
+			}, config)
+		},
+		ScheduleApply: runtime.scheduleRuntimeSettingsApply,
 	}
 }
 

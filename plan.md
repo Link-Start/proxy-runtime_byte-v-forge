@@ -739,6 +739,7 @@ Completed user-visible/runtime batches:
 - Provider account application now receives explicit repository, settings, descriptor, lock, lease-operation, and logger dependencies; provider usecase methods no longer dereference `*Runtime` directly.
 - Runtime check application now receives explicit settings, HTTP-client, exit-IP probe, geo lookup, IP-fraud, edge-canary, and cache dependencies instead of reaching through `*Runtime`.
 - Runtime lease application construction now accepts the lease application dependency object directly; `RuntimeService` owns only wiring from `Runtime` to lease ports.
+- Runtime settings application construction now uses an explicit dependency object, and settings usecases guard missing repositories/loggers instead of dereferencing app fields directly.
 
 Still open:
 

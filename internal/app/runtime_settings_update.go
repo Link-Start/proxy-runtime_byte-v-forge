@@ -10,11 +10,15 @@ func (a runtimeSettingsApplication) UpdateProxyRuntimeSettings(ctx context.Conte
 	if err := rejectMissingProxyUserProfiles(a.proxyUsers, req.GetEgressProfiles()); err != nil {
 		return nil, err
 	}
-	before, err := a.settings.load(ctx)
+	repository, err := a.settingsRepository()
 	if err != nil {
 		return nil, err
 	}
-	settings, err := a.settings.update(ctx, req)
+	before, err := repository.load(ctx)
+	if err != nil {
+		return nil, err
+	}
+	settings, err := repository.update(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +27,11 @@ func (a runtimeSettingsApplication) UpdateProxyRuntimeSettings(ctx context.Conte
 }
 
 func (a runtimeSettingsApplication) UpdateProxyDynamicIPProviders(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
-	settings, err := a.settings.updateDynamicIPProviders(ctx, req.GetDynamicIpProviders())
+	repository, err := a.settingsRepository()
+	if err != nil {
+		return nil, err
+	}
+	settings, err := repository.updateDynamicIPProviders(ctx, req.GetDynamicIpProviders())
 	if err != nil {
 		return nil, err
 	}
@@ -35,11 +43,15 @@ func (a runtimeSettingsApplication) UpdateProxyEgressProfiles(ctx context.Contex
 	if err := rejectMissingProxyUserProfiles(a.proxyUsers, req.GetEgressProfiles()); err != nil {
 		return nil, err
 	}
-	before, err := a.settings.load(ctx)
+	repository, err := a.settingsRepository()
 	if err != nil {
 		return nil, err
 	}
-	settings, err := a.settings.updateEgressProfiles(ctx, req.GetEgressProfiles())
+	before, err := repository.load(ctx)
+	if err != nil {
+		return nil, err
+	}
+	settings, err := repository.updateEgressProfiles(ctx, req.GetEgressProfiles())
 	if err != nil {
 		return nil, err
 	}
@@ -48,11 +60,15 @@ func (a runtimeSettingsApplication) UpdateProxyEgressProfiles(ctx context.Contex
 }
 
 func (a runtimeSettingsApplication) UpdateProxyIngressRules(ctx context.Context, req *proxyruntimev1.UpdateProxyIngressRulesRequest) (*proxyruntimev1.UpdateProxyIngressRulesResponse, error) {
-	before, err := a.settings.load(ctx)
+	repository, err := a.settingsRepository()
 	if err != nil {
 		return nil, err
 	}
-	settings, err := a.settings.updateIngressRules(ctx, req.GetIngressRules())
+	before, err := repository.load(ctx)
+	if err != nil {
+		return nil, err
+	}
+	settings, err := repository.updateIngressRules(ctx, req.GetIngressRules())
 	if err != nil {
 		return nil, err
 	}
@@ -64,11 +80,15 @@ func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, 
 	if err := rejectMissingProxyUserProfiles(a.proxyUsers, req.GetEgressProfiles()); err != nil {
 		return nil, err
 	}
-	before, err := a.settings.load(ctx)
+	repository, err := a.settingsRepository()
 	if err != nil {
 		return nil, err
 	}
-	settings, err := a.settings.updateInUserRules(ctx, req.GetEgressProfiles(), req.GetIngressRules())
+	before, err := repository.load(ctx)
+	if err != nil {
+		return nil, err
+	}
+	settings, err := repository.updateInUserRules(ctx, req.GetEgressProfiles(), req.GetIngressRules())
 	if err != nil {
 		return nil, err
 	}
@@ -77,9 +97,14 @@ func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, 
 }
 
 func (a runtimeSettingsApplication) changedInUserConnectionUsernamesAfterUpdate(ctx context.Context, before *runtimeSettingsFile, errorMessage string) []string {
-	after, err := a.settings.load(ctx)
+	repository, err := a.settingsRepository()
 	if err != nil {
-		a.logger.Warn(errorMessage, "error", err)
+		a.warn(errorMessage, "error", err)
+		return nil
+	}
+	after, err := repository.load(ctx)
+	if err != nil {
+		a.warn(errorMessage, "error", err)
 		return nil
 	}
 	return changedInUserConnectionUsernames(before, after)

@@ -29,30 +29,27 @@ type runtimeSettingsApplication struct {
 	scheduleApply              func([]string)
 }
 
-func newRuntimeSettingsApplication(runtime *Runtime) runtimeSettingsApplication {
+type runtimeSettingsApplicationDependencies struct {
+	Logger                     *slog.Logger
+	Settings                   runtimeSettingsRepository
+	ProxyUsers                 []config.ProxyUserRoute
+	IPFraudProviderViews       func() []*proxyruntimev1.ProxyIPFraudProviderDescriptor
+	IPGeoProviderViews         func() []*proxyruntimev1.ProxyIPGeoProviderDescriptor
+	LoadMihomoNativeSettings   func(context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
+	UpdateMihomoNativeSettings func(context.Context, *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
+	ScheduleApply              func([]string)
+}
+
+func newRuntimeSettingsApplication(deps runtimeSettingsApplicationDependencies) runtimeSettingsApplication {
 	return runtimeSettingsApplication{
-		logger:               runtime.logger,
-		settings:             runtime.settings,
-		proxyUsers:           append([]config.ProxyUserRoute(nil), runtime.cfg.ProxyUsers...),
-		ipFraudProviderViews: runtime.ipFraudProviders.ProviderDescriptors,
-		ipGeoProviderViews:   runtime.ipGeoProviders.ProviderDescriptors,
-		loadMihomoNativeSettings: func(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
-			if runtime.settings == nil {
-				return normalizeMihomoNativeSettings(nil), nil
-			}
-			return runtime.settings.loadMihomoNative(ctx)
-		},
-		updateMihomoNativeSettings: func(ctx context.Context, config *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
-			return updateMihomoNativeSettings(ctx, mihomoNativeUpdateDependencies{
-				Repository: runtime.settings,
-				ConfigDir:  runtime.cfg.Mihomo.ConfigDir,
-				AfterApply: func() {
-					runtime.exitCheckCache.clear()
-					runtime.requestReconcile()
-				},
-			}, config)
-		},
-		scheduleApply: runtime.scheduleRuntimeSettingsApply,
+		logger:                     deps.Logger,
+		settings:                   deps.Settings,
+		proxyUsers:                 append([]config.ProxyUserRoute(nil), deps.ProxyUsers...),
+		ipFraudProviderViews:       deps.IPFraudProviderViews,
+		ipGeoProviderViews:         deps.IPGeoProviderViews,
+		loadMihomoNativeSettings:   deps.LoadMihomoNativeSettings,
+		updateMihomoNativeSettings: deps.UpdateMihomoNativeSettings,
+		scheduleApply:              deps.ScheduleApply,
 	}
 }
 
@@ -65,7 +62,11 @@ func (a runtimeSettingsApplication) ListProxyIPGeoProviders(context.Context) (*p
 }
 
 func (a runtimeSettingsApplication) GetProxyRuntimeSettings(ctx context.Context) (*proxyruntimev1.GetProxyRuntimeSettingsResponse, error) {
-	settings, err := a.settings.view(ctx)
+	repository, err := a.settingsRepository()
+	if err != nil {
+		return nil, err
+	}
+	settings, err := repository.view(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -84,4 +85,17 @@ func (a runtimeSettingsApplication) listIPGeoProviderViews() []*proxyruntimev1.P
 		return nil
 	}
 	return a.ipGeoProviderViews()
+}
+
+func (a runtimeSettingsApplication) settingsRepository() (runtimeSettingsRepository, error) {
+	if a.settings == nil {
+		return nil, internalError("runtime settings repository is not configured", nil)
+	}
+	return a.settings, nil
+}
+
+func (a runtimeSettingsApplication) warn(message string, args ...any) {
+	if a.logger != nil {
+		a.logger.Warn(message, args...)
+	}
 }

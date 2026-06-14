@@ -3,26 +3,18 @@ package mihomo
 import "strings"
 
 func renderConfig(opts renderOptions) (mihomoConfig, error) {
-	providerMap := cloneNativeProviders(opts.NativeConfig.ProxyProviders)
-	fixedConfigs, err := renderBaseProxyConfigs(opts)
+	proxyProjection, err := renderProxyProjection(opts)
 	if err != nil {
 		return mihomoConfig{}, err
 	}
-	profileGroupsByID := profileGroupNames(opts.EgressProfiles)
-	profileProjection, err := renderProfileProjection(opts, fixedConfigs, providerMap, profileGroupsByID)
+	gatewayProjection, err := renderGatewayProjection(opts, proxyProjection.profileGroupsBy)
 	if err != nil {
 		return mihomoConfig{}, err
 	}
-	fixedConfigs = append(fixedConfigs, profileProjection.proxies...)
-	mergeMihomoProviders(providerMap, profileProjection.providers)
-	gateway, userGroups, userRules, err := renderGateway(opts.Endpoint, opts.ProxyUsers, opts.SessionRoutes, profileGroupsByID)
-	if err != nil {
-		return mihomoConfig{}, err
-	}
-	groups := appendUniqueGroups(baseMihomoGroups(), opts.NativeConfig.ProxyGroups, profileProjection.groups, userGroups)
+	groups := appendUniqueGroups(baseMihomoGroups(), opts.NativeConfig.ProxyGroups, proxyProjection.profileGroups, gatewayProjection.groups)
 	return mihomoConfig{
-		MixedPort:          gateway.Port,
-		BindAddress:        gateway.Listen,
+		MixedPort:          gatewayProjection.listener.Port,
+		BindAddress:        gatewayProjection.listener.Listen,
 		AllowLAN:           true,
 		Mode:               "rule",
 		LogLevel:           "warning",
@@ -30,10 +22,10 @@ func renderConfig(opts renderOptions) (mihomoConfig, error) {
 		Secret:             strings.TrimSpace(opts.ControllerSecret),
 		ExternalUI:         strings.TrimSpace(opts.DashboardDir),
 		ExternalUIURL:      strings.TrimSpace(opts.DashboardURL),
-		Authentication:     renderAuthentication(gateway.Users),
-		Proxies:            fixedConfigs,
-		ProxyProviders:     providerMap,
+		Authentication:     renderAuthentication(gatewayProjection.listener.Users),
+		Proxies:            proxyProjection.proxies,
+		ProxyProviders:     proxyProjection.providers,
 		ProxyGroups:        groups,
-		Rules:              renderConfigRules(userRules, opts.NativeConfig.Rules),
+		Rules:              renderConfigRules(gatewayProjection.rules, opts.NativeConfig.Rules),
 	}, nil
 }

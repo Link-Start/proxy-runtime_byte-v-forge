@@ -889,6 +889,7 @@ Completed user-visible/runtime batches:
 - Mihomo reconcile provider-directory creation and runtime config path construction are split into path helpers, leaving top-level reconcile focused on stage ordering.
 - Acquired lease session-route construction and session egress binding now live in `internal/app/lease`; route apply only invokes dataplane apply and persistence.
 - Acquired lease endpoint metadata input construction now lives in `internal/app/lease`, including provider name and session id extraction for endpoint labels.
+- Mihomo top-level config render now delegates proxy/provider/profile projection and gateway projection to focused section helpers before assembling final config fields.
 
 Still open:
 

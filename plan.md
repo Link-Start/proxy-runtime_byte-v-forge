@@ -810,6 +810,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease node line-label application is centralized in `internal/app/lease`, removing the app-level line-label mutation helper.
 - Provider-account concurrency slot release-unless-kept semantics are centralized in `internal/app/lease`, and failed acquire slot cleanup now uses a bounded timeout.
 - Provider session create/fetch helpers are centralized in `internal/app/lease`; acquire and restore orchestration no longer call provider session methods directly.
+- Dynamic profile pool session fetch now reuses lease provider-session and concurrency-slot release helpers, with bounded cleanup timeout instead of background-context release.
 
 Still open:
 

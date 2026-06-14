@@ -5,11 +5,15 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
+
+const dynamicProfileSlotReleaseTimeout = 5 * time.Second
 
 func (r *Runtime) dynamicProfilePool(ctx context.Context, settings *runtimeSettingsFile) ([]provider.Node, error) {
 	if r.store == nil || r.accountProviders == nil {
@@ -109,11 +113,11 @@ func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *h
 	}
 	keepSlot := false
 	defer func() {
-		if !keepSlot {
-			_ = slot.Release(context.Background())
-		}
+		releaseCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), dynamicProfileSlotReleaseTimeout)
+		defer cancel()
+		_ = leaseapp.ReleaseConcurrencySlotUnlessKept(releaseCtx, slot, keepSlot)
 	}()
-	nodes, err := providerClient.FetchSession(ctx, session)
+	nodes, err := leaseapp.FetchProviderSession(ctx, providerClient, session)
 	if err != nil {
 		r.logger.Warn("dynamic profile provider session skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error", err)
 		return nil

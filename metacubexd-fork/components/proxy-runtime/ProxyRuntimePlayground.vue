@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { IconRefresh } from '@tabler/icons-vue'
 
+const runtimeStatus = useProxyRuntimeStatus()
 const {
   canSave,
   checks,
@@ -24,6 +25,7 @@ const {
 <template>
   <main class="flex h-full min-h-0 flex-col gap-3">
     <div class="animate-fade-slide-in flex shrink-0 items-center justify-end gap-2">
+      <ProxyRuntimeStatusBadge :state="runtimeStatus" />
       <Button class="flex h-9 w-9 items-center justify-center rounded-[0.625rem] border border-base-content/10 bg-base-200/80 transition-all duration-200 hover:border-primary/30 hover:bg-primary/15 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60" :disabled="refreshing" title="刷新" @click="refresh">
         <IconRefresh :size="18" :class="{ 'animate-spin': refreshing }" />
       </Button>

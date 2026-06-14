@@ -8,6 +8,19 @@ import (
 
 type runtimeSettingsUpdateOperation func(runtimeSettingsRepository) (*proxyruntimev1.ProxyRuntimeSettings, error)
 
+func (a runtimeSettingsApplication) updateSettingsAndScheduleApply(operation runtimeSettingsUpdateOperation) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+	repository, err := a.settingsRepository()
+	if err != nil {
+		return nil, err
+	}
+	settings, err := operation(repository)
+	if err != nil {
+		return nil, err
+	}
+	a.scheduleRuntimeSettingsApply(nil)
+	return settings, nil
+}
+
 func (a runtimeSettingsApplication) updateSettingsWithConnectionCleanup(ctx context.Context, errorMessage string, operation runtimeSettingsUpdateOperation) (*proxyruntimev1.ProxyRuntimeSettings, error) {
 	repository, err := a.settingsRepository()
 	if err != nil {

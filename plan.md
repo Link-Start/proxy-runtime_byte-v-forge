@@ -839,6 +839,7 @@ Completed user-visible/runtime batches:
 - Mihomo native egress resolution now separates native node-name stripping, resource lookup, and proxy/provider availability checks.
 - Mihomo dynamic egress rendering now separates exit group rendering, dynamic node filtering, provider-id matching, and cloned proxy naming.
 - Mihomo native provider normalization now separates provider file path normalization from HTTP fetch proxy and User-Agent header normalization.
+- Mihomo top-level config rendering now separates base proxy assembly, profile projection, provider merging, and rule/base-group construction from final config assembly.
 
 Still open:
 

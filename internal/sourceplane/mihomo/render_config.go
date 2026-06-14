@@ -4,45 +4,22 @@ import "strings"
 
 func renderConfig(opts renderOptions) (mihomoConfig, error) {
 	providerMap := cloneNativeProviders(opts.NativeConfig.ProxyProviders)
-	fixedConfigs := cloneNativeProxies(opts.NativeConfig.Proxies)
-	poolConfigs, _, err := renderProviderNodes("provider-pool", opts.BasePool)
+	fixedConfigs, err := renderBaseProxyConfigs(opts)
 	if err != nil {
 		return mihomoConfig{}, err
 	}
-	fixedConfigs = append(fixedConfigs, poolConfigs...)
-	sessionConfigs, err := renderSessionRoutes(opts.SessionRoutes)
-	if err != nil {
-		return mihomoConfig{}, err
-	}
-	fixedConfigs = append(fixedConfigs, sessionConfigs...)
 	profileGroupsByID := profileGroupNames(opts.EgressProfiles)
-	profileOpts := opts
-	profileOpts.AvailableProxies = mihomoProxyNames(fixedConfigs)
-	profileOpts.AvailableProviders = mihomoProviderNames(providerMap)
-	profileOpts.ProfileGroups = profileGroupsByID
-	profileConfigs, profileProviders, profileGroups, err := renderEgressProfiles(profileOpts)
+	profileProjection, err := renderProfileProjection(opts, fixedConfigs, providerMap, profileGroupsByID)
 	if err != nil {
 		return mihomoConfig{}, err
 	}
-	fixedConfigs = append(fixedConfigs, profileConfigs...)
-	for id, provider := range profileProviders {
-		providerMap[id] = provider
-	}
+	fixedConfigs = append(fixedConfigs, profileProjection.proxies...)
+	mergeMihomoProviders(providerMap, profileProjection.providers)
 	gateway, userGroups, userRules, err := renderGateway(opts.Endpoint, opts.ProxyUsers, opts.SessionRoutes, profileGroupsByID)
 	if err != nil {
 		return mihomoConfig{}, err
 	}
-	rules := append(userRules, opts.NativeConfig.Rules...)
-	rules = append(rules, "MATCH,REJECT")
-	baseGroups := []mihomoGroup{
-		{
-			Name:    "GLOBAL",
-			Type:    "select",
-			Proxies: []string{"REJECT"},
-			Hidden:  true,
-		},
-	}
-	groups := appendUniqueGroups(baseGroups, opts.NativeConfig.ProxyGroups, profileGroups, userGroups)
+	groups := appendUniqueGroups(baseMihomoGroups(), opts.NativeConfig.ProxyGroups, profileProjection.groups, userGroups)
 	return mihomoConfig{
 		MixedPort:          gateway.Port,
 		BindAddress:        gateway.Listen,
@@ -57,6 +34,6 @@ func renderConfig(opts renderOptions) (mihomoConfig, error) {
 		Proxies:            fixedConfigs,
 		ProxyProviders:     providerMap,
 		ProxyGroups:        groups,
-		Rules:              rules,
+		Rules:              renderConfigRules(userRules, opts.NativeConfig.Rules),
 	}, nil
 }

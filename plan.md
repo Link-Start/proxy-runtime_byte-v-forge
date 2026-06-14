@@ -719,6 +719,7 @@ Completed user-visible/runtime batches:
 - Lease coordinator logging now depends on the lease logger port instead of the concrete slog logger.
 - Dynamic lease failed-acquire, released, expired, cleanup-failure, and cleanup-retry status mutations are centralized in `internal/app/lease` lifecycle helpers; app-level persistence code now saves already-mutated lease facts instead of owning status transitions.
 - Dynamic lease concurrency holder, concurrency policy, and dynamic-provider-id extraction are centralized in `internal/app/lease`, keeping lease fact interpretation out of runtime provider concurrency helpers.
+- Active dynamic lease fact construction and active/released status checks are centralized in `internal/app/lease`, removing direct status-enum writes and checks from lease runtime orchestration.
 
 Still open:
 

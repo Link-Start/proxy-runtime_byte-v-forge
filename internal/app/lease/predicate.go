@@ -14,10 +14,22 @@ const (
 )
 
 func ActiveAt(lease *proxyruntimev1.ProxyDynamicLease, now time.Time) bool {
-	if lease == nil || lease.GetStatus() != proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE {
+	if !HasActiveStatus(lease) {
 		return false
 	}
 	return lease.GetExpiresAt() == nil || now.Before(lease.GetExpiresAt().AsTime())
+}
+
+func HasActiveStatus(lease *proxyruntimev1.ProxyDynamicLease) bool {
+	return hasStatus(lease, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE)
+}
+
+func HasReleasedStatus(lease *proxyruntimev1.ProxyDynamicLease) bool {
+	return hasStatus(lease, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_RELEASED)
+}
+
+func hasStatus(lease *proxyruntimev1.ProxyDynamicLease, status proxyruntimev1.ProxyDynamicLeaseStatus) bool {
+	return lease != nil && lease.GetStatus() == status
 }
 
 func CleanupPending(lease *proxyruntimev1.ProxyDynamicLease) bool {

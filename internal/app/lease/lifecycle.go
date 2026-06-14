@@ -27,6 +27,37 @@ type FailedAcquireFactInput struct {
 	AcquiredAt        time.Time
 }
 
+type ActiveFactInput struct {
+	LeaseID           string
+	AccountID         string
+	Purpose           string
+	ProviderAccountID string
+	Session           *proxyruntimev1.ProxySession
+	Egress            *proxyruntimev1.ProxyEndpoint
+	Listener          *proxyruntimev1.EgressListener
+	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	AcquiredAt        time.Time
+}
+
+func NewActiveFact(input ActiveFactInput) *proxyruntimev1.ProxyDynamicLease {
+	lease := &proxyruntimev1.ProxyDynamicLease{
+		LeaseId:           strings.TrimSpace(input.LeaseID),
+		AccountId:         strings.TrimSpace(input.AccountID),
+		Purpose:           defaultLeasePurpose(input.Purpose),
+		ProviderAccountId: strings.TrimSpace(input.ProviderAccountID),
+		Status:            proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE,
+		Session:           input.Session,
+		Egress:            input.Egress,
+		Listener:          input.Listener,
+		AcquiredAt:        timestamppb.New(input.AcquiredAt.UTC()),
+		SelectionPlan:     input.SelectionPlan,
+	}
+	if input.Session != nil {
+		lease.ExpiresAt = input.Session.GetExpiresAt()
+	}
+	return lease
+}
+
 func NewFailedAcquireFact(input FailedAcquireFactInput) *proxyruntimev1.ProxyDynamicLease {
 	lease := &proxyruntimev1.ProxyDynamicLease{
 		LeaseId:           strings.TrimSpace(input.LeaseID),

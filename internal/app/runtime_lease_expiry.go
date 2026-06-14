@@ -74,7 +74,7 @@ func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyrunti
 		if leaseapp.ActiveAt(current, c.now().UTC()) {
 			return nil
 		}
-		if current.GetStatus() != proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE {
+		if !leaseapp.HasActiveStatus(current) {
 			return nil
 		}
 		if err := c.deleteLeaseRoute(ctx, current); err != nil {

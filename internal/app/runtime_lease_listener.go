@@ -92,7 +92,7 @@ func listenerReservedLeaseFacts(active []*proxyruntimev1.ProxyDynamicLease, clea
 		out = append(out, lease)
 	}
 	for _, lease := range active {
-		if lease.GetStatus() == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE {
+		if leaseapp.HasActiveStatus(lease) {
 			appendReserved(lease)
 		}
 	}

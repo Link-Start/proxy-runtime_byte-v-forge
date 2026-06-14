@@ -11,7 +11,6 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	"github.com/byte-v-forge/proxy-runtime/internal/random"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (c leaseCoordinator) acquireLease(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
@@ -199,8 +198,17 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertise
 		failure.afterRoute(route, "dataplane route apply failed")
 		return nil, unavailable("dataplane route apply failed", err)
 	}
-	now := c.now().UTC()
-	lease := &proxyruntimev1.ProxyDynamicLease{LeaseId: leaseID, AccountId: req.GetAccountId(), Purpose: req.GetPurpose(), ProviderAccountId: providerAccountID, Status: proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE, Session: session, Egress: egress, Listener: listenerProto, AcquiredAt: timestamppb.New(now), ExpiresAt: session.GetExpiresAt(), SelectionPlan: selection.plan}
+	lease := leaseapp.NewActiveFact(leaseapp.ActiveFactInput{
+		LeaseID:           leaseID,
+		AccountID:         req.GetAccountId(),
+		Purpose:           req.GetPurpose(),
+		ProviderAccountID: providerAccountID,
+		Session:           session,
+		Egress:            egress,
+		Listener:          listenerProto,
+		SelectionPlan:     selection.plan,
+		AcquiredAt:        c.now(),
+	})
 	if err := c.deps.store.SaveLeaseFact(ctx, lease); err != nil {
 		failure.afterRoute(route, "lease fact save failed")
 		return nil, internalError("lease fact save failed", err)
@@ -272,7 +280,7 @@ func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.
 	if err != nil {
 		return nil, err
 	}
-	if lease.GetStatus() == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_RELEASED {
+	if leaseapp.HasReleasedStatus(lease) {
 		return lease, nil
 	}
 	accountID := strings.TrimSpace(lease.GetAccountId())
@@ -284,10 +292,10 @@ func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.
 		if current != nil {
 			lease = current
 		}
-		if lease.GetStatus() == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_RELEASED {
+		if leaseapp.HasReleasedStatus(lease) {
 			return nil
 		}
-		if lease.GetStatus() != proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE {
+		if !leaseapp.HasActiveStatus(lease) {
 			return nil
 		}
 		return c.retireLeaseRoute(ctx, lease)

@@ -15,10 +15,7 @@ export function useProxyRuntimeDynamicLeases() {
   const error = ref('')
   let refreshTimer: ReturnType<typeof setInterval> | undefined
   const activeLeases = computed(() =>
-    leases.value.filter(
-      (item) =>
-        item.status === ProxyDynamicLeaseStatus.PROXY_DYNAMIC_LEASE_STATUS_ACTIVE,
-    ),
+    leases.value.filter(isActiveLease),
   )
 
   async function load() {
@@ -27,7 +24,7 @@ export function useProxyRuntimeDynamicLeases() {
     try {
       const [providerRes, leaseRes] = await Promise.all([
         api.listProviders(),
-        api.listLeases(),
+        api.listLeases({ status: 'active', limit: 50 }),
       ])
       providers.value = providerRes.providers || []
       leases.value = leaseRes.leases || []
@@ -84,6 +81,14 @@ export function useProxyRuntimeDynamicLeases() {
     providerName,
     release,
   }
+}
+
+function isActiveLease(lease: ProxyDynamicLease) {
+  if (lease.status !== ProxyDynamicLeaseStatus.PROXY_DYNAMIC_LEASE_STATUS_ACTIVE) {
+    return false
+  }
+  const expiresAt = lease.expires_at ? Date.parse(lease.expires_at) || 0 : 0
+  return expiresAt === 0 || expiresAt > Date.now()
 }
 
 export type ProxyRuntimeDynamicLeasesState = ReturnType<

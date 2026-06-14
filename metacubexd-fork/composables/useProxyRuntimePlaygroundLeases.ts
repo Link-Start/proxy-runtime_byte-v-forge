@@ -29,7 +29,7 @@ export function useProxyRuntimePlaygroundLeases(
       .filter((lease) => lease.account_id === profileID.value)
       .sort((left, right) => timeValue(right.acquired_at) - timeValue(left.acquired_at)),
   )
-  const activeRows = computed(() => rows.value.filter((lease) => lease.status === ProxyDynamicLeaseStatus.PROXY_DYNAMIC_LEASE_STATUS_ACTIVE))
+  const activeRows = computed(() => rows.value.filter(isActiveLease))
   const currentLease = computed(() => activeRows.value[0])
   const canAcquire = computed(() => playgroundAcquireDisabledReason(runtime) === '' && activeRows.value.length === 0)
   const acquireDisabledReason = computed(() => activeRows.value.length > 0 ? 'PlayGround 已有活跃租约' : playgroundAcquireDisabledReason(runtime))
@@ -39,7 +39,8 @@ export function useProxyRuntimePlaygroundLeases(
     const previousError = error.value
     if (!options.preserveError) error.value = ''
     try {
-      leases.value = (await api.listLeases()).leases || []
+      leases.value =
+        (await api.listLeases({ status: 'active', limit: 50 })).leases || []
       if (options.preserveError) error.value = previousError
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err)
@@ -122,6 +123,14 @@ function setLabel(policy: ProxySessionPolicy, key: string, value: string) {
 
 function timeValue(value: string | undefined) {
   return value ? Date.parse(value) || 0 : 0
+}
+
+function isActiveLease(lease: ProxyDynamicLease) {
+  if (lease.status !== ProxyDynamicLeaseStatus.PROXY_DYNAMIC_LEASE_STATUS_ACTIVE) {
+    return false
+  }
+  const expiresAt = timeValue(lease.expires_at)
+  return expiresAt === 0 || expiresAt > Date.now()
 }
 
 export type ProxyRuntimePlaygroundLeasesState = ReturnType<typeof useProxyRuntimePlaygroundLeases>

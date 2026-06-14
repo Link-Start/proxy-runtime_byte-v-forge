@@ -43,6 +43,11 @@ import {
 
 const base = '/api'
 
+interface ProxyRuntimeLeaseListOptions {
+  limit?: number
+  status?: 'active' | 'history' | 'recent'
+}
+
 async function proxyRuntimeRequest<T>(
   path: string,
   init: RequestInit = {},
@@ -165,9 +170,9 @@ export function useProxyRuntimeApi() {
           }),
         },
       ),
-    listLeases: () =>
+    listLeases: (options: ProxyRuntimeLeaseListOptions = {}) =>
       proxyRuntimeRequest<ListProxyDynamicLeasesResponse>(
-        '/leases?include_inactive=true',
+        leaseListPath(options),
       ),
     acquireLease: (req: AcquireProxyLeaseRequest) =>
       proxyRuntimeRequest<AcquireProxyLeaseResponse>('/leases/acquire', {
@@ -180,4 +185,11 @@ export function useProxyRuntimeApi() {
         body: proxyRuntimeJsonBody(req),
       }),
   }
+}
+
+function leaseListPath(options: ProxyRuntimeLeaseListOptions) {
+  const query = new URLSearchParams()
+  query.set('status', options.status || 'active')
+  query.set('limit', String(options.limit || 50))
+  return `/leases?${query.toString()}`
 }

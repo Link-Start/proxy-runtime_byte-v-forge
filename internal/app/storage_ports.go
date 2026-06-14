@@ -39,6 +39,8 @@ type providerAccountStore interface {
 type leaseFactStore interface {
 	SaveLeaseFact(context.Context, *proxyruntimev1.ProxyDynamicLease) error
 	ListLeaseFacts(context.Context, bool) ([]*proxyruntimev1.ProxyDynamicLease, error)
+	ListActiveLeaseFacts(context.Context, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
+	ListRecentLeaseFacts(context.Context, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 	RecentLeaseFacts(context.Context, time.Time, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 	ProviderAccountHasBlockingLease(context.Context, string) (bool, error)
 	BlockingLeaseFactsByProviderAccount(context.Context, string) ([]*proxyruntimev1.ProxyDynamicLease, error)

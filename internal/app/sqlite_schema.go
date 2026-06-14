@@ -32,10 +32,16 @@ CREATE TABLE IF NOT EXISTS proxy_runtime_dynamic_leases (
 
 CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_account_status
   ON proxy_runtime_dynamic_leases(account_id, status);
+CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_account_status_expires
+  ON proxy_runtime_dynamic_leases(account_id, status, expires_at);
 CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_provider_status
   ON proxy_runtime_dynamic_leases(provider_account_id, status);
+CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_provider_status_expires
+  ON proxy_runtime_dynamic_leases(provider_account_id, status, expires_at);
 CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_expires_at
   ON proxy_runtime_dynamic_leases(expires_at);
+CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_acquired_updated
+  ON proxy_runtime_dynamic_leases(acquired_at DESC, updated_at DESC, lease_id);
 
 
 CREATE TABLE IF NOT EXISTS proxy_runtime_secrets (

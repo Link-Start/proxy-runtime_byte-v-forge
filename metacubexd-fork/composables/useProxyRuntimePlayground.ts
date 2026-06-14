@@ -8,7 +8,9 @@ export function useProxyRuntimePlayground() {
   const gatewayPort = '30081'
   const copied = ref('')
   const refreshing = ref(false)
-  const leases = useProxyRuntimePlaygroundLeases(runtime, save)
+  const leases = useProxyRuntimePlaygroundLeases(runtime, () =>
+    save({ refreshLeases: false }),
+  )
   const dynamicExit = computed(() => runtime.form.exit_kind === EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP)
   const lineUsesNode = computed(() => runtime.form.line_kind === EgressProfileLineKind.EGRESS_PROFILE_LINE_KIND_MIHOMO_NODE)
   const canSave = computed(() => {
@@ -74,14 +76,14 @@ export function useProxyRuntimePlayground() {
     return changed
   }
 
-  async function save() {
+  async function save(options: { refreshLeases?: boolean } = {}) {
     normalizePlayground()
     if (!canSave.value) return
     await runtime.saveRule()
     if (!runtime.error.value) {
       hydratePlayground()
       if (!dynamicExit.value) await releaseActiveLeases()
-      await leases.load()
+      if (options.refreshLeases !== false) await leases.load()
     }
   }
 

@@ -158,11 +158,11 @@ func (c leaseCoordinator) releaseLeaseConcurrencySlot(ctx context.Context, lease
 		return nil
 	}
 	accountID := strings.TrimSpace(lease.GetProviderAccountId())
-	holder := strings.TrimSpace(leaseConcurrencyHolder(lease))
+	holder := strings.TrimSpace(leaseapp.ConcurrencyHolder(lease))
 	if accountID == "" || holder == "" || c.deps.providerConcurrency == nil {
 		return nil
 	}
-	return c.deps.providerConcurrency.Release(ctx, accountID, leaseConcurrencyPolicy(lease), holder)
+	return c.deps.providerConcurrency.Release(ctx, accountID, leaseapp.ConcurrencyPolicy(lease), holder)
 }
 
 func (c leaseCoordinator) refreshLeaseConcurrencySlot(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
@@ -170,7 +170,7 @@ func (c leaseCoordinator) refreshLeaseConcurrencySlot(ctx context.Context, lease
 		return nil
 	}
 	accountID := strings.TrimSpace(lease.GetProviderAccountId())
-	holder := strings.TrimSpace(leaseConcurrencyHolder(lease))
+	holder := strings.TrimSpace(leaseapp.ConcurrencyHolder(lease))
 	if accountID == "" || holder == "" || c.deps.providerConcurrency == nil {
 		return nil
 	}
@@ -182,8 +182,8 @@ func (c leaseCoordinator) refreshLeaseConcurrencySlot(ctx context.Context, lease
 	if err != nil {
 		return err
 	}
-	policy := leaseConcurrencyPolicy(lease)
-	_, err = c.acquireProviderAccountConcurrencySlot(ctx, account, dynamicProviderConcurrencyLimit(settings, leaseDynamicProviderID(lease), policy), policy, holder, leaseConcurrencySlotTTL(policy))
+	policy := leaseapp.ConcurrencyPolicy(lease)
+	_, err = c.acquireProviderAccountConcurrencySlot(ctx, account, dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), policy, holder, leaseConcurrencySlotTTL(policy))
 	return err
 }
 

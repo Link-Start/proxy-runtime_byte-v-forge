@@ -82,9 +82,9 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	if err != nil {
 		return err
 	}
-	holder := leaseConcurrencyHolder(lease)
-	policy := leaseConcurrencyPolicy(lease)
-	slot, err := c.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, leaseDynamicProviderID(lease), policy), policy, holder, leaseConcurrencySlotTTL(policy))
+	holder := leaseapp.ConcurrencyHolder(lease)
+	policy := leaseapp.ConcurrencyPolicy(lease)
+	slot, err := c.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), policy, holder, leaseConcurrencySlotTTL(policy))
 	if err != nil {
 		return err
 	}

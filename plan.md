@@ -718,6 +718,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease orchestration now depends on a narrow lock-manager port that exposes only account, provider-account, and listener-allocation critical sections.
 - Lease coordinator logging now depends on the lease logger port instead of the concrete slog logger.
 - Dynamic lease failed-acquire, released, expired, cleanup-failure, and cleanup-retry status mutations are centralized in `internal/app/lease` lifecycle helpers; app-level persistence code now saves already-mutated lease facts instead of owning status transitions.
+- Dynamic lease concurrency holder, concurrency policy, and dynamic-provider-id extraction are centralized in `internal/app/lease`, keeping lease fact interpretation out of runtime provider concurrency helpers.
 
 Still open:
 

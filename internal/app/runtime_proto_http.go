@@ -6,7 +6,6 @@ import (
 
 	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
-	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -71,13 +70,5 @@ func readRequestBody(req *http.Request) ([]byte, error) {
 
 func writeHTTPError(w http.ResponseWriter, err error, fallbackStatus int) {
 	httpStatus, code, message := httpErrorDetails(err, fallbackStatus)
-	data, marshalErr := httpapi.MarshalProto(grpcstatus.New(code, message).Proto())
-	if marshalErr != nil {
-		httpStatus = http.StatusInternalServerError
-		data = []byte(`{"code":13,"message":"internal server error"}`)
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("X-Content-Type-Options", "nosniff")
-	w.WriteHeader(httpStatus)
-	_, _ = w.Write(data)
+	httpapi.WriteError(w, httpStatus, code, message)
 }

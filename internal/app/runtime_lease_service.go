@@ -34,7 +34,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 	requestedSessionID := leaseapp.RequestedSessionID(req)
 	existing, err := c.activeLeaseByRequest(ctx, req, requestedSessionID)
 	if err == nil && leaseapp.ActiveAt(existing, c.now().UTC()) {
-		if !req.GetForceNew() && !playgroundLeaseNeedsReplacement(req, existing) {
+		if !req.GetForceNew() && !leaseapp.PlaygroundLeaseNeedsReplacement(req, existing, playgroundProfileID, playgroundUsername) {
 			if err := c.refreshLeaseConcurrencySlot(ctx, existing); err != nil {
 				return nil, err
 			}

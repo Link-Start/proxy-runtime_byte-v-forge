@@ -167,16 +167,18 @@ func (s *SQLiteStore) ActiveLeaseFactBySession(ctx context.Context, accountID st
 	if sessionID == "" {
 		return nil, sql.ErrNoRows
 	}
-	leases, err := s.activeLeaseFactsByAccount(ctx, accountID, purpose)
-	if err != nil {
-		return nil, err
+	query := `
+SELECT lease_json
+FROM proxy_runtime_dynamic_leases
+WHERE account_id=? AND status=? AND (expires_at='' OR expires_at>?) AND json_extract(lease_json, '$.session.sessionId')=?`
+	args := []any{strings.TrimSpace(accountID), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), sessionID}
+	if purpose = strings.TrimSpace(purpose); purpose != "" {
+		query += ` AND purpose=?`
+		args = append(args, purpose)
 	}
-	for _, lease := range leases {
-		if strings.TrimSpace(lease.GetSession().GetSessionId()) == sessionID {
-			return lease, nil
-		}
-	}
-	return nil, sql.ErrNoRows
+	query += ` ORDER BY acquired_at DESC, updated_at DESC, lease_id LIMIT 1`
+	row := s.db.QueryRowContext(ctx, query, args...)
+	return scanSQLiteLeaseFact(row)
 }
 
 func (s *SQLiteStore) ActiveLeaseFactByAccount(ctx context.Context, accountID string, purpose string) (*proxyruntimev1.ProxyDynamicLease, error) {
@@ -206,43 +208,6 @@ WHERE account_id=?`
 	query += ` ORDER BY acquired_at DESC, updated_at DESC, lease_id LIMIT 1`
 	row := s.db.QueryRowContext(ctx, query, args...)
 	return scanSQLiteLeaseFact(row)
-}
-
-func (s *SQLiteStore) activeLeaseFactsByAccount(ctx context.Context, accountID string, purpose string) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	accountID = strings.TrimSpace(accountID)
-	purpose = strings.TrimSpace(purpose)
-	query := `
-SELECT lease_json
-FROM proxy_runtime_dynamic_leases
-WHERE account_id=? AND status=? AND (expires_at='' OR expires_at>?)`
-	args := []any{accountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC())}
-	if purpose != "" {
-		query += ` AND purpose=?`
-		args = append(args, purpose)
-	}
-	query += ` ORDER BY acquired_at DESC, updated_at DESC, lease_id`
-	return s.leaseFactsByQuery(ctx, query, args...)
-}
-
-func (s *SQLiteStore) allLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	return s.leaseFactsByQuery(ctx, `SELECT lease_json FROM proxy_runtime_dynamic_leases ORDER BY updated_at DESC, lease_id`)
-}
-
-func (s *SQLiteStore) leaseFactsByQuery(ctx context.Context, query string, args ...any) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	rows, err := s.db.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []*proxyruntimev1.ProxyDynamicLease{}
-	for rows.Next() {
-		lease, err := scanSQLiteLeaseFact(rows)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, lease)
-	}
-	return out, rows.Err()
 }
 
 func scanSQLiteLeaseFact(row interface{ Scan(...any) error }) (*proxyruntimev1.ProxyDynamicLease, error) {

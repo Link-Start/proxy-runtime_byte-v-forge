@@ -688,6 +688,7 @@ Completed user-visible/runtime batches:
 - Lease list query parsing for status, legacy inactive mode, and bounded limits is centralized in the lease package; the Gin handler only adapts query values to application input.
 - Listener resolution and reserved-listener checks no longer use the old unbounded `ListLeaseFacts`; they use bounded active lease queries plus cleanup-pending facts, and the unbounded store port was removed.
 - SQLite provider-account blocking and cleanup-pending lease queries now use SQL/JSON predicates, aligning with the Postgres existence-query behavior instead of loading rows only to filter in Go.
+- Active lease lookup by provider session now uses SQL/JSON session-id predicates in both Postgres and SQLite instead of loading all active account leases and filtering in Go.
 - Lease package is split into application, repository/coordinator ports, list options, operations, and predicates.
 - Lease restore/expire/cleanup worker entrypoints now go through the lease application worker port instead of direct Runtime coordinator calls.
 - Lease cleanup label mutation is centralized in the lease package together with cleanup predicates.

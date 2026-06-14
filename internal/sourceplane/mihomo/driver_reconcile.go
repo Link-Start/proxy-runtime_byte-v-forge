@@ -43,17 +43,10 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 		d.lastError = err.Error()
 		return nil, err
 	}
-	d.desiredSig = finalConfig.signature
-	if baseReloaded || finalConfig.signature != d.signature {
-		if err := d.reloadConfigDataLocked(ctx, configPath, finalConfig.data, endpoint); err != nil {
-			d.lastError = err.Error()
-			return nil, err
-		}
+	if err := d.applyFinalConfigProjectionLocked(ctx, configPath, finalConfig, endpoint, baseReloaded); err != nil {
+		d.lastError = err.Error()
+		return nil, err
 	}
-	d.signature = finalConfig.signature
-	d.baseSig = baseConfig.signature
-	d.configPath = configPath
-	d.lastEndpoint = endpoint
-	d.lastError = ""
+	d.recordAppliedConfigProjection(configPath, endpoint, baseConfig, finalConfig)
 	return nil, nil
 }

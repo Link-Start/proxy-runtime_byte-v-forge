@@ -32,3 +32,19 @@ func (d *Driver) applyBaseConfigProjectionLocked(ctx context.Context, configPath
 	}
 	return false, nil
 }
+
+func (d *Driver) applyFinalConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint, baseReloaded bool) error {
+	d.desiredSig = config.signature
+	if !baseReloaded && config.signature == d.signature {
+		return nil
+	}
+	return d.reloadConfigDataLocked(ctx, configPath, config.data, endpoint)
+}
+
+func (d *Driver) recordAppliedConfigProjection(configPath string, endpoint sourceplane.Endpoint, baseConfig renderedMihomoConfig, finalConfig renderedMihomoConfig) {
+	d.signature = finalConfig.signature
+	d.baseSig = baseConfig.signature
+	d.configPath = configPath
+	d.lastEndpoint = endpoint
+	d.lastError = ""
+}

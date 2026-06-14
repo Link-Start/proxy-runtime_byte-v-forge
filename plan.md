@@ -885,6 +885,7 @@ Completed user-visible/runtime batches:
 - Provider session create-versus-fetch failure classification now lives in `internal/app/lease`; app-level acquire maps classified outcomes to transport errors and compensation.
 - Dynamic selection provider-account and dynamic-provider identifiers are now read through lease-owned helpers instead of app-level selected-endpoint field traversal.
 - Failed-acquire compensation and failed fact persistence are now owned by a lease `FailedAcquireRecorder`; app wiring only constructs the recorder and passes route/application context.
+- Mihomo reconcile final projection apply and applied-state recording are split from top-level reconcile orchestration, keeping base apply, final apply, and status mutation in focused helpers.
 
 Still open:
 

@@ -938,7 +938,7 @@ Completed user-visible/runtime batches:
 
 Still open:
 
-- Fully extract lease application into `internal/app/lease`; remaining work is to move the top-level acquire/release/restore/cleanup orchestration and app-specific settings/selection adapters out of the current app-level coordinator. Provider-session acquisition/release/fetch, listener auth resolution, data-plane route apply/delete helpers, listener endpoint projection, lock-window refresh, and concurrency-slot acquire/release semantics now cross lease-owned models/ports, but the coordinator still sequences several workflows.
+- Fully extract lease application into `internal/app/lease`; remaining work is to move the top-level acquire/release/restore/cleanup orchestration and app-specific settings/selection adapters out of the current app-level coordinator. Provider-session acquisition/release/fetch, listener auth resolution, data-plane route apply/delete helpers, listener endpoint projection, lock-window refresh, batch loops, current-fact reload, and concurrency-slot acquire/release semantics now cross lease-owned models/ports, but the coordinator still sequences several workflows.
 - Continue splitting Mihomo sourceplane projection, validation, render, and apply stages so no single file owns the whole config pipeline.
 - Move settings orchestration into an explicit settings application package.
 - Separate `httpapi`, `auth`, and `dashboard` packages and keep handlers as thin transport adapters.

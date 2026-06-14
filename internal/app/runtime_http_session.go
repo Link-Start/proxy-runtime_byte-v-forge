@@ -2,7 +2,6 @@ package app
 
 import (
 	"net/http"
-	"strings"
 	"time"
 
 	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
@@ -50,8 +49,8 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 
 func (api *runtimeHTTPAPI) handleAuthLogout(ctx *gin.Context) {
 	api.auth.ClearSessionCookie(ctx.Writer, ctx.Request)
-	if redirect := strings.TrimSpace(ctx.Query("redirect")); redirect != "" {
-		ctx.Redirect(http.StatusSeeOther, authapp.SafeRedirect(redirect))
+	if redirect := authapp.LogoutRedirect(ctx.Query("redirect")); redirect != "" {
+		ctx.Redirect(http.StatusSeeOther, redirect)
 		return
 	}
 	ctx.Status(http.StatusNoContent)

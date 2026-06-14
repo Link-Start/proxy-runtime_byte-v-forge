@@ -21,3 +21,10 @@ func (a Application) DecideLogin(login LoginRequest) (LoginDecision, error) {
 	}
 	return LoginDecision{Authenticated: true}, nil
 }
+
+func LogoutRedirect(value string) string {
+	if safe := SafeRedirect(value); safe != "/" {
+		return safe
+	}
+	return ""
+}

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 type localProviderAccountConcurrencyLimiter struct {
@@ -62,7 +63,7 @@ func (l *localProviderAccountConcurrencyLimiter) Acquire(ctx context.Context, ac
 	now := time.Now().UTC()
 	l.purgeExpiredLocked(key, now)
 	if _, exists := l.slots[key][cleanHolder]; !exists && len(l.slots[key]) >= int(limit) {
-		return nil, fmt.Errorf("provider account %q %s concurrency limit reached", strings.TrimSpace(accountID), providerAccountConcurrencyModeText(policy))
+		return nil, fmt.Errorf("provider account %q %s concurrency limit reached", strings.TrimSpace(accountID), leaseapp.ConcurrencyModeText(policy))
 	}
 	l.slots[key][cleanHolder] = now.Add(ttl)
 	return &localProviderAccountConcurrencySlot{limiter: l, accountID: strings.TrimSpace(accountID), policy: cloneConcurrencyPolicy(policy), holder: cleanHolder}, nil
@@ -115,5 +116,5 @@ func localConcurrencyKey(accountID string, policy *proxyruntimev1.ProxySessionPo
 	if holder == "" {
 		holder = "_probe"
 	}
-	return accountID + ":" + providerAccountConcurrencyModeText(policy), holder, nil
+	return accountID + ":" + leaseapp.ConcurrencyModeText(policy), holder, nil
 }

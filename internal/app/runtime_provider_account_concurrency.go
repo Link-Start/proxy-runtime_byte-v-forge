@@ -6,6 +6,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 const (
@@ -29,7 +30,7 @@ func normalizeDynamicProviderStickyConcurrencyLimit(value uint32) uint32 {
 }
 
 func dynamicProviderInstanceConcurrencyLimit(provider dynamicIPProviderInstance, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
-	if providerAccountConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
+	if leaseapp.ConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
 		return normalizeDynamicProviderRotatingConcurrencyLimit(provider.rotatingConcurrencyLimit)
 	}
 	return normalizeDynamicProviderStickyConcurrencyLimit(provider.stickyConcurrencyLimit)
@@ -42,27 +43,10 @@ func dynamicProviderConcurrencyLimit(settings *runtimeSettingsFile, dynamicProvi
 			return dynamicProviderInstanceConcurrencyLimit(provider, policy)
 		}
 	}
-	if providerAccountConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
+	if leaseapp.ConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
 		return defaultDynamicProviderRotatingConcurrencyLimit
 	}
 	return defaultDynamicProviderStickyConcurrencyLimit
-}
-
-func providerAccountConcurrencyMode(policy *proxyruntimev1.ProxySessionPolicy) proxyruntimev1.ProxySessionMode {
-	if policy == nil {
-		return proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY
-	}
-	if policy.GetMode() == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING || policy.GetRotationMode() == proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_PER_REQUEST {
-		return proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING
-	}
-	return proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY
-}
-
-func providerAccountConcurrencyModeText(policy *proxyruntimev1.ProxySessionPolicy) string {
-	if providerAccountConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
-		return "rotating"
-	}
-	return "sticky"
 }
 
 func (r *Runtime) acquireProviderAccountConcurrencySlot(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, limit uint32, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (providerAccountConcurrencySlot, error) {
@@ -75,15 +59,7 @@ func acquireProviderAccountConcurrencySlot(ctx context.Context, limiter provider
 	}
 	slot, err := limiter.Acquire(ctx, account.GetAccountId(), policy, limit, holder, ttl)
 	if err != nil {
-		return nil, fmt.Errorf("provider account %q %s concurrency limit reached: %w", account.GetAccountId(), providerAccountConcurrencyModeText(policy), err)
+		return nil, fmt.Errorf("provider account %q %s concurrency limit reached: %w", account.GetAccountId(), leaseapp.ConcurrencyModeText(policy), err)
 	}
 	return slot, nil
-}
-
-func leaseConcurrencySlotTTL(policy *proxyruntimev1.ProxySessionPolicy) time.Duration {
-	ttl := defaultDynamicIPStickyTTL
-	if policy != nil && policy.GetStickyTtl() != nil && policy.GetStickyTtl().AsDuration() > 0 {
-		ttl = policy.GetStickyTtl().AsDuration()
-	}
-	return ttl + providerAccountConcurrencyTTLBuffer
 }

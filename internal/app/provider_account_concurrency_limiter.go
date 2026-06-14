@@ -9,6 +9,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/redis/go-redis/v9"
 )
@@ -85,7 +86,7 @@ func (l *redisProviderAccountConcurrencyLimiter) Acquire(ctx context.Context, ac
 		return nil, err
 	}
 	if result != 1 {
-		return nil, fmt.Errorf("provider account %q %s concurrency limit reached", strings.TrimSpace(accountID), providerAccountConcurrencyModeText(policy))
+		return nil, fmt.Errorf("provider account %q %s concurrency limit reached", strings.TrimSpace(accountID), leaseapp.ConcurrencyModeText(policy))
 	}
 	return &redisProviderAccountConcurrencySlot{limiter: l, accountID: strings.TrimSpace(accountID), policy: cloneConcurrencyPolicy(policy), holder: cleanHolder}, nil
 }
@@ -117,7 +118,7 @@ func (l *redisProviderAccountConcurrencyLimiter) key(accountID string, policy *p
 	if holder == "" {
 		holder = "_probe"
 	}
-	key, ok := redisKey(providerAccountConcurrencyKeyPrefix, accountID+":"+providerAccountConcurrencyModeText(policy))
+	key, ok := redisKey(providerAccountConcurrencyKeyPrefix, accountID+":"+leaseapp.ConcurrencyModeText(policy))
 	if !ok {
 		return "", "", errors.New("provider account concurrency key is required")
 	}

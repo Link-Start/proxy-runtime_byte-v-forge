@@ -84,7 +84,7 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	}
 	holder := leaseapp.ConcurrencyHolder(lease)
 	policy := leaseapp.ConcurrencyPolicy(lease)
-	slot, err := c.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), policy, holder, leaseConcurrencySlotTTL(policy))
+	slot, err := c.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), policy, holder, leaseapp.ConcurrencySlotTTL(policy, defaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
 	if err != nil {
 		return err
 	}

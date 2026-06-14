@@ -16,41 +16,6 @@ const (
 	leaseCleanupFinalReleased = "released"
 )
 
-func markLeaseCleanupPending(lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool, finalStatus string) {
-	if lease == nil {
-		return
-	}
-	session := lease.GetSession()
-	if session == nil {
-		session = &proxyruntimev1.ProxySession{}
-		lease.Session = session
-	}
-	if session.Labels == nil {
-		session.Labels = map[string]string{}
-	}
-	if routePending {
-		session.Labels[leaseapp.RouteCleanupPendingLabel] = "true"
-	}
-	if providerPending {
-		session.Labels[leaseapp.ProviderCleanupPendingLabel] = "true"
-	}
-	if strings.TrimSpace(finalStatus) != "" {
-		session.Labels[leaseapp.CleanupFinalStatusLabel] = strings.TrimSpace(finalStatus)
-	}
-}
-
-func clearLeaseCleanupPending(lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool) {
-	if lease == nil || lease.GetSession() == nil || lease.GetSession().Labels == nil {
-		return
-	}
-	if routePending {
-		delete(lease.GetSession().Labels, leaseapp.RouteCleanupPendingLabel)
-	}
-	if providerPending {
-		delete(lease.GetSession().Labels, leaseapp.ProviderCleanupPendingLabel)
-	}
-}
-
 func (c leaseCoordinator) cleanupPendingLeaseFacts(ctx context.Context) error {
 	r := c.runtime
 	if r.store == nil {
@@ -99,7 +64,7 @@ func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *pr
 				_ = c.saveLeaseCleanupRetry(ctx, current, "lease route cleanup failed")
 				return err
 			}
-			clearLeaseCleanupPending(current, true, false)
+			leaseapp.ClearCleanupPending(current, true, false)
 		}
 		if leaseapp.ProviderCleanupPending(current) {
 			releaseProvider := func(ctx context.Context) error {
@@ -116,7 +81,7 @@ func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *pr
 			} else if err := releaseProvider(ctx); err != nil {
 				return err
 			}
-			clearLeaseCleanupPending(current, false, true)
+			leaseapp.ClearCleanupPending(current, false, true)
 		}
 		if !leaseapp.CleanupPending(current) {
 			switch leaseapp.CleanupFinalStatus(current) {

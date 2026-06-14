@@ -674,6 +674,7 @@ Completed user-visible/runtime batches:
 - Lease application now owns list/acquire/release response orchestration through repository/coordinator ports, and HTTP request details are reduced to an advertised host before entering lease orchestration.
 - Lease package is split into application, repository/coordinator ports, list options, operations, and predicates.
 - Lease restore/expire/cleanup worker entrypoints now go through the lease application worker port instead of direct Runtime coordinator calls.
+- Lease cleanup label mutation is centralized in the lease package together with cleanup predicates.
 
 Still open:
 

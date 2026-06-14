@@ -4,6 +4,7 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
@@ -48,7 +49,7 @@ func (f *leaseAcquireFailure) cleanupProviderSession() bool {
 
 func (f *leaseAcquireFailure) markCleanupPending(routePending bool, providerPending bool) {
 	lease := &proxyruntimev1.ProxyDynamicLease{Session: f.session}
-	markLeaseCleanupPending(lease, routePending, providerPending, leaseCleanupFinalFailed)
+	leaseapp.MarkCleanupPending(lease, routePending, providerPending, leaseCleanupFinalFailed)
 }
 
 func (f *leaseAcquireFailure) save(message string) {

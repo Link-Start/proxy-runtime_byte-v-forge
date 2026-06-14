@@ -898,6 +898,7 @@ Completed user-visible/runtime batches:
 - Settings update-with-connection-cleanup orchestration now lives in `internal/app/settings`; app update handlers provide only validation and concrete repository operations.
 - Runtime, egress-profile, ingress-rule, and in-user settings updates now expose explicit methods on `internal/app/settings`; app update handlers only delegate to the settings usecase.
 - IP fraud and IP geo provider descriptor reads now live in `internal/app/settings`; app-level provider view methods only delegate to the settings usecase.
+- Auth session and websocket-token response DTO/write helpers now live in `internal/app/auth`; HTTP session handlers no longer own auth JSON response shapes.
 
 Still open:
 

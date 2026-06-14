@@ -1,7 +1,6 @@
 package app
 
 import (
-	"encoding/json"
 	"errors"
 	"net/http"
 	"strings"
@@ -11,15 +10,6 @@ import (
 	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
 )
-
-type runtimeAuthSessionResponse struct {
-	Authenticated bool `json:"authenticated"`
-	AuthRequired  bool `json:"authRequired"`
-}
-
-type runtimeAuthWebSocketTokenResponse struct {
-	Token string `json:"token"`
-}
 
 func (api *runtimeHTTPAPI) handleAuthSession(ctx *gin.Context) {
 	ctx.Header("Cache-Control", "no-store")
@@ -33,8 +23,7 @@ func (api *runtimeHTTPAPI) handleAuthWebSocketToken(ctx *gin.Context) {
 		return
 	}
 	ctx.Header("Cache-Control", "no-store")
-	ctx.Header("Content-Type", "application/json")
-	_ = json.NewEncoder(ctx.Writer).Encode(runtimeAuthWebSocketTokenResponse{Token: token})
+	authapp.WriteWebSocketTokenResponse(ctx.Writer, token)
 }
 
 func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
@@ -92,11 +81,7 @@ func (api *runtimeHTTPAPI) handleAuthLoginPage(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) writeAuthSession(ctx *gin.Context, authenticated bool) {
-	ctx.Header("Content-Type", "application/json")
-	_ = json.NewEncoder(ctx.Writer).Encode(runtimeAuthSessionResponse{
-		Authenticated: authenticated,
-		AuthRequired:  api.auth.Enabled(),
-	})
+	authapp.WriteSessionResponse(ctx.Writer, authenticated, api.auth.Enabled())
 }
 
 func (api *runtimeHTTPAPI) redirectToLoginIfRequired(ctx *gin.Context) bool {

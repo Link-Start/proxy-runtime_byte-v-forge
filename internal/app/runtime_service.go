@@ -20,7 +20,7 @@ func NewRuntimeService(runtime *Runtime) *RuntimeService {
 	return &RuntimeService{
 		providers: newRuntimeProviderApplication(runtimeProviderDependencies(runtime)),
 		leases:    newRuntimeLeaseApplication(runtime),
-		checks:    newRuntimeCheckApplication(runtime),
+		checks:    newRuntimeCheckApplication(runtimeCheckDependencies(runtime)),
 		settings:  newRuntimeSettingsApplication(runtime),
 		status:    newRuntimeStatusApplication(runtime),
 	}
@@ -47,6 +47,21 @@ func runtimeProviderDependencies(runtime *Runtime) runtimeProviderApplicationDep
 			return runtime.service().leases
 		},
 		Logger: runtime.logger,
+	}
+}
+
+func runtimeCheckDependencies(runtime *Runtime) runtimeCheckApplicationDependencies {
+	if runtime == nil {
+		return runtimeCheckApplicationDependencies{}
+	}
+	return runtimeCheckApplicationDependencies{
+		Settings:       runtime.settings,
+		CheckClient:    runtime.checkProxyHTTPClient,
+		ProbeExitIP:    runtime.probeExitIP,
+		LookupGeo:      runtime.lookupIPGeo,
+		CheckFraud:     runtime.checkIPFraud,
+		RunEdgeCanary:  runtime.runEdgeCanary,
+		ExitCheckCache: &runtime.exitCheckCache,
 	}
 }
 

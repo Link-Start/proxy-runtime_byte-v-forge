@@ -737,6 +737,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease egress-profile policy resolution and playground replacement checks are split from the acquire service file into a focused profile helper file.
 - Dynamic lease listener allocation, endpoint materialization, dataplane route upsert, active fact persistence, and playground connection cleanup are split from the acquire service file into a focused route-apply file.
 - Provider account application now receives explicit repository, settings, descriptor, lock, lease-operation, and logger dependencies; provider usecase methods no longer dereference `*Runtime` directly.
+- Runtime check application now receives explicit settings, HTTP-client, exit-IP probe, geo lookup, IP-fraud, edge-canary, and cache dependencies instead of reaching through `*Runtime`.
 
 Still open:
 

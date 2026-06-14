@@ -11,7 +11,7 @@ func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyrunti
 	if !leaseapp.HasLeaseID(lease) {
 		return nil
 	}
-	return leaseapp.WithAccountLock(ctx, c.deps.locks, lease.GetAccountId(), func(ctx context.Context) error {
+	return leaseapp.RunAccountAction(ctx, c.deps.locks, lease.GetAccountId(), func(ctx context.Context) error {
 		current, err := c.deps.store.LeaseFactByID(ctx, lease.GetLeaseId())
 		if err != nil {
 			if isStoreNotFound(err) {

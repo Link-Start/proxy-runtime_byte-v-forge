@@ -931,6 +931,7 @@ Completed user-visible/runtime batches:
 - Restore route dataplane upsert and temporary concurrency-slot keep/release lifecycle now run through `internal/app/lease`; restore orchestration supplies only provider-node fetch and line-binding resolvers.
 - Session-listener allocation locking now runs through `internal/app/lease`; acquire orchestration only supplies the acquired-route application action.
 - Acquire account-level lock invocation now runs through `internal/app/lease`; the coordinator supplies only the locked acquire action.
+- Cleanup-pending and expiry account-level lock invocations now run through `internal/app/lease`; the coordinator supplies only cleanup actions.
 
 Still open:
 

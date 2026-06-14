@@ -23,3 +23,14 @@ func RunAccountLeaseAction(ctx context.Context, locks LockManager, accountID str
 	})
 	return lease, err
 }
+
+type AccountAction func(context.Context) error
+
+func RunAccountAction(ctx context.Context, locks LockManager, accountID string, action AccountAction) error {
+	if action == nil {
+		return ErrAccountLeaseActionRequired
+	}
+	return WithAccountLock(ctx, locks, accountID, func(ctx context.Context) error {
+		return action(ctx)
+	})
+}

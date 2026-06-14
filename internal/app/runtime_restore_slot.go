@@ -10,7 +10,7 @@ import (
 func (c leaseCoordinator) acquireRestoreLeaseConcurrencySlot(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, settings *runtimeSettingsFile, providerAccount *proxyruntimev1.ProxyProviderAccount) (leaseapp.ProviderAccountConcurrencySlot, error) {
 	holder := leaseapp.ConcurrencyHolder(lease)
 	policy := leaseapp.ConcurrencyPolicy(lease)
-	return c.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), policy, holder, leaseapp.ConcurrencySlotTTL(policy, defaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
+	return leaseapp.AcquireProviderAccountConcurrencySlot(ctx, c.deps.providerConcurrency, providerAccount.GetAccountId(), dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), policy, holder, leaseapp.ConcurrencySlotTTL(policy, defaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
 }
 
 func releaseRestoreLeaseConcurrencySlotUnlessKept(ctx context.Context, slot leaseapp.ProviderAccountConcurrencySlot, keep *bool) {

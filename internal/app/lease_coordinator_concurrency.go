@@ -3,15 +3,10 @@ package app
 import (
 	"context"
 	"strings"
-	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
-
-func (c leaseCoordinator) acquireProviderAccountConcurrencySlot(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, limit uint32, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (leaseapp.ProviderAccountConcurrencySlot, error) {
-	return acquireProviderAccountConcurrencySlot(ctx, c.deps.providerConcurrency, account, limit, policy, holder, ttl)
-}
 
 func (c leaseCoordinator) releaseLeaseConcurrencySlot(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
 	if lease == nil {
@@ -43,6 +38,6 @@ func (c leaseCoordinator) refreshLeaseConcurrencySlot(ctx context.Context, lease
 		return err
 	}
 	policy := leaseapp.ConcurrencyPolicy(lease)
-	_, err = c.acquireProviderAccountConcurrencySlot(ctx, account, dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), policy, holder, leaseapp.ConcurrencySlotTTL(policy, defaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
+	_, err = leaseapp.AcquireProviderAccountConcurrencySlot(ctx, c.deps.providerConcurrency, account.GetAccountId(), dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), policy, holder, leaseapp.ConcurrencySlotTTL(policy, defaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
 	return err
 }

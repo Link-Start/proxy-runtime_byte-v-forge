@@ -816,10 +816,11 @@ Completed user-visible/runtime batches:
 - Dynamic lease listener endpoint projection now lives in `internal/app/lease`, including host/port parsing, protocol mapping, and proxy credential labels.
 - Dynamic lease advertised-host resolution now lives in `internal/app/lease`; runtime only passes configured/request host values.
 - Listener projection and playground replacement checks now reuse lease-owned proxy username/password and dynamic-listener mode constants instead of raw label strings.
+- Provider-account concurrency slot acquisition now uses a lease-owned helper directly; the app-level acquire wrapper was removed.
 
 Still open:
 
-- Fully extract lease application into `internal/app/lease`; remaining work is to move provider-session orchestration, listener input resolution, locks, concurrency-slot behavior, and route orchestration out of the current app-level coordinator. Data-plane route apply/delete, lease listener construction/endpoint/advertised-host projection, and provider session access now cross lease-owned models/ports, but the coordinator still drives the workflow.
+- Fully extract lease application into `internal/app/lease`; remaining work is to move provider-session orchestration, listener input resolution, locks, and route orchestration out of the current app-level coordinator. Data-plane route apply/delete, lease listener construction/endpoint/advertised-host projection, provider session access, and concurrency-slot acquire/release semantics now cross lease-owned models/ports, but the coordinator still drives the workflow.
 - Continue splitting Mihomo sourceplane projection, validation, render, and apply stages so no single file owns the whole config pipeline.
 - Move settings orchestration into an explicit settings application package.
 - Separate `httpapi`, `auth`, and `dashboard` packages and keep handlers as thin transport adapters.

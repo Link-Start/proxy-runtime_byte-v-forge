@@ -1,8 +1,6 @@
 package app
 
 import (
-	"context"
-	"fmt"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -47,15 +45,4 @@ func dynamicProviderConcurrencyLimit(settings *runtimeSettingsFile, dynamicProvi
 		return defaultDynamicProviderRotatingConcurrencyLimit
 	}
 	return defaultDynamicProviderStickyConcurrencyLimit
-}
-
-func acquireProviderAccountConcurrencySlot(ctx context.Context, limiter leaseapp.ProviderAccountConcurrencyLimiter, account *proxyruntimev1.ProxyProviderAccount, limit uint32, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (leaseapp.ProviderAccountConcurrencySlot, error) {
-	if limiter == nil {
-		return leaseapp.NoopProviderAccountConcurrencySlot{}, nil
-	}
-	slot, err := limiter.Acquire(ctx, account.GetAccountId(), policy, limit, holder, ttl)
-	if err != nil {
-		return nil, fmt.Errorf("provider account %q %s concurrency limit reached: %w", account.GetAccountId(), leaseapp.ConcurrencyModeText(policy), err)
-	}
-	return slot, nil
 }

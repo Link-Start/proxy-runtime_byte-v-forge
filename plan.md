@@ -897,6 +897,7 @@ Completed user-visible/runtime batches:
 - In-user connection cleanup username diffing now lives in `internal/app/settings`, so settings update flow no longer depends on an app-local diff helper.
 - Settings update-with-connection-cleanup orchestration now lives in `internal/app/settings`; app update handlers provide only validation and concrete repository operations.
 - Runtime, egress-profile, ingress-rule, and in-user settings updates now expose explicit methods on `internal/app/settings`; app update handlers only delegate to the settings usecase.
+- IP fraud and IP geo provider descriptor reads now live in `internal/app/settings`; app-level provider view methods only delegate to the settings usecase.
 
 Still open:
 

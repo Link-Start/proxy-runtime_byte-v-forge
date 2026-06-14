@@ -52,5 +52,7 @@ func (a runtimeSettingsApplication) settingsUsecase() settingsapp.Application {
 		ValidateProfiles: func(profiles []*proxyruntimev1.EgressProfileSettings) error {
 			return rejectMissingProxyUserProfiles(a.proxyUsers, profiles)
 		},
+		IPFraudProviderViews: a.ipFraudProviderViews,
+		IPGeoProviderViews:   a.ipGeoProviderViews,
 	})
 }

@@ -3,6 +3,7 @@ package auth
 import (
 	"bytes"
 	"html/template"
+	"net/http"
 )
 
 type LoginPageOptions struct {
@@ -27,6 +28,17 @@ func LoginPageHTML(opts LoginPageOptions) ([]byte, error) {
 		return nil, err
 	}
 	return out.Bytes(), nil
+}
+
+func WriteLoginPage(w http.ResponseWriter, opts LoginPageOptions) error {
+	body, err := LoginPageHTML(opts)
+	if err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Cache-Control", "no-store")
+	_, _ = w.Write(body)
+	return nil
 }
 
 var loginPageTemplate = template.Must(template.New("runtime-login").Parse(`<!doctype html>

@@ -12,7 +12,6 @@ import (
 )
 
 func (api *runtimeHTTPAPI) handleAuthSession(ctx *gin.Context) {
-	ctx.Header("Cache-Control", "no-store")
 	api.writeAuthSession(ctx, api.sessionAuthenticated(ctx.Request))
 }
 
@@ -22,7 +21,6 @@ func (api *runtimeHTTPAPI) handleAuthWebSocketToken(ctx *gin.Context) {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
 	}
-	ctx.Header("Cache-Control", "no-store")
 	authapp.WriteWebSocketTokenResponse(ctx.Writer, token)
 }
 
@@ -66,18 +64,10 @@ func (api *runtimeHTTPAPI) handleAuthLoginPage(ctx *gin.Context) {
 		ctx.Redirect(http.StatusSeeOther, next)
 		return
 	}
-	body, err := authapp.LoginPageHTML(authapp.LoginPageOptions{
-		Next:      next,
-		ShowError: strings.TrimSpace(ctx.Query("error")) != "",
-	})
-	if err != nil {
+	if err := authapp.WriteLoginPage(ctx.Writer, authapp.LoginPageOptions{Next: next, ShowError: strings.TrimSpace(ctx.Query("error")) != ""}); err != nil {
 		api.logger.Warn("render login page failed", "error", err)
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
-		return
 	}
-	ctx.Header("Content-Type", "text/html; charset=utf-8")
-	ctx.Header("Cache-Control", "no-store")
-	_, _ = ctx.Writer.Write(body)
 }
 
 func (api *runtimeHTTPAPI) writeAuthSession(ctx *gin.Context, authenticated bool) {

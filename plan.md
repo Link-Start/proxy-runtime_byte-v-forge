@@ -900,6 +900,7 @@ Completed user-visible/runtime batches:
 - IP fraud and IP geo provider descriptor reads now live in `internal/app/settings`; app-level provider view methods only delegate to the settings usecase.
 - Auth session and websocket-token response DTO/write helpers now live in `internal/app/auth`; HTTP session handlers no longer own auth JSON response shapes.
 - Dashboard bootstrap response writing now lives in `internal/app/dashboard`, and trailing-slash redirects use `internal/app/httpapi`, thinning dashboard handlers.
+- Auth login-page response writing and no-store auth JSON headers now live in `internal/app/auth`, further thinning auth HTTP session handlers.
 
 Still open:
 

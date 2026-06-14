@@ -15,14 +15,20 @@ type WebSocketTokenResponse struct {
 }
 
 func WriteSessionResponse(w http.ResponseWriter, authenticated bool, authRequired bool) {
+	writeNoStore(w)
 	writeJSON(w, SessionResponse{Authenticated: authenticated, AuthRequired: authRequired})
 }
 
 func WriteWebSocketTokenResponse(w http.ResponseWriter, token string) {
+	writeNoStore(w)
 	writeJSON(w, WebSocketTokenResponse{Token: token})
 }
 
 func writeJSON(w http.ResponseWriter, value any) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(value)
+}
+
+func writeNoStore(w http.ResponseWriter) {
+	w.Header().Set("Cache-Control", "no-store")
 }

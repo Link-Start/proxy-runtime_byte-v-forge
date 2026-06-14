@@ -154,37 +154,6 @@ func ipFraudSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, 
 	return cleanIPFraudSecretRefs(out), nil
 }
 
-func resolveRuntimeSecretRefs(ctx context.Context, resolver secretref.Resolver, refs []*commonv1.SecretRef, purpose string) ([]string, error) {
-	refs = cleanSecretRefs(refs, "proxy-runtime", purpose)
-	if len(refs) == 0 {
-		return nil, nil
-	}
-	if resolver == nil {
-		return nil, fmt.Errorf("secret resolver is required")
-	}
-	out := make([]string, 0, len(refs))
-	for _, ref := range refs {
-		value, err := resolver.ResolveSecret(ctx, ref)
-		if err != nil {
-			return nil, err
-		}
-		if strings.TrimSpace(value) != "" {
-			out = append(out, value)
-		}
-	}
-	return out, nil
-}
-
-func defaultProviderWeight(index int) uint32 {
-	if index < 0 {
-		return 100
-	}
-	if index > 9 {
-		return 10
-	}
-	return uint32(100 - index*10)
-}
-
 func providerDefaultWeight(kind proxyruntimev1.ProxyIPFraudProviderKind, index int, registry *ipfraud.Registry) uint32 {
 	if plugin, ok := registry.PluginForKind(kind); ok {
 		return plugin.DefaultWeight()

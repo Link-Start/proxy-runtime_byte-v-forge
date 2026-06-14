@@ -668,6 +668,7 @@ Completed user-visible/runtime batches:
 - Runtime status is exposed by backend and surfaced in the Playground UI.
 - First frontend/backend split steps are done for lease API and Mihomo-native update logic.
 - Mihomo-native config model, projection persistence, settings mapping, and URI rendering helpers are split into focused files.
+- Mihomo-native projection orchestration is separated from native JSON file path/load/save IO.
 - Mihomo sourceplane egress-profile rendering is split into line, exit, native-resource, dynamic-exit, and naming helpers.
 - Mihomo driver model, reconcile flow, and hot-reload candidate apply logic are separated into focused files.
 - Mihomo reconcile now uses explicit rendered-config projection and base-config apply helpers.

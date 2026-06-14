@@ -17,7 +17,6 @@ import (
 const (
 	SessionCookieName = "proxy_runtime_session"
 	SessionTTL        = 12 * time.Hour
-	WebSocketTokenTTL = 2 * time.Minute
 	sessionVersion    = "v1"
 )
 

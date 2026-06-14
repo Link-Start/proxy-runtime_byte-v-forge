@@ -29,7 +29,7 @@ func (api *runtimeHTTPAPI) handleAuthSession(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleAuthWebSocketToken(ctx *gin.Context) {
-	token, err := authapp.SignSession(api.authToken, time.Now().Add(authapp.WebSocketTokenTTL))
+	token, err := api.auth.NewWebSocketToken(time.Now())
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
@@ -45,7 +45,7 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return
 	}
-	if !authapp.TokenMatches(login.Token, api.authToken) {
+	if !api.auth.TokenMatches(login.Token) {
 		if login.FormSubmit {
 			ctx.Redirect(http.StatusSeeOther, authapp.LoginRedirectWithError(login.Next))
 			return
@@ -101,7 +101,7 @@ func (api *runtimeHTTPAPI) writeAuthSession(ctx *gin.Context, authenticated bool
 	ctx.Header("Content-Type", "application/json")
 	_ = json.NewEncoder(ctx.Writer).Encode(runtimeAuthSessionResponse{
 		Authenticated: authenticated,
-		AuthRequired:  strings.TrimSpace(api.authToken) != "",
+		AuthRequired:  api.auth.Enabled(),
 	})
 }
 
@@ -114,17 +114,7 @@ func (api *runtimeHTTPAPI) redirectToLoginIfRequired(ctx *gin.Context) bool {
 }
 
 func (api *runtimeHTTPAPI) redirectLoginPreferred(req *http.Request) bool {
-	if req == nil || req.URL == nil {
-		return false
-	}
-	if req.Method != http.MethodGet && req.Method != http.MethodHead {
-		return false
-	}
-	if httpapi.PathInPrefix(req.URL.Path, controlPlaneHTTPPrefix) || httpapi.PathInPrefix(req.URL.Path, "/mihomo/controller") {
-		return false
-	}
-	accept := strings.ToLower(req.Header.Get("Accept"))
-	return accept == "" || strings.Contains(accept, "text/html")
+	return api.auth.LoginRedirectPreferred(req, controlPlaneHTTPPrefix)
 }
 
 func (api *runtimeHTTPAPI) redirectToLogin(ctx *gin.Context, next string) {
@@ -136,28 +126,15 @@ func (api *runtimeHTTPAPI) redirectToLogin(ctx *gin.Context, next string) {
 }
 
 func (api *runtimeHTTPAPI) sessionAuthenticated(req *http.Request) bool {
-	if strings.TrimSpace(api.authToken) == "" {
-		return true
-	}
-	cookie, err := req.Cookie(authapp.SessionCookieName)
-	if err != nil {
-		return false
-	}
-	return authapp.VerifySession(cookie.Value, api.authToken, time.Now())
+	return api.auth.SessionAuthenticated(req, time.Now())
 }
 
 func (api *runtimeHTTPAPI) requestAuthenticated(req *http.Request) bool {
-	if api.sessionAuthenticated(req) {
-		return true
-	}
-	if req == nil || req.URL == nil || !httpapi.PathInPrefix(req.URL.Path, "/mihomo/controller") {
-		return false
-	}
-	return authapp.VerifySession(req.URL.Query().Get("session"), api.authToken, time.Now())
+	return api.auth.RequestAuthenticated(req, time.Now())
 }
 
 func (api *runtimeHTTPAPI) setSessionCookie(ctx *gin.Context) error {
-	cookie, err := authapp.NewSessionCookie(api.authToken, time.Now(), httpapi.ForwardedProto(ctx.Request) == "https")
+	cookie, err := api.auth.NewSessionCookie(time.Now(), httpapi.ForwardedProto(ctx.Request) == "https")
 	if err != nil {
 		return err
 	}
@@ -166,7 +143,7 @@ func (api *runtimeHTTPAPI) setSessionCookie(ctx *gin.Context) error {
 }
 
 func (api *runtimeHTTPAPI) clearSessionCookie(ctx *gin.Context) {
-	http.SetCookie(ctx.Writer, authapp.NewClearSessionCookie(httpapi.ForwardedProto(ctx.Request) == "https"))
+	http.SetCookie(ctx.Writer, api.auth.NewClearSessionCookie(httpapi.ForwardedProto(ctx.Request) == "https"))
 }
 
 func readRuntimeLoginRequest(req *http.Request) (authapp.LoginRequest, error) {

@@ -2,7 +2,6 @@ package app
 
 import (
 	"net/http"
-	"strings"
 
 	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
 	"github.com/gin-gonic/gin"
@@ -24,7 +23,7 @@ func (api *runtimeHTTPAPI) writeMihomoDashboardBootstrap(ctx *gin.Context, endpo
 	body, err := dashboardapp.BootstrapHTML(dashboardapp.BootstrapOptions{
 		EndpointURL:  endpointURL,
 		UIURL:        uiURL,
-		AuthRequired: strings.TrimSpace(api.authToken) != "",
+		AuthRequired: api.auth.Enabled(),
 	})
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
 	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
 )
@@ -57,6 +58,7 @@ type runtimeHTTPAPI struct {
 	service           *RuntimeService
 	mihomoAPIAddr     string
 	authToken         string
+	auth              authapp.Application
 	ready             runtimeReadyFunc
 	logger            *slog.Logger
 	dashboardFallback gin.HandlerFunc
@@ -66,7 +68,14 @@ func newRuntimeHTTPAPI(service *RuntimeService, mihomoAPIAddr string, authToken 
 	if logger == nil {
 		logger = slog.Default()
 	}
-	api := &runtimeHTTPAPI{service: service, mihomoAPIAddr: mihomoAPIAddr, authToken: strings.TrimSpace(authToken), ready: ready, logger: logger}
+	api := &runtimeHTTPAPI{
+		service:       service,
+		mihomoAPIAddr: mihomoAPIAddr,
+		authToken:     strings.TrimSpace(authToken),
+		auth:          authapp.NewApplication(authToken),
+		ready:         ready,
+		logger:        logger,
+	}
 	api.dashboardFallback = api.mihomoReverseProxy("/", "/ui/")
 	return api
 }

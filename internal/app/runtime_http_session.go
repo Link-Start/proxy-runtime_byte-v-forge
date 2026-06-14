@@ -157,34 +157,16 @@ func (api *runtimeHTTPAPI) requestAuthenticated(req *http.Request) bool {
 }
 
 func (api *runtimeHTTPAPI) setSessionCookie(ctx *gin.Context) error {
-	value, err := authapp.SignSession(api.authToken, time.Now().Add(authapp.SessionTTL))
+	cookie, err := authapp.NewSessionCookie(api.authToken, time.Now(), httpapi.ForwardedProto(ctx.Request) == "https")
 	if err != nil {
 		return err
 	}
-	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:     authapp.SessionCookieName,
-		Value:    value,
-		Path:     "/",
-		MaxAge:   int(authapp.SessionTTL.Seconds()),
-		Expires:  time.Now().Add(authapp.SessionTTL),
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   httpapi.ForwardedProto(ctx.Request) == "https",
-	})
+	http.SetCookie(ctx.Writer, cookie)
 	return nil
 }
 
 func (api *runtimeHTTPAPI) clearSessionCookie(ctx *gin.Context) {
-	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:     authapp.SessionCookieName,
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1,
-		Expires:  time.Unix(0, 0),
-		HttpOnly: true,
-		SameSite: http.SameSiteLaxMode,
-		Secure:   httpapi.ForwardedProto(ctx.Request) == "https",
-	})
+	http.SetCookie(ctx.Writer, authapp.NewClearSessionCookie(httpapi.ForwardedProto(ctx.Request) == "https"))
 }
 
 func readRuntimeLoginRequest(req *http.Request) (authapp.LoginRequest, error) {

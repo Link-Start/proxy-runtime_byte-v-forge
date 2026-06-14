@@ -39,13 +39,13 @@ func (c leaseCoordinator) acquiredLeaseEndpoint(ctx context.Context, input acqui
 }
 
 func applyAcquiredLeaseEndpointMetadata(egress *proxyruntimev1.ProxyEndpoint, input acquiredLeaseEndpointInput) {
-	leaseapp.ApplyDynamicEndpointMetadata(egress, leaseapp.DynamicEndpointMetadataInput{
+	leaseapp.ApplyAcquiredEndpointMetadata(egress, leaseapp.AcquiredEndpointMetadataInput{
 		Request:           input.req,
 		SelectionPlan:     input.selection.plan,
-		ProviderID:        input.providerClient.Name(),
+		ProviderClient:    input.providerClient,
 		ProviderAccountID: input.providerAccountID,
 		ConcurrencyHolder: input.concurrencyHolder,
-		SessionID:         input.session.GetSessionId(),
+		Session:           input.session,
 		LineLabels:        input.lineLabels,
 	})
 }

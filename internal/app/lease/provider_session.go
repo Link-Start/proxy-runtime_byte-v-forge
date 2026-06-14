@@ -63,6 +63,13 @@ func ReleaseProviderSession(ctx context.Context, providerClient SessionProvider,
 	return providerClient.ReleaseSession(ctx, session)
 }
 
+func ProviderName(providerClient SessionProvider) string {
+	if providerClient == nil {
+		return ""
+	}
+	return providerClient.Name()
+}
+
 func StatelessProviderSession(session *proxyruntimev1.ProxySession) bool {
 	switch strings.TrimSpace(session.GetLabels()["session_mode"]) {
 	case "username_parameter", "provider_configured":

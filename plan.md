@@ -888,6 +888,7 @@ Completed user-visible/runtime batches:
 - Mihomo reconcile final projection apply and applied-state recording are split from top-level reconcile orchestration, keeping base apply, final apply, and status mutation in focused helpers.
 - Mihomo reconcile provider-directory creation and runtime config path construction are split into path helpers, leaving top-level reconcile focused on stage ordering.
 - Acquired lease session-route construction and session egress binding now live in `internal/app/lease`; route apply only invokes dataplane apply and persistence.
+- Acquired lease endpoint metadata input construction now lives in `internal/app/lease`, including provider name and session id extraction for endpoint labels.
 
 Still open:
 

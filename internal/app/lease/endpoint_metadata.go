@@ -16,6 +16,28 @@ type DynamicEndpointMetadataInput struct {
 	LineLabels        map[string]string
 }
 
+type AcquiredEndpointMetadataInput struct {
+	Request           *proxyruntimev1.AcquireProxyLeaseRequest
+	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	ProviderClient    SessionProvider
+	ProviderAccountID string
+	ConcurrencyHolder string
+	Session           *proxyruntimev1.ProxySession
+	LineLabels        map[string]string
+}
+
+func ApplyAcquiredEndpointMetadata(endpoint *proxyruntimev1.ProxyEndpoint, input AcquiredEndpointMetadataInput) {
+	ApplyDynamicEndpointMetadata(endpoint, DynamicEndpointMetadataInput{
+		Request:           input.Request,
+		SelectionPlan:     input.SelectionPlan,
+		ProviderID:        ProviderName(input.ProviderClient),
+		ProviderAccountID: input.ProviderAccountID,
+		ConcurrencyHolder: input.ConcurrencyHolder,
+		SessionID:         input.Session.GetSessionId(),
+		LineLabels:        input.LineLabels,
+	})
+}
+
 func ApplyDynamicEndpointMetadata(endpoint *proxyruntimev1.ProxyEndpoint, input DynamicEndpointMetadataInput) {
 	if endpoint == nil {
 		return

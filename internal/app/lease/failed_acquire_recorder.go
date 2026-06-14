@@ -81,11 +81,7 @@ func (r *FailedAcquireRecorder) warnProviderCleanup(err error) {
 	if r == nil || err == nil || r.logger == nil {
 		return
 	}
-	providerID := ""
-	if r.providerClient != nil {
-		providerID = r.providerClient.Name()
-	}
-	r.logger.Warn("provider session cleanup failed", "provider_id", providerID, LabelAccountID, r.request.GetAccountId())
+	r.logger.Warn("provider session cleanup failed", "provider_id", ProviderName(r.providerClient), LabelAccountID, r.request.GetAccountId())
 }
 
 func (r *FailedAcquireRecorder) save(ctx context.Context, message string) {

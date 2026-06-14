@@ -3,11 +3,15 @@ package lease
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
-var ErrFinalLeaseStateUnsupported = errors.New("final lease state is unsupported")
+var (
+	ErrFinalLeaseStateUnsupported   = errors.New("final lease state is unsupported")
+	ErrFinalLeaseConcurrencyRelease = errors.New("release provider account concurrency slot failed")
+)
 
 type FinalLeaseState int
 
@@ -16,22 +20,14 @@ const (
 	FinalLeaseStateReleased
 )
 
-type FinalLeaseSaveStage int
-
-const (
-	FinalLeaseSaveNoError FinalLeaseSaveStage = iota
-	FinalLeaseSaveState
-	FinalLeaseSaveConcurrencyRelease
-)
-
-func SaveFinalLeaseState(ctx context.Context, store OrchestrationStore, limiter ProviderAccountConcurrencyLimiter, lease *proxyruntimev1.ProxyDynamicLease, state FinalLeaseState) (FinalLeaseSaveStage, error) {
+func SaveFinalLeaseState(ctx context.Context, store OrchestrationStore, limiter ProviderAccountConcurrencyLimiter, lease *proxyruntimev1.ProxyDynamicLease, state FinalLeaseState) error {
 	if err := saveFinalLeaseState(ctx, store, lease, state); err != nil {
-		return FinalLeaseSaveState, err
+		return err
 	}
 	if err := ReleaseLeaseConcurrencySlot(ctx, limiter, lease); err != nil {
-		return FinalLeaseSaveConcurrencyRelease, err
+		return fmt.Errorf("%w: %w", ErrFinalLeaseConcurrencyRelease, err)
 	}
-	return FinalLeaseSaveNoError, nil
+	return nil
 }
 
 func saveFinalLeaseState(ctx context.Context, store OrchestrationStore, lease *proxyruntimev1.ProxyDynamicLease, state FinalLeaseState) error {
@@ -45,12 +41,12 @@ func saveFinalLeaseState(ctx context.Context, store OrchestrationStore, lease *p
 	}
 }
 
-func SaveCleanupProgress(ctx context.Context, store OrchestrationStore, limiter ProviderAccountConcurrencyLimiter, lease *proxyruntimev1.ProxyDynamicLease) (FinalLeaseSaveStage, error) {
+func SaveCleanupProgress(ctx context.Context, store OrchestrationStore, limiter ProviderAccountConcurrencyLimiter, lease *proxyruntimev1.ProxyDynamicLease) error {
 	if CleanupPending(lease) {
 		if err := store.SaveLeaseFact(ctx, lease); err != nil {
-			return FinalLeaseSaveState, err
+			return err
 		}
-		return FinalLeaseSaveNoError, nil
+		return nil
 	}
 	switch CleanupFinalStatus(lease) {
 	case CleanupFinalExpired:
@@ -59,8 +55,8 @@ func SaveCleanupProgress(ctx context.Context, store OrchestrationStore, limiter 
 		return SaveFinalLeaseState(ctx, store, limiter, lease, FinalLeaseStateReleased)
 	default:
 		if err := store.SaveLeaseFact(ctx, lease); err != nil {
-			return FinalLeaseSaveState, err
+			return err
 		}
-		return FinalLeaseSaveNoError, nil
+		return nil
 	}
 }

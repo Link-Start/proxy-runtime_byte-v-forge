@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -71,7 +70,7 @@ func (s *SQLiteStore) BlockingLeaseFactsByProviderAccount(ctx context.Context, p
 	if providerAccountID == "" {
 		return nil, nil
 	}
-	leases, err := s.leaseFactsByQuery(ctx, `
+	return s.leaseFactsByQuery(ctx, `
 SELECT lease_json
 FROM proxy_runtime_dynamic_leases
 WHERE provider_account_id=?
@@ -81,28 +80,15 @@ WHERE provider_account_id=?
   )
 ORDER BY acquired_at DESC, updated_at DESC, lease_id
 `, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String())
-	if err != nil {
-		return nil, err
-	}
-	now := time.Now().UTC()
-	out := filterLeaseFacts(leases, func(lease *proxyruntimev1.ProxyDynamicLease) bool {
-		return strings.TrimSpace(lease.GetProviderAccountId()) == providerAccountID && (leaseapp.ActiveAt(lease, now) || leaseapp.CleanupPending(lease))
-	})
-	sortLeaseFactsByAcquiredDesc(out)
-	return out, nil
 }
 
 func (s *SQLiteStore) CleanupPendingLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	leases, err := s.leaseFactsByQuery(ctx, `
+	return s.leaseFactsByQuery(ctx, `
 SELECT lease_json
 FROM proxy_runtime_dynamic_leases
 WHERE status=? AND `+sqliteCleanupPendingLeasePredicate+`
 ORDER BY acquired_at ASC, updated_at ASC, lease_id
 `, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String())
-	if err != nil {
-		return nil, err
-	}
-	return filterLeaseFacts(leases, leaseapp.CleanupPending), nil
 }
 
 func (s *SQLiteStore) ListRestorableLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {

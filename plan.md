@@ -853,6 +853,7 @@ Completed user-visible/runtime batches:
 - Playground active-lease replacement predicate now lives in `internal/app/lease`; runtime acquire only supplies playground account and username constants.
 - Postgres dynamic lease persistence is split into save, list/blocking/cleanup, lookup, and scan helpers so store responsibilities are no longer concentrated in one large file.
 - SQLite dynamic lease persistence is split into save, list/blocking/cleanup, lookup, and scan helpers to mirror the Postgres store boundary.
+- SQLite blocking and cleanup-pending lease list methods now return SQL-filtered rows directly, removing duplicated Go-layer cleanup/active predicates from the adapter.
 
 Still open:
 

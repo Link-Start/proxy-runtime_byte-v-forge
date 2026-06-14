@@ -8,37 +8,20 @@ import (
 )
 
 func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	return leaseapp.RunCurrentLeaseAction(ctx, leaseapp.CurrentLeaseActionInput{
-		Store:      c.deps.store,
-		Locks:      c.deps.locks,
-		Lease:      lease,
-		IsNotFound: isStoreNotFound,
-		Action: func(ctx context.Context, current *proxyruntimev1.ProxyDynamicLease) error {
-			if !leaseapp.CleanupPending(current) {
-				return nil
-			}
-			if leaseapp.RouteCleanupPending(current) {
-				if err := c.cleanupLeaseRoute(ctx, current, func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-					return c.saveLeaseCleanupRetry(ctx, lease, "lease route cleanup failed")
-				}); err != nil {
-					return err
-				}
-				leaseapp.ClearCleanupPending(current, true, false)
-			}
-			if leaseapp.ProviderCleanupPending(current) {
-				releaseProvider := func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-					if releaseErr := c.releaseLeaseProviderSession(ctx, lease); releaseErr != nil {
-						_ = c.saveLeaseCleanupRetry(ctx, lease, "provider session cleanup failed")
-						return releaseErr
-					}
-					return nil
-				}
-				if err := leaseapp.ReleaseLeaseProviderSessionWithLock(ctx, c.deps.locks, current, releaseProvider); err != nil {
-					return err
-				}
-				leaseapp.ClearCleanupPending(current, false, true)
-			}
-			return c.saveLeaseCleanupProgress(ctx, current)
+	return leaseapp.CleanupPendingLease(ctx, leaseapp.CleanupPendingLeaseInput{
+		Store:         c.deps.store,
+		Limiter:       c.deps.providerConcurrency,
+		Locks:         c.deps.locks,
+		DataPlane:     c.deps.dataPlane,
+		LocalProtocol: c.deps.cfg.LocalProtocol,
+		Lease:         lease,
+		IsNotFound:    isStoreNotFound,
+		ReleaseProvider: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+			return c.releaseLeaseProviderSession(ctx, lease)
+		},
+		ObserveFinalConcurrencyReleaseErr: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
+			_ = ctx
+			c.warn("release provider account concurrency slot failed", "lease_id", lease.GetLeaseId(), "provider_account_id", lease.GetProviderAccountId())
 		},
 	})
 }

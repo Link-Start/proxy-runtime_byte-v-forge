@@ -965,6 +965,7 @@ Completed user-visible/runtime batches:
 - Acquired route flow now combines endpoint materialization with dataplane/fact apply inside `internal/app/lease`, deleting the app-level acquired-endpoint wrapper; the coordinator only injects endpoint resolvers and post-success local side effects.
 - Acquired route post-apply success observer is now invoked by the lease flow, so the coordinator injects cache cleanup and playground connection cleanup as side-effect callbacks instead of sequencing them after lease persistence itself.
 - Release retire route cleanup, provider-session release, cleanup-failure persistence, and released final-state save now run through `internal/app/lease`; the coordinator injects provider release, local cleanup, and warning observers only.
+- Cleanup-pending current-fact workflow now lives in `internal/app/lease`, including route cleanup retry persistence, provider-session cleanup retry persistence, cleanup flag clearing, and final-state progress save; the coordinator only injects provider release and warning observers.
 
 Still open:
 

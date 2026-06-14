@@ -53,14 +53,11 @@ func authTokenMatches(actual string, expected string) bool {
 	return subtle.ConstantTimeCompare([]byte(actual), []byte(expected)) == 1
 }
 
-func (api *runtimeHTTPAPI) forwardMihomoControllerAuthorization(out *http.Request, in *http.Request) {
-	if out == nil || in == nil {
+func (api *runtimeHTTPAPI) forwardMihomoControllerAuthorization(out *http.Request, requestPath string) {
+	if out == nil {
 		return
 	}
-	if in.URL == nil {
-		return
-	}
-	if !pathInPrefix(in.URL.Path, "/mihomo/controller") {
+	if !pathInPrefix(requestPath, "/mihomo/controller") {
 		return
 	}
 	token := strings.TrimSpace(api.authToken)

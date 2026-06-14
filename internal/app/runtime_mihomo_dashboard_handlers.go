@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -17,6 +18,10 @@ import (
 )
 
 const mihomoDashboardEndpointID = "proxy-runtime-mihomo"
+
+type mihomoProxyContextKey string
+
+const mihomoProxyRequestPathKey mihomoProxyContextKey = "request_path"
 
 func (api *runtimeHTTPAPI) registerMihomoDashboardRoutes(router *gin.Engine) {
 	router.GET("/mihomo/dashboard", api.handleMihomoDashboard)
@@ -69,32 +74,47 @@ window.location.replace(new URL(config.uiURL, window.location.origin).href);
 }
 
 func (api *runtimeHTTPAPI) mihomoReverseProxy(mountPrefix string, upstreamPrefix string) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		target, err := mihomoAPIURL(api.mihomoAPIAddr)
-		if err != nil {
+	target, err := mihomoAPIURL(api.mihomoAPIAddr)
+	if err != nil {
+		return func(ctx *gin.Context) {
 			writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
-			return
 		}
-		proxy := httputil.NewSingleHostReverseProxy(target)
-		proxy.Director = func(out *http.Request) {
-			out.URL.Scheme = target.Scheme
-			out.URL.Host = target.Host
-			out.URL.Path = joinMihomoProxyPath(upstreamPrefix, strings.TrimPrefix(ctx.Request.URL.Path, mountPrefix))
-			out.Host = target.Host
-			out.Header.Set("X-Forwarded-Host", ctx.Request.Host)
-			out.Header.Set("X-Forwarded-Proto", forwardedProto(ctx.Request))
-			api.forwardMihomoControllerAuthorization(out, ctx.Request)
-		}
-		proxy.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, err error) {
-			writeHTTPError(w, err, http.StatusBadGateway)
-		}
-		requestPath := ctx.Request.URL.Path
-		proxy.ModifyResponse = func(resp *http.Response) error {
-			applyMihomoDashboardCacheHeaders(resp, requestPath)
-			return redactMihomoControllerErrorResponse(resp)
-		}
+	}
+	proxy := httputil.NewSingleHostReverseProxy(target)
+	proxy.Director = func(out *http.Request) {
+		requestPath := out.URL.Path
+		requestHost := out.Host
+		*out = *out.WithContext(context.WithValue(out.Context(), mihomoProxyRequestPathKey, requestPath))
+		out.URL.Scheme = target.Scheme
+		out.URL.Host = target.Host
+		out.URL.Path = joinMihomoProxyPath(upstreamPrefix, strings.TrimPrefix(requestPath, mountPrefix))
+		out.Host = target.Host
+		out.Header.Set("X-Forwarded-Host", requestHost)
+		out.Header.Set("X-Forwarded-Proto", forwardedProto(out))
+		api.forwardMihomoControllerAuthorization(out, requestPath)
+	}
+	proxy.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, err error) {
+		writeHTTPError(w, err, http.StatusBadGateway)
+	}
+	proxy.ModifyResponse = func(resp *http.Response) error {
+		applyMihomoDashboardCacheHeaders(resp, mihomoProxyRequestPath(resp.Request))
+		return redactMihomoControllerErrorResponse(resp)
+	}
+	return func(ctx *gin.Context) {
 		proxy.ServeHTTP(ctx.Writer, ctx.Request)
 	}
+}
+
+func mihomoProxyRequestPath(req *http.Request) string {
+	if req != nil {
+		if requestPath, ok := req.Context().Value(mihomoProxyRequestPathKey).(string); ok {
+			return requestPath
+		}
+		if req.URL != nil {
+			return req.URL.Path
+		}
+	}
+	return ""
 }
 
 func applyMihomoDashboardCacheHeaders(resp *http.Response, requestPath string) {

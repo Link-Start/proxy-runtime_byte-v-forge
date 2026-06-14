@@ -49,5 +49,8 @@ func (a runtimeSettingsApplication) settingsUsecase() settingsapp.Application {
 		Repository:    runtimeSettingsRepositoryAdapter{repository: a.settings},
 		ScheduleApply: a.scheduleRuntimeSettingsApply,
 		Logger:        a.logger,
+		ValidateProfiles: func(profiles []*proxyruntimev1.EgressProfileSettings) error {
+			return rejectMissingProxyUserProfiles(a.proxyUsers, profiles)
+		},
 	})
 }

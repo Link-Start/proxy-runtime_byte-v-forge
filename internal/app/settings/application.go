@@ -7,19 +7,21 @@ var ErrRepositoryRequired = errors.New("runtime settings repository is not confi
 type ApplyScheduler func([]string)
 
 type Dependencies struct {
-	Repository    Repository
-	ScheduleApply ApplyScheduler
-	Logger        Logger
+	Repository       Repository
+	ScheduleApply    ApplyScheduler
+	Logger           Logger
+	ValidateProfiles ProfileValidator
 }
 
 type Application struct {
-	repository    Repository
-	scheduleApply ApplyScheduler
-	logger        Logger
+	repository           Repository
+	scheduleApply        ApplyScheduler
+	logger               Logger
+	validateProfilesFunc ProfileValidator
 }
 
 func NewApplication(deps Dependencies) Application {
-	return Application{repository: deps.Repository, scheduleApply: deps.ScheduleApply, logger: deps.Logger}
+	return Application{repository: deps.Repository, scheduleApply: deps.ScheduleApply, logger: deps.Logger, validateProfilesFunc: deps.ValidateProfiles}
 }
 
 func (a Application) repositoryOrError() (Repository, error) {

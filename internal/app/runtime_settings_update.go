@@ -4,20 +4,10 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings"
 )
 
 func (a runtimeSettingsApplication) UpdateProxyRuntimeSettings(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
-	if err := rejectMissingProxyUserProfiles(a.proxyUsers, req.GetEgressProfiles()); err != nil {
-		return nil, err
-	}
-	settings, err := a.settingsUsecase().UpdateWithConnectionCleanup(ctx, "load runtime settings after update failed", func(repository settingsapp.Repository) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-		return repository.Update(ctx, req)
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
+	return a.settingsUsecase().UpdateRuntimeSettings(ctx, req)
 }
 
 func (a runtimeSettingsApplication) UpdateProxyDynamicIPProviders(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
@@ -25,37 +15,13 @@ func (a runtimeSettingsApplication) UpdateProxyDynamicIPProviders(ctx context.Co
 }
 
 func (a runtimeSettingsApplication) UpdateProxyEgressProfiles(ctx context.Context, req *proxyruntimev1.UpdateProxyEgressProfilesRequest) (*proxyruntimev1.UpdateProxyEgressProfilesResponse, error) {
-	if err := rejectMissingProxyUserProfiles(a.proxyUsers, req.GetEgressProfiles()); err != nil {
-		return nil, err
-	}
-	settings, err := a.settingsUsecase().UpdateWithConnectionCleanup(ctx, "load runtime settings after egress profile update failed", func(repository settingsapp.Repository) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-		return repository.UpdateEgressProfiles(ctx, req.GetEgressProfiles())
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &proxyruntimev1.UpdateProxyEgressProfilesResponse{Settings: settings}, nil
+	return a.settingsUsecase().UpdateEgressProfiles(ctx, req)
 }
 
 func (a runtimeSettingsApplication) UpdateProxyIngressRules(ctx context.Context, req *proxyruntimev1.UpdateProxyIngressRulesRequest) (*proxyruntimev1.UpdateProxyIngressRulesResponse, error) {
-	settings, err := a.settingsUsecase().UpdateWithConnectionCleanup(ctx, "load runtime settings after ingress rule update failed", func(repository settingsapp.Repository) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-		return repository.UpdateIngressRules(ctx, req.GetIngressRules())
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &proxyruntimev1.UpdateProxyIngressRulesResponse{Settings: settings}, nil
+	return a.settingsUsecase().UpdateIngressRules(ctx, req)
 }
 
 func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
-	if err := rejectMissingProxyUserProfiles(a.proxyUsers, req.GetEgressProfiles()); err != nil {
-		return nil, err
-	}
-	settings, err := a.settingsUsecase().UpdateWithConnectionCleanup(ctx, "load runtime settings after in-user rule update failed", func(repository settingsapp.Repository) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-		return repository.UpdateInUserRules(ctx, req.GetEgressProfiles(), req.GetIngressRules())
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
+	return a.settingsUsecase().UpdateInUserRules(ctx, req)
 }

@@ -896,6 +896,7 @@ Completed user-visible/runtime batches:
 - Dynamic IP provider settings update now runs through the explicit `internal/app/settings` application with a repository adapter and apply scheduler instead of app-local update flow.
 - In-user connection cleanup username diffing now lives in `internal/app/settings`, so settings update flow no longer depends on an app-local diff helper.
 - Settings update-with-connection-cleanup orchestration now lives in `internal/app/settings`; app update handlers provide only validation and concrete repository operations.
+- Runtime, egress-profile, ingress-rule, and in-user settings updates now expose explicit methods on `internal/app/settings`; app update handlers only delegate to the settings usecase.
 
 Still open:
 

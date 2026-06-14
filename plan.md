@@ -678,6 +678,7 @@ Completed user-visible/runtime batches:
 - Settings application service forwarding, update usecases, apply scheduling, Mihomo-native handlers, and validation are split into focused files.
 - Runtime settings store load/save and Mihomo-native persistence facades are split from settings update logic.
 - HTTP control-plane route declarations are split by auth, runtime status, provider, lease, check, and settings ownership.
+- Runtime auth session signing, verification, token matching, and safe redirects are extracted into `internal/app/auth`.
 
 Still open:
 

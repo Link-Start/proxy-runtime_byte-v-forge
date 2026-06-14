@@ -1,7 +1,6 @@
 package app
 
 import (
-	"crypto/subtle"
 	"errors"
 	"net/http"
 	"strings"
@@ -42,15 +41,6 @@ func (api *runtimeHTTPAPI) authRequired(requestPath string) bool {
 		return false
 	}
 	return true
-}
-
-func authTokenMatches(actual string, expected string) bool {
-	actual = strings.TrimSpace(actual)
-	expected = strings.TrimSpace(expected)
-	if actual == "" || expected == "" {
-		return false
-	}
-	return subtle.ConstantTimeCompare([]byte(actual), []byte(expected)) == 1
 }
 
 func (api *runtimeHTTPAPI) forwardMihomoControllerAuthorization(out *http.Request, requestPath string) {

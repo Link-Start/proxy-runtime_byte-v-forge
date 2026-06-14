@@ -1,28 +1,16 @@
 package app
 
 import (
-	"crypto/hmac"
-	"crypto/sha256"
-	"crypto/subtle"
-	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"html/template"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/random"
+	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	runtimeSessionCookieName = "proxy_runtime_session"
-	runtimeSessionVersion    = "v1"
-	runtimeSessionTTL        = 12 * time.Hour
-	runtimeWebSocketTokenTTL = 2 * time.Minute
 )
 
 type runtimeAuthSessionResponse struct {
@@ -44,7 +32,7 @@ func (api *runtimeHTTPAPI) handleAuthSession(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleAuthWebSocketToken(ctx *gin.Context) {
-	token, err := signRuntimeSession(api.authToken, time.Now().Add(runtimeWebSocketTokenTTL))
+	token, err := authapp.SignSession(api.authToken, time.Now().Add(authapp.WebSocketTokenTTL))
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
@@ -60,9 +48,9 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return
 	}
-	if !authTokenMatches(token, api.authToken) {
+	if !authapp.TokenMatches(token, api.authToken) {
 		if formSubmit {
-			ctx.Redirect(http.StatusSeeOther, loginRedirectWithError(next))
+			ctx.Redirect(http.StatusSeeOther, authapp.LoginRedirectWithError(next))
 			return
 		}
 		writeHTTPError(ctx.Writer, errors.New("unauthorized"), http.StatusUnauthorized)
@@ -73,7 +61,7 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 		return
 	}
 	if formSubmit {
-		ctx.Redirect(http.StatusSeeOther, safeAuthRedirect(next))
+		ctx.Redirect(http.StatusSeeOther, authapp.SafeRedirect(next))
 		return
 	}
 	api.writeAuthSession(ctx, true)
@@ -82,14 +70,14 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 func (api *runtimeHTTPAPI) handleAuthLogout(ctx *gin.Context) {
 	api.clearSessionCookie(ctx)
 	if redirect := strings.TrimSpace(ctx.Query("redirect")); redirect != "" {
-		ctx.Redirect(http.StatusSeeOther, safeAuthRedirect(redirect))
+		ctx.Redirect(http.StatusSeeOther, authapp.SafeRedirect(redirect))
 		return
 	}
 	ctx.Status(http.StatusNoContent)
 }
 
 func (api *runtimeHTTPAPI) handleAuthLoginPage(ctx *gin.Context) {
-	next := safeAuthRedirect(ctx.Query("next"))
+	next := authapp.SafeRedirect(ctx.Query("next"))
 	if api.sessionAuthenticated(ctx.Request) {
 		ctx.Redirect(http.StatusSeeOther, next)
 		return
@@ -144,7 +132,7 @@ func (api *runtimeHTTPAPI) redirectLoginPreferred(req *http.Request) bool {
 
 func (api *runtimeHTTPAPI) redirectToLogin(ctx *gin.Context, next string) {
 	loginURL := "/login"
-	if safe := safeAuthRedirect(next); safe != "/" {
+	if safe := authapp.SafeRedirect(next); safe != "/" {
 		loginURL += "?next=" + url.QueryEscape(safe)
 	}
 	ctx.Redirect(http.StatusSeeOther, loginURL)
@@ -154,11 +142,11 @@ func (api *runtimeHTTPAPI) sessionAuthenticated(req *http.Request) bool {
 	if strings.TrimSpace(api.authToken) == "" {
 		return true
 	}
-	cookie, err := req.Cookie(runtimeSessionCookieName)
+	cookie, err := req.Cookie(authapp.SessionCookieName)
 	if err != nil {
 		return false
 	}
-	return verifyRuntimeSession(cookie.Value, api.authToken, time.Now())
+	return authapp.VerifySession(cookie.Value, api.authToken, time.Now())
 }
 
 func (api *runtimeHTTPAPI) requestAuthenticated(req *http.Request) bool {
@@ -168,20 +156,20 @@ func (api *runtimeHTTPAPI) requestAuthenticated(req *http.Request) bool {
 	if req == nil || req.URL == nil || !pathInPrefix(req.URL.Path, "/mihomo/controller") {
 		return false
 	}
-	return verifyRuntimeSession(req.URL.Query().Get("session"), api.authToken, time.Now())
+	return authapp.VerifySession(req.URL.Query().Get("session"), api.authToken, time.Now())
 }
 
 func (api *runtimeHTTPAPI) setSessionCookie(ctx *gin.Context) error {
-	value, err := signRuntimeSession(api.authToken, time.Now().Add(runtimeSessionTTL))
+	value, err := authapp.SignSession(api.authToken, time.Now().Add(authapp.SessionTTL))
 	if err != nil {
 		return err
 	}
 	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:     runtimeSessionCookieName,
+		Name:     authapp.SessionCookieName,
 		Value:    value,
 		Path:     "/",
-		MaxAge:   int(runtimeSessionTTL.Seconds()),
-		Expires:  time.Now().Add(runtimeSessionTTL),
+		MaxAge:   int(authapp.SessionTTL.Seconds()),
+		Expires:  time.Now().Add(authapp.SessionTTL),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
 		Secure:   forwardedProto(ctx.Request) == "https",
@@ -191,7 +179,7 @@ func (api *runtimeHTTPAPI) setSessionCookie(ctx *gin.Context) error {
 
 func (api *runtimeHTTPAPI) clearSessionCookie(ctx *gin.Context) {
 	http.SetCookie(ctx.Writer, &http.Cookie{
-		Name:     runtimeSessionCookieName,
+		Name:     authapp.SessionCookieName,
 		Value:    "",
 		Path:     "/",
 		MaxAge:   -1,
@@ -200,85 +188,6 @@ func (api *runtimeHTTPAPI) clearSessionCookie(ctx *gin.Context) {
 		SameSite: http.SameSiteLaxMode,
 		Secure:   forwardedProto(ctx.Request) == "https",
 	})
-}
-
-func signRuntimeSession(secret string, expiresAt time.Time) (string, error) {
-	secret = strings.TrimSpace(secret)
-	if secret == "" {
-		return "", errors.New("auth token is empty")
-	}
-	nonce, err := random.Hex(16)
-	if err != nil {
-		return "", err
-	}
-	message := strings.Join([]string{runtimeSessionVersion, strconv.FormatInt(expiresAt.Unix(), 10), nonce}, ".")
-	return message + "." + runtimeSessionSignature(secret, message), nil
-}
-
-func verifyRuntimeSession(value string, secret string, now time.Time) bool {
-	secret = strings.TrimSpace(secret)
-	parts := strings.Split(strings.TrimSpace(value), ".")
-	if secret == "" || len(parts) != 4 || parts[0] != runtimeSessionVersion {
-		return false
-	}
-	expiresAt, err := strconv.ParseInt(parts[1], 10, 64)
-	if err != nil || now.Unix() > expiresAt {
-		return false
-	}
-	message := strings.Join(parts[:3], ".")
-	expected := runtimeSessionSignature(secret, message)
-	return subtle.ConstantTimeCompare([]byte(parts[3]), []byte(expected)) == 1
-}
-
-func runtimeSessionSignature(secret string, message string) string {
-	mac := hmac.New(sha256.New, []byte(strings.TrimSpace(secret)))
-	_, _ = mac.Write([]byte(message))
-	return base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
-}
-
-func readRuntimeLoginRequest(req *http.Request) (token string, next string, formSubmit bool, err error) {
-	next = safeAuthRedirect(req.URL.Query().Get("next"))
-	contentType := strings.ToLower(strings.TrimSpace(req.Header.Get("Content-Type")))
-	body, err := readRequestBody(req)
-	if err != nil {
-		return "", next, false, err
-	}
-	switch {
-	case strings.HasPrefix(contentType, "application/x-www-form-urlencoded"):
-		values, parseErr := url.ParseQuery(string(body))
-		if parseErr != nil {
-			return "", next, true, invalidArgument("invalid login form", parseErr)
-		}
-		return strings.TrimSpace(values.Get("token")), firstNonEmpty(values.Get("next"), next), true, nil
-	default:
-		var payload runtimeAuthLoginRequest
-		if len(strings.TrimSpace(string(body))) > 0 {
-			if parseErr := json.Unmarshal(body, &payload); parseErr != nil {
-				return "", next, false, invalidArgument("invalid login request", parseErr)
-			}
-		}
-		return strings.TrimSpace(payload.Token), next, false, nil
-	}
-}
-
-func loginRedirectWithError(next string) string {
-	target := "/login?error=1"
-	if safe := safeAuthRedirect(next); safe != "/" {
-		target += "&next=" + url.QueryEscape(safe)
-	}
-	return target
-}
-
-func safeAuthRedirect(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return "/"
-	}
-	parsed, err := url.Parse(value)
-	if err != nil || parsed.IsAbs() || parsed.Host != "" || !strings.HasPrefix(parsed.Path, "/") || strings.HasPrefix(parsed.Path, "//") {
-		return "/"
-	}
-	return parsed.String()
 }
 
 func mihomoControllerUpstreamRawQuery(rawQuery string) string {

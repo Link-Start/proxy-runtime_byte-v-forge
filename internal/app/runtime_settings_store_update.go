@@ -6,14 +6,6 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
-func (s *runtimeSettingsStore) view(ctx context.Context) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-	settings, err := s.load(ctx)
-	if err != nil {
-		return nil, err
-	}
-	return runtimeSettingsView(settings), nil
-}
-
 func (s *runtimeSettingsStore) update(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.ProxyRuntimeSettings, error) {
 	return s.mutateRuntimeSettings(ctx, func(current *runtimeSettingsFile) (*runtimeSettingsFile, error) {
 		nativeResourceIDs, err := s.enabledMihomoResourceIDs(ctx)

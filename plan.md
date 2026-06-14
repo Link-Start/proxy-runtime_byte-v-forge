@@ -916,6 +916,7 @@ Completed user-visible/runtime batches:
 - Mihomo base-config apply now has explicit restart/reload/noop decision and apply-result models before final projection apply, separating policy from process/reload effects.
 - Mihomo final projection apply now uses the same explicit reload/noop decision model instead of embedding signature comparison inside reload execution.
 - Mihomo render option construction is split from config projection rendering, with a pure render-options input factory separating driver snapshots from render execution.
+- Mihomo config projection JSON encoding and signature calculation are now isolated from config object rendering, preparing a clearer validation insertion point.
 - Auth authorization and dashboard login-redirect decisions now live in the auth application; Gin handlers only translate decisions into redirects, challenges, or JSON errors.
 - Dashboard reverse proxies now build once as a dashboard-owned proxy bundle during HTTP API construction, and routes reuse the prebuilt handlers.
 - Lease worker entrypoints now emit structured operation, duration, and lease identity logs for restore, expiry, cleanup-pending, and single-lease cleanup paths.

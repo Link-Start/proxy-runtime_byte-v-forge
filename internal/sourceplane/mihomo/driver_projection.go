@@ -12,6 +12,10 @@ func renderConfigProjection(options renderOptions) (renderedMihomoConfig, error)
 	if err != nil {
 		return renderedMihomoConfig{}, err
 	}
+	return encodeRenderedMihomoConfig(configFile)
+}
+
+func encodeRenderedMihomoConfig(configFile mihomoConfig) (renderedMihomoConfig, error) {
 	data, err := json.MarshalIndent(configFile, "", "  ")
 	if err != nil {
 		return renderedMihomoConfig{}, err

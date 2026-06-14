@@ -8,15 +8,15 @@ import (
 )
 
 func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
-	lease, err := c.leaseByReleaseRequest(ctx, req)
-	if err != nil {
-		return nil, err
-	}
-	return leaseapp.RetireReleaseLease(ctx, leaseapp.ReleaseRetireInput{
+	lease, err := leaseapp.ReleaseLease(ctx, leaseapp.ReleaseInput{
 		Store:      c.deps.store,
 		Locks:      c.deps.locks,
-		Lease:      lease,
+		Request:    req,
 		IsNotFound: isStoreNotFound,
 		Retire:     c.retireLeaseRoute,
 	})
+	if err != nil && leaseapp.IsReleaseLookupRequestError(err) {
+		return nil, invalidArgument(err.Error(), err)
+	}
+	return lease, err
 }

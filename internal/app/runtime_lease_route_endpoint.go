@@ -21,29 +21,28 @@ type acquiredLeaseEndpointInput struct {
 }
 
 func (c leaseCoordinator) acquiredLeaseEndpoint(ctx context.Context, input acquiredLeaseEndpointInput, failure *leaseapp.FailedAcquireRecorder) (leaseapp.Listener, *proxyruntimev1.EgressListener, *proxyruntimev1.ProxyEndpoint, error) {
-	listener, err := c.deps.leaseListener(ctx, input.settings, input.req.GetAccountId(), input.leaseID)
-	if err != nil {
-		failure.BeforeRoute(ctx, "lease listener allocation failed")
-		return leaseapp.Listener{}, nil, nil, err
-	}
-	egress, err := c.deps.localListenerEndpoint(listener, c.deps.sessionAdvertisedHost(input.advertisedHost, listener))
-	if err != nil {
-		failure.BeforeRoute(ctx, "lease endpoint build failed")
-		return leaseapp.Listener{}, nil, nil, err
-	}
-	endpoint := leaseapp.NewAcquiredEndpoint(leaseapp.AcquiredEndpointInput{
-		Listener:          listener,
-		Egress:            egress,
+	endpoint, err := leaseapp.MaterializeAcquiredEndpoint(ctx, leaseapp.AcquiredEndpointMaterializeInput{
 		Request:           input.req,
+		LeaseID:           input.leaseID,
 		SelectionPlan:     input.selection.plan,
 		ProviderClient:    input.providerClient,
 		ProviderAccountID: input.providerAccountID,
 		ConcurrencyHolder: input.concurrencyHolder,
 		Session:           input.session,
 		LineLabels:        input.lineLabels,
+		Failure:           failure,
 		Managed:           true,
 		FallbackProtocol:  "http",
+		ResolveListener: func(ctx context.Context, accountID string, leaseID string) (leaseapp.Listener, error) {
+			return c.deps.leaseListener(ctx, input.settings, accountID, leaseID)
+		},
+		ResolveEgress: func(ctx context.Context, listener leaseapp.Listener) (*proxyruntimev1.ProxyEndpoint, error) {
+			_ = ctx
+			return c.deps.localListenerEndpoint(listener, c.deps.sessionAdvertisedHost(input.advertisedHost, listener))
+		},
 	})
-	failure.SetEndpoint(endpoint)
+	if err != nil {
+		return leaseapp.Listener{}, nil, nil, err
+	}
 	return endpoint.Listener, endpoint.ListenerProto, endpoint.Egress, nil
 }

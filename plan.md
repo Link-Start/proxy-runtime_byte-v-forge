@@ -871,6 +871,7 @@ Completed user-visible/runtime batches:
 - Failed-acquire cleanup-pending session label mutation now lives in `internal/app/lease`; failure compensation no longer constructs temporary lease facts in app code.
 - Dynamic lease Mihomo line dialer helpers now separate profile label/error construction, native fixed/subscription lookup, and Mihomo node naming helpers.
 - Dynamic IP selection policy normalization, attempt parsing, max-attempt resolution, and selection keys now live in `internal/app/lease`; app-level lease acquire retains only retry error classification.
+- Existing active-lease reuse/replace branching is now a single lease-owned decision enum; acquire orchestration only executes refresh or retire side effects.
 
 Still open:
 

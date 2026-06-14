@@ -34,14 +34,13 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 	requestedSessionID := leaseapp.RequestedSessionID(req)
 	existing, err := c.activeLeaseByRequest(ctx, req, requestedSessionID)
 	if err == nil {
-		now := c.now().UTC()
-		if leaseapp.ReuseExistingActiveLease(req, existing, now, playgroundProfileID, playgroundUsername) {
+		switch leaseapp.DecideExistingActiveLease(req, existing, c.now().UTC(), playgroundProfileID, playgroundUsername) {
+		case leaseapp.ExistingActiveLeaseReuse:
 			if err := c.refreshLeaseConcurrencySlot(ctx, existing); err != nil {
 				return nil, err
 			}
 			return existing, nil
-		}
-		if leaseapp.ReplaceExistingActiveLease(req, existing, now, playgroundProfileID, playgroundUsername) {
+		case leaseapp.ExistingActiveLeaseReplace:
 			if err := c.retireLeaseRoute(ctx, existing); err != nil {
 				return nil, err
 			}

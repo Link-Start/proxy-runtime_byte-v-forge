@@ -676,6 +676,7 @@ Completed user-visible/runtime batches:
 - Lease restore/expire/cleanup worker entrypoints now go through the lease application worker port instead of direct Runtime coordinator calls.
 - Lease cleanup label mutation is centralized in the lease package together with cleanup predicates.
 - Settings application service forwarding, update usecases, apply scheduling, Mihomo-native handlers, and validation are split into focused files.
+- Runtime settings application now carries explicit logger, settings-store, proxy-user, provider-descriptor, Mihomo-native, and apply-scheduler dependencies instead of reaching through `*Runtime` inside usecase methods.
 - Runtime settings store load/save and Mihomo-native persistence facades are split from settings update logic.
 - HTTP control-plane route declarations are split by auth, runtime status, provider, lease, check, and settings ownership.
 - Runtime auth session signing, verification, token matching, and safe redirects are extracted into `internal/app/auth`.

@@ -2,30 +2,66 @@ package app
 
 import (
 	"context"
+	"log/slog"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
 type runtimeSettingsApplication struct {
-	runtime *Runtime
+	logger                     *slog.Logger
+	settings                   *runtimeSettingsStore
+	proxyUsers                 []config.ProxyUserRoute
+	ipFraudProviderViews       func() []*proxyruntimev1.ProxyIPFraudProviderDescriptor
+	ipGeoProviderViews         func() []*proxyruntimev1.ProxyIPGeoProviderDescriptor
+	loadMihomoNativeSettings   func(context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
+	updateMihomoNativeSettings func(context.Context, *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
+	scheduleApply              func([]string)
 }
 
 func newRuntimeSettingsApplication(runtime *Runtime) runtimeSettingsApplication {
-	return runtimeSettingsApplication{runtime: runtime}
+	return runtimeSettingsApplication{
+		logger:               runtime.logger,
+		settings:             runtime.settings,
+		proxyUsers:           append([]config.ProxyUserRoute(nil), runtime.cfg.ProxyUsers...),
+		ipFraudProviderViews: runtime.ipFraudProviders.ProviderDescriptors,
+		ipGeoProviderViews:   runtime.ipGeoProviders.ProviderDescriptors,
+		loadMihomoNativeSettings: func(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+			return mihomoNativeSettings(ctx, runtime)
+		},
+		updateMihomoNativeSettings: func(ctx context.Context, config *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+			return updateMihomoNativeSettings(ctx, runtime, config)
+		},
+		scheduleApply: runtime.scheduleRuntimeSettingsApply,
+	}
 }
 
 func (a runtimeSettingsApplication) ListProxyIPFraudProviders(context.Context) (*proxyruntimev1.ListProxyIPFraudProvidersResponse, error) {
-	return &proxyruntimev1.ListProxyIPFraudProvidersResponse{Providers: a.runtime.ipFraudProviders.ProviderDescriptors()}, nil
+	return &proxyruntimev1.ListProxyIPFraudProvidersResponse{Providers: a.listIPFraudProviderViews()}, nil
 }
 
 func (a runtimeSettingsApplication) ListProxyIPGeoProviders(context.Context) (*proxyruntimev1.ListProxyIPGeoProvidersResponse, error) {
-	return &proxyruntimev1.ListProxyIPGeoProvidersResponse{Providers: a.runtime.ipGeoProviders.ProviderDescriptors()}, nil
+	return &proxyruntimev1.ListProxyIPGeoProvidersResponse{Providers: a.listIPGeoProviderViews()}, nil
 }
 
 func (a runtimeSettingsApplication) GetProxyRuntimeSettings(ctx context.Context) (*proxyruntimev1.GetProxyRuntimeSettingsResponse, error) {
-	settings, err := a.runtime.settings.view(ctx)
+	settings, err := a.settings.view(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &proxyruntimev1.GetProxyRuntimeSettingsResponse{Settings: settings}, nil
+}
+
+func (a runtimeSettingsApplication) listIPFraudProviderViews() []*proxyruntimev1.ProxyIPFraudProviderDescriptor {
+	if a.ipFraudProviderViews == nil {
+		return nil
+	}
+	return a.ipFraudProviderViews()
+}
+
+func (a runtimeSettingsApplication) listIPGeoProviderViews() []*proxyruntimev1.ProxyIPGeoProviderDescriptor {
+	if a.ipGeoProviderViews == nil {
+		return nil
+	}
+	return a.ipGeoProviderViews()
 }

@@ -7,14 +7,14 @@ import (
 )
 
 func (a runtimeSettingsApplication) UpdateProxyRuntimeSettings(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
-	if err := rejectMissingProxyUserProfiles(a.runtime.cfg.ProxyUsers, req.GetEgressProfiles()); err != nil {
+	if err := rejectMissingProxyUserProfiles(a.proxyUsers, req.GetEgressProfiles()); err != nil {
 		return nil, err
 	}
-	before, err := a.runtime.settings.load(ctx)
+	before, err := a.settings.load(ctx)
 	if err != nil {
 		return nil, err
 	}
-	settings, err := a.runtime.settings.update(ctx, req)
+	settings, err := a.settings.update(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -23,7 +23,7 @@ func (a runtimeSettingsApplication) UpdateProxyRuntimeSettings(ctx context.Conte
 }
 
 func (a runtimeSettingsApplication) UpdateProxyDynamicIPProviders(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
-	settings, err := a.runtime.settings.updateDynamicIPProviders(ctx, req.GetDynamicIpProviders())
+	settings, err := a.settings.updateDynamicIPProviders(ctx, req.GetDynamicIpProviders())
 	if err != nil {
 		return nil, err
 	}
@@ -32,14 +32,14 @@ func (a runtimeSettingsApplication) UpdateProxyDynamicIPProviders(ctx context.Co
 }
 
 func (a runtimeSettingsApplication) UpdateProxyEgressProfiles(ctx context.Context, req *proxyruntimev1.UpdateProxyEgressProfilesRequest) (*proxyruntimev1.UpdateProxyEgressProfilesResponse, error) {
-	if err := rejectMissingProxyUserProfiles(a.runtime.cfg.ProxyUsers, req.GetEgressProfiles()); err != nil {
+	if err := rejectMissingProxyUserProfiles(a.proxyUsers, req.GetEgressProfiles()); err != nil {
 		return nil, err
 	}
-	before, err := a.runtime.settings.load(ctx)
+	before, err := a.settings.load(ctx)
 	if err != nil {
 		return nil, err
 	}
-	settings, err := a.runtime.settings.updateEgressProfiles(ctx, req.GetEgressProfiles())
+	settings, err := a.settings.updateEgressProfiles(ctx, req.GetEgressProfiles())
 	if err != nil {
 		return nil, err
 	}
@@ -48,11 +48,11 @@ func (a runtimeSettingsApplication) UpdateProxyEgressProfiles(ctx context.Contex
 }
 
 func (a runtimeSettingsApplication) UpdateProxyIngressRules(ctx context.Context, req *proxyruntimev1.UpdateProxyIngressRulesRequest) (*proxyruntimev1.UpdateProxyIngressRulesResponse, error) {
-	before, err := a.runtime.settings.load(ctx)
+	before, err := a.settings.load(ctx)
 	if err != nil {
 		return nil, err
 	}
-	settings, err := a.runtime.settings.updateIngressRules(ctx, req.GetIngressRules())
+	settings, err := a.settings.updateIngressRules(ctx, req.GetIngressRules())
 	if err != nil {
 		return nil, err
 	}
@@ -61,14 +61,14 @@ func (a runtimeSettingsApplication) UpdateProxyIngressRules(ctx context.Context,
 }
 
 func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
-	if err := rejectMissingProxyUserProfiles(a.runtime.cfg.ProxyUsers, req.GetEgressProfiles()); err != nil {
+	if err := rejectMissingProxyUserProfiles(a.proxyUsers, req.GetEgressProfiles()); err != nil {
 		return nil, err
 	}
-	before, err := a.runtime.settings.load(ctx)
+	before, err := a.settings.load(ctx)
 	if err != nil {
 		return nil, err
 	}
-	settings, err := a.runtime.settings.updateInUserRules(ctx, req.GetEgressProfiles(), req.GetIngressRules())
+	settings, err := a.settings.updateInUserRules(ctx, req.GetEgressProfiles(), req.GetIngressRules())
 	if err != nil {
 		return nil, err
 	}
@@ -77,9 +77,9 @@ func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, 
 }
 
 func (a runtimeSettingsApplication) changedInUserConnectionUsernamesAfterUpdate(ctx context.Context, before *runtimeSettingsFile, errorMessage string) []string {
-	after, err := a.runtime.settings.load(ctx)
+	after, err := a.settings.load(ctx)
 	if err != nil {
-		a.runtime.logger.Warn(errorMessage, "error", err)
+		a.logger.Warn(errorMessage, "error", err)
 		return nil
 	}
 	return changedInUserConnectionUsernames(before, after)

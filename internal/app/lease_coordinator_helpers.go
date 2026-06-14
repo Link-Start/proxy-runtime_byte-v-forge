@@ -209,3 +209,24 @@ func (c leaseCoordinator) accountLockedAcquireRunner(ctx context.Context, settin
 		},
 	}
 }
+
+func (c leaseCoordinator) preparedAcquireRunner(advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.PreparedAcquireRunner {
+	return leaseapp.PreparedAcquireRunner{
+		Locks: c.deps.locks,
+		Action: func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
+			settings, err := c.deps.settings.load(ctx)
+			if err != nil {
+				return nil, err
+			}
+			runner := c.accountLockedAcquireRunner(ctx, settings, advertisedHost, req)
+			lease, err := runner.Run(ctx, leaseapp.AccountLockedAcquireRunnerInput{
+				Request:        req,
+				EgressProfiles: settings.GetEgressProfiles(),
+			})
+			if err != nil && leaseapp.IsAcquirePolicyError(err) {
+				return nil, leaseProfilePolicyError(err)
+			}
+			return lease, err
+		},
+	}
+}

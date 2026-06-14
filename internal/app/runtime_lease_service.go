@@ -8,31 +8,12 @@ import (
 )
 
 func (c leaseCoordinator) acquireLease(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
-	lease, err := leaseapp.RunPreparedAcquire(ctx, leaseapp.PreparedAcquireInput{
-		Locks:   c.deps.locks,
+	runner := c.preparedAcquireRunner(advertisedHost, req)
+	lease, err := runner.Run(ctx, leaseapp.PreparedAcquireRunnerInput{
 		Request: req,
-		Action: func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
-			return c.acquireLeaseWithAccountLock(ctx, advertisedHost, req)
-		},
 	})
 	if err != nil && leaseapp.IsAcquireRequestError(err) {
 		return nil, invalidArgument(err.Error(), err)
-	}
-	return lease, err
-}
-
-func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
-	settings, err := c.deps.settings.load(ctx)
-	if err != nil {
-		return nil, err
-	}
-	runner := c.accountLockedAcquireRunner(ctx, settings, advertisedHost, req)
-	lease, err := runner.Run(ctx, leaseapp.AccountLockedAcquireRunnerInput{
-		Request:        req,
-		EgressProfiles: settings.GetEgressProfiles(),
-	})
-	if err != nil && leaseapp.IsAcquirePolicyError(err) {
-		return nil, leaseProfilePolicyError(err)
 	}
 	return lease, err
 }

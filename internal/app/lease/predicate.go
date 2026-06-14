@@ -13,6 +13,10 @@ const (
 	CleanupFinalStatusLabel     = "cleanup_final_status"
 )
 
+func HasLeaseID(lease *proxyruntimev1.ProxyDynamicLease) bool {
+	return lease != nil && strings.TrimSpace(lease.GetLeaseId()) != ""
+}
+
 func ActiveAt(lease *proxyruntimev1.ProxyDynamicLease, now time.Time) bool {
 	if !HasActiveStatus(lease) {
 		return false

@@ -2,14 +2,13 @@ package app
 
 import (
 	"context"
-	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	if lease == nil || strings.TrimSpace(lease.GetLeaseId()) == "" {
+	if !leaseapp.HasLeaseID(lease) {
 		return nil
 	}
 	return leaseapp.WithAccountLock(ctx, c.deps.locks, lease.GetAccountId(), func(ctx context.Context) error {

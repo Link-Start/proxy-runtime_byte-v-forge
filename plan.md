@@ -864,6 +864,7 @@ Completed user-visible/runtime batches:
 - Lease release/expired cleanup failure and cleanup retry Mark+Save flows now live in `internal/app/lease`, leaving coordinator wrappers as store adapters.
 - Lease final expired/released Mark+Save flows now live in `internal/app/lease`; coordinator finalization only releases concurrency slots and logs cleanup failures.
 - Lease worker code now separates sweep-loop scheduling, expiry batch processing, single-lease expiry, cleanup batch processing, and single-lease cleanup into focused files.
+- Lease ID presence checks are centralized in `internal/app/lease`, removing duplicate string trimming from expiry and cleanup workers.
 
 Still open:
 

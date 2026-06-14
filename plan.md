@@ -721,6 +721,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease concurrency holder, concurrency policy, and dynamic-provider-id extraction are centralized in `internal/app/lease`, keeping lease fact interpretation out of runtime provider concurrency helpers.
 - Active dynamic lease fact construction and active/released status checks are centralized in `internal/app/lease`, removing direct status-enum writes and checks from lease runtime orchestration.
 - Dynamic IP endpoint health scoring now uses lease status predicates from `internal/app/lease` instead of interpreting active/expired/released/failed enums locally.
+- Acquire request session-id label parsing is centralized in `internal/app/lease`, so lease orchestration no longer owns sticky-session label aliases.
 
 Still open:
 

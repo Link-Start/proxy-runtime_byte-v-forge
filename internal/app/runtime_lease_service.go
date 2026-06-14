@@ -41,7 +41,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 		return nil, err
 	}
 	selectionPolicy := normalizeDynamicIPSelectionPolicy(req)
-	requestedSessionID := requestedLeaseSessionID(req)
+	requestedSessionID := leaseapp.RequestedSessionID(req)
 	existing, err := c.activeLeaseByRequest(ctx, req, requestedSessionID)
 	if err == nil && leaseapp.ActiveAt(existing, c.now().UTC()) {
 		if !req.GetForceNew() && !playgroundLeaseNeedsReplacement(req, existing) {
@@ -117,7 +117,7 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 	if err != nil {
 		return nil, invalidArgument("provider account configuration is invalid", err)
 	}
-	requestedSessionID := requestedLeaseSessionID(req)
+	requestedSessionID := leaseapp.RequestedSessionID(req)
 	if requestedSessionID != "" {
 		req.Policy.Labels["session_id"] = requestedSessionID
 	}
@@ -395,15 +395,4 @@ func normalizeLeasePolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) {
 	}
 	req.Policy.Labels["account_id"] = req.GetAccountId()
 	req.Policy.Labels["purpose"] = req.GetPurpose()
-}
-
-func requestedLeaseSessionID(req *proxyruntimev1.AcquireProxyLeaseRequest) string {
-	labels := req.GetPolicy().GetLabels()
-	return firstNonEmpty(
-		labels["session_id"],
-		labels["sticky_session_id"],
-		labels["sticky_id"],
-		labels["sid"],
-		labels["session"],
-	)
 }

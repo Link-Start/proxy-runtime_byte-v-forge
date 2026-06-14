@@ -744,6 +744,7 @@ Completed user-visible/runtime batches:
 - Lease coordinator construction now accepts explicit orchestration dependencies; `Runtime` is only adapted in a dedicated wiring file.
 - Dynamic IP selector construction now uses explicit store, settings, provider-registry, concurrency, logger, and geo-lookup dependencies behind a dedicated Runtime wiring adapter.
 - Provider-account concurrency acquire/available/release is now a lease-owned port; app runtime keeps only the cache lifecycle/Redis-local adapter implementation.
+- Source-plane egress-profile projection helpers are split out of settings mutation code into a dedicated source projection file.
 
 Still open:
 

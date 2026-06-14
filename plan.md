@@ -779,6 +779,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native fixed-proxy URI parsing, URI rendering, and JSON value extraction are split into focused helpers.
 - Mihomo connection cleanup now separates runtime orchestration, controller HTTP client calls, response models, and selector matching helpers.
 - Source-plane egress profile kind mapping is split from egress profile projection.
+- Source-plane egress profile list assembly is split from line and exit projection helpers.
 
 Still open:
 

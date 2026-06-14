@@ -10,10 +10,12 @@ import (
 )
 
 func (c leaseCoordinator) restoreLeaseSessionNodes(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, settings *runtimeSettingsFile, providerCfg accountproxy.Config) ([]provider.Node, error) {
-	providerCfg.Gateways = endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerCfg.ProviderID)
-	providerClient, err := leaseapp.NewSessionProvider(c.deps.sessionProviders, providerCfg)
-	if err != nil {
-		return nil, err
-	}
-	return leaseapp.FetchProviderSession(ctx, providerClient, lease.GetSession())
+	return leaseapp.FetchLeaseProviderSession(ctx, leaseapp.ProviderSessionFetchInput{
+		Factory:        c.deps.sessionProviders,
+		Lease:          lease,
+		ProviderConfig: providerCfg,
+		ResolveGateways: func(ctx context.Context, providerID string) ([]accountproxy.Gateway, error) {
+			return endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerID), nil
+		},
+	})
 }

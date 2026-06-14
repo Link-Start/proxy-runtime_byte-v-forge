@@ -799,6 +799,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease listener handling now separates listener construction, password/ingress lookup, reserved-lease aggregation, and listener identity helpers.
 - Dynamic lease release now separates top-level release orchestration, release request lookup, and route/provider-session cleanup helpers.
 - Dynamic lease acquire service now separates account-lock orchestration from endpoint selection, concurrency slot acquisition, and provider-account locked session creation attempts.
+- Lease coordinator wiring now separates dependency shape, basic runtime helpers, active-lease lookup, provider-account concurrency handling, and session-provider factory access.
 
 Still open:
 

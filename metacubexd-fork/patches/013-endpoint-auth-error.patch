@@ -1,0 +1,42 @@
+diff --git a/composables/useApi.ts b/composables/useApi.ts
+--- a/composables/useApi.ts
++++ b/composables/useApi.ts
+@@ -252,4 +252,7 @@ export function useGithubAPI() {
+ // API Functions
+-export type EndpointCheckError = 'mixed_content' | 'network_error' | null
+-
++export type EndpointCheckError =
++  | 'mixed_content'
++  | 'network_error'
++  | 'unauthorized'
++  | null
+ export function checkEndpointAPI(
+@@ -263,4 +267,5 @@ export function checkEndpointAPI(
+     })
+     .then(() => null)
+     .catch((err) => {
++      if (endpointUnauthorized(err)) return 'unauthorized'
+       console.error(err)
+@@ -277,4 +282,8 @@ export function checkEndpointAPI(
+     })
+ }
+-
++function endpointUnauthorized(err: unknown) {
++  if (!err || typeof err !== 'object' || !('response' in err)) return false
++  const response = err.response as { status?: number } | undefined
++  return response?.status === 401 || response?.status === 403
++}
+ export function closeAllConnectionsAPI() {
+diff --git a/pages/setup.vue b/pages/setup.vue
+--- a/pages/setup.vue
++++ b/pages/setup.vue
+@@ -284,6 +284,9 @@ onMounted(async () => {
+             <template v-if="endpointError === 'mixed_content'">
+               {{ t('mixedContentError') }}
+             </template>
++            <template v-else-if="endpointError === 'unauthorized'">
++              Secret required or invalid.
++            </template>
+             <template v-else>
+               {{ t('endpointConnectError') }}
+             </template>

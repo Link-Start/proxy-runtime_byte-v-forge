@@ -11,14 +11,6 @@ import (
 
 var ErrAcquireAttemptConcurrencyLimit = errors.New("provider account concurrency limit reached")
 
-type AcquireAttemptSlotStage int
-
-const (
-	AcquireAttemptSlotNoError AcquireAttemptSlotStage = iota
-	AcquireAttemptSlotProviderAccountLookup
-	AcquireAttemptSlotConcurrencyAcquire
-)
-
 type AcquireAttemptSlotInput struct {
 	Store             OrchestrationStore
 	Limiter           ProviderAccountConcurrencyLimiter
@@ -35,10 +27,10 @@ type AcquireAttemptSlot struct {
 	ConcurrencyHolder string
 }
 
-func AcquireAttemptSlotForProviderAccount(ctx context.Context, input AcquireAttemptSlotInput) (AcquireAttemptSlot, AcquireAttemptSlotStage, error) {
+func AcquireAttemptSlotForProviderAccount(ctx context.Context, input AcquireAttemptSlotInput) (AcquireAttemptSlot, error) {
 	providerAccount, err := input.Store.ProviderAccount(ctx, input.ProviderAccountID)
 	if err != nil {
-		return AcquireAttemptSlot{}, AcquireAttemptSlotProviderAccountLookup, err
+		return AcquireAttemptSlot{}, err
 	}
 	slot, holder, err := AcquireAttemptConcurrencySlot(ctx, AcquireAttemptConcurrencyInput{
 		Limiter:    input.Limiter,
@@ -50,7 +42,7 @@ func AcquireAttemptSlotForProviderAccount(ctx context.Context, input AcquireAtte
 		TTLBuffer:  input.TTLBuffer,
 	})
 	if err != nil {
-		return AcquireAttemptSlot{}, AcquireAttemptSlotConcurrencyAcquire, fmt.Errorf("%w: %w", ErrAcquireAttemptConcurrencyLimit, err)
+		return AcquireAttemptSlot{}, fmt.Errorf("%w: %w", ErrAcquireAttemptConcurrencyLimit, err)
 	}
-	return AcquireAttemptSlot{ConcurrencySlot: slot, ConcurrencyHolder: holder}, AcquireAttemptSlotNoError, nil
+	return AcquireAttemptSlot{ConcurrencySlot: slot, ConcurrencyHolder: holder}, nil
 }

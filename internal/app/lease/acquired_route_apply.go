@@ -14,14 +14,6 @@ var (
 	ErrAcquiredRouteFactSave  = errors.New("lease fact save failed")
 )
 
-type AcquiredRouteApplyStage int
-
-const (
-	AcquiredRouteApplyNoError AcquiredRouteApplyStage = iota
-	AcquiredRouteApplyDataPlane
-	AcquiredRouteApplyFactSave
-)
-
 type AcquiredRouteApplyInput struct {
 	Store             OrchestrationStore
 	DataPlane         DataPlaneApplier
@@ -37,10 +29,10 @@ type AcquiredRouteApplyInput struct {
 	AcquiredAt        time.Time
 }
 
-func ApplyAcquiredRoute(ctx context.Context, input AcquiredRouteApplyInput) (*proxyruntimev1.ProxyDynamicLease, AcquiredRouteApplyStage, error) {
+func ApplyAcquiredRoute(ctx context.Context, input AcquiredRouteApplyInput) (*proxyruntimev1.ProxyDynamicLease, error) {
 	if err := UpsertSessionRoute(ctx, input.DataPlane, input.Route); err != nil {
 		input.Failure.AfterRoute(ctx, input.Route, ErrAcquiredRouteDataPlane.Error())
-		return nil, AcquiredRouteApplyDataPlane, fmt.Errorf("%w: %w", ErrAcquiredRouteDataPlane, err)
+		return nil, fmt.Errorf("%w: %w", ErrAcquiredRouteDataPlane, err)
 	}
 	lease, err := SaveAcquiredActiveFact(ctx, input.Store, AcquiredActiveFactInput{
 		LeaseID:           input.LeaseID,
@@ -54,7 +46,7 @@ func ApplyAcquiredRoute(ctx context.Context, input AcquiredRouteApplyInput) (*pr
 	})
 	if err != nil {
 		input.Failure.AfterRoute(ctx, input.Route, ErrAcquiredRouteFactSave.Error())
-		return nil, AcquiredRouteApplyFactSave, fmt.Errorf("%w: %w", ErrAcquiredRouteFactSave, err)
+		return nil, fmt.Errorf("%w: %w", ErrAcquiredRouteFactSave, err)
 	}
-	return lease, AcquiredRouteApplyNoError, nil
+	return lease, nil
 }

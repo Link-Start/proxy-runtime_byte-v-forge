@@ -17,39 +17,21 @@ var (
 	ErrProviderSessionFetch    = errors.New("provider session fetch failed")
 )
 
-type ProviderSessionErrorKind int
-
-const (
-	ProviderSessionNoError ProviderSessionErrorKind = iota
-	ProviderSessionFactoryError
-	ProviderSessionCreateError
-	ProviderSessionFetchError
-)
-
-func ClassifyProviderSessionError(session *proxyruntimev1.ProxySession, err error) ProviderSessionErrorKind {
-	if err == nil {
-		return ProviderSessionNoError
-	}
-	if session == nil {
-		return ProviderSessionCreateError
-	}
-	return ProviderSessionFetchError
-}
-
-func ProviderSessionStageError(kind ProviderSessionErrorKind, err error) error {
+func WrapProviderSessionFactoryFailure(err error) error {
 	if err == nil {
 		return nil
 	}
-	switch kind {
-	case ProviderSessionFactoryError:
-		return fmt.Errorf("%w: %w", ErrProviderSessionFactory, err)
-	case ProviderSessionCreateError:
-		return fmt.Errorf("%w: %w", ErrProviderSessionCreate, err)
-	case ProviderSessionFetchError:
-		return fmt.Errorf("%w: %w", ErrProviderSessionFetch, err)
-	default:
-		return err
+	return fmt.Errorf("%w: %w", ErrProviderSessionFactory, err)
+}
+
+func WrapProviderSessionCreateFetchFailure(session *proxyruntimev1.ProxySession, err error) error {
+	if err == nil {
+		return nil
 	}
+	if session == nil {
+		return fmt.Errorf("%w: %w", ErrProviderSessionCreate, err)
+	}
+	return fmt.Errorf("%w: %w", ErrProviderSessionFetch, err)
 }
 
 func CreateAndFetchProviderSession(ctx context.Context, providerClient SessionProvider, req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, concurrencyHolder string) (*proxyruntimev1.ProxySession, []provider.Node, error) {

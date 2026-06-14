@@ -32,7 +32,7 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, flow acqu
 		DialerProxy:   flow.dialerProxy,
 		LocalProtocol: c.deps.cfg.LocalProtocol,
 	})
-	lease, _, err := leaseapp.ApplyAcquiredRoute(ctx, leaseapp.AcquiredRouteApplyInput{
+	lease, err := leaseapp.ApplyAcquiredRoute(ctx, leaseapp.AcquiredRouteApplyInput{
 		Store:             c.deps.store,
 		DataPlane:         c.deps.dataPlane,
 		Failure:           flow.failure,

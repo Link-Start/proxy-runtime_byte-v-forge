@@ -26,7 +26,6 @@ type ProviderSessionAcquireResult struct {
 	ProviderClient    SessionProvider
 	Session           *proxyruntimev1.ProxySession
 	Nodes             []provider.Node
-	ErrorKind         ProviderSessionErrorKind
 }
 
 func AcquireProviderSession(ctx context.Context, input ProviderSessionAcquireInput) (ProviderSessionAcquireResult, error) {
@@ -37,14 +36,12 @@ func AcquireProviderSession(ctx context.Context, input ProviderSessionAcquireInp
 	providerClient, err := NewSessionProvider(input.Factory, providerCfg)
 	result := ProviderSessionAcquireResult{ProviderAccountID: accountID, ProviderClient: providerClient}
 	if err != nil {
-		result.ErrorKind = ProviderSessionFactoryError
-		return result, ProviderSessionStageError(result.ErrorKind, err)
+		return result, WrapProviderSessionFactoryFailure(err)
 	}
 	session, nodes, err := CreateAndFetchProviderSession(ctx, providerClient, input.Request, input.SelectionPlan, input.ConcurrencyHolder)
 	result.Session = session
 	result.Nodes = nodes
-	result.ErrorKind = ClassifyProviderSessionError(session, err)
-	return result, ProviderSessionStageError(result.ErrorKind, err)
+	return result, WrapProviderSessionCreateFetchFailure(session, err)
 }
 
 func NewSessionProvider(factory SessionProviderFactory, providerCfg accountproxy.Config) (SessionProvider, error) {

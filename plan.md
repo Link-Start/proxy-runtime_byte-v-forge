@@ -836,6 +836,7 @@ Completed user-visible/runtime batches:
 - Mihomo proxy URL rendering now separates provider-node list rendering, URL-to-node config rendering, and port resolution helpers.
 - Mihomo driver projection now separates reconcile orchestration, render-option assembly, and JSON projection/signature rendering into focused files.
 - Mihomo endpoint handling now separates endpoint normalization, address parsing/dial-address resolution, and listener readiness waiting.
+- Mihomo native egress resolution now separates native node-name stripping, resource lookup, and proxy/provider availability checks.
 
 Still open:
 

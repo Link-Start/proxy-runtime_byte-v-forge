@@ -760,6 +760,7 @@ Completed user-visible/runtime batches:
 - IP fraud provider secret-key helper naming now matches IP geo ownership instead of using an ambiguous generic provider helper name.
 - Runtime settings secret-ref cleaning, cloning, configured checks, and resolution are centralized in the secret-ref helper file instead of the broad settings helper bucket.
 - Runtime-wide ID, region, map, duration, and expected-status helpers are moved out of settings helpers; request raw-value cleanup now lives with settings request helpers.
+- The obsolete runtime settings helper bucket was removed after its last clone helper became unused.
 
 Still open:
 

@@ -101,3 +101,583 @@ Rejected decisions:
 - Search for stale GOST, proxy-source, gateway/pool, and resolver references.
 - Run static checks in the allowed environment.
 - Validate runtime scenarios: empty entry, proxy user routing, Mihomo-native proxy/provider observation, dynamic lease acquire/release, and restore.
+
+## Runtime Reliability and Clean Code Refactor Plan
+
+### Target Outcome
+
+`proxy-runtime` should move from a large `Runtime` object plus synchronous slow paths to a usecase-oriented runtime:
+
+```text
+transport -> usecase -> ports -> adapters
+```
+
+The refactor must preserve one source of truth:
+
+- Durable control-plane facts live in the service-owned database.
+- Hot/ephemeral state, locks, leases, and idempotency windows use TTL-backed runtime state where needed.
+- Mihomo config remains a generated runtime projection, never a second editable model.
+
+Success criteria:
+
+- Login and dashboard loading are not blocked by lease history scans.
+- Playground lease acquire does not wait for inactive lease history.
+- Service startup is not blocked by provider calls or lease restore.
+- HTTP handlers only adapt requests/responses; they do not run business orchestration directly.
+- Usecases do not depend on `*Runtime`, `gin.Context`, or concrete store implementations.
+- Store queries do not load all JSON rows and filter business state in Go.
+- External HTTP/gRPC/SDK calls have explicit timeout, bounded retry/backoff, and visible failure handling.
+- Logs, metrics, traces, and errors never expose provider passwords, session material, API tokens, cookies, Mihomo secret, or full proxy URLs.
+
+### Phase 0: Migration Boundary
+
+Scope:
+
+- Touch only `proxy-runtime` unless deployment values or scripts are required.
+- Keep cross-repository collaboration through proto, HTTP, events, or deploy config.
+- Do not add deprecated wrappers, compatibility aliases, temporary adapters, or dual business flows.
+- Do not add tests in this project phase; validate with formatting, static checks, focused grep, generated-code checks, and remote/deploy validation where artifacts are required.
+
+Required before each implementation batch:
+
+- Check `proxy-runtime` git status.
+- Read `proxy-runtime/AGENTS.md`.
+- Keep each migration batch independently committable.
+
+### Phase 1: Fix User-Visible Latency
+
+#### Lease list query contract
+
+Current defect:
+
+- Main UI calls `GET /api/leases?include_inactive=true`.
+- Backend reads full `lease_json` history and unmarshals rows before filtering.
+- Large history makes Playground and dashboard appear stuck.
+
+Target API shape:
+
+```text
+GET /api/leases?status=active&limit=50
+GET /api/leases?status=recent&limit=50
+GET /api/leases?status=history&cursor=<cursor>&limit=50
+GET /api/leases/{lease_id}
+```
+
+Rules:
+
+- `active` means `status = ACTIVE` and `expires_at > now`.
+- `recent` is bounded by `limit`.
+- `history` is cursor-paginated.
+- Full JSON/proto detail is fetched only by lease ID.
+- Main UI must not default to inactive history.
+
+Store target methods:
+
+```text
+ListActiveLeases(ctx, filter)
+ListRecentLeases(ctx, page)
+ListLeaseHistory(ctx, page)
+GetLeaseFact(ctx, leaseID)
+HasBlockingLease(ctx, providerAccount)
+FindActiveLeaseBySession(ctx, providerAccount, sessionID)
+```
+
+Data access requirements:
+
+- Use SQL predicates for active, blocking, session, provider account, and expiry checks.
+- Replace full-row JSON scans with projected columns.
+- Add or verify indexes for:
+  - `(status, expires_at)`
+  - `(provider_key, account_key, status, expires_at)`
+  - `(acquired_at DESC, updated_at DESC)`
+  - `session_id` if session lookup is required.
+
+Acceptance:
+
+- Active lease list is bounded and does not scan inactive history.
+- `HasBlockingLease` uses an existence query, not full row loading.
+- Playground opens without waiting on full history.
+
+#### Playground acquire path
+
+Current defect:
+
+```text
+save playground rule -> leases.load() -> acquire lease -> leases.load()
+```
+
+Target flow:
+
+```text
+save playground rule without lease refresh
+acquire lease
+refresh active lease only
+```
+
+Rules:
+
+- Save failure blocks acquire.
+- Acquire failure shows the provider/runtime error.
+- Refresh failure does not hide a successful acquire.
+- Active lease check must include expiry, not only status.
+
+Acceptance:
+
+- Clicking acquire enters acquire loading immediately.
+- No inactive history request is made before acquire.
+- Expired active rows do not block UI state.
+
+#### Frontend request policy
+
+Target:
+
+- Centralize proxy-runtime API requests.
+- Add timeout and cancellation.
+- Normalize errors into:
+  - `timeout`
+  - `unauthorized`
+  - `backend_unreachable`
+  - `validation_error`
+  - `provider_error`
+  - `internal_error`
+
+Default timeouts:
+
+- Lease refresh: short bounded timeout.
+- Normal API calls: bounded default timeout.
+- Long apply/reconcile operations: moved to background operation instead of relying on long HTTP requests.
+
+Acceptance:
+
+- Backend slowness is displayed as a clear timeout or unavailable state.
+- Component unmount cancels pending requests.
+- Repeated refresh does not create uncontrolled concurrent requests.
+
+### Phase 2: Decouple Startup and Background Work
+
+Current defect:
+
+```text
+refresh(ctx)
+restoreActiveLeases(ctx)
+serveHTTP()
+```
+
+Provider or lease restore latency can delay HTTP startup.
+
+Target lifecycle:
+
+```text
+load minimal config
+initialize stores and dataplane controller
+start HTTP
+start workers
+restore leases in background
+publish runtime status
+```
+
+Health model:
+
+```text
+/healthz              process liveness
+/readyz               dataplane and minimal runtime readiness
+/api/runtime/status   UI-facing restore/apply/worker status
+```
+
+Background lease worker responsibilities:
+
+- Restore active leases.
+- Cleanup expired leases.
+- Cleanup failed cleanup-pending leases.
+- Release orphan dynamic slots.
+- Reconcile provider session state where required.
+
+Worker requirements:
+
+- Bounded concurrency.
+- Per-task timeout.
+- Bounded retry with backoff.
+- Idempotent state transitions.
+- Structured logs with request or operation correlation.
+- No secret or full proxy URL output.
+
+Acceptance:
+
+- HTTP starts even when provider restore is slow or failing.
+- UI sees `restoring` or `degraded` state instead of backend unreachable.
+- Lease cleanup no longer depends on user-triggered requests.
+
+### Phase 3: Extract Lease Application
+
+Target package:
+
+```text
+internal/app/lease/
+  application.go
+  repository.go
+  worker.go
+  active_predicate.go
+  slot_allocator.go
+  errors.go
+```
+
+Target application dependencies:
+
+```text
+LeaseRepository
+ProviderSessionService
+DataPlaneLeaseApplier
+LockManager
+Clock
+Logger
+```
+
+Target operations:
+
+```text
+Acquire(ctx, req)
+Release(ctx, req)
+ListActive(ctx, req)
+ListRecent(ctx, req)
+ListHistory(ctx, req)
+Get(ctx, req)
+Restore(ctx)
+CleanupExpired(ctx)
+```
+
+Rules:
+
+- `lease.Application` must not depend on `*Runtime`.
+- Business predicates must be centralized.
+- Store implementations must not decide business workflow.
+- Go-layer filtering of all historical JSON rows is not allowed on hot paths.
+
+Acceptance:
+
+- `Runtime` owns lifecycle wiring, not lease business logic.
+- HTTP handlers call lease usecase methods only.
+- Lease query behavior is testable by reading usecase and repository interfaces without following the whole runtime.
+
+### Phase 4: Refactor Settings and Reconcile
+
+Current defect:
+
+- Settings read path can mutate persisted settings.
+- Settings update synchronously performs reconcile and rollback.
+
+Target model:
+
+```text
+LoadSettings       pure read
+NormalizeSettings  pure function
+MigrateSettings    explicit migration/startup operation
+UpdateSettings     persist desired state
+ApplySettings      background operation
+```
+
+State fields should remain minimal and represent current need:
+
+```text
+desired_version
+applied_version
+apply_status
+last_error
+updated_at
+applied_at
+```
+
+Target package:
+
+```text
+internal/app/settings/
+  application.go
+  repository.go
+  normalizer.go
+  validator.go
+  projector.go
+  apply_worker.go
+```
+
+Rules:
+
+- GET settings cannot write storage.
+- Desired state is persisted before apply.
+- Apply failure records status and is retryable from desired state.
+- Rollback buffer remains only the last accepted generated Mihomo config bytes.
+- Do not create a second config model.
+
+Acceptance:
+
+- Settings read is side-effect free.
+- Save settings returns quickly.
+- Dataplane apply slowness is observable through operation status.
+- Apply failure does not leave invisible partial state.
+
+### Phase 5: Split Mihomo Config Projection
+
+Current defect:
+
+- Large config files mix validation, projection, provider data, egress profile logic, rendering, and runtime apply concerns.
+
+Target structure:
+
+```text
+internal/app/mihomo/
+  projection/
+    projector.go
+    egress_profiles.go
+    dns.go
+    routing.go
+  render/
+    renderer.go
+  validate/
+    validator.go
+```
+
+Pipeline:
+
+```text
+settings + provider facts + lease facts
+  -> projection
+  -> validation
+  -> render Mihomo config
+  -> dataplane apply
+```
+
+Rules:
+
+- Projection and render must not directly read storage.
+- Render must not call provider APIs.
+- Validation must produce user-actionable errors without secrets.
+- Proto remains the source for contract models.
+
+Acceptance:
+
+- No single Mihomo config file owns the whole pipeline.
+- Each stage has one clear responsibility.
+- Runtime apply can report which stage failed.
+
+### Phase 6: Provider Account and Provider Adapter Boundary
+
+Current defect:
+
+- Deleting a provider account may synchronously release or cleanup many blocking leases.
+
+Target flow:
+
+```text
+request delete provider account
+mark deleting
+background release blocking leases
+delete account
+mark deleted or failed
+```
+
+Provider adapter rules:
+
+- Provider-specific branches stay inside provider adapters or capability registry.
+- Business usecases consume stable capability interfaces.
+- Provider account validation belongs to the plugin boundary.
+- Secrets are decrypted only at adapter boundaries.
+- Logs use provider/account identifiers only, not reusable credentials.
+
+Acceptance:
+
+- Provider account delete does not block on unbounded lease cleanup.
+- Blocking lease checks use efficient repository methods.
+- Provider failures are classified and visible without leaking secret data.
+
+### Phase 7: HTTP, Auth, and Dashboard Separation
+
+Target structure:
+
+```text
+internal/app/httpapi/
+  server.go
+  middleware.go
+  error.go
+  protojson.go
+  routes.go
+
+internal/app/auth/
+  application.go
+  session.go
+  cookie.go
+  ws_token.go
+
+internal/app/dashboard/
+  reverse_proxy.go
+  bootstrap.go
+  sanitizer.go
+```
+
+HTTP rules:
+
+- Handler parses request, calls one usecase, writes response.
+- Handler does not access stores, providers, dataplane internals, or global runtime state directly.
+- HTTP errors map from application errors in one place.
+
+Auth rules:
+
+```text
+public:
+  /api/auth/login
+  /api/auth/logout
+  /api/auth/session
+
+authenticated:
+  /api/auth/ws-token
+```
+
+Dashboard proxy rules:
+
+- Reverse proxy is initialized once, not created per request.
+- Query token/session stripping is centralized.
+- Mihomo secret injection is centralized.
+- Upstream errors are sanitized.
+
+Acceptance:
+
+- Route ownership is obvious.
+- Auth route naming matches real access control.
+- Dashboard proxy behavior is reusable and auditable.
+
+### Phase 8: Frontend Module Cleanup
+
+Target structure:
+
+```text
+metacubexd-fork/src/proxy-runtime/
+  api/
+    client.ts
+    errors.ts
+    leases.ts
+    settings.ts
+    providers.ts
+  composables/
+    useProxyRuntimeLeases.ts
+    useProxyRuntimePlayground.ts
+    useProxyRuntimeSettings.ts
+    useProxyRuntimeAuth.ts
+  components/
+    Playground.vue
+    LeasePanel.vue
+    ProviderAccountPanel.vue
+```
+
+Rules:
+
+- API client owns base URL, credentials, timeout, cancellation, and error normalization.
+- Server state and action state are separated.
+- Playground lease acquire is independent from history loading.
+- Refresh buttons refresh explicit resources only.
+- Prefer existing UI library components instead of handwritten replacements.
+
+Acceptance:
+
+- Loading indicators map to exact operations.
+- Active and history lease views are independent.
+- Backend timeout does not make UI look inert.
+
+### Phase 9: Observability
+
+Required metrics:
+
+```text
+proxy_runtime_http_request_duration_seconds
+proxy_runtime_lease_list_duration_seconds
+proxy_runtime_lease_list_rows_total
+proxy_runtime_lease_acquire_duration_seconds
+proxy_runtime_lease_release_duration_seconds
+proxy_runtime_lease_worker_runs_total
+proxy_runtime_lease_worker_failures_total
+proxy_runtime_provider_request_duration_seconds
+proxy_runtime_dataplane_apply_duration_seconds
+proxy_runtime_settings_apply_duration_seconds
+```
+
+Required structured log fields:
+
+```text
+request_id
+operation_id
+lease_id
+provider_key
+provider_account_key
+runtime_status
+duration_ms
+error_code
+```
+
+Forbidden output:
+
+```text
+token
+cookie
+mihomo secret
+provider password
+full proxy URL
+session material
+subscription URL with token
+```
+
+Acceptance:
+
+- A slow UI operation can be traced to lease query, provider request, dataplane apply, or settings apply.
+- Backend unavailable and backend slow are distinguishable.
+- Sensitive proxy/auth/session material does not appear in logs, metrics, traces, or client errors.
+
+### Phase 10: Postgres and SQLite Store Decision
+
+Current defect:
+
+- Postgres and SQLite stores duplicate dynamic lease query and persistence behavior.
+
+Decision path:
+
+1. Verify whether deployed runtime uses SQLite.
+2. Verify whether standalone SQLite mode is still a supported product requirement.
+3. If not required, remove SQLite store from the runtime path.
+4. If required, keep SQLite as an adapter but prevent duplicated business predicates.
+
+Rules:
+
+- There must be one semantic definition for active, blocking, cleanup-pending, restorable, and session-bound leases.
+- Store adapters implement repository contracts; they do not invent independent business behavior.
+
+Acceptance:
+
+- Fixing lease behavior requires changing one semantic layer, not two drifting store implementations.
+
+### Recommended Commit Sequence
+
+```text
+1. optimize lease list query contract and pagination
+2. decouple playground acquire from lease history refresh
+3. add frontend timeout, cancellation, and error normalization
+4. start HTTP before background lease restore
+5. move lease restore and cleanup into bounded worker
+6. extract lease application from Runtime
+7. remove settings load side effects
+8. make settings apply and reconcile operation-based
+9. split Mihomo projection, validation, and rendering
+10. isolate provider account delete as a background operation
+11. separate httpapi, auth, and dashboard proxy packages
+12. consolidate or remove duplicated SQLite store behavior
+13. add runtime status, metrics, and structured slow-path logs
+```
+
+### First Implementation Batch
+
+The first batch should be small and user-visible:
+
+1. Replace default full lease history loading with bounded active/recent queries.
+2. Remove pre-acquire `leases.load()` from Playground save flow.
+3. Add frontend timeout/cancellation in the proxy-runtime API client.
+4. Make active lease checks include `expires_at > now`.
+
+Expected impact:
+
+- Playground acquire no longer waits behind history scans.
+- Refresh button has visible bounded behavior.
+- Login/dashboard no longer appears unavailable because of full lease list latency.

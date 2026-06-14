@@ -825,6 +825,7 @@ Completed user-visible/runtime batches:
 - Mihomo native config load, path/header normalization, and clone helpers are split into focused sourceplane files with no behavior change.
 - Mihomo render config now separates duration/default helpers, proxy/provider name indexes, and unique group merging from the top-level render flow.
 - Mihomo gateway rendering now separates listener assembly from user authentication, IN-USER rule generation, and hidden session group naming.
+- Mihomo-native egress rendering now separates resource/node resolution and availability checks from profile layer render flow.
 
 Still open:
 

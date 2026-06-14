@@ -7,7 +7,6 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
 const (
@@ -65,11 +64,7 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 		TTLBuffer:          providerAccountConcurrencyTTLBuffer,
 		SlotReleaseTimeout: leaseRestoreSlotReleaseTimeout,
 		LocalProtocol:      c.deps.cfg.LocalProtocol,
-		ResolveGateways: func(ctx context.Context, providerID string) ([]accountproxy.Gateway, error) {
-			return endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerID), nil
-		},
-		ResolveLineBinding: func(ctx context.Context, accountID string) (string, map[string]string, error) {
-			return c.deps.dynamicLeaseDialerProxy(ctx, settings, accountID)
-		},
+		ResolveGateways:    c.providerSessionGatewaysResolverForSettings(settings, lease),
+		ResolveLineBinding: c.routeLineBindingResolver(settings),
 	})
 }

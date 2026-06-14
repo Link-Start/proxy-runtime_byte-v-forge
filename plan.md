@@ -975,6 +975,7 @@ Completed user-visible/runtime batches:
 - Provider-session release locking and failure recording are now owned by the release, expiry, and cleanup-pending lease flows; the app-level provider-session release wrapper was removed.
 - Existing-lease concurrency slot refresh now uses a lease-owned helper for provider-account lookup, holder validation, TTL calculation, and slot acquisition; the coordinator only supplies the runtime settings-derived limit.
 - Restore lease session/listener materialization checks now live in the lease restore flow instead of the app-level coordinator.
+- Lease gateway and line-binding resolver construction is centralized on the coordinator adapter, so acquire and restore no longer duplicate resolver closures.
 
 Still open:
 

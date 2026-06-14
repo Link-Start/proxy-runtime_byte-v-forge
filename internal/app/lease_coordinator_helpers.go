@@ -44,6 +44,19 @@ func (c leaseCoordinator) providerSessionGatewaysResolver(lease *proxyruntimev1.
 		if err != nil {
 			return nil, err
 		}
+		return c.providerSessionGatewaysResolverForSettings(settings, lease)(ctx, providerID)
+	}
+}
+
+func (c leaseCoordinator) providerSessionGatewaysResolverForSettings(settings *runtimeSettingsFile, lease *proxyruntimev1.ProxyDynamicLease) func(context.Context, string) ([]accountproxy.Gateway, error) {
+	return func(ctx context.Context, providerID string) ([]accountproxy.Gateway, error) {
+		_ = ctx
 		return endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerID), nil
+	}
+}
+
+func (c leaseCoordinator) routeLineBindingResolver(settings *runtimeSettingsFile) func(context.Context, string) (string, map[string]string, error) {
+	return func(ctx context.Context, accountID string) (string, map[string]string, error) {
+		return c.deps.dynamicLeaseDialerProxy(ctx, settings, accountID)
 	}
 }

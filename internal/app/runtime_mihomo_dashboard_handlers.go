@@ -27,21 +27,19 @@ func (api *runtimeHTTPAPI) registerMihomoDashboardRoutes(router *gin.Engine) {
 }
 
 func (api *runtimeHTTPAPI) handleMihomoDashboard(ctx *gin.Context) {
-	api.writeMihomoDashboardBootstrap(ctx, "/mihomo/controller", "/mihomo/ui/#/proxies", "/mihomo/ui/#/setup?endpoint="+mihomoDashboardEndpointID)
+	api.writeMihomoDashboardBootstrap(ctx, "/mihomo/controller", "/mihomo/ui/#/overview")
 }
 
-func (api *runtimeHTTPAPI) writeMihomoDashboardBootstrap(ctx *gin.Context, endpointURL string, uiURL string, setupURL string) {
+func (api *runtimeHTTPAPI) writeMihomoDashboardBootstrap(ctx *gin.Context, endpointURL string, uiURL string) {
 	payload, err := json.Marshal(struct {
 		EndpointID   string `json:"endpointID"`
 		EndpointURL  string `json:"endpointURL"`
 		UIURL        string `json:"uiURL"`
-		SetupURL     string `json:"setupURL"`
 		AuthRequired bool   `json:"authRequired"`
 	}{
 		EndpointID:   mihomoDashboardEndpointID,
 		EndpointURL:  endpointURL,
 		UIURL:        uiURL,
-		SetupURL:     setupURL,
 		AuthRequired: strings.TrimSpace(api.authToken) != "",
 	})
 	if err != nil {
@@ -61,26 +59,10 @@ const endpoint = {
   url: new URL(config.endpointURL, window.location.origin).href.replace(/\/$/, ''),
   secret: ''
 };
-try {
-  const parsed = JSON.parse(window.localStorage.getItem('endpointList') || '[]');
-  if (Array.isArray(parsed)) {
-    const existing = parsed.find((item) => item && (item.id === endpoint.id || item.url === endpoint.url));
-    if (existing && typeof existing.secret === 'string') {
-      endpoint.secret = existing.secret;
-    }
-  }
-} catch (_) {}
 window.localStorage.setItem('proxyRuntimeControlAuthRequired', config.authRequired ? 'true' : 'false');
 window.localStorage.setItem('endpointList', JSON.stringify([endpoint]));
-if (endpoint.secret || !config.authRequired) {
-  window.localStorage.setItem('selectedEndpoint', endpoint.id);
-  window.location.replace(new URL(config.uiURL, window.location.origin).href);
-} else {
-  if (window.localStorage.getItem('selectedEndpoint') === endpoint.id) {
-    window.localStorage.removeItem('selectedEndpoint');
-  }
-  window.location.replace(new URL(config.setupURL, window.location.origin).href);
-}
+window.localStorage.setItem('selectedEndpoint', endpoint.id);
+window.location.replace(new URL(config.uiURL, window.location.origin).href);
 </script>
 </body>
 </html>`, payload)

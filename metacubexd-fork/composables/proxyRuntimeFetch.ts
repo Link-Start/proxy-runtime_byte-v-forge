@@ -16,6 +16,7 @@ export async function proxyRuntimeFetchJson<T>(
 ): Promise<T> {
   const response = await fetch(`${base}${path}`, {
     ...init,
+    credentials: 'same-origin',
     headers: proxyRuntimeFetchHeaders(init.headers, options),
   })
   const text = await response.text()

@@ -83,12 +83,19 @@ func (api *runtimeHTTPAPI) handler() http.Handler {
 func (api *runtimeHTTPAPI) registerPublicHTTPRoutes(router *gin.Engine) {
 	router.GET("/healthz", api.handleHealth)
 	router.GET("/readyz", api.handleReady)
+	router.GET("/login", api.handleAuthLoginPage)
+	router.GET("/api/auth/session", api.handleAuthSession)
+	router.POST("/api/auth/login", api.handleAuthLogin)
+	router.POST("/api/auth/logout", api.handleAuthLogout)
 	router.GET("/", api.handleDashboardEntry)
 	router.HEAD("/", api.handleDashboardEntry)
 }
 
 func (api *runtimeHTTPAPI) handleDashboardEntry(ctx *gin.Context) {
-	api.writeMihomoDashboardBootstrap(ctx, "/mihomo/controller", "/mihomo/ui/#/proxies", "/mihomo/ui/#/setup?endpoint="+mihomoDashboardEndpointID)
+	if api.redirectToLoginIfRequired(ctx) {
+		return
+	}
+	api.writeMihomoDashboardBootstrap(ctx, "/mihomo/controller", "/mihomo/ui/#/overview")
 }
 
 func (api *runtimeHTTPAPI) handleGinMethodNotAllowed(ctx *gin.Context) {
@@ -99,6 +106,9 @@ func (api *runtimeHTTPAPI) handleGinNoRoute(ctx *gin.Context) {
 	path := ctx.Request.URL.Path
 	if strings.HasPrefix(path, "/api") || strings.HasPrefix(path, "/mihomo") {
 		writeHTTPError(ctx.Writer, errors.New("not found"), http.StatusNotFound)
+		return
+	}
+	if api.redirectToLoginIfRequired(ctx) {
 		return
 	}
 	api.mihomoReverseProxy("/", "/ui/")(ctx)

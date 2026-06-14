@@ -9,8 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-const bearerPrefix = "bearer "
-
 func (api *runtimeHTTPAPI) authorize(ctx *gin.Context) bool {
 	if !api.authRequired(ctx.Request.URL.Path) {
 		return true
@@ -19,10 +17,14 @@ func (api *runtimeHTTPAPI) authorize(ctx *gin.Context) bool {
 	if expected == "" {
 		return true
 	}
-	if authenticatedRequest(ctx.Request, expected) {
+	if api.sessionAuthenticated(ctx.Request) {
 		return true
 	}
-	ctx.Header("WWW-Authenticate", "Bearer")
+	if api.redirectLoginPreferred(ctx.Request) {
+		api.redirectToLogin(ctx, ctx.Request.URL.RequestURI())
+		return false
+	}
+	ctx.Header("WWW-Authenticate", "Cookie")
 	writeHTTPError(ctx.Writer, errors.New("unauthorized"), http.StatusUnauthorized)
 	return false
 }
@@ -32,28 +34,14 @@ func (api *runtimeHTTPAPI) authRequired(requestPath string) bool {
 		return false
 	}
 	requestPath = strings.TrimSpace(requestPath)
-	return pathInPrefix(requestPath, controlPlaneHTTPPrefix) || pathInPrefix(requestPath, "/mihomo/controller")
-}
-
-func bearerToken(req *http.Request) string {
-	if req == nil {
-		return ""
-	}
-	value := strings.TrimSpace(req.Header.Get("Authorization"))
-	if len(value) <= len(bearerPrefix) || !strings.EqualFold(value[:len(bearerPrefix)], bearerPrefix) {
-		return ""
-	}
-	return strings.TrimSpace(value[len(bearerPrefix):])
-}
-
-func authenticatedRequest(req *http.Request, expected string) bool {
-	if authTokenMatches(bearerToken(req), expected) {
-		return true
-	}
-	if req == nil || req.URL == nil || !pathInPrefix(req.URL.Path, "/mihomo/controller") {
+	switch strings.TrimRight(requestPath, "/") {
+	case "", "/", "/healthz", "/readyz", "/login":
 		return false
 	}
-	return authTokenMatches(mihomoControllerQueryToken(req), expected)
+	if pathInPrefix(requestPath, "/api/auth") {
+		return false
+	}
+	return true
 }
 
 func authTokenMatches(actual string, expected string) bool {
@@ -65,15 +53,8 @@ func authTokenMatches(actual string, expected string) bool {
 	return subtle.ConstantTimeCompare([]byte(actual), []byte(expected)) == 1
 }
 
-func mihomoControllerQueryToken(req *http.Request) string {
-	if req == nil || req.URL == nil {
-		return ""
-	}
-	return strings.TrimSpace(req.URL.Query().Get("token"))
-}
-
 func (api *runtimeHTTPAPI) forwardMihomoControllerAuthorization(out *http.Request, in *http.Request) {
-	if out == nil || in == nil || out.Header.Get("Authorization") != "" {
+	if out == nil || in == nil {
 		return
 	}
 	if in.URL == nil {
@@ -82,11 +63,12 @@ func (api *runtimeHTTPAPI) forwardMihomoControllerAuthorization(out *http.Reques
 	if !pathInPrefix(in.URL.Path, "/mihomo/controller") {
 		return
 	}
-	token := mihomoControllerQueryToken(in)
-	if !authTokenMatches(token, api.authToken) {
+	token := strings.TrimSpace(api.authToken)
+	if token == "" {
 		return
 	}
 	out.Header.Set("Authorization", "Bearer "+strings.TrimSpace(token))
+	out.URL.RawQuery = mihomoControllerUpstreamRawQuery(out.URL.RawQuery)
 }
 
 func pathInPrefix(requestPath string, prefix string) bool {

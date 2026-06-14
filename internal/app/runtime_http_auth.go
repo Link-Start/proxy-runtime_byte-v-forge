@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
+	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
 )
 
@@ -48,7 +49,7 @@ func (api *runtimeHTTPAPI) forwardMihomoControllerAuthorization(out *http.Reques
 	if out == nil {
 		return
 	}
-	if !pathInPrefix(requestPath, "/mihomo/controller") {
+	if !httpapi.PathInPrefix(requestPath, "/mihomo/controller") {
 		return
 	}
 	token := strings.TrimSpace(api.authToken)
@@ -66,10 +67,4 @@ func publicRuntimeAuthPath(requestPath string) bool {
 	default:
 		return false
 	}
-}
-
-func pathInPrefix(requestPath string, prefix string) bool {
-	requestPath = strings.TrimRight(strings.TrimSpace(requestPath), "/")
-	prefix = strings.TrimRight(strings.TrimSpace(prefix), "/")
-	return requestPath == prefix || strings.HasPrefix(requestPath, prefix+"/")
 }

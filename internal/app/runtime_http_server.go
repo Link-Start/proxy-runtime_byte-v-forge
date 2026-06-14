@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/random"
+	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
 )
 
@@ -119,7 +119,7 @@ func (api *runtimeHTTPAPI) handleGinNoRoute(ctx *gin.Context) {
 
 func (api *runtimeHTTPAPI) ginMiddleware() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		requestID := httpRequestID(ctx.Request)
+		requestID := httpapi.RequestID(ctx.Request)
 		ctx.Header("X-Request-Id", requestID)
 		start := time.Now()
 		defer func() {
@@ -138,17 +138,4 @@ func (api *runtimeHTTPAPI) ginMiddleware() gin.HandlerFunc {
 		}
 		ctx.Next()
 	}
-}
-
-func httpRequestID(req *http.Request) string {
-	for _, header := range []string{"X-Request-Id", "X-Request-ID", "X-Correlation-Id"} {
-		if value := strings.TrimSpace(req.Header.Get(header)); value != "" {
-			return value
-		}
-	}
-	value, err := random.Hex(8)
-	if err != nil {
-		return fmt.Sprintf("%d", time.Now().UnixNano())
-	}
-	return value
 }

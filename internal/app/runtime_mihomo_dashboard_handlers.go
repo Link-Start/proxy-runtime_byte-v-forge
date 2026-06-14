@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
+	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
 )
 
@@ -85,7 +86,7 @@ func (api *runtimeHTTPAPI) mihomoReverseProxy(mountPrefix string, upstreamPrefix
 		out.URL.Path = dashboardapp.JoinProxyPath(upstreamPrefix, strings.TrimPrefix(requestPath, mountPrefix))
 		out.Host = target.Host
 		out.Header.Set("X-Forwarded-Host", requestHost)
-		out.Header.Set("X-Forwarded-Proto", forwardedProto(out))
+		out.Header.Set("X-Forwarded-Proto", httpapi.ForwardedProto(out))
 		api.forwardMihomoControllerAuthorization(out, requestPath)
 	}
 	proxy.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, err error) {
@@ -110,16 +111,6 @@ func mihomoProxyRequestPath(req *http.Request) string {
 		}
 	}
 	return ""
-}
-
-func forwardedProto(req *http.Request) string {
-	if value := strings.TrimSpace(req.Header.Get("X-Forwarded-Proto")); value != "" {
-		return value
-	}
-	if req.TLS != nil {
-		return "https"
-	}
-	return "http"
 }
 
 func redirectToTrailingSlash(ctx *gin.Context) {

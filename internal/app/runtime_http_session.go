@@ -10,6 +10,7 @@ import (
 	"time"
 
 	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
+	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
 )
 
@@ -123,7 +124,7 @@ func (api *runtimeHTTPAPI) redirectLoginPreferred(req *http.Request) bool {
 	if req.Method != http.MethodGet && req.Method != http.MethodHead {
 		return false
 	}
-	if pathInPrefix(req.URL.Path, controlPlaneHTTPPrefix) || pathInPrefix(req.URL.Path, "/mihomo/controller") {
+	if httpapi.PathInPrefix(req.URL.Path, controlPlaneHTTPPrefix) || httpapi.PathInPrefix(req.URL.Path, "/mihomo/controller") {
 		return false
 	}
 	accept := strings.ToLower(req.Header.Get("Accept"))
@@ -153,7 +154,7 @@ func (api *runtimeHTTPAPI) requestAuthenticated(req *http.Request) bool {
 	if api.sessionAuthenticated(req) {
 		return true
 	}
-	if req == nil || req.URL == nil || !pathInPrefix(req.URL.Path, "/mihomo/controller") {
+	if req == nil || req.URL == nil || !httpapi.PathInPrefix(req.URL.Path, "/mihomo/controller") {
 		return false
 	}
 	return authapp.VerifySession(req.URL.Query().Get("session"), api.authToken, time.Now())
@@ -172,7 +173,7 @@ func (api *runtimeHTTPAPI) setSessionCookie(ctx *gin.Context) error {
 		Expires:  time.Now().Add(authapp.SessionTTL),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   forwardedProto(ctx.Request) == "https",
+		Secure:   httpapi.ForwardedProto(ctx.Request) == "https",
 	})
 	return nil
 }
@@ -186,7 +187,7 @@ func (api *runtimeHTTPAPI) clearSessionCookie(ctx *gin.Context) {
 		Expires:  time.Unix(0, 0),
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   forwardedProto(ctx.Request) == "https",
+		Secure:   httpapi.ForwardedProto(ctx.Request) == "https",
 	})
 }
 

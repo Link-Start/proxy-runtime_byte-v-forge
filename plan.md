@@ -680,6 +680,7 @@ Completed user-visible/runtime batches:
 - HTTP control-plane route declarations are split by auth, runtime status, provider, lease, check, and settings ownership.
 - Runtime auth session signing, verification, token matching, and safe redirects are extracted into `internal/app/auth`.
 - Mihomo dashboard/controller URL, query sanitization, cache header, and error redaction helpers are extracted into `internal/app/dashboard`.
+- HTTP request helpers for path-prefix matching, forwarded protocol, and request IDs are extracted into `internal/app/httpapi`.
 
 Still open:
 

@@ -1,9 +1,6 @@
 package mihomo
 
-import (
-	"strings"
-	"time"
-)
+import "strings"
 
 func renderConfig(opts renderOptions) (mihomoConfig, error) {
 	providerMap := cloneNativeProviders(opts.NativeConfig.ProxyProviders)
@@ -62,77 +59,4 @@ func renderConfig(opts renderOptions) (mihomoConfig, error) {
 		ProxyGroups:        groups,
 		Rules:              rules,
 	}, nil
-}
-
-func defaultExpectedStatus(value uint32) uint32 {
-	if value == 0 {
-		return 204
-	}
-	return value
-}
-
-func seconds(value time.Duration, fallback int) int {
-	if value <= 0 {
-		return fallback
-	}
-	return int(value / time.Second)
-}
-
-func milliseconds(value time.Duration, fallback int) int {
-	if value <= 0 {
-		return fallback
-	}
-	return int(value / time.Millisecond)
-}
-
-func secondsDuration(value time.Duration, fallback int) int { return seconds(value, fallback) }
-
-func millisecondsDuration(value time.Duration, fallback int) int {
-	return milliseconds(value, fallback)
-}
-
-func mihomoProxyNames(proxies []map[string]any) map[string]struct{} {
-	out := map[string]struct{}{}
-	for _, proxy := range proxies {
-		name, _ := proxy["name"].(string)
-		if name = strings.TrimSpace(name); name != "" {
-			out[name] = struct{}{}
-		}
-	}
-	return out
-}
-
-func mihomoProviderNames(providers map[string]mihomoProvider) map[string]struct{} {
-	out := map[string]struct{}{}
-	for name := range providers {
-		if name = strings.TrimSpace(name); name != "" {
-			out[name] = struct{}{}
-		}
-	}
-	return out
-}
-
-func appendUniqueGroups(base []mihomoGroup, groups ...[]mihomoGroup) []mihomoGroup {
-	out := make([]mihomoGroup, 0, len(base))
-	seen := map[string]struct{}{}
-	for _, group := range base {
-		if group.Name == "" {
-			continue
-		}
-		seen[group.Name] = struct{}{}
-		out = append(out, group)
-	}
-	for _, items := range groups {
-		for _, group := range items {
-			if group.Name == "" {
-				continue
-			}
-			if _, exists := seen[group.Name]; exists {
-				continue
-			}
-			seen[group.Name] = struct{}{}
-			out = append(out, group)
-		}
-	}
-	return out
 }

@@ -26,6 +26,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 	if err != nil {
 		return nil, err
 	}
+	retirer := c.leaseRouteRetirer()
 	lease, err := leaseapp.RunAccountLockedAcquire(ctx, leaseapp.AccountLockedAcquireInput{
 		Store:               c.deps.store,
 		Request:             req,
@@ -34,7 +35,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 		PlaygroundAccountID: playgroundProfileID,
 		PlaygroundUsername:  playgroundUsername,
 		Reuse:               c.refreshLeaseConcurrencySlot,
-		Replace:             c.retireLeaseRoute,
+		Replace:             retirer.Retire,
 		RunAttempt: func(int) (*proxyruntimev1.ProxyDynamicLease, error) {
 			return c.acquireLeaseAttempt(ctx, advertisedHost, req, settings)
 		},

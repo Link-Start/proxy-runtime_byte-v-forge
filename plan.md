@@ -976,6 +976,7 @@ Completed user-visible/runtime batches:
 - Existing-lease concurrency slot refresh now uses a lease-owned helper for provider-account lookup, holder validation, TTL calculation, and slot acquisition; the coordinator only supplies the runtime settings-derived limit.
 - Restore lease session/listener materialization checks now live in the lease restore flow instead of the app-level coordinator.
 - Lease gateway and line-binding resolver construction is centralized on the coordinator adapter, so acquire and restore no longer duplicate resolver closures.
+- Lease route retirement dependencies are now composed through a lease-owned `LeaseRouteRetirer`; normal release and existing-lease replacement reuse it, and the app-level route-retire wrapper was removed.
 
 Still open:
 

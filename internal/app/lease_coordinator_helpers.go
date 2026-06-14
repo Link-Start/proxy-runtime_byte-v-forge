@@ -5,6 +5,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
@@ -58,5 +59,28 @@ func (c leaseCoordinator) providerSessionGatewaysResolverForSettings(settings *r
 func (c leaseCoordinator) routeLineBindingResolver(settings *runtimeSettingsFile) func(context.Context, string) (string, map[string]string, error) {
 	return func(ctx context.Context, accountID string) (string, map[string]string, error) {
 		return c.deps.dynamicLeaseDialerProxy(ctx, settings, accountID)
+	}
+}
+
+func (c leaseCoordinator) leaseRouteRetirer() leaseapp.LeaseRouteRetirer {
+	return leaseapp.LeaseRouteRetirer{
+		Store:                   c.deps.store,
+		Limiter:                 c.deps.providerConcurrency,
+		Locks:                   c.deps.locks,
+		DataPlane:               c.deps.dataPlane,
+		Factory:                 c.deps.sessionProviders,
+		LocalProtocol:           c.deps.cfg.LocalProtocol,
+		ResolveGatewaysForLease: c.providerSessionGatewaysResolver,
+		AfterRouteCleanup: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
+			c.clearExitCheckCache()
+			if lease.GetAccountId() == playgroundProfileID {
+				c.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
+			}
+		},
+		ObserveProviderReleaseFailure: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
+			_ = ctx
+			c.warn("provider session release failed", leaseapp.LabelAccountID, lease.GetAccountId(), leaseapp.LabelProviderAccountID, lease.GetProviderAccountId())
+		},
+		ObserveFinalConcurrencyReleaseErr: c.warnFinalConcurrencyReleaseFailed,
 	}
 }

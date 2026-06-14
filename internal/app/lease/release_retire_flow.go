@@ -9,6 +9,21 @@ import (
 
 type LeaseObserver func(context.Context, *proxyruntimev1.ProxyDynamicLease)
 
+type ProviderSessionGatewaysResolverFactory func(*proxyruntimev1.ProxyDynamicLease) ProviderSessionGatewaysResolver
+
+type LeaseRouteRetirer struct {
+	Store                             OrchestrationStore
+	Limiter                           ProviderAccountConcurrencyLimiter
+	Locks                             LockManager
+	DataPlane                         DataPlaneApplier
+	Factory                           SessionProviderFactory
+	LocalProtocol                     string
+	ResolveGatewaysForLease           ProviderSessionGatewaysResolverFactory
+	AfterRouteCleanup                 LeaseObserver
+	ObserveProviderReleaseFailure     LeaseObserver
+	ObserveFinalConcurrencyReleaseErr LeaseObserver
+}
+
 type RetireLeaseRouteInput struct {
 	Store                             OrchestrationStore
 	Limiter                           ProviderAccountConcurrencyLimiter
@@ -21,6 +36,29 @@ type RetireLeaseRouteInput struct {
 	AfterRouteCleanup                 LeaseObserver
 	ObserveProviderReleaseFailure     LeaseObserver
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
+}
+
+func (r LeaseRouteRetirer) Retire(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+	return RetireLeaseRoute(ctx, RetireLeaseRouteInput{
+		Store:                             r.Store,
+		Limiter:                           r.Limiter,
+		Locks:                             r.Locks,
+		DataPlane:                         r.DataPlane,
+		Factory:                           r.Factory,
+		LocalProtocol:                     r.LocalProtocol,
+		Lease:                             lease,
+		ResolveGateways:                   r.resolveGateways(lease),
+		AfterRouteCleanup:                 r.AfterRouteCleanup,
+		ObserveProviderReleaseFailure:     r.ObserveProviderReleaseFailure,
+		ObserveFinalConcurrencyReleaseErr: r.ObserveFinalConcurrencyReleaseErr,
+	})
+}
+
+func (r LeaseRouteRetirer) resolveGateways(lease *proxyruntimev1.ProxyDynamicLease) ProviderSessionGatewaysResolver {
+	if r.ResolveGatewaysForLease == nil {
+		return nil
+	}
+	return r.ResolveGatewaysForLease(lease)
 }
 
 func RetireLeaseRoute(ctx context.Context, input RetireLeaseRouteInput) error {

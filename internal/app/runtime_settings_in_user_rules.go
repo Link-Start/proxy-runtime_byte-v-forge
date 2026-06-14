@@ -9,35 +9,28 @@ import (
 )
 
 func (s *runtimeSettingsStore) updateInUserRules(ctx context.Context, profiles []*proxyruntimev1.EgressProfileSettings, rules []*proxyruntimev1.ProxyIngressRuleSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	settings, err := s.loadLocked(ctx)
-	if err != nil {
-		return nil, err
-	}
-	nativeResourceIDs, err := s.enabledMihomoResourceIDs(ctx)
-	if err != nil {
-		return nil, err
-	}
-	dynamicProviderEndpoints := enabledDynamicProviderEndpointIDs(settings)
-	nextProfiles, err := egressProfilesFromRequest(profiles, nativeResourceIDs, dynamicProviderEndpoints)
-	if err != nil {
-		return nil, err
-	}
-	nextRules, err := ingressRulesFromRequest(rules, nextProfiles)
-	if err != nil {
-		return nil, err
-	}
-	if err := rejectOmittedIngressRules(settings.GetIngressRules(), nextRules); err != nil {
-		return nil, err
-	}
-	applyInUserSessionLabels(nextProfiles, nextRules)
-	settings.EgressProfiles = nextProfiles
-	settings.IngressRules = nextRules
-	if err := s.saveLocked(ctx, settings); err != nil {
-		return nil, err
-	}
-	return runtimeSettingsView(settings), nil
+	return s.mutateRuntimeSettings(ctx, func(settings *runtimeSettingsFile) (*runtimeSettingsFile, error) {
+		nativeResourceIDs, err := s.enabledMihomoResourceIDs(ctx)
+		if err != nil {
+			return nil, err
+		}
+		dynamicProviderEndpoints := enabledDynamicProviderEndpointIDs(settings)
+		nextProfiles, err := egressProfilesFromRequest(profiles, nativeResourceIDs, dynamicProviderEndpoints)
+		if err != nil {
+			return nil, err
+		}
+		nextRules, err := ingressRulesFromRequest(rules, nextProfiles)
+		if err != nil {
+			return nil, err
+		}
+		if err := rejectOmittedIngressRules(settings.GetIngressRules(), nextRules); err != nil {
+			return nil, err
+		}
+		applyInUserSessionLabels(nextProfiles, nextRules)
+		settings.EgressProfiles = nextProfiles
+		settings.IngressRules = nextRules
+		return settings, nil
+	})
 }
 
 func applyInUserSessionLabels(profiles []*proxyruntimev1.EgressProfileSettings, rules []*proxyruntimev1.ProxyIngressRuleSettings) {

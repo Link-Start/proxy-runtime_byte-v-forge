@@ -761,6 +761,7 @@ Completed user-visible/runtime batches:
 - Runtime settings secret-ref cleaning, cloning, configured checks, and resolution are centralized in the secret-ref helper file instead of the broad settings helper bucket.
 - Runtime-wide ID, region, map, duration, and expected-status helpers are moved out of settings helpers; request raw-value cleanup now lives with settings request helpers.
 - The obsolete runtime settings helper bucket was removed after its last clone helper became unused.
+- Runtime settings update usecases now share an explicit update/apply scheduling flow helper for load-before, persist-update, changed-user detection, and apply scheduling.
 
 Still open:
 

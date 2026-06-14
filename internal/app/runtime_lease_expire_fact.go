@@ -22,8 +22,9 @@ func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyrunti
 		if !leaseapp.NeedsExpiryCleanup(current, c.now().UTC()) {
 			return nil
 		}
-		if err := leaseapp.DeleteLeaseRoute(ctx, c.deps.dataPlane, current, c.deps.cfg.LocalProtocol); err != nil {
-			_ = c.saveLeaseExpiredCleanupFailure(ctx, current, true, false, "expired lease route cleanup failed")
+		if err := c.cleanupLeaseRoute(ctx, current, func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+			return c.saveLeaseExpiredCleanupFailure(ctx, lease, true, false, "expired lease route cleanup failed")
+		}); err != nil {
 			return err
 		}
 		releaseProvider := func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {

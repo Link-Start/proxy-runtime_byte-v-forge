@@ -11,8 +11,9 @@ func (c leaseCoordinator) retireLeaseRoute(ctx context.Context, lease *proxyrunt
 	if lease == nil {
 		return nil
 	}
-	if err := leaseapp.DeleteLeaseRoute(ctx, c.deps.dataPlane, lease, c.deps.cfg.LocalProtocol); err != nil {
-		_ = c.saveLeaseReleaseCleanupFailure(ctx, lease, true, false, "lease route cleanup failed")
+	if err := c.cleanupLeaseRoute(ctx, lease, func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+		return c.saveLeaseReleaseCleanupFailure(ctx, lease, true, false, "lease route cleanup failed")
+	}); err != nil {
 		return err
 	}
 	c.clearExitCheckCache()

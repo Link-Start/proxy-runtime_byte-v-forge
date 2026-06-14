@@ -23,8 +23,9 @@ func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *pr
 			return nil
 		}
 		if leaseapp.RouteCleanupPending(current) {
-			if err := leaseapp.DeleteLeaseRoute(ctx, c.deps.dataPlane, current, c.deps.cfg.LocalProtocol); err != nil {
-				_ = c.saveLeaseCleanupRetry(ctx, current, "lease route cleanup failed")
+			if err := c.cleanupLeaseRoute(ctx, current, func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+				return c.saveLeaseCleanupRetry(ctx, lease, "lease route cleanup failed")
+			}); err != nil {
 				return err
 			}
 			leaseapp.ClearCleanupPending(current, true, false)

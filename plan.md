@@ -920,6 +920,7 @@ Completed user-visible/runtime batches:
 - Provider session acquisition now lives in `internal/app/lease`, including provider config gateway binding, session-provider factory use, create/fetch sequencing, and failure-stage classification.
 - Dynamic lease listener username/password resolution now lives in `internal/app/lease`; Runtime only supplies listener constants, ingress rules, and playground identifiers.
 - Acquired lease route apply now runs through `internal/app/lease`, combining dataplane upsert, failure compensation, and active fact persistence behind a stage-aware result.
+- Release lock-window refresh and route-retire invocation now live in `internal/app/lease`; the coordinator supplies only the concrete retire side effect.
 
 Still open:
 

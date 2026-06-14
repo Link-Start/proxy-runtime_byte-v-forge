@@ -835,6 +835,7 @@ Completed user-visible/runtime batches:
 - Mihomo native config normalization now separates provider path/header normalization and fixed native group cleanup from the top-level normalization flow.
 - Mihomo proxy URL rendering now separates provider-node list rendering, URL-to-node config rendering, and port resolution helpers.
 - Mihomo driver projection now separates reconcile orchestration, render-option assembly, and JSON projection/signature rendering into focused files.
+- Mihomo endpoint handling now separates endpoint normalization, address parsing/dial-address resolution, and listener readiness waiting.
 
 Still open:
 

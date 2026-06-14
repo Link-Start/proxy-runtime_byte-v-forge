@@ -5,7 +5,6 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
@@ -32,7 +31,7 @@ func (f *leaseAcquireFailure) beforeRoute(message string) {
 	f.save(message)
 }
 
-func (f *leaseAcquireFailure) afterRoute(route dataplane.SessionRoute, message string) {
+func (f *leaseAcquireFailure) afterRoute(route leaseapp.SessionRoute, message string) {
 	routeCleanupPending := f.coordinator.deps.dataPlane.DeleteSessionRoute(f.ctx, route) != nil
 	providerCleanupPending := f.cleanupProviderSession()
 	f.markCleanupPending(routeCleanupPending, providerCleanupPending)

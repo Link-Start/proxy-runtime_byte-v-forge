@@ -19,7 +19,7 @@ func runtimeLeaseCoordinatorDependencies(runtime *Runtime) leaseCoordinatorDepen
 		store:                   store,
 		settings:                runtime.settings,
 		locks:                   locks,
-		dataPlane:               runtime.dataPlane,
+		dataPlane:               leaseRuntimeDataPlaneApplier{dataPlane: runtime.dataPlane},
 		dynamicIPSelector:       runtime.dynamicIPSelector,
 		sessionProviders:        leaseRegistrySessionProviderFactory{registry: runtime.accountProviders, client: runtime.providerHTTPClient},
 		providerConcurrency:     runtime.providerConcurrency,

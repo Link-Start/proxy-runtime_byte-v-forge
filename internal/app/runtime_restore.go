@@ -8,7 +8,6 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 )
 
 const (
@@ -110,7 +109,7 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 		return err
 	}
 	nodes = applyDynamicLeaseLineLabels(nodes, lineLabels)
-	route := dataplane.SessionRoute{
+	route := leaseapp.SessionRoute{
 		SessionID:   lease.GetSession().GetSessionId(),
 		Listener:    localServiceFromListener(listenerFromProto(lease.GetListener()), c.deps.cfg.LocalProtocol),
 		Pool:        nodes,

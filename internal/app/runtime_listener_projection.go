@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 )
 
 func defaultListenerConfigs(localAddr string, localProtocol string) []config.EgressListener {
@@ -48,8 +48,8 @@ func protoListener(listener config.EgressListener, managed bool) *proxyruntimev1
 	return &proxyruntimev1.EgressListener{ListenerId: listener.ID, Kind: kind, ListenAddr: listener.Addr, Protocol: protocolFromName(listenerProtocol(listener, "http")), RouteId: routeID, Managed: managed, Labels: labels}
 }
 
-func localServiceFromListener(listener config.EgressListener, fallback string) dataplane.LocalService {
-	return dataplane.LocalService{Name: listener.ID, Addr: listener.Addr, Protocol: listenerProtocol(listener, fallback), Username: listener.Username, Password: listener.Password, Route: listenerRoute(listener)}
+func localServiceFromListener(listener config.EgressListener, fallback string) leaseapp.LocalService {
+	return leaseapp.LocalService{Name: listener.ID, Addr: listener.Addr, Protocol: listenerProtocol(listener, fallback), Username: listener.Username, Password: listener.Password, Route: listenerRoute(listener)}
 }
 
 func listenerFromProto(listener *proxyruntimev1.EgressListener) config.EgressListener {

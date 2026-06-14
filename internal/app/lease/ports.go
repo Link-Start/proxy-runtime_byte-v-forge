@@ -4,7 +4,6 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
@@ -26,9 +25,25 @@ type SessionProviderFactory interface {
 	NewSessionProvider(accountproxy.Config) (provider.SessionProvider, error)
 }
 
+type LocalService struct {
+	Name     string
+	Addr     string
+	Protocol string
+	Username string
+	Password string
+	Route    string
+}
+
+type SessionRoute struct {
+	SessionID   string
+	Listener    LocalService
+	Pool        []provider.Node
+	DialerProxy string
+}
+
 type DataPlaneApplier interface {
-	UpsertSessionRoute(context.Context, dataplane.SessionRoute) error
-	DeleteSessionRoute(context.Context, dataplane.SessionRoute) error
+	UpsertSessionRoute(context.Context, SessionRoute) error
+	DeleteSessionRoute(context.Context, SessionRoute) error
 }
 
 type LockFunc func(context.Context) error

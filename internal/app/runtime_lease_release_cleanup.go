@@ -6,7 +6,6 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 )
 
 func (c leaseCoordinator) retireLeaseRoute(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
@@ -47,6 +46,6 @@ func (c leaseCoordinator) deleteLeaseRoute(ctx context.Context, lease *proxyrunt
 		return nil
 	}
 	listener := listenerFromProto(lease.GetListener())
-	route := dataplane.SessionRoute{SessionID: lease.GetSession().GetSessionId(), Listener: localServiceFromListener(listener, c.deps.cfg.LocalProtocol)}
+	route := leaseapp.SessionRoute{SessionID: lease.GetSession().GetSessionId(), Listener: localServiceFromListener(listener, c.deps.cfg.LocalProtocol)}
 	return c.deps.dataPlane.DeleteSessionRoute(ctx, route)
 }

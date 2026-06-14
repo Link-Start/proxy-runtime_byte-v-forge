@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"strings"
-	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/random"
@@ -27,7 +26,7 @@ func (c leaseCoordinator) saveFailedAcquireLeaseFact(ctx context.Context, req *p
 		Session:           session,
 		Egress:            egress,
 		Listener:          listener,
-		AcquiredAt:        timestamppb.New(time.Now().UTC()),
+		AcquiredAt:        timestamppb.New(c.now().UTC()),
 		SelectionPlan:     plan,
 		ErrorMessage:      strings.TrimSpace(message),
 	}

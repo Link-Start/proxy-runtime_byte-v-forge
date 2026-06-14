@@ -9,6 +9,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
@@ -43,6 +44,7 @@ type leaseCoordinatorDependencies struct {
 	cfg                     config.Config
 	store                   leaseCoordinatorStore
 	settings                leaseCoordinatorSettings
+	clock                   leaseapp.Clock
 	locks                   leaseRuntimeLocks
 	dataPlane               dataplane.Driver
 	dynamicIPSelector       *dynamicIPSelector
@@ -71,6 +73,7 @@ func newLeaseCoordinator(runtime *Runtime) leaseCoordinator {
 		cfg:                     runtime.cfg,
 		store:                   store,
 		settings:                runtime.settings,
+		clock:                   leaseapp.SystemClock{},
 		locks:                   runtime.leaseLocks,
 		dataPlane:               runtime.dataPlane,
 		dynamicIPSelector:       runtime.dynamicIPSelector,
@@ -91,6 +94,13 @@ func (c leaseCoordinator) warn(message string, args ...any) {
 	if c.deps.logger != nil {
 		c.deps.logger.Warn(message, args...)
 	}
+}
+
+func (c leaseCoordinator) now() time.Time {
+	if c.deps.clock != nil {
+		return c.deps.clock.Now()
+	}
+	return time.Now()
 }
 
 func (c leaseCoordinator) clearExitCheckCache() {

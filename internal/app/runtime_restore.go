@@ -44,7 +44,7 @@ func (c leaseCoordinator) restoreActiveLeases(ctx context.Context) error {
 		c.warn("list proxy leases for restore failed", "error", err)
 		return err
 	}
-	now := time.Now().UTC()
+	now := c.now().UTC()
 	restoreErrors := make([]error, 0)
 	for _, lease := range leases {
 		if !leaseapp.ActiveAt(lease, now) {

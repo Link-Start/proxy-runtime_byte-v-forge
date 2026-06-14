@@ -4,7 +4,6 @@ import (
 	"context"
 	"strconv"
 	"strings"
-	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
@@ -45,7 +44,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 	selectionPolicy := normalizeDynamicIPSelectionPolicy(req)
 	requestedSessionID := requestedLeaseSessionID(req)
 	existing, err := c.activeLeaseByRequest(ctx, req, requestedSessionID)
-	if err == nil && leaseapp.ActiveAt(existing, time.Now().UTC()) {
+	if err == nil && leaseapp.ActiveAt(existing, c.now().UTC()) {
 		if !req.GetForceNew() && !playgroundLeaseNeedsReplacement(req, existing) {
 			if err := c.refreshLeaseConcurrencySlot(ctx, existing); err != nil {
 				return nil, err
@@ -200,7 +199,7 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertise
 		failure.afterRoute(route, "dataplane route apply failed")
 		return nil, unavailable("dataplane route apply failed", err)
 	}
-	now := time.Now().UTC()
+	now := c.now().UTC()
 	lease := &proxyruntimev1.ProxyDynamicLease{LeaseId: leaseID, AccountId: req.GetAccountId(), Purpose: req.GetPurpose(), ProviderAccountId: providerAccountID, Status: proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE, Session: session, Egress: egress, Listener: listenerProto, AcquiredAt: timestamppb.New(now), ExpiresAt: session.GetExpiresAt(), SelectionPlan: selection.plan}
 	if err := c.deps.store.SaveLeaseFact(ctx, lease); err != nil {
 		failure.afterRoute(route, "lease fact save failed")

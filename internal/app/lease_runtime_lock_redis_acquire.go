@@ -1,0 +1,49 @@
+package app
+
+import (
+	"context"
+	"errors"
+	"time"
+)
+
+func (s *redisLeaseRuntimeLocks) withLock(ctx context.Context, key string, fn leaseRuntimeLockFunc) error {
+	lock, err := s.lock(ctx, key)
+	if err != nil {
+		return err
+	}
+	return lock.run(fn)
+}
+
+func (s *redisLeaseRuntimeLocks) lock(ctx context.Context, key string) (*redisLeaseRuntimeLock, error) {
+	if s == nil || s.client == nil {
+		return nil, errors.New("redis lease lock client is not configured")
+	}
+	redisKeyValue, ok := redisKey(leaseRuntimeLockPrefix, key)
+	if !ok {
+		return nil, errors.New("redis lease lock key is required")
+	}
+	token, err := redisLeaseRuntimeLockToken()
+	if err != nil {
+		return nil, err
+	}
+	for {
+		locked, err := s.client.SetNX(ctx, redisKeyValue, token, leaseRuntimeLockTTL).Result()
+		if err != nil {
+			return nil, err
+		}
+		if locked {
+			scopeCtx, scopeCancel := context.WithCancel(ctx)
+			renewCtx, renewCancel := context.WithCancel(context.Background())
+			lock := &redisLeaseRuntimeLock{client: s.client, key: redisKeyValue, token: token, scopeCtx: scopeCtx, scopeCancel: scopeCancel, renewCancel: renewCancel, done: make(chan struct{})}
+			go lock.renew(renewCtx)
+			return lock, nil
+		}
+		timer := time.NewTimer(leaseRuntimeLockRetry)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return nil, ctx.Err()
+		case <-timer.C:
+		}
+	}
+}

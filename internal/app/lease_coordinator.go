@@ -20,34 +20,6 @@ type leaseCoordinatorSettings interface {
 	load(context.Context) (*runtimeSettingsFile, error)
 }
 
-type leaseCoordinatorStore interface {
-	ActiveLeaseFactBySession(context.Context, string, string, string) (*proxyruntimev1.ProxyDynamicLease, error)
-	ActiveLeaseFactByAccount(context.Context, string, string) (*proxyruntimev1.ProxyDynamicLease, error)
-	LatestLeaseFactByAccount(context.Context, string, string) (*proxyruntimev1.ProxyDynamicLease, error)
-	LeaseFactByID(context.Context, string) (*proxyruntimev1.ProxyDynamicLease, error)
-	SaveLeaseFact(context.Context, *proxyruntimev1.ProxyDynamicLease) error
-	CleanupPendingLeaseFacts(context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error)
-	ExpiredActiveLeaseFacts(context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error)
-	ListRestorableLeaseFacts(context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error)
-	ProviderAccount(context.Context, string) (*proxyruntimev1.ProxyProviderAccount, error)
-	ProviderConfig(context.Context, string) (accountproxy.Config, string, error)
-}
-
-type leaseSessionProviderFactory interface {
-	NewSessionProvider(accountproxy.Config) (provider.SessionProvider, error)
-}
-
-type leaseDataPlaneApplier interface {
-	UpsertSessionRoute(context.Context, dataplane.SessionRoute) error
-	DeleteSessionRoute(context.Context, dataplane.SessionRoute) error
-}
-
-type leaseLockManager interface {
-	WithAccountLock(context.Context, string, leaseRuntimeLockFunc) error
-	WithProviderAccountLock(context.Context, string, leaseRuntimeLockFunc) error
-	WithSessionListenerAllocationLock(context.Context, leaseRuntimeLockFunc) error
-}
-
 type leaseRegistrySessionProviderFactory struct {
 	registry *providerregistry.Registry
 	client   *http.Client
@@ -60,6 +32,28 @@ func (f leaseRegistrySessionProviderFactory) NewSessionProvider(providerCfg acco
 	return f.registry.NewSessionProvider(providerCfg, f.client)
 }
 
+type leaseRuntimeLockManager struct {
+	locks leaseRuntimeLocks
+}
+
+func (m leaseRuntimeLockManager) WithAccountLock(ctx context.Context, accountID string, fn leaseapp.LockFunc) error {
+	return m.locks.WithAccountLock(ctx, accountID, func(ctx context.Context) error {
+		return fn(ctx)
+	})
+}
+
+func (m leaseRuntimeLockManager) WithProviderAccountLock(ctx context.Context, providerAccountID string, fn leaseapp.LockFunc) error {
+	return m.locks.WithProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
+		return fn(ctx)
+	})
+}
+
+func (m leaseRuntimeLockManager) WithSessionListenerAllocationLock(ctx context.Context, fn leaseapp.LockFunc) error {
+	return m.locks.WithSessionListenerAllocationLock(ctx, func(ctx context.Context) error {
+		return fn(ctx)
+	})
+}
+
 type leaseListenerFunc func(context.Context, *runtimeSettingsFile, string, string) (config.EgressListener, error)
 type leaseEndpointFunc func(config.EgressListener, string) (*proxyruntimev1.ProxyEndpoint, error)
 type leaseAdvertisedHostFunc func(string, config.EgressListener) string
@@ -68,13 +62,13 @@ type leaseConnectionCleanupFunc func(context.Context, []string)
 
 type leaseCoordinatorDependencies struct {
 	cfg                     config.Config
-	store                   leaseCoordinatorStore
+	store                   leaseapp.OrchestrationStore
 	settings                leaseCoordinatorSettings
 	clock                   leaseapp.Clock
-	locks                   leaseLockManager
-	dataPlane               leaseDataPlaneApplier
+	locks                   leaseapp.LockManager
+	dataPlane               leaseapp.DataPlaneApplier
 	dynamicIPSelector       *dynamicIPSelector
-	sessionProviders        leaseSessionProviderFactory
+	sessionProviders        leaseapp.SessionProviderFactory
 	providerConcurrency     providerAccountConcurrencyLimiter
 	logger                  leaseapp.Logger
 	exitCheckCache          *proxyExitCheckCache
@@ -90,16 +84,20 @@ type leaseCoordinator struct {
 }
 
 func newLeaseCoordinator(runtime *Runtime) leaseCoordinator {
-	var store leaseCoordinatorStore
+	var store leaseapp.OrchestrationStore
 	if runtime.store != nil {
 		store = runtime.store
+	}
+	var locks leaseapp.LockManager
+	if runtime.leaseLocks != nil {
+		locks = leaseRuntimeLockManager{locks: runtime.leaseLocks}
 	}
 	return leaseCoordinator{deps: leaseCoordinatorDependencies{
 		cfg:                     runtime.cfg,
 		store:                   store,
 		settings:                runtime.settings,
 		clock:                   leaseapp.SystemClock{},
-		locks:                   runtime.leaseLocks,
+		locks:                   locks,
 		dataPlane:               runtime.dataPlane,
 		dynamicIPSelector:       runtime.dynamicIPSelector,
 		sessionProviders:        leaseRegistrySessionProviderFactory{registry: runtime.accountProviders, client: runtime.providerHTTPClient},

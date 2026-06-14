@@ -723,6 +723,7 @@ Completed user-visible/runtime batches:
 - Dynamic IP endpoint health scoring now uses lease status predicates from `internal/app/lease` instead of interpreting active/expired/released/failed enums locally.
 - Acquire request session-id label parsing is centralized in `internal/app/lease`, so lease orchestration no longer owns sticky-session label aliases.
 - Acquire request account/purpose label injection is centralized in `internal/app/lease`; dynamic IP policy normalization remains in the runtime dynamic-IP layer.
+- Lease orchestration store, provider-session factory, data-plane applier, and lock-manager ports are now defined in `internal/app/lease`; the app layer only adapts runtime registry and lock implementations to those ports.
 
 Still open:
 

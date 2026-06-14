@@ -973,6 +973,7 @@ Completed user-visible/runtime batches:
 - Restore provider config and provider-account identity loading now happens inside the lease restore flow; the coordinator only loads runtime settings and supplies concrete gateway/line-binding resolvers.
 - Provider-session release now reuses the lease-owned provider-config loader instead of directly reading store details in the release flow.
 - Provider-session release locking and failure recording are now owned by the release, expiry, and cleanup-pending lease flows; the app-level provider-session release wrapper was removed.
+- Existing-lease concurrency slot refresh now uses a lease-owned helper for provider-account lookup, holder validation, TTL calculation, and slot acquisition; the coordinator only supplies the runtime settings-derived limit.
 
 Still open:
 

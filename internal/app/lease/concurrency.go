@@ -9,6 +9,7 @@ import (
 
 const (
 	LabelAccountID                        = "account_id"
+	LabelLeaseID                          = "lease_id"
 	LabelPurpose                          = "purpose"
 	LabelSessionID                        = "session_id"
 	LabelProviderAccountID                = "provider_account_id"

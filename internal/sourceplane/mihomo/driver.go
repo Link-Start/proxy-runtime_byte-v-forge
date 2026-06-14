@@ -3,6 +3,7 @@ package mihomo
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
@@ -199,24 +200,14 @@ func (d *Driver) rollbackConfigLocked(ctx context.Context, configPath string) er
 	if err := writeConfigData(configPath, d.lastGoodData); err != nil {
 		return err
 	}
-	if d.running {
-		if err := d.reloadLocked(ctx, configPath); err == nil {
-			if strings.TrimSpace(d.lastEndpoint.Addr) == "" {
-				return nil
-			}
-			return waitForEndpoint(ctx, d.lastEndpoint.Addr, 3*time.Second)
-		}
-		d.stopLocked()
-	}
 	if strings.TrimSpace(d.lastEndpoint.Addr) == "" {
 		return nil
 	}
-	dir, err := d.ensureConfigDir()
-	if err != nil {
-		return err
+	if !d.running {
+		return errors.New("mihomo process is not running")
 	}
-	if err := d.startLocked(ctx, dir, configPath); err != nil {
-		return err
+	if err := d.reloadLocked(ctx, configPath); err != nil {
+		return fmt.Errorf("rollback mihomo config by hot reload: %w", err)
 	}
 	return waitForEndpoint(ctx, d.lastEndpoint.Addr, 3*time.Second)
 }

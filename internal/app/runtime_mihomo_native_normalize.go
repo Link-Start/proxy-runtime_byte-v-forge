@@ -1,8 +1,6 @@
 package app
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -44,6 +42,7 @@ func normalizeMihomoNativeSettings(view *proxyruntimev1.ProxyRuntimeMihomoNative
 	}
 	return out
 }
+
 func normalizeMihomoNativeFixedProxy(item mihomoNativeFixedProxy, currentByName map[string]mihomoNativeFixedProxy) mihomoNativeFixedProxy {
 	item.Name = strings.TrimSpace(item.Name)
 	item.URI = strings.TrimSpace(item.URI)
@@ -57,6 +56,7 @@ func normalizeMihomoNativeFixedProxy(item mihomoNativeFixedProxy, currentByName 
 	}
 	return item
 }
+
 func normalizeMihomoNativeSubscription(item mihomoNativeSubscription, currentByName map[string]mihomoNativeSubscription) mihomoNativeSubscription {
 	item.Name = strings.TrimSpace(item.Name)
 	item.URL = strings.TrimSpace(item.URL)
@@ -68,12 +68,4 @@ func normalizeMihomoNativeSubscription(item mihomoNativeSubscription, currentByN
 		item.ID = nativeStableID("sub", item.URL)
 	}
 	return item
-}
-func nativeStableID(prefix string, source string) string {
-	source = strings.TrimSpace(source)
-	if source == "" {
-		return ""
-	}
-	sum := sha256.Sum256([]byte(source))
-	return runtimeSafeID(prefix + "-" + hex.EncodeToString(sum[:])[:12])
 }

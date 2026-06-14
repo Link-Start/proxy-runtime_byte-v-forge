@@ -7,6 +7,7 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
 const (
@@ -55,19 +56,24 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	if err != nil {
 		return err
 	}
-	slot, err := c.acquireRestoreLeaseConcurrencySlot(ctx, lease, inputs.settings, inputs.providerAccount)
-	if err != nil {
-		return err
-	}
-	return leaseapp.RunTemporaryConcurrencySlot(ctx, leaseapp.TemporaryConcurrencySlotInput{
-		Slot:           slot,
-		ReleaseTimeout: leaseRestoreSlotReleaseTimeout,
-		Action: func(ctx context.Context) error {
-			nodes, err := c.restoreLeaseSessionNodes(ctx, lease, inputs.settings, inputs.providerConfig)
-			if err != nil {
-				return err
-			}
-			return c.restoreLeaseDataPlaneRoute(ctx, lease, inputs.settings, nodes)
+	policy := leaseapp.ConcurrencyPolicy(lease)
+	return leaseapp.RestoreLease(ctx, leaseapp.RestoreLeaseInput{
+		Limiter:            c.deps.providerConcurrency,
+		DataPlane:          c.deps.dataPlane,
+		Factory:            c.deps.sessionProviders,
+		Lease:              lease,
+		ProviderConfig:     inputs.providerConfig,
+		ProviderAccountID:  inputs.providerAccount.GetAccountId(),
+		Limit:              dynamicProviderConcurrencyLimit(inputs.settings, leaseapp.DynamicProviderID(lease), policy),
+		DefaultTTL:         leaseapp.DefaultDynamicIPStickyTTL,
+		TTLBuffer:          providerAccountConcurrencyTTLBuffer,
+		SlotReleaseTimeout: leaseRestoreSlotReleaseTimeout,
+		LocalProtocol:      c.deps.cfg.LocalProtocol,
+		ResolveGateways: func(ctx context.Context, providerID string) ([]accountproxy.Gateway, error) {
+			return endpointsForDynamicIPSelection(inputs.settings, lease.GetSelectionPlan(), providerID), nil
+		},
+		ResolveLineBinding: func(ctx context.Context, accountID string) (string, map[string]string, error) {
+			return c.deps.dynamicLeaseDialerProxy(ctx, inputs.settings, accountID)
 		},
 	})
 }

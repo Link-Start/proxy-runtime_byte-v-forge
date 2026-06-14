@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"sort"
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -25,6 +26,9 @@ func (s *runtimeSettingsStore) updateInUserRules(ctx context.Context, profiles [
 	}
 	nextRules, err := ingressRulesFromRequest(rules, nextProfiles)
 	if err != nil {
+		return nil, err
+	}
+	if err := rejectOmittedIngressRules(settings.GetIngressRules(), nextRules); err != nil {
 		return nil, err
 	}
 	applyInUserSessionLabels(nextProfiles, nextRules)
@@ -59,6 +63,32 @@ func applyInUserSessionLabels(profiles []*proxyruntimev1.EgressProfileSettings, 
 		}
 		policy.Labels["session_id"] = sessionID
 	}
+}
+
+func rejectOmittedIngressRules(current []*proxyruntimev1.ProxyIngressRuleSettings, next []*proxyruntimev1.ProxyIngressRuleSettings) error {
+	missing := existingIngressRuleIDs(current)
+	for _, rule := range next {
+		delete(missing, runtimeSafeID(rule.GetRuleId()))
+	}
+	if len(missing) == 0 {
+		return nil
+	}
+	ids := make([]string, 0, len(missing))
+	for id := range missing {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	return failedPrecondition("in-user update omitted existing ingress rules: "+strings.Join(ids, ", "), nil)
+}
+
+func existingIngressRuleIDs(rules []*proxyruntimev1.ProxyIngressRuleSettings) map[string]struct{} {
+	out := map[string]struct{}{}
+	for _, rule := range rules {
+		if id := runtimeSafeID(rule.GetRuleId()); id != "" {
+			out[id] = struct{}{}
+		}
+	}
+	return out
 }
 
 func inUserSessionID(username string) string {

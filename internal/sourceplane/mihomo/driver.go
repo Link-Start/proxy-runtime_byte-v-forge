@@ -3,8 +3,6 @@ package mihomo
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -48,7 +46,6 @@ type Driver struct {
 	running      bool
 	lastError    string
 	lastEndpoint sourceplane.Endpoint
-	lastGoodData []byte
 }
 
 func New(cfg Config, logger *slog.Logger) *Driver {
@@ -124,29 +121,20 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 		}
 		d.stopLocked()
 		if err := d.startLocked(ctx, dir, configPath); err != nil {
-			err = d.withRollback(ctx, configPath, err)
+			d.lastError = err.Error()
+			return nil, err
+		}
+		if err := waitForEndpoint(ctx, endpoint.Addr, 3*time.Second); err != nil {
 			d.lastError = err.Error()
 			return nil, err
 		}
 		baseReloaded = true
 	} else if baseChanged {
-		if err := writeConfigData(configPath, data); err != nil {
-			d.lastError = err.Error()
-			return nil, err
-		}
-		if err := d.reloadLocked(ctx, configPath); err != nil {
-			err = d.withRollback(ctx, configPath, err)
+		if err := d.reloadConfigDataLocked(ctx, configPath, data, endpoint); err != nil {
 			d.lastError = err.Error()
 			return nil, err
 		}
 		baseReloaded = true
-	}
-	if err := waitForEndpoint(ctx, endpoint.Addr, 3*time.Second); err != nil {
-		if baseReloaded {
-			err = d.withRollback(ctx, configPath, err)
-		}
-		d.lastError = err.Error()
-		return nil, err
 	}
 
 	finalOptions := baseOptions
@@ -162,17 +150,7 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 	}
 	finalSig := signature(finalData)
 	if baseReloaded || finalSig != d.signature {
-		if err := writeConfigData(configPath, finalData); err != nil {
-			d.lastError = err.Error()
-			return nil, err
-		}
-		if err := d.reloadLocked(ctx, configPath); err != nil {
-			err = d.withRollback(ctx, configPath, err)
-			d.lastError = err.Error()
-			return nil, err
-		}
-		if err := waitForEndpoint(ctx, endpoint.Addr, 3*time.Second); err != nil {
-			err = d.withRollback(ctx, configPath, err)
+		if err := d.reloadConfigDataLocked(ctx, configPath, finalData, endpoint); err != nil {
 			d.lastError = err.Error()
 			return nil, err
 		}
@@ -181,33 +159,22 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 	d.baseSig = baseSig
 	d.configPath = configPath
 	d.lastEndpoint = endpoint
-	d.lastGoodData = append(d.lastGoodData[:0], finalData...)
 	d.lastError = ""
 	return nil, nil
 }
 
-func (d *Driver) withRollback(ctx context.Context, configPath string, applyErr error) error {
-	if rollbackErr := d.rollbackConfigLocked(ctx, configPath); rollbackErr != nil {
-		return fmt.Errorf("%w; rollback failed: %v", applyErr, rollbackErr)
-	}
-	return applyErr
-}
-
-func (d *Driver) rollbackConfigLocked(ctx context.Context, configPath string) error {
-	if len(d.lastGoodData) == 0 {
-		return nil
-	}
-	if err := writeConfigData(configPath, d.lastGoodData); err != nil {
+func (d *Driver) reloadConfigDataLocked(ctx context.Context, canonicalPath string, data []byte, endpoint sourceplane.Endpoint) error {
+	candidatePath := filepath.Join(filepath.Dir(canonicalPath), "config.candidate.json")
+	if err := writeConfigData(candidatePath, data); err != nil {
 		return err
 	}
-	if strings.TrimSpace(d.lastEndpoint.Addr) == "" {
-		return nil
+	if err := d.reloadLocked(ctx, candidatePath); err != nil {
+		return err
 	}
-	if !d.running {
-		return errors.New("mihomo process is not running")
+	if strings.TrimSpace(endpoint.Addr) != "" {
+		if err := waitForEndpoint(ctx, endpoint.Addr, 3*time.Second); err != nil {
+			return err
+		}
 	}
-	if err := d.reloadLocked(ctx, configPath); err != nil {
-		return fmt.Errorf("rollback mihomo config by hot reload: %w", err)
-	}
-	return waitForEndpoint(ctx, d.lastEndpoint.Addr, 3*time.Second)
+	return writeConfigData(canonicalPath, data)
 }

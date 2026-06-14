@@ -13,7 +13,6 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
@@ -25,7 +24,6 @@ const (
 	defaultProviderHealthPeriod = 300
 	defaultProviderHealthWait   = 5000
 	defaultProviderUserAgent    = "mihomo/1.18.3"
-	mihomoNativeRollbackTimeout = 30 * time.Second
 )
 
 type mihomoNativeFixedProxy struct {
@@ -362,30 +360,6 @@ func updateMihomoNativeSettings(ctx context.Context, runtime *Runtime, view *pro
 	if err != nil {
 		return nil, internalError("load mihomo native settings", err)
 	}
-	currentSettings, err := runtime.settings.load(ctx)
-	if err != nil {
-		return nil, err
-	}
-	rollback := mihomoNativeUpdateRollback{
-		runtime:        runtime,
-		config:         current,
-		nativeSettings: currentView,
-		settings:       cloneRuntimeSettingsFile(currentSettings),
-	}
-	configChanged := false
-	nativeSettingsChanged := false
-	settingsChanged := false
-	fail := func(err error) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
-		if err == nil {
-			return nil, nil
-		}
-		if rollback.needsRestore(configChanged, nativeSettingsChanged, settingsChanged) {
-			if rollbackErr := rollback.restore(settingsChanged, configChanged, nativeSettingsChanged, configChanged || nativeSettingsChanged || settingsChanged); rollbackErr != nil {
-				return nil, internalError("mihomo native config rollback failed", fmt.Errorf("%w; rollback failed: %v", err, rollbackErr))
-			}
-		}
-		return nil, err
-	}
 	next := mihomoNativeConfigFile{
 		FixedProxies:   make([]mihomoNativeFixedProxy, 0, len(view.FixedProxies)),
 		Proxies:        make([]map[string]any, 0, len(view.FixedProxies)),
@@ -404,16 +378,16 @@ func updateMihomoNativeSettings(ctx context.Context, runtime *Runtime, view *pro
 		}
 		resourceReplacements[normalized.Name] = mihomoNativeResourceReplacement{ResourceID: normalized.ID, FixedProxy: true}
 		if _, exists := seenFixedIDs[normalized.ID]; exists {
-			return fail(invalidArgument(fmt.Sprintf("fixed proxy %q duplicates id %q", normalized.Name, normalized.ID), nil))
+			return nil, invalidArgument(fmt.Sprintf("fixed proxy %q duplicates id %q", normalized.Name, normalized.ID), nil)
 		}
 		if _, exists := seenFixedNames[normalized.Name]; exists {
-			return fail(invalidArgument(fmt.Sprintf("fixed proxy %q duplicates name", normalized.Name), nil))
+			return nil, invalidArgument(fmt.Sprintf("fixed proxy %q duplicates name", normalized.Name), nil)
 		}
 		seenFixedIDs[normalized.ID] = struct{}{}
 		seenFixedNames[normalized.Name] = struct{}{}
 		proxy, err := mihomoNativeProxyFromURI(normalized.Name, normalized.URI)
 		if err != nil {
-			return fail(invalidArgument(err.Error(), nil))
+			return nil, invalidArgument(err.Error(), nil)
 		}
 		normalized.Type = jsonStringValue(proxy["type"])
 		next.FixedProxies = append(next.FixedProxies, normalized)
@@ -429,80 +403,33 @@ func updateMihomoNativeSettings(ctx context.Context, runtime *Runtime, view *pro
 		}
 		resourceReplacements[normalized.Name] = mihomoNativeResourceReplacement{ResourceID: normalized.ID}
 		if _, exists := seenSubscriptionIDs[normalized.ID]; exists {
-			return fail(invalidArgument(fmt.Sprintf("subscription %q duplicates id %q", normalized.Name, normalized.ID), nil))
+			return nil, invalidArgument(fmt.Sprintf("subscription %q duplicates id %q", normalized.Name, normalized.ID), nil)
 		}
 		if _, exists := seenSubscriptionNames[normalized.Name]; exists {
-			return fail(invalidArgument(fmt.Sprintf("subscription %q duplicates name", normalized.Name), nil))
+			return nil, invalidArgument(fmt.Sprintf("subscription %q duplicates name", normalized.Name), nil)
 		}
 		seenSubscriptionIDs[normalized.ID] = struct{}{}
 		seenSubscriptionNames[normalized.Name] = struct{}{}
 		provider, subscription, err := mihomoNativeSubscriptionProvider(normalized)
 		if err != nil {
-			return fail(err)
+			return nil, err
 		}
 		next.Subscriptions = append(next.Subscriptions, subscription)
 		next.ProxyProviders[subscription.Name] = provider
 	}
 	if err := runtime.settings.saveMihomoNative(ctx, mihomoNativeSettingsFromConfig(next)); err != nil {
-		return fail(internalError("save mihomo native settings", err))
+		return nil, internalError("save mihomo native settings", err)
 	}
-	nativeSettingsChanged = true
 	if err := saveMihomoNativeConfig(runtime, next); err != nil {
-		return fail(internalError("save mihomo native config", err))
+		return nil, internalError("save mihomo native config", err)
 	}
-	configChanged = true
-	settingsChanged, err = runtime.settings.replaceMihomoResourceRefs(ctx, resourceReplacements)
+	_, err = runtime.settings.replaceMihomoResourceRefs(ctx, resourceReplacements)
 	if err != nil {
-		return fail(internalError("update mihomo native resource references", err))
+		return nil, internalError("update mihomo native resource references", err)
 	}
 	runtime.exitCheckCache.clear()
-	if err := runtime.runReconcile(ctx); err != nil {
-		return fail(unavailable("mihomo native config apply failed", err))
-	}
+	runtime.requestReconcile()
 	return mihomoNativeSettings(ctx, runtime)
-}
-
-type mihomoNativeUpdateRollback struct {
-	runtime        *Runtime
-	config         mihomoNativeConfigFile
-	nativeSettings *proxyruntimev1.ProxyRuntimeMihomoNativeConfig
-	settings       *runtimeSettingsFile
-}
-
-func (r mihomoNativeUpdateRollback) needsRestore(configChanged bool, nativeSettingsChanged bool, settingsChanged bool) bool {
-	return configChanged || nativeSettingsChanged || settingsChanged
-}
-
-func (r mihomoNativeUpdateRollback) restore(settingsChanged bool, configChanged bool, nativeSettingsChanged bool, reconcile bool) error {
-	restoreErrors := make([]error, 0)
-	if nativeSettingsChanged && r.runtime != nil && r.runtime.settings != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), mihomoNativeRollbackTimeout)
-		if err := r.runtime.settings.saveMihomoNative(ctx, r.nativeSettings); err != nil {
-			restoreErrors = append(restoreErrors, fmt.Errorf("restore mihomo native settings: %w", err))
-		}
-		cancel()
-	}
-	if configChanged && r.runtime != nil {
-		if err := saveMihomoNativeConfig(r.runtime, r.config); err != nil {
-			restoreErrors = append(restoreErrors, fmt.Errorf("restore mihomo native config: %w", err))
-		}
-	}
-	if settingsChanged && r.runtime != nil && r.runtime.settings != nil && r.settings != nil {
-		ctx, cancel := context.WithTimeout(context.Background(), mihomoNativeRollbackTimeout)
-		if err := r.runtime.settings.replace(ctx, r.settings); err != nil {
-			restoreErrors = append(restoreErrors, fmt.Errorf("restore runtime settings: %w", err))
-		}
-		cancel()
-	}
-	if reconcile && r.runtime != nil {
-		r.runtime.exitCheckCache.clear()
-		ctx, cancel := context.WithTimeout(context.Background(), mihomoNativeRollbackTimeout)
-		if err := r.runtime.runReconcile(ctx); err != nil {
-			restoreErrors = append(restoreErrors, fmt.Errorf("reconcile rollback config: %w", err))
-		}
-		cancel()
-	}
-	return errors.Join(restoreErrors...)
 }
 
 func preserveNativeGroups(groups []mihomoNativeGroup) []mihomoNativeGroup {

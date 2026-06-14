@@ -49,18 +49,6 @@ func NewFailedAcquireRecorder(input FailedAcquireRecorderInput) *FailedAcquireRe
 	}
 }
 
-func (r *FailedAcquireRecorder) SetListener(listener *proxyruntimev1.EgressListener) {
-	if r != nil {
-		r.listener = listener
-	}
-}
-
-func (r *FailedAcquireRecorder) SetEgress(egress *proxyruntimev1.ProxyEndpoint) {
-	if r != nil {
-		r.egress = egress
-	}
-}
-
 func (r *FailedAcquireRecorder) SetEndpoint(endpoint AcquiredEndpoint) {
 	if r == nil {
 		return

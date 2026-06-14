@@ -1,7 +1,6 @@
-package app
+package lease
 
 import (
-	"errors"
 	"strconv"
 	"strings"
 
@@ -9,7 +8,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/geox"
 )
 
-func normalizeDynamicIPSelectionPolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) *proxyruntimev1.ProxyDynamicIPSelectionPolicy {
+func NormalizeDynamicIPSelectionPolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) *proxyruntimev1.ProxyDynamicIPSelectionPolicy {
 	in := req.GetSelectionPolicy()
 	policy := &proxyruntimev1.ProxyDynamicIPSelectionPolicy{}
 	if in != nil {
@@ -35,11 +34,11 @@ func normalizeDynamicIPSelectionPolicy(req *proxyruntimev1.AcquireProxyLeaseRequ
 	return policy
 }
 
-func dynamicIPSelectionAttempt(req *proxyruntimev1.AcquireProxyLeaseRequest) int {
+func DynamicIPSelectionAttempt(req *proxyruntimev1.AcquireProxyLeaseRequest) int {
 	if req == nil || req.GetPolicy() == nil {
 		return 1
 	}
-	value := strings.TrimSpace(req.GetPolicy().GetLabels()["attempt"])
+	value := strings.TrimSpace(req.GetPolicy().GetLabels()[LabelAttempt])
 	if value == "" {
 		return 1
 	}
@@ -50,7 +49,7 @@ func dynamicIPSelectionAttempt(req *proxyruntimev1.AcquireProxyLeaseRequest) int
 	return attempt
 }
 
-func dynamicIPSelectionMaxAttempts(policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) int {
+func DynamicIPSelectionMaxAttempts(policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) int {
 	attempts := int(policy.GetMaxAttempts())
 	if attempts < 1 {
 		return 1
@@ -58,15 +57,7 @@ func dynamicIPSelectionMaxAttempts(policy *proxyruntimev1.ProxyDynamicIPSelectio
 	return attempts
 }
 
-func retryLeaseAcquireAttempt(err error) bool {
-	var appErr *appError
-	if !errors.As(err, &appErr) {
-		return false
-	}
-	return appErr.code == errCodeUnavailable || appErr.code == errCodeFailedPrecondition
-}
-
-func dynamicIPSelectionKey(req *proxyruntimev1.AcquireProxyLeaseRequest) string {
+func DynamicIPSelectionKey(req *proxyruntimev1.AcquireProxyLeaseRequest) string {
 	if req == nil {
 		return ""
 	}

@@ -75,7 +75,7 @@ func (p *dynamicIPSelector) selectDynamicIPEndpoint(ctx context.Context, req *pr
 	if err != nil {
 		return dynamicIPSelection{}, err
 	}
-	policy := normalizeDynamicIPSelectionPolicy(req)
+	policy := leaseapp.NormalizeDynamicIPSelectionPolicy(req)
 	endpoints, err := p.dynamicIPEndpointCandidates(ctx, settings, policy, req.GetPolicy())
 	if err != nil {
 		return dynamicIPSelection{}, err
@@ -83,8 +83,8 @@ func (p *dynamicIPSelector) selectDynamicIPEndpoint(ctx context.Context, req *pr
 	if len(endpoints) == 0 {
 		return dynamicIPSelection{}, errors.New("no dynamic IP endpoint candidate")
 	}
-	attempt := dynamicIPSelectionAttempt(req)
-	selectedEndpoint := chooseDynamicIPEndpointCandidate(endpoints, policy, dynamicIPSelectionKey(req), attempt)
+	attempt := leaseapp.DynamicIPSelectionAttempt(req)
+	selectedEndpoint := chooseDynamicIPEndpointCandidate(endpoints, policy, leaseapp.DynamicIPSelectionKey(req), attempt)
 	reasons := []string{
 		fmt.Sprintf("dynamic_ip_endpoint=%s/%s/%s/%s", selectedEndpoint.proto.GetProviderAccountId(), selectedEndpoint.proto.GetProviderId(), selectedEndpoint.proto.GetDynamicProviderId(), selectedEndpoint.proto.GetEndpointId()),
 	}

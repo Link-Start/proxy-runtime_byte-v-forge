@@ -30,7 +30,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 	if err := leaseapp.ApplyProfileDynamicIPPolicy(settings.GetEgressProfiles(), req); err != nil {
 		return nil, leaseProfilePolicyError(err)
 	}
-	selectionPolicy := normalizeDynamicIPSelectionPolicy(req)
+	selectionPolicy := leaseapp.NormalizeDynamicIPSelectionPolicy(req)
 	requestedSessionID := leaseapp.RequestedSessionID(req)
 	existing, err := c.activeLeaseByRequest(ctx, req, requestedSessionID)
 	if err == nil {
@@ -48,7 +48,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 		}
 	}
 	var lastErr error
-	for attempt := 1; attempt <= dynamicIPSelectionMaxAttempts(selectionPolicy); attempt++ {
+	for attempt := 1; attempt <= leaseapp.DynamicIPSelectionMaxAttempts(selectionPolicy); attempt++ {
 		leaseapp.SetAttemptLabel(req, attempt)
 		lease, err := c.acquireLeaseAttempt(ctx, advertisedHost, req, settings)
 		if err == nil {

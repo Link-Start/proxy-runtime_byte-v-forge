@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 func dynamicProfileEndpointID(exit *proxyruntimev1.EgressProfileExitSettings) string {
@@ -25,7 +26,7 @@ func dynamicProfileEndpointCandidates(candidates []scoredDynamicIPEndpointCandid
 }
 
 func dynamicProfileSelectionPolicy(profileID string, policy *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxyDynamicIPSelectionPolicy {
-	return normalizeDynamicIPSelectionPolicy(&proxyruntimev1.AcquireProxyLeaseRequest{
+	return leaseapp.NormalizeDynamicIPSelectionPolicy(&proxyruntimev1.AcquireProxyLeaseRequest{
 		AccountId: strings.TrimSpace(profileID),
 		Purpose:   "in-user-profile",
 		Policy:    policy,

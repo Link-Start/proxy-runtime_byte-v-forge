@@ -1,0 +1,32 @@
+diff --git a/composables/useApi.ts b/composables/useApi.ts
+--- a/composables/useApi.ts
++++ b/composables/useApi.ts
+@@ -10,6 +10,10 @@ import type {
+ import ky from 'ky'
+ import { compareVersions } from '~/utils'
+ import { useMockData } from './useMockData'
++import {
++  isUnauthorizedStatus,
++  redirectToProxyRuntimeSetup,
++} from '~/composables/proxyRuntimeEndpointAuth'
+ 
+ // Mock mode support
+ export function useMockMode() {
+@@ -215,6 +219,17 @@ export function useRequest() {
+     prefix: endpoint.url,
+     headers,
+     timeout: 5000,
++    hooks: {
++      afterResponse: [
++        (_request, _options, response) => {
++          if (!isUnauthorizedStatus(response.status)) return
++          if (endpoint.id === 'proxy-runtime-mihomo') {
++            endpointStore.setSelectedEndpoint('')
++            redirectToProxyRuntimeSetup(endpoint.id)
++          }
++        },
++      ],
++    },
+   })
+ }
+ 

@@ -36,6 +36,10 @@ import {
   listMihomoConfigNodes,
   listMihomoEgressOwners,
 } from '~/composables/proxyRuntimeMihomoController'
+import {
+  isUnauthorizedStatus,
+  redirectToProxyRuntimeSetup,
+} from '~/composables/proxyRuntimeEndpointAuth'
 
 const base = '/api'
 
@@ -48,6 +52,9 @@ async function proxyRuntimeRequest<T>(
     headers: proxyRuntimeHeaders(init.headers),
   })
   if (!response.ok) {
+    if (isUnauthorizedStatus(response.status)) {
+      redirectToProxyRuntimeSetup()
+    }
     let message = `${response.status} ${response.statusText}`
     try {
       const body = await response.json()

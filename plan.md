@@ -837,6 +837,7 @@ Completed user-visible/runtime batches:
 - Mihomo driver projection now separates reconcile orchestration, render-option assembly, and JSON projection/signature rendering into focused files.
 - Mihomo endpoint handling now separates endpoint normalization, address parsing/dial-address resolution, and listener readiness waiting.
 - Mihomo native egress resolution now separates native node-name stripping, resource lookup, and proxy/provider availability checks.
+- Mihomo dynamic egress rendering now separates exit group rendering, dynamic node filtering, provider-id matching, and cloned proxy naming.
 
 Still open:
 

@@ -7,6 +7,7 @@ import (
 )
 
 type runtimeSettingsMutation func(*runtimeSettingsFile) (*runtimeSettingsFile, error)
+type runtimeSettingsChangeMutation func(*runtimeSettingsFile) (bool, error)
 
 func (s *runtimeSettingsStore) view(ctx context.Context) (*proxyruntimev1.ProxyRuntimeSettings, error) {
 	settings, err := s.load(ctx)
@@ -52,4 +53,24 @@ func (s *runtimeSettingsStore) mutateRuntimeSettings(ctx context.Context, mutati
 		return nil, err
 	}
 	return runtimeSettingsView(next), nil
+}
+
+func (s *runtimeSettingsStore) mutateRuntimeSettingsIfChanged(ctx context.Context, mutation runtimeSettingsChangeMutation) (bool, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	settings, err := s.loadLocked(ctx)
+	if err != nil {
+		return false, err
+	}
+	changed, err := mutation(settings)
+	if err != nil {
+		return false, err
+	}
+	if !changed {
+		return false, nil
+	}
+	if err := s.saveLocked(ctx, settings); err != nil {
+		return false, err
+	}
+	return true, nil
 }

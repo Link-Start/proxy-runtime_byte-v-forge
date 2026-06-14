@@ -767,6 +767,7 @@ Completed user-visible/runtime batches:
 - Dynamic provider settings store updates now reuse the shared request conversion and validation helper instead of duplicating provider normalization and duplicate checks.
 - Runtime settings store dependencies and construction are split from store read/update mutation methods.
 - Runtime settings store writes now share a locked mutation helper for load, mutate, save, and view projection instead of repeating the sequence in each update method.
+- Mihomo native resource reference replacement now uses the store's changed-aware mutation helper instead of hand-written lock, load, and save orchestration.
 
 Still open:
 

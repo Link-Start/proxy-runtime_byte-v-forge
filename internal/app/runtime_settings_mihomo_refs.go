@@ -16,28 +16,18 @@ func (s *runtimeSettingsStore) replaceMihomoResourceRefs(ctx context.Context, re
 	if len(replacements) == 0 {
 		return false, nil
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	settings, err := s.loadLocked(ctx)
-	if err != nil {
-		return false, err
-	}
-	changed := false
-	for _, profile := range settings.GetEgressProfiles() {
-		if replaceMihomoNodeRef(profile.GetLine().GetMihomoNode(), replacements) {
-			changed = true
+	return s.mutateRuntimeSettingsIfChanged(ctx, func(settings *runtimeSettingsFile) (bool, error) {
+		changed := false
+		for _, profile := range settings.GetEgressProfiles() {
+			if replaceMihomoNodeRef(profile.GetLine().GetMihomoNode(), replacements) {
+				changed = true
+			}
+			if replaceMihomoNodeRef(profile.GetExit().GetMihomoNode(), replacements) {
+				changed = true
+			}
 		}
-		if replaceMihomoNodeRef(profile.GetExit().GetMihomoNode(), replacements) {
-			changed = true
-		}
-	}
-	if !changed {
-		return false, nil
-	}
-	if err := s.saveLocked(ctx, settings); err != nil {
-		return false, err
-	}
-	return true, nil
+		return changed, nil
+	})
 }
 
 func replaceMihomoNodeRef(ref *proxyruntimev1.EgressProfileMihomoNodeRef, replacements map[string]mihomoNativeResourceReplacement) bool {

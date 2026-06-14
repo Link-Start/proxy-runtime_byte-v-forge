@@ -691,6 +691,7 @@ Completed user-visible/runtime batches:
 - MetaCubeXD bootstrap HTML, reverse proxy construction, controller auth injection, query sanitization, cache headers, and upstream error redaction are centralized in `internal/app/dashboard`.
 - HTTP request ID, authorization handoff, panic recovery, and request logging middleware are extracted into `internal/app/httpapi`; panic logs no longer include the recovered payload.
 - Runtime auth secret handling, required-path checks, login token matching, session verification, session cookies, and WebSocket token minting are routed through `internal/app/auth.Application`.
+- Runtime login page rendering and login redirect URL construction are owned by `internal/app/auth`, leaving Gin handlers to set headers and write responses.
 
 Still open:
 

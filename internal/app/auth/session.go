@@ -57,6 +57,14 @@ func VerifySession(value string, secret string, now time.Time) bool {
 	return subtle.ConstantTimeCompare([]byte(parts[3]), []byte(expected)) == 1
 }
 
+func LoginRedirect(next string) string {
+	target := "/login"
+	if safe := SafeRedirect(next); safe != "/" {
+		target += "?next=" + url.QueryEscape(safe)
+	}
+	return target
+}
+
 func LoginRedirectWithError(next string) string {
 	target := "/login?error=1"
 	if safe := SafeRedirect(next); safe != "/" {

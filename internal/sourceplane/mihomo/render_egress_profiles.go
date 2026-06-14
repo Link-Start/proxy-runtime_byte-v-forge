@@ -2,10 +2,12 @@ package mihomo
 
 import "fmt"
 
-func renderEgressProfiles(opts renderOptions) ([]map[string]any, map[string]mihomoProvider, []mihomoGroup, error) {
-	proxies := []map[string]any{}
-	providers := map[string]mihomoProvider{}
-	groups := []mihomoGroup{}
+func renderEgressProfiles(opts renderOptions) (renderedProfileProjection, error) {
+	projection := renderedProfileProjection{
+		proxies:   []map[string]any{},
+		providers: map[string]mihomoProvider{},
+		groups:    []mihomoGroup{},
+	}
 	for _, profile := range opts.EgressProfiles {
 		if !profile.Enabled {
 			continue
@@ -16,31 +18,29 @@ func renderEgressProfiles(opts renderOptions) ([]map[string]any, map[string]miho
 		}
 		line, err := renderEgressProfileLine(opts, id, profile.Line)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("profile %q line: %w", id, err)
+			return renderedProfileProjection{}, fmt.Errorf("profile %q line: %w", id, err)
 		}
-		if line.proxy != nil {
-			proxies = append(proxies, line.proxy)
-		}
-		if line.providerName != "" {
-			providers[line.providerName] = line.provider
-		}
-		if line.group.Name != "" {
-			groups = append(groups, line.group)
-		}
+		projection.addLayer(line)
 		exit, err := renderEgressProfileExit(opts, id, profileGroupNameFor(opts, profile), profile.Exit, line.target, opts.BasePool)
 		if err != nil {
-			return nil, nil, nil, fmt.Errorf("profile %q exit: %w", id, err)
+			return renderedProfileProjection{}, fmt.Errorf("profile %q exit: %w", id, err)
 		}
-		if exit.proxy != nil {
-			proxies = append(proxies, exit.proxy)
-		}
-		proxies = append(proxies, exit.proxies...)
-		if exit.providerName != "" {
-			providers[exit.providerName] = exit.provider
-		}
-		groups = append(groups, exit.group)
+		projection.addLayer(exit)
 	}
-	return proxies, providers, groups, nil
+	return projection, nil
+}
+
+func (p *renderedProfileProjection) addLayer(layer renderedProfileLayer) {
+	if layer.proxy != nil {
+		p.proxies = append(p.proxies, layer.proxy)
+	}
+	p.proxies = append(p.proxies, layer.proxies...)
+	if layer.providerName != "" {
+		p.providers[layer.providerName] = layer.provider
+	}
+	if layer.group.Name != "" {
+		p.groups = append(p.groups, layer.group)
+	}
 }
 
 type renderedProfileLayer struct {

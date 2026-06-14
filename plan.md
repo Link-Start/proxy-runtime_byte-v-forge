@@ -908,6 +908,7 @@ Completed user-visible/runtime batches:
 - Proxy-user referenced egress-profile validation now lives in `internal/app/settings`; app wiring only provides the failed-precondition error factory.
 - Auth login outcome decisions now live in the auth application; HTTP login handler only performs body read, cookie write, redirect, and response emission.
 - Mihomo gateway rendering now returns a structured projection instead of positional listener/group/rule tuples, making render sections less order-coupled.
+- Mihomo egress-profile rendering now returns a structured proxy/provider/group projection instead of positional tuple results, keeping profile render stages less order-coupled.
 - Auth logout redirect sanitization now lives in the auth package, leaving the logout handler to clear the cookie and emit redirect/no-content only.
 - Auth login-page query parsing now lives in the auth package, so the login-page handler only redirects authenticated sessions or writes the page.
 - Mihomo hot-reload now separates candidate config path construction and endpoint readiness waiting from the reload-and-commit orchestration.

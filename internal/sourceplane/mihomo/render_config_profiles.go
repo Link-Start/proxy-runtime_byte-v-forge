@@ -11,11 +11,11 @@ func renderProfileProjection(opts renderOptions, fixedConfigs []map[string]any, 
 	profileOpts.AvailableProxies = mihomoProxyNames(fixedConfigs)
 	profileOpts.AvailableProviders = mihomoProviderNames(providerMap)
 	profileOpts.ProfileGroups = profileGroupsByID
-	profileConfigs, profileProviders, profileGroups, err := renderEgressProfiles(profileOpts)
+	projection, err := renderEgressProfiles(profileOpts)
 	if err != nil {
 		return renderedProfileProjection{}, err
 	}
-	return renderedProfileProjection{proxies: profileConfigs, providers: profileProviders, groups: profileGroups}, nil
+	return projection, nil
 }
 
 func mergeMihomoProviders(target map[string]mihomoProvider, providers map[string]mihomoProvider) {

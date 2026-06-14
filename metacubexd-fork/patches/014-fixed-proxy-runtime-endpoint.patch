@@ -1,0 +1,282 @@
+diff --git a/pages/setup.vue b/pages/setup.vue
+index 5750a35..834d2e9 100644
+--- a/pages/setup.vue
++++ b/pages/setup.vue
+@@ -1,10 +1,11 @@
+ <script setup lang="ts">
+ import type { EndpointCheckError } from '~/composables/useApi'
+-import { IconLink, IconLock, IconServer, IconX } from '@tabler/icons-vue'
+-import { v4 as uuid } from 'uuid'
++import { IconLink, IconLock, IconServer } from '@tabler/icons-vue'
+ import { checkEndpointAPI } from '~/composables/useApi'
+-import { FALLBACK_BACKEND_URL } from '~/constants'
+-import { transformEndpointURL } from '~/utils'
++import {
++  proxyRuntimeAuthRequired,
++  proxyRuntimeMihomoEndpointID,
++} from '~/composables/proxyRuntimeEndpointAuth'
+ 
+ definePageMeta({
+   layout: 'default',
+@@ -14,7 +15,6 @@ const { t } = useI18n()
+ 
+ useHead({ title: computed(() => t('setup')) })
+ const router = useRouter()
+-const route = useRoute()
+ const endpointStore = useEndpointStore()
+ 
+ const formData = reactive({
+@@ -25,61 +25,36 @@ const formData = reactive({
+ const isSubmitting = ref(false)
+ const endpointError = ref<EndpointCheckError>(null)
+ 
+-// Get default backend URL from config
+-// Priority: runtime config (NUXT_PUBLIC_DEFAULT_BACKEND_URL) > config.js > fallback
+-const runtimeConfig = useRuntimeConfig()
+-const defaultBackendURL = computed(() => {
+-  if (runtimeConfig.public.defaultBackendURL) {
+-    return runtimeConfig.public.defaultBackendURL
+-  }
+-  if (
+-    typeof window !== 'undefined' &&
+-    (window as any).__METACUBEXD_CONFIG__?.defaultBackendURL
+-  ) {
+-    return (window as any).__METACUBEXD_CONFIG__.defaultBackendURL
+-  }
+-  return FALLBACK_BACKEND_URL
+-})
+-
+-// Get current origin for datalist
+-const currentOrigin = computed(() => {
+-  if (typeof window === 'undefined') return ''
+-  return window.location.origin
+-})
+-
+-function queryStringValue(value: unknown): string {
+-  if (Array.isArray(value)) {
+-    return typeof value[0] === 'string' ? value[0] : ''
+-  }
+-  return typeof value === 'string' ? value : ''
++function fixedEndpointURL() {
++  if (typeof window === 'undefined') return '/mihomo/controller'
++  return new URL('/mihomo/controller', window.location.origin).href.replace(
++    /\/$/,
++    '',
++  )
+ }
+ 
+-function prefillEndpoint(id: string): boolean {
+-  const endpoint = endpointStore.endpointList.find((item) => item.id === id)
+-  if (!endpoint) return false
+-  formData.url = endpoint.url
+-  formData.secret = endpoint.secret || ''
+-  endpointError.value = null
+-  return true
++function storedFixedEndpointSecret(url: string) {
++  const endpoint = endpointStore.endpointList.find(
++    (item) => item.id === proxyRuntimeMihomoEndpointID || item.url === url,
++  )
++  return endpoint?.secret || ''
+ }
+ 
+-function onSetupSuccess(id: string) {
+-  endpointStore.setSelectedEndpoint(id)
+-  router.replace('/overview')
++function syncFormEndpoint() {
++  const url = fixedEndpointURL()
++  formData.url = url
++  formData.secret = storedFixedEndpointSecret(url)
+ }
+ 
+-async function onEndpointSelect(id: string) {
+-  const endpoint = endpointStore.endpointList.find((e) => e.id === id)
+-  if (!endpoint) return
+-
+-  const error = await checkEndpointAPI(endpoint.url, endpoint.secret)
+-  if (error) {
+-    endpointError.value = error
+-    return
+-  }
++function persistFixedEndpoint(secret: string) {
++  endpointStore.setEndpointList([
++    { id: proxyRuntimeMihomoEndpointID, url: fixedEndpointURL(), secret },
++  ])
++}
+ 
+-  endpointError.value = null
+-  onSetupSuccess(id)
++function onSetupSuccess() {
++  endpointStore.setSelectedEndpoint(proxyRuntimeMihomoEndpointID)
++  router.replace('/overview')
+ }
+ 
+ async function onSubmit() {
+@@ -87,83 +62,27 @@ async function onSubmit() {
+   endpointError.value = null
+ 
+   try {
+-    const url = formData.url
++    const url = fixedEndpointURL()
+     const secret = formData.secret
+-    const transformedURL = transformEndpointURL(url)
+ 
+-    const error = await checkEndpointAPI(transformedURL, secret)
++    formData.url = url
++    const error = await checkEndpointAPI(url, secret)
+     if (error) {
+       endpointError.value = error
+       isSubmitting.value = false
+       return
+     }
+ 
+-    const id = uuid()
+-    const list = [...endpointStore.endpointList]
+-    const point = list.find((history) => history.url === transformedURL)
+-
+-    if (!point) {
+-      // New endpoint
+-      endpointStore.setEndpointList([
+-        { id, url: transformedURL, secret },
+-        ...list,
+-      ])
+-      onSetupSuccess(id)
+-      return
+-    }
+-
+-    // Update existing endpoint
+-    point.secret = secret
+-    point.id = id
+-
+-    endpointStore.setEndpointList(list)
+-    onSetupSuccess(id)
++    persistFixedEndpoint(secret)
++    onSetupSuccess()
+   } finally {
+     isSubmitting.value = false
+   }
+ }
+ 
+-function onRemove(id: string) {
+-  endpointStore.removeEndpoint(id)
+-}
+-
+-// Auto-login logic
+ onMounted(async () => {
+-  const search =
+-    route.query ||
+-    (typeof window !== 'undefined'
+-      ? new URLSearchParams(window.location.search)
+-      : null)
+-
+-  if (search && typeof search === 'object') {
+-    const endpointID = queryStringValue((search as any).endpoint)
+-    if (endpointID && prefillEndpoint(endpointID)) {
+-      return
+-    }
+-
+-    const hostname = (search as any).hostname
+-    if (hostname) {
+-      const protocol = (search as any).http
+-        ? 'http:'
+-        : (search as any).https
+-          ? 'https:'
+-          : typeof window !== 'undefined'
+-            ? window.location.protocol
+-            : 'http:'
+-      const port = (search as any).port ? `:${(search as any).port}` : ''
+-
+-      formData.url = `${protocol}//${hostname}${port}`
+-      formData.secret = (search as any).secret || ''
+-
+-      await onSubmit()
+-      return
+-    }
+-  }
+-
+-  // Auto-login with default if no endpoints
+-  if (endpointStore.endpointList.length === 0) {
+-    formData.url = defaultBackendURL.value
+-    formData.secret = ''
++  syncFormEndpoint()
++  if (!proxyRuntimeAuthRequired() || formData.secret) {
+     await onSubmit()
+   }
+ })
+@@ -221,30 +140,10 @@ onMounted(async () => {
+               id="url"
+               v-model="formData.url"
+               type="url"
+-              class="w-full rounded-lg border border-base-content/15 bg-base-100/80 px-4 py-3 text-[0.9375rem] text-base-content transition-all duration-200 placeholder:text-base-content/40 focus:border-primary focus:ring-3 focus:ring-primary/20 focus:outline-none"
+-              placeholder="http(s)://{hostname}:{port}"
+-              list="defaultEndpoints"
+-              autocomplete="on"
++              class="w-full cursor-not-allowed rounded-lg border border-base-content/15 bg-base-100/50 px-4 py-3 text-[0.9375rem] text-base-content/70"
++              readonly
++              tabindex="-1"
+             />
+-            <datalist id="defaultEndpoints">
+-              <option :value="FALLBACK_BACKEND_URL" />
+-              <option
+-                v-if="
+-                  defaultBackendURL &&
+-                  defaultBackendURL !== FALLBACK_BACKEND_URL
+-                "
+-                :value="defaultBackendURL"
+-              />
+-              <option
+-                v-if="currentOrigin && currentOrigin !== FALLBACK_BACKEND_URL"
+-                :value="currentOrigin"
+-              />
+-              <option
+-                v-for="endpoint in endpointStore.endpointList"
+-                :key="endpoint.id"
+-                :value="endpoint.url"
+-              />
+-            </datalist>
+           </div>
+ 
+           <!-- Hidden username field for password managers -->
+@@ -302,43 +201,6 @@ onMounted(async () => {
+           </Button>
+         </form>
+       </div>
+-
+-      <!-- Saved Endpoints -->
+-      <div
+-        v-if="endpointStore.endpointList.length > 0"
+-        class="animate-fade-slide-in-delay-3 mt-6"
+-      >
+-        <h3
+-          class="mb-3 text-[0.8125rem] font-semibold tracking-widest text-base-content/50 uppercase"
+-        >
+-          Saved Endpoints
+-        </h3>
+-        <div class="flex flex-col gap-3">
+-          <div
+-            v-for="(endpoint, index) in endpointStore.endpointList"
+-            :key="endpoint.id"
+-            class="animate-fade-slide-in flex cursor-pointer items-center gap-2 rounded-xl border border-info/20 bg-info/10 p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-info/30 hover:bg-info/15"
+-            :style="{ animationDelay: `${index * 50}ms` }"
+-            @click="onEndpointSelect(endpoint.id)"
+-          >
+-            <div
+-              class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-info/20 text-info"
+-            >
+-              <IconServer :size="16" />
+-            </div>
+-            <span
+-              class="min-w-0 flex-1 overflow-hidden text-[0.8125rem] font-medium text-ellipsis whitespace-nowrap text-base-content"
+-              >{{ endpoint.url }}</span
+-            >
+-            <button
+-              class="flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-full border-none bg-transparent text-base-content/50 transition-all duration-200 hover:bg-error/15 hover:text-error"
+-              @click.stop="onRemove(endpoint.id)"
+-            >
+-              <IconX :size="14" />
+-            </button>
+-          </div>
+-        </div>
+-      </div>
+     </div>
+   </div>
+ </template>

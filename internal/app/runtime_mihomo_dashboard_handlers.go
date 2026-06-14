@@ -61,7 +61,6 @@ const endpoint = {
   url: new URL(config.endpointURL, window.location.origin).href.replace(/\/$/, ''),
   secret: ''
 };
-let endpoints = [];
 try {
   const parsed = JSON.parse(window.localStorage.getItem('endpointList') || '[]');
   if (Array.isArray(parsed)) {
@@ -69,11 +68,10 @@ try {
     if (existing && typeof existing.secret === 'string') {
       endpoint.secret = existing.secret;
     }
-    endpoints = parsed.filter((item) => item && item.id !== endpoint.id && item.url !== endpoint.url);
   }
 } catch (_) {}
 window.localStorage.setItem('proxyRuntimeControlAuthRequired', config.authRequired ? 'true' : 'false');
-window.localStorage.setItem('endpointList', JSON.stringify([endpoint, ...endpoints]));
+window.localStorage.setItem('endpointList', JSON.stringify([endpoint]));
 if (endpoint.secret || !config.authRequired) {
   window.localStorage.setItem('selectedEndpoint', endpoint.id);
   window.location.replace(new URL(config.uiURL, window.location.origin).href);

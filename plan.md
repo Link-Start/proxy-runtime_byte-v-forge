@@ -967,6 +967,7 @@ Completed user-visible/runtime batches:
 - Release retire route cleanup, provider-session release, cleanup-failure persistence, and released final-state save now run through `internal/app/lease`; the coordinator injects provider release, local cleanup, and warning observers only.
 - Cleanup-pending current-fact workflow now lives in `internal/app/lease`, including route cleanup retry persistence, provider-session cleanup retry persistence, cleanup flag clearing, and final-state progress save; the coordinator only injects provider release and warning observers.
 - Expired-active current-fact workflow now lives in `internal/app/lease`, including expiry predicate check, route cleanup failure persistence, provider-session cleanup failure persistence, and expired final-state save; the coordinator only injects provider release and warning observers.
+- Stale app-level lease route cleanup and final-save wrappers were removed after release, expiry, and cleanup-pending flows moved into `internal/app/lease`.
 
 Still open:
 

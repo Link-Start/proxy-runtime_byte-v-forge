@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
 	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
 	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
@@ -31,18 +32,7 @@ func (api *runtimeHTTPAPI) authorize(ctx *gin.Context) bool {
 }
 
 func (api *runtimeHTTPAPI) authRequired(requestPath string) bool {
-	if strings.TrimSpace(api.authToken) == "" {
-		return false
-	}
-	requestPath = strings.TrimSpace(requestPath)
-	switch strings.TrimRight(requestPath, "/") {
-	case "", "/", "/healthz", "/readyz", "/login":
-		return false
-	}
-	if publicRuntimeAuthPath(requestPath) {
-		return false
-	}
-	return true
+	return authapp.Required(api.authToken, requestPath)
 }
 
 func (api *runtimeHTTPAPI) forwardMihomoControllerAuthorization(out *http.Request, requestPath string) {
@@ -58,13 +48,4 @@ func (api *runtimeHTTPAPI) forwardMihomoControllerAuthorization(out *http.Reques
 	}
 	out.Header.Set("Authorization", "Bearer "+strings.TrimSpace(token))
 	out.URL.RawQuery = dashboardapp.ControllerUpstreamRawQuery(out.URL.RawQuery)
-}
-
-func publicRuntimeAuthPath(requestPath string) bool {
-	switch strings.TrimRight(strings.TrimSpace(requestPath), "/") {
-	case "/api/auth/session", "/api/auth/login", "/api/auth/logout":
-		return true
-	default:
-		return false
-	}
 }

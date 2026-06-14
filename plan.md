@@ -765,6 +765,7 @@ Completed user-visible/runtime batches:
 - Dynamic provider settings update now uses the same explicit update/apply scheduling flow instead of hand-written repository and scheduler orchestration.
 - Runtime settings application construction, repository port, read usecase, and provider descriptor views are split into focused files instead of one mixed application file.
 - Dynamic provider settings store updates now reuse the shared request conversion and validation helper instead of duplicating provider normalization and duplicate checks.
+- Runtime settings store dependencies and construction are split from store read/update mutation methods.
 
 Still open:
 

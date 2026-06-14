@@ -125,14 +125,7 @@ ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
 		return nil, err
 	}
 	defer rows.Close()
-	leases, err := scanLeaseFacts(rows)
-	if err != nil {
-		return nil, err
-	}
-	now := time.Now().UTC()
-	return filterLeaseFacts(leases, func(lease *proxyruntimev1.ProxyDynamicLease) bool {
-		return leaseapp.ActiveAt(lease, now) || leaseapp.CleanupPending(lease)
-	}), nil
+	return scanLeaseFacts(rows)
 }
 
 func (s *PostgresStore) CleanupPendingLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
@@ -150,11 +143,7 @@ ORDER BY acquired_at ASC NULLS LAST, updated_at ASC, lease_id
 		return nil, err
 	}
 	defer rows.Close()
-	leases, err := scanLeaseFacts(rows)
-	if err != nil {
-		return nil, err
-	}
-	return filterLeaseFacts(leases, leaseapp.CleanupPending), nil
+	return scanLeaseFacts(rows)
 }
 
 func (s *PostgresStore) ListRestorableLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {

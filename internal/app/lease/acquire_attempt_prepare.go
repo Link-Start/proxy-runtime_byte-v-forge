@@ -29,6 +29,50 @@ type SelectedAcquireAttempt struct {
 	ConcurrencyHolder string
 }
 
+type SelectedAcquireAttemptAction func(context.Context, SelectedAcquireAttempt) (*proxyruntimev1.ProxyDynamicLease, error)
+
+type SelectedAcquireAttemptRunInput struct {
+	Store          OrchestrationStore
+	IDs            IDGenerator
+	Limiter        ProviderAccountConcurrencyLimiter
+	Locks          LockManager
+	SelectionPlan  *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Limit          uint32
+	Policy         *proxyruntimev1.ProxySessionPolicy
+	DefaultTTL     time.Duration
+	TTLBuffer      time.Duration
+	ReleaseTimeout time.Duration
+	Action         SelectedAcquireAttemptAction
+}
+
+func RunSelectedAcquireAttempt(ctx context.Context, input SelectedAcquireAttemptRunInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+	attempt, err := PrepareSelectedAcquireAttempt(ctx, SelectedAcquireAttemptInput{
+		Store:         input.Store,
+		IDs:           input.IDs,
+		Limiter:       input.Limiter,
+		SelectionPlan: input.SelectionPlan,
+		Limit:         input.Limit,
+		Policy:        input.Policy,
+		DefaultTTL:    input.DefaultTTL,
+		TTLBuffer:     input.TTLBuffer,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if input.Action == nil {
+		return nil, ErrAcquireAttemptActionRequired
+	}
+	return RunLockedAcquireAttempt(ctx, LockedAcquireAttemptInput{
+		Locks:             input.Locks,
+		ProviderAccountID: attempt.ProviderAccountID,
+		ConcurrencySlot:   attempt.ConcurrencySlot,
+		ReleaseTimeout:    input.ReleaseTimeout,
+		Action: func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
+			return input.Action(ctx, attempt)
+		},
+	})
+}
+
 func PrepareSelectedAcquireAttempt(ctx context.Context, input SelectedAcquireAttemptInput) (SelectedAcquireAttempt, error) {
 	providerAccountID := SelectedProviderAccountID(input.SelectionPlan)
 	leaseID, err := newAttemptLeaseID(input.IDs)

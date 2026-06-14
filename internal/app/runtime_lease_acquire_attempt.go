@@ -15,26 +15,23 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 	if err != nil {
 		return nil, failedPrecondition("no dynamic IP endpoint candidate", err)
 	}
-	attempt, err := leaseapp.PrepareSelectedAcquireAttempt(ctx, leaseapp.SelectedAcquireAttemptInput{
-		Store:         c.deps.store,
-		IDs:           c.deps.ids,
-		Limiter:       c.deps.providerConcurrency,
-		SelectionPlan: selection.plan,
-		Limit:         dynamicProviderConcurrencyLimit(settings, leaseapp.SelectedDynamicProviderID(selection.plan), req.GetPolicy()),
-		Policy:        req.GetPolicy(),
-		DefaultTTL:    leaseapp.DefaultDynamicIPStickyTTL,
-		TTLBuffer:     providerAccountConcurrencyTTLBuffer,
+	lease, err := leaseapp.RunSelectedAcquireAttempt(ctx, leaseapp.SelectedAcquireAttemptRunInput{
+		Store:          c.deps.store,
+		IDs:            c.deps.ids,
+		Limiter:        c.deps.providerConcurrency,
+		Locks:          c.deps.locks,
+		SelectionPlan:  selection.plan,
+		Limit:          dynamicProviderConcurrencyLimit(settings, leaseapp.SelectedDynamicProviderID(selection.plan), req.GetPolicy()),
+		Policy:         req.GetPolicy(),
+		DefaultTTL:     leaseapp.DefaultDynamicIPStickyTTL,
+		TTLBuffer:      providerAccountConcurrencyTTLBuffer,
+		ReleaseTimeout: leaseAcquireSlotReleaseTimeout,
+		Action: func(ctx context.Context, attempt leaseapp.SelectedAcquireAttempt) (*proxyruntimev1.ProxyDynamicLease, error) {
+			return c.acquireLeaseWithProviderAccountLock(ctx, advertisedHost, req, settings, selection, attempt.ProviderAccountID, attempt.LeaseID, attempt.ConcurrencyHolder)
+		},
 	})
 	if err != nil {
 		return nil, acquireAttemptSlotError(err)
 	}
-	return leaseapp.RunLockedAcquireAttempt(ctx, leaseapp.LockedAcquireAttemptInput{
-		Locks:             c.deps.locks,
-		ProviderAccountID: attempt.ProviderAccountID,
-		ConcurrencySlot:   attempt.ConcurrencySlot,
-		ReleaseTimeout:    leaseAcquireSlotReleaseTimeout,
-		Action: func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
-			return c.acquireLeaseWithProviderAccountLock(ctx, advertisedHost, req, settings, selection, attempt.ProviderAccountID, attempt.LeaseID, attempt.ConcurrencyHolder)
-		},
-	})
+	return lease, nil
 }

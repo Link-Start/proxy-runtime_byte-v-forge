@@ -846,6 +846,7 @@ Completed user-visible/runtime batches:
 - Dynamic IP lease policy normalization and in-user profile dynamic-IP policy merge now live in `internal/app/lease`; app-level lease acquire keeps only transport error mapping and settings adaptation.
 - Lease listener ingress-rule lookup and password fallback resolution now live in `internal/app/lease`; runtime listener helpers only adapt runtime constants/settings.
 - Postgres and SQLite dynamic lease persistence now share lease save validation, default status normalization, identifier trimming, and proto JSON marshaling.
+- Postgres and SQLite dynamic lease reads now share proto JSON decode behavior instead of duplicating empty JSON and unmarshal handling.
 
 Still open:
 

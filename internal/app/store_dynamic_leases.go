@@ -8,7 +8,6 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 	"github.com/jackc/pgx/v5"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -285,14 +284,7 @@ func scanLeaseFact(row pgx.Row) (*proxyruntimev1.ProxyDynamicLease, error) {
 	if err := row.Scan(&raw); err != nil {
 		return nil, err
 	}
-	lease := &proxyruntimev1.ProxyDynamicLease{}
-	if strings.TrimSpace(raw) == "" {
-		return lease, nil
-	}
-	if err := protojsoncodec.Unmarshal([]byte(raw), lease); err != nil {
-		return nil, err
-	}
-	return lease, nil
+	return decodeDynamicLeaseFactJSON(raw)
 }
 
 func scanLeaseFacts(rows pgx.Rows) ([]*proxyruntimev1.ProxyDynamicLease, error) {

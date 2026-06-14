@@ -784,6 +784,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native conversion now separates config-to-settings projection, settings-to-config rendering input, and proto/native shape conversion.
 - Mihomo-native config-to-settings projection now separates fixed proxy and subscription extraction from the top-level conversion flow.
 - Mihomo-native settings-to-config conversion now delegates fixed proxy rendering and subscription provider rendering to focused helpers.
+- Mihomo-native update plan construction now separates top-level plan wiring from fixed-proxy and subscription mutation helpers.
 
 Still open:
 

@@ -649,6 +649,66 @@ Acceptance:
 
 - Fixing lease behavior requires changing one semantic layer, not two drifting store implementations.
 
+### Current Execution Status
+
+Snapshot date: 2026-06-15.
+
+Completed user-visible/runtime batches:
+
+- Lease list hot path is bounded and no longer defaults to inactive history.
+- Playground acquire no longer waits for full lease history before requesting a lease.
+- Frontend proxy-runtime requests have bounded timeout and clearer backend-unreachable handling.
+- HTTP startup is decoupled from active lease restore.
+- Lease restore and cleanup attempts are bounded.
+- Lease list semantics were extracted from ad hoc handler filtering.
+- Settings reads are side-effect free.
+- Runtime settings apply, Mihomo-native config apply, and provider-account delete now persist desired state and continue through asynchronous reconcile/background work.
+- WebSocket token route is treated as authenticated.
+- Dashboard proxy creation was centralized/reused.
+- Runtime status is exposed by backend and surfaced in the Playground UI.
+- First frontend/backend split steps are done for lease API and Mihomo-native update logic.
+
+Still open:
+
+- Fully extract lease application into `internal/app/lease` with repository, provider-session, data-plane applier, lock, clock, and logger ports.
+- Split Mihomo projection, validation, render, and apply stages so no single file owns the whole config pipeline.
+- Move settings orchestration into an explicit settings application package.
+- Separate `httpapi`, `auth`, and `dashboard` packages and keep handlers as thin transport adapters.
+- Finish provider adapter capability boundaries and secret-handling audit.
+- Expand metrics and structured operation logging for slow paths.
+- Decide whether SQLite remains a supported adapter; if it stays, remove duplicated business predicates from store implementations.
+
+### Next Implementation Batches
+
+1. **Mihomo projection split, no behavior change**
+   - Move projection helpers, native update orchestration, validation, and render/apply boundaries into focused files/packages.
+   - Keep generated config output semantically identical.
+   - Validate with focused diffs, `gofmt`, stale-reference search, and remote build/deploy validation only when artifacts are required.
+
+2. **Lease application extraction**
+   - Introduce `internal/app/lease` ports and usecase methods.
+   - Move acquire/release/list/restore/cleanup orchestration out of `Runtime`.
+   - Keep active/blocking/restorable predicates in one semantic layer.
+
+3. **Settings application extraction**
+   - Separate pure load/normalize/validate from persist/apply.
+   - Keep GET side-effect free.
+   - Model apply state as desired/applied version plus status/error, without adding a second config source.
+
+4. **HTTP/auth/dashboard cleanup**
+   - Move routing, middleware, proto JSON, and error mapping into `internal/app/httpapi`.
+   - Move login/session/cookie/ws-token logic into `internal/app/auth`.
+   - Move dashboard reverse proxy bootstrapping, Mihomo secret injection, and URL/session sanitization into `internal/app/dashboard`.
+
+5. **Provider boundary and secret hygiene**
+   - Keep provider-specific branches inside adapters/capability registry.
+   - Decrypt secrets only at adapter boundary.
+   - Audit logs, metrics, traces, and client errors for provider credentials, Mihomo secret, proxy passwords, full proxy URLs, and session material.
+
+6. **Observability and store decision**
+   - Add missing slow-path metrics for lease list/acquire/release, workers, provider requests, dataplane apply, and settings apply.
+   - Verify deployed store mode and remove SQLite from runtime path if it is no longer a product requirement.
+
 ### Recommended Commit Sequence
 
 ```text

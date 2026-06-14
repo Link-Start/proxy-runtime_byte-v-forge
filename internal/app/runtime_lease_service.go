@@ -8,6 +8,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
@@ -47,7 +48,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, httpR
 	selectionPolicy := normalizeDynamicIPSelectionPolicy(req)
 	requestedSessionID := requestedLeaseSessionID(req)
 	existing, err := r.activeLeaseByRequest(ctx, req, requestedSessionID)
-	if err == nil && leaseActive(existing, time.Now().UTC()) {
+	if err == nil && leaseapp.ActiveAt(existing, time.Now().UTC()) {
 		if !req.GetForceNew() && !playgroundLeaseNeedsReplacement(req, existing) {
 			if err := r.refreshLeaseConcurrencySlot(ctx, existing); err != nil {
 				return nil, err
@@ -415,11 +416,4 @@ func requestedLeaseSessionID(req *proxyruntimev1.AcquireProxyLeaseRequest) strin
 		labels["sid"],
 		labels["session"],
 	)
-}
-
-func leaseActive(lease *proxyruntimev1.ProxyDynamicLease, now time.Time) bool {
-	if lease == nil || lease.GetStatus() != proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE {
-		return false
-	}
-	return lease.GetExpiresAt() == nil || now.Before(lease.GetExpiresAt().AsTime())
 }

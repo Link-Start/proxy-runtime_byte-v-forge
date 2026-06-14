@@ -8,6 +8,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 	"github.com/jackc/pgx/v5"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -69,7 +70,7 @@ WHERE status=$1
 	AND (expires_at IS NULL OR expires_at > now())
 ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
 LIMIT $2
-`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), normalizeLeaseListLimit(limit))
+`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), leaseapp.NormalizeListLimit(limit))
 	if err != nil {
 		return nil, err
 	}
@@ -83,7 +84,7 @@ SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
 ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
 LIMIT $1
-`, normalizeLeaseListLimit(limit))
+`, leaseapp.NormalizeListLimit(limit))
 	if err != nil {
 		return nil, err
 	}
@@ -169,7 +170,7 @@ ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
 		if err != nil {
 			return nil, err
 		}
-		if leaseActive(lease, time.Now().UTC()) || leaseCleanupPending(lease) {
+		if leaseapp.ActiveAt(lease, time.Now().UTC()) || leaseapp.CleanupPending(lease) {
 			out = append(out, lease)
 		}
 	}
@@ -193,7 +194,7 @@ ORDER BY acquired_at ASC NULLS LAST, updated_at ASC, lease_id
 		if err != nil {
 			return nil, err
 		}
-		if leaseCleanupPending(lease) {
+		if leaseapp.CleanupPending(lease) {
 			out = append(out, lease)
 		}
 	}

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 type runtimeProviderApplication struct {
@@ -153,7 +154,7 @@ func (a runtimeProviderApplication) deleteProviderAccount(ctx context.Context, p
 			return err
 		}
 		for _, lease := range leases {
-			if leaseCleanupPending(lease) {
+			if leaseapp.CleanupPending(lease) {
 				if err := a.runtime.leaseCoordinator.cleanupPendingLeaseFact(ctx, lease); err != nil {
 					return fmt.Errorf("cleanup proxy lease %q for provider account %q: %w", lease.GetLeaseId(), providerAccountID, err)
 				}

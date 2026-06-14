@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
@@ -72,7 +73,7 @@ func (r *Runtime) listenerReservedLeaseFacts(ctx context.Context) ([]*proxyrunti
 		if lease.GetListener() == nil {
 			continue
 		}
-		if lease.GetStatus() == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE || leaseRouteCleanupPending(lease) {
+		if lease.GetStatus() == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE || leaseapp.RouteCleanupPending(lease) {
 			out = append(out, lease)
 		}
 	}

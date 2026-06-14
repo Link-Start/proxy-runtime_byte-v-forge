@@ -8,6 +8,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 const leaseExpirySweepInterval = 30 * time.Second
@@ -62,7 +63,7 @@ func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyrunti
 			}
 			return err
 		}
-		if leaseActive(current, time.Now().UTC()) {
+		if leaseapp.ActiveAt(current, time.Now().UTC()) {
 			return nil
 		}
 		if current.GetStatus() != proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE {

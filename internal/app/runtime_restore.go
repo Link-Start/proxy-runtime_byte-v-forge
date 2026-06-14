@@ -7,6 +7,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 )
 
@@ -43,7 +44,7 @@ func (c leaseCoordinator) restoreActiveLeases(ctx context.Context) error {
 	now := time.Now().UTC()
 	restoreErrors := make([]error, 0)
 	for _, lease := range leases {
-		if !leaseActive(lease, now) {
+		if !leaseapp.ActiveAt(lease, now) {
 			continue
 		}
 		if err := c.restoreLeaseRoute(ctx, lease); err != nil {

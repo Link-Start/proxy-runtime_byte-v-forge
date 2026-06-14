@@ -9,6 +9,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -57,7 +58,7 @@ FROM proxy_runtime_dynamic_leases
 WHERE status=? AND (expires_at='' OR expires_at>?)
 ORDER BY acquired_at DESC, updated_at DESC, lease_id
 LIMIT ?
-`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), normalizeLeaseListLimit(limit))
+`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), leaseapp.NormalizeListLimit(limit))
 }
 
 func (s *SQLiteStore) ListRecentLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
@@ -66,7 +67,7 @@ SELECT lease_json
 FROM proxy_runtime_dynamic_leases
 ORDER BY acquired_at DESC, updated_at DESC, lease_id
 LIMIT ?
-`, normalizeLeaseListLimit(limit))
+`, leaseapp.NormalizeListLimit(limit))
 }
 
 func (s *SQLiteStore) RecentLeaseFacts(ctx context.Context, since time.Time, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
@@ -110,7 +111,7 @@ ORDER BY acquired_at DESC, updated_at DESC, lease_id
 	}
 	now := time.Now().UTC()
 	out := filterLeaseFacts(leases, func(lease *proxyruntimev1.ProxyDynamicLease) bool {
-		return strings.TrimSpace(lease.GetProviderAccountId()) == providerAccountID && (leaseActive(lease, now) || leaseCleanupPending(lease))
+		return strings.TrimSpace(lease.GetProviderAccountId()) == providerAccountID && (leaseapp.ActiveAt(lease, now) || leaseapp.CleanupPending(lease))
 	})
 	sortLeaseFactsByAcquiredDesc(out)
 	return out, nil
@@ -126,7 +127,7 @@ ORDER BY acquired_at ASC, updated_at ASC, lease_id
 	if err != nil {
 		return nil, err
 	}
-	return filterLeaseFacts(leases, leaseCleanupPending), nil
+	return filterLeaseFacts(leases, leaseapp.CleanupPending), nil
 }
 
 func (s *SQLiteStore) ListRestorableLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {

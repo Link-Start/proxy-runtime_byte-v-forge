@@ -5,35 +5,20 @@ import (
 	"net/http"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 type runtimeLeaseApplication struct {
-	runtime *Runtime
-	leases  leaseCoordinator
-}
-
-type leaseListMode string
-
-const (
-	leaseListModeActive  leaseListMode = "active"
-	leaseListModeRecent  leaseListMode = "recent"
-	leaseListModeHistory leaseListMode = "history"
-
-	defaultLeaseListLimit = 50
-	maxLeaseListLimit     = 200
-)
-
-type leaseListOptions struct {
-	mode  leaseListMode
-	limit int
+	list   *leaseapp.Application
+	leases leaseCoordinator
 }
 
 func newRuntimeLeaseApplication(runtime *Runtime) runtimeLeaseApplication {
-	return runtimeLeaseApplication{runtime: runtime, leases: runtime.leaseCoordinator}
+	return runtimeLeaseApplication{list: leaseapp.NewApplication(runtime.store), leases: runtime.leaseCoordinator}
 }
 
 func (s *RuntimeService) ListProxyDynamicLeases(ctx context.Context, _ *proxyruntimev1.ListProxyDynamicLeasesRequest) (*proxyruntimev1.ListProxyDynamicLeasesResponse, error) {
-	return s.listProxyDynamicLeases(ctx, defaultLeaseListOptions())
+	return s.listProxyDynamicLeases(ctx, leaseapp.DefaultListOptions())
 }
 
 func (s *RuntimeService) AcquireProxyLease(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.AcquireProxyLeaseResponse, error) {
@@ -48,24 +33,12 @@ func (s *RuntimeService) ReleaseProxyLease(ctx context.Context, req *proxyruntim
 	return s.leases.ReleaseProxyLease(ctx, req)
 }
 
-func (s *RuntimeService) listProxyDynamicLeases(ctx context.Context, options leaseListOptions) (*proxyruntimev1.ListProxyDynamicLeasesResponse, error) {
+func (s *RuntimeService) listProxyDynamicLeases(ctx context.Context, options leaseapp.ListOptions) (*proxyruntimev1.ListProxyDynamicLeasesResponse, error) {
 	return s.leases.ListProxyDynamicLeaseFacts(ctx, options)
 }
 
-func (a runtimeLeaseApplication) ListProxyDynamicLeaseFacts(ctx context.Context, options leaseListOptions) (*proxyruntimev1.ListProxyDynamicLeasesResponse, error) {
-	options = normalizeLeaseListOptions(options)
-	var (
-		leases []*proxyruntimev1.ProxyDynamicLease
-		err    error
-	)
-	switch options.mode {
-	case leaseListModeActive:
-		leases, err = a.runtime.store.ListActiveLeaseFacts(ctx, options.limit)
-	case leaseListModeRecent, leaseListModeHistory:
-		leases, err = a.runtime.store.ListRecentLeaseFacts(ctx, options.limit)
-	default:
-		return nil, invalidArgument("unsupported lease list status", nil)
-	}
+func (a runtimeLeaseApplication) ListProxyDynamicLeaseFacts(ctx context.Context, options leaseapp.ListOptions) (*proxyruntimev1.ListProxyDynamicLeasesResponse, error) {
+	leases, err := a.list.List(ctx, options)
 	if err != nil {
 		return nil, err
 	}
@@ -86,26 +59,4 @@ func (a runtimeLeaseApplication) ReleaseProxyLease(ctx context.Context, req *pro
 		return nil, err
 	}
 	return &proxyruntimev1.ReleaseProxyLeaseResponse{Lease: lease}, nil
-}
-
-func defaultLeaseListOptions() leaseListOptions {
-	return leaseListOptions{mode: leaseListModeActive, limit: defaultLeaseListLimit}
-}
-
-func normalizeLeaseListOptions(options leaseListOptions) leaseListOptions {
-	if options.mode == "" {
-		options.mode = leaseListModeActive
-	}
-	options.limit = normalizeLeaseListLimit(options.limit)
-	return options
-}
-
-func normalizeLeaseListLimit(limit int) int {
-	if limit <= 0 {
-		return defaultLeaseListLimit
-	}
-	if limit > maxLeaseListLimit {
-		return maxLeaseListLimit
-	}
-	return limit
 }

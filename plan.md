@@ -802,6 +802,7 @@ Completed user-visible/runtime batches:
 - Lease coordinator wiring now separates dependency shape, basic runtime helpers, active-lease lookup, provider-account concurrency handling, and session-provider factory access.
 - Dynamic lease acquire attempts now separate endpoint/concurrency attempt setup from provider-account locked provider session creation and route application.
 - Dynamic lease route application now uses a lease-owned session-route port, with runtime-only dataplane conversion isolated in a wiring adapter and acquired-lease endpoint/dataplane helpers split from persistence orchestration.
+- Active lease restore now separates input loading, concurrency-slot reservation, provider session refetch, and dataplane route replay into focused helpers.
 
 Still open:
 

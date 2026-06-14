@@ -69,53 +69,21 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	if lease.GetSession() == nil || lease.GetListener() == nil {
 		return errors.New("lease session or listener is missing")
 	}
-	providerCfg, _, err := c.deps.store.ProviderConfig(ctx, lease.GetProviderAccountId())
+	inputs, err := c.loadRestoreLeaseInputs(ctx, lease)
 	if err != nil {
 		return err
 	}
-	providerAccount, err := c.deps.store.ProviderAccount(ctx, lease.GetProviderAccountId())
-	if err != nil {
-		return err
-	}
-	settings, err := c.deps.settings.load(ctx)
-	if err != nil {
-		return err
-	}
-	holder := leaseapp.ConcurrencyHolder(lease)
-	policy := leaseapp.ConcurrencyPolicy(lease)
-	slot, err := c.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), policy, holder, leaseapp.ConcurrencySlotTTL(policy, defaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
+	slot, err := c.acquireRestoreLeaseConcurrencySlot(ctx, lease, inputs.settings, inputs.providerAccount)
 	if err != nil {
 		return err
 	}
 	keepSlot := false
-	defer func() {
-		if !keepSlot {
-			releaseCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), leaseRestoreSlotReleaseTimeout)
-			defer cancel()
-			_ = slot.Release(releaseCtx)
-		}
-	}()
-	providerCfg.Gateways = endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerCfg.ProviderID)
-	providerClient, err := c.newSessionProvider(providerCfg)
+	defer releaseRestoreLeaseConcurrencySlotUnlessKept(ctx, slot, &keepSlot)
+	nodes, err := c.restoreLeaseSessionNodes(ctx, lease, inputs.settings, inputs.providerConfig)
 	if err != nil {
 		return err
 	}
-	nodes, err := providerClient.FetchSession(ctx, lease.GetSession())
-	if err != nil {
-		return err
-	}
-	dialerProxy, lineLabels, err := c.deps.dynamicLeaseDialerProxy(ctx, settings, lease.GetAccountId())
-	if err != nil {
-		return err
-	}
-	nodes = applyDynamicLeaseLineLabels(nodes, lineLabels)
-	route := leaseapp.SessionRoute{
-		SessionID:   lease.GetSession().GetSessionId(),
-		Listener:    localServiceFromListener(listenerFromProto(lease.GetListener()), c.deps.cfg.LocalProtocol),
-		Pool:        nodes,
-		DialerProxy: dialerProxy,
-	}
-	if err := c.deps.dataPlane.UpsertSessionRoute(ctx, route); err != nil {
+	if err := c.restoreLeaseDataPlaneRoute(ctx, lease, inputs.settings, nodes); err != nil {
 		return err
 	}
 	keepSlot = true

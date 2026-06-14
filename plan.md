@@ -910,6 +910,7 @@ Completed user-visible/runtime batches:
 - Mihomo gateway rendering now returns a structured projection instead of positional listener/group/rule tuples, making render sections less order-coupled.
 - Auth logout redirect sanitization now lives in the auth package, leaving the logout handler to clear the cookie and emit redirect/no-content only.
 - Auth login-page query parsing now lives in the auth package, so the login-page handler only redirects authenticated sessions or writes the page.
+- Mihomo hot-reload now separates candidate config path construction and endpoint readiness waiting from the reload-and-commit orchestration.
 
 Still open:
 

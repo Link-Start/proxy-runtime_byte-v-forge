@@ -28,7 +28,10 @@ type AcquiredRouteFlowInput struct {
 	FallbackProtocol  string
 	ResolveListener   AcquiredEndpointListenerResolver
 	ResolveEgress     AcquiredEndpointEgressResolver
+	AfterApply        AcquiredRouteSuccessObserver
 }
+
+type AcquiredRouteSuccessObserver func(context.Context, *proxyruntimev1.ProxyDynamicLease)
 
 func ApplyAcquiredRouteFlow(ctx context.Context, input AcquiredRouteFlowInput) (*proxyruntimev1.ProxyDynamicLease, error) {
 	endpoint, err := MaterializeAcquiredEndpoint(ctx, AcquiredEndpointMaterializeInput{
@@ -49,7 +52,7 @@ func ApplyAcquiredRouteFlow(ctx context.Context, input AcquiredRouteFlowInput) (
 	if err != nil {
 		return nil, err
 	}
-	return ApplyAcquiredEndpointRoute(ctx, AcquiredEndpointRouteApplyInput{
+	lease, err := ApplyAcquiredEndpointRoute(ctx, AcquiredEndpointRouteApplyInput{
 		Store:             input.Store,
 		DataPlane:         input.DataPlane,
 		Failure:           input.Failure,
@@ -66,4 +69,11 @@ func ApplyAcquiredRouteFlow(ctx context.Context, input AcquiredRouteFlowInput) (
 		SelectionPlan:     input.SelectionPlan,
 		AcquiredAt:        input.AcquiredAt,
 	})
+	if err != nil {
+		return nil, err
+	}
+	if input.AfterApply != nil {
+		input.AfterApply(ctx, lease)
+	}
+	return lease, nil
 }

@@ -33,13 +33,15 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, flow acqu
 			_ = ctx
 			return c.deps.localListenerEndpoint(listener, c.deps.sessionAdvertisedHost(flow.advertisedHost, listener))
 		},
+		AfterApply: func(ctx context.Context, _ *proxyruntimev1.ProxyDynamicLease) {
+			c.clearExitCheckCache()
+			if flow.request.GetAccountId() == playgroundProfileID {
+				c.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
+			}
+		},
 	})
 	if err != nil {
 		return nil, acquiredRouteApplyError(err)
-	}
-	c.clearExitCheckCache()
-	if flow.request.GetAccountId() == playgroundProfileID {
-		c.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
 	}
 	return lease, nil
 }

@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
 )
@@ -102,7 +103,7 @@ type mihomoProxyGroupState struct {
 }
 
 func (r *Runtime) mihomoProxyGroup(ctx context.Context, groupName string) (mihomoProxyGroupState, error) {
-	target, err := mihomoAPIURL(r.cfg.Mihomo.APIAddr)
+	target, err := dashboardapp.APIURL(r.cfg.Mihomo.APIAddr)
 	if err != nil {
 		return mihomoProxyGroupState{}, err
 	}

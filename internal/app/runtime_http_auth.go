@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"strings"
 
+	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
 	"github.com/gin-gonic/gin"
 )
 
@@ -55,7 +56,7 @@ func (api *runtimeHTTPAPI) forwardMihomoControllerAuthorization(out *http.Reques
 		return
 	}
 	out.Header.Set("Authorization", "Bearer "+strings.TrimSpace(token))
-	out.URL.RawQuery = mihomoControllerUpstreamRawQuery(out.URL.RawQuery)
+	out.URL.RawQuery = dashboardapp.ControllerUpstreamRawQuery(out.URL.RawQuery)
 }
 
 func publicRuntimeAuthPath(requestPath string) bool {

@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
 	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
 )
 
@@ -46,7 +47,7 @@ func (r *Runtime) closeMihomoConnections(ctx context.Context, selector mihomoCon
 	if len(targets) == 0 && len(chains) == 0 {
 		return nil
 	}
-	base, err := mihomoAPIURL(r.cfg.Mihomo.APIAddr)
+	base, err := dashboardapp.APIURL(r.cfg.Mihomo.APIAddr)
 	if err != nil {
 		return err
 	}

@@ -1,19 +1,14 @@
 package app
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httputil"
-	"net/url"
-	"path"
-	"regexp"
 	"strings"
 
+	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
 	"github.com/gin-gonic/gin"
 )
 
@@ -74,7 +69,7 @@ window.location.replace(new URL(config.uiURL, window.location.origin).href);
 }
 
 func (api *runtimeHTTPAPI) mihomoReverseProxy(mountPrefix string, upstreamPrefix string) gin.HandlerFunc {
-	target, err := mihomoAPIURL(api.mihomoAPIAddr)
+	target, err := dashboardapp.APIURL(api.mihomoAPIAddr)
 	if err != nil {
 		return func(ctx *gin.Context) {
 			writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
@@ -87,7 +82,7 @@ func (api *runtimeHTTPAPI) mihomoReverseProxy(mountPrefix string, upstreamPrefix
 		*out = *out.WithContext(context.WithValue(out.Context(), mihomoProxyRequestPathKey, requestPath))
 		out.URL.Scheme = target.Scheme
 		out.URL.Host = target.Host
-		out.URL.Path = joinMihomoProxyPath(upstreamPrefix, strings.TrimPrefix(requestPath, mountPrefix))
+		out.URL.Path = dashboardapp.JoinProxyPath(upstreamPrefix, strings.TrimPrefix(requestPath, mountPrefix))
 		out.Host = target.Host
 		out.Header.Set("X-Forwarded-Host", requestHost)
 		out.Header.Set("X-Forwarded-Proto", forwardedProto(out))
@@ -97,8 +92,8 @@ func (api *runtimeHTTPAPI) mihomoReverseProxy(mountPrefix string, upstreamPrefix
 		writeHTTPError(w, err, http.StatusBadGateway)
 	}
 	proxy.ModifyResponse = func(resp *http.Response) error {
-		applyMihomoDashboardCacheHeaders(resp, mihomoProxyRequestPath(resp.Request))
-		return redactMihomoControllerErrorResponse(resp)
+		dashboardapp.ApplyCacheHeaders(resp, mihomoProxyRequestPath(resp.Request))
+		return dashboardapp.RedactControllerErrorResponse(resp)
 	}
 	return func(ctx *gin.Context) {
 		proxy.ServeHTTP(ctx.Writer, ctx.Request)
@@ -115,80 +110,6 @@ func mihomoProxyRequestPath(req *http.Request) string {
 		}
 	}
 	return ""
-}
-
-func applyMihomoDashboardCacheHeaders(resp *http.Response, requestPath string) {
-	if resp == nil || !mihomoDashboardNoStorePath(requestPath, resp.Header.Get("Content-Type")) {
-		return
-	}
-	resp.Header.Set("Cache-Control", "no-store")
-	resp.Header.Set("Pragma", "no-cache")
-	resp.Header.Set("Expires", "0")
-}
-
-func mihomoDashboardNoStorePath(requestPath string, contentType string) bool {
-	cleanPath := strings.TrimSuffix(requestPath, "/")
-	switch cleanPath {
-	case "", "/mihomo/ui", "/mihomo/ui/index.html", "/sw.js", "/mihomo/ui/sw.js", "/config.js", "/mihomo/ui/config.js", "/manifest.webmanifest", "/mihomo/ui/manifest.webmanifest":
-		return true
-	}
-	return strings.HasPrefix(strings.ToLower(contentType), "text/html")
-}
-
-func redactMihomoControllerErrorResponse(resp *http.Response) error {
-	if resp == nil || resp.StatusCode < http.StatusBadRequest || resp.Body == nil {
-		return nil
-	}
-	data, err := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
-	_ = resp.Body.Close()
-	if err != nil {
-		return err
-	}
-	data = redactURLCredentials(data)
-	resp.Body = io.NopCloser(bytes.NewReader(data))
-	resp.ContentLength = int64(len(data))
-	resp.Header.Set("Content-Length", fmt.Sprintf("%d", len(data)))
-	return nil
-}
-
-var sensitiveURLPattern = regexp.MustCompile(`https?://[^\s"'<>)\\]+`)
-
-func redactURLCredentials(data []byte) []byte {
-	return sensitiveURLPattern.ReplaceAll(data, []byte("[redacted-url]"))
-}
-
-func mihomoAPIURL(addr string) (*url.URL, error) {
-	raw := strings.TrimSpace(addr)
-	if raw == "" {
-		return nil, errors.New("mihomo api address is empty")
-	}
-	if !strings.Contains(raw, "://") {
-		raw = "http://" + raw
-	}
-	parsed, err := url.Parse(raw)
-	if err != nil {
-		return nil, err
-	}
-	if parsed.Host == "" {
-		return nil, errors.New("mihomo api address is invalid")
-	}
-	return parsed, nil
-}
-
-func joinMihomoProxyPath(prefix string, suffix string) string {
-	prefix = "/" + strings.Trim(strings.TrimSpace(prefix), "/")
-	suffix = strings.TrimLeft(suffix, "/")
-	if suffix == "" {
-		if strings.HasSuffix(prefix, "/") {
-			return prefix
-		}
-		return prefix + "/"
-	}
-	joined := path.Join(prefix, suffix)
-	if strings.HasSuffix(suffix, "/") && !strings.HasSuffix(joined, "/") {
-		return joined + "/"
-	}
-	return joined
 }
 
 func forwardedProto(req *http.Request) string {

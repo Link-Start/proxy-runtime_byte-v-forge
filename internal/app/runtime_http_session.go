@@ -190,16 +190,6 @@ func (api *runtimeHTTPAPI) clearSessionCookie(ctx *gin.Context) {
 	})
 }
 
-func mihomoControllerUpstreamRawQuery(rawQuery string) string {
-	values, err := url.ParseQuery(rawQuery)
-	if err != nil {
-		return rawQuery
-	}
-	values.Del("token")
-	values.Del("session")
-	return values.Encode()
-}
-
 var runtimeLoginTemplate = template.Must(template.New("runtime-login").Parse(`<!doctype html>
 <html lang="zh-CN">
 <head>

@@ -44,18 +44,15 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 			}
 		}
 	}
-	var lastErr error
-	for attempt := 1; attempt <= leaseapp.DynamicIPSelectionMaxAttempts(selectionPolicy); attempt++ {
-		leaseapp.SetAttemptLabel(req, attempt)
-		lease, err := c.acquireLeaseAttempt(ctx, advertisedHost, req, settings)
-		if err == nil {
-			return lease, nil
-		}
-		lastErr = err
-		if !retryLeaseAcquireAttempt(err) {
-			return nil, err
-		}
-		c.warn("dynamic IP lease attempt failed", leaseapp.LabelAccountID, req.GetAccountId(), leaseapp.LabelPurpose, req.GetPurpose(), "attempt", attempt, "error_type", errorLogType(err))
-	}
-	return nil, lastErr
+	return leaseapp.RunAcquireAttempts(
+		req,
+		selectionPolicy,
+		func(int) (*proxyruntimev1.ProxyDynamicLease, error) {
+			return c.acquireLeaseAttempt(ctx, advertisedHost, req, settings)
+		},
+		retryLeaseAcquireAttempt,
+		func(attempt int, err error) {
+			c.warn("dynamic IP lease attempt failed", leaseapp.LabelAccountID, req.GetAccountId(), leaseapp.LabelPurpose, req.GetPurpose(), "attempt", attempt, "error_type", errorLogType(err))
+		},
+	)
 }

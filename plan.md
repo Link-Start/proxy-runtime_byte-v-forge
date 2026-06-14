@@ -914,6 +914,7 @@ Completed user-visible/runtime batches:
 - Auth authorization and dashboard login-redirect decisions now live in the auth application; Gin handlers only translate decisions into redirects, challenges, or JSON errors.
 - Dashboard reverse proxies now build once as a dashboard-owned proxy bundle during HTTP API construction, and routes reuse the prebuilt handlers.
 - Lease worker entrypoints now emit structured operation, duration, and lease identity logs for restore, expiry, cleanup-pending, and single-lease cleanup paths.
+- Dynamic lease acquire attempt retry loops now live in `internal/app/lease`; the coordinator supplies only the concrete attempt action, retry classifier, and warning observer.
 
 Still open:
 

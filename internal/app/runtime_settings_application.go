@@ -37,10 +37,20 @@ func newRuntimeSettingsApplication(runtime *Runtime) runtimeSettingsApplication 
 		ipFraudProviderViews: runtime.ipFraudProviders.ProviderDescriptors,
 		ipGeoProviderViews:   runtime.ipGeoProviders.ProviderDescriptors,
 		loadMihomoNativeSettings: func(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
-			return mihomoNativeSettings(ctx, runtime)
+			if runtime.settings == nil {
+				return normalizeMihomoNativeSettings(nil), nil
+			}
+			return runtime.settings.loadMihomoNative(ctx)
 		},
 		updateMihomoNativeSettings: func(ctx context.Context, config *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
-			return updateMihomoNativeSettings(ctx, runtime, config)
+			return updateMihomoNativeSettings(ctx, mihomoNativeUpdateDependencies{
+				Repository: runtime.settings,
+				ConfigDir:  runtime.cfg.Mihomo.ConfigDir,
+				AfterApply: func() {
+					runtime.exitCheckCache.clear()
+					runtime.requestReconcile()
+				},
+			}, config)
 		},
 		scheduleApply: runtime.scheduleRuntimeSettingsApply,
 	}

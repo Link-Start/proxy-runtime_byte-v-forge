@@ -22,3 +22,10 @@ type NoopProviderAccountConcurrencySlot struct{}
 func (NoopProviderAccountConcurrencySlot) Release(context.Context) error {
 	return nil
 }
+
+func ReleaseConcurrencySlotUnlessKept(ctx context.Context, slot ProviderAccountConcurrencySlot, keep bool) error {
+	if keep || slot == nil {
+		return nil
+	}
+	return slot.Release(ctx)
+}

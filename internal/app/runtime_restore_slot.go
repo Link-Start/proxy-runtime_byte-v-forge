@@ -14,10 +14,7 @@ func (c leaseCoordinator) acquireRestoreLeaseConcurrencySlot(ctx context.Context
 }
 
 func releaseRestoreLeaseConcurrencySlotUnlessKept(ctx context.Context, slot leaseapp.ProviderAccountConcurrencySlot, keep *bool) {
-	if keep != nil && *keep {
-		return
-	}
 	releaseCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), leaseRestoreSlotReleaseTimeout)
 	defer cancel()
-	_ = slot.Release(releaseCtx)
+	_ = leaseapp.ReleaseConcurrencySlotUnlessKept(releaseCtx, slot, keep != nil && *keep)
 }

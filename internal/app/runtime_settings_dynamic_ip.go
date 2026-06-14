@@ -1,12 +1,10 @@
 package app
 
 import (
-	"fmt"
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
-	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 )
 
 func dynamicIPEndpoints(settings *runtimeSettingsFile, dynamicProviderID string, providerID string) []accountproxy.Gateway {
@@ -132,27 +130,6 @@ func normalizeDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderS
 	for index := range provider.Endpoints {
 		normalizeDynamicIPEndpoint(provider.Endpoints[index])
 	}
-}
-
-func validateDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderSettings, index int, accountProviders *providerregistry.Registry) error {
-	if dynamicIPProviderID(provider) == "" {
-		return fmt.Errorf("dynamic_ip_providers[%d].dynamic_provider_id is required", index)
-	}
-	if !accountProviders.IsSupported(provider.GetProviderId()) {
-		return fmt.Errorf("dynamic_ip_providers[%d].provider_id is unsupported", index)
-	}
-	seen := map[string]struct{}{}
-	for endpointIndex, endpoint := range provider.GetEndpoints() {
-		endpointURL := normalizeEndpointURL(endpoint.GetEndpointUrl())
-		if endpointURL == "" {
-			return fmt.Errorf("dynamic_ip_providers[%d].endpoints[%d].endpoint_url is required", index, endpointIndex)
-		}
-		if _, exists := seen[endpointURL]; exists {
-			return fmt.Errorf("dynamic_ip_providers[%d].endpoints[%d] duplicates endpoint %q", index, endpointIndex, endpointURL)
-		}
-		seen[endpointURL] = struct{}{}
-	}
-	return nil
 }
 
 func normalizeDynamicIPEndpoint(endpoint *proxyruntimev1.ProxyDynamicIPEndpointSettings) {

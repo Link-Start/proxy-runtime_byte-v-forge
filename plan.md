@@ -750,6 +750,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native resource reference replacement and enabled-resource lookup are split from egress profile normalization.
 - Settings enabled dynamic-provider and egress-profile ID index helpers are split from egress profile normalization.
 - Mihomo-native update now separates current-projection loading and update-plan persistence/apply helpers from top-level orchestration.
+- Dynamic IP provider request validation is split from dynamic provider endpoint/model normalization.
 
 Still open:
 

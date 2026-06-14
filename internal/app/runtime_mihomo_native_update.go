@@ -25,27 +25,16 @@ func updateMihomoNativeSettings(ctx context.Context, deps mihomoNativeUpdateDepe
 	if deps.Repository == nil {
 		return nil, internalError("mihomo native settings repository is required", nil)
 	}
-	currentView, err := deps.Repository.loadMihomoNative(ctx)
+	current, err := loadMihomoNativeUpdateCurrent(ctx, deps.Repository)
 	if err != nil {
-		return nil, internalError("load mihomo native settings", err)
-	}
-	current, err := mihomoNativeConfigFileFromSettings(currentView)
-	if err != nil {
-		return nil, internalError("load mihomo native settings", err)
+		return nil, err
 	}
 	plan, err := buildMihomoNativeUpdatePlan(current, view)
 	if err != nil {
 		return nil, err
 	}
-	if err := deps.Repository.saveMihomoNative(ctx, mihomoNativeSettingsFromConfig(plan.Config)); err != nil {
-		return nil, internalError("save mihomo native settings", err)
-	}
-	if err := saveMihomoNativeConfig(deps.ConfigDir, plan.Config); err != nil {
-		return nil, internalError("save mihomo native config", err)
-	}
-	_, err = deps.Repository.replaceMihomoResourceRefs(ctx, plan.ResourceReplacements)
-	if err != nil {
-		return nil, internalError("update mihomo native resource references", err)
+	if err := persistMihomoNativeUpdatePlan(ctx, deps, plan); err != nil {
+		return nil, err
 	}
 	if deps.AfterApply != nil {
 		deps.AfterApply()

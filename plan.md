@@ -749,6 +749,7 @@ Completed user-visible/runtime batches:
 - Egress profile and ingress rule persistence updates are split from egress profile normalization/resource-ref helpers.
 - Mihomo-native resource reference replacement and enabled-resource lookup are split from egress profile normalization.
 - Settings enabled dynamic-provider and egress-profile ID index helpers are split from egress profile normalization.
+- Mihomo-native update now separates current-projection loading and update-plan persistence/apply helpers from top-level orchestration.
 
 Still open:
 

@@ -52,19 +52,5 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	if err != nil {
 		return err
 	}
-	policy := leaseapp.ConcurrencyPolicy(lease)
-	return leaseapp.RestoreLease(ctx, leaseapp.RestoreLeaseInput{
-		Limiter:            c.deps.providerConcurrency,
-		Store:              c.deps.store,
-		DataPlane:          c.deps.dataPlane,
-		Factory:            c.deps.sessionProviders,
-		Lease:              lease,
-		Limit:              dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy),
-		DefaultTTL:         leaseapp.DefaultDynamicIPStickyTTL,
-		TTLBuffer:          providerAccountConcurrencyTTLBuffer,
-		SlotReleaseTimeout: leaseRestoreSlotReleaseTimeout,
-		LocalProtocol:      c.deps.cfg.LocalProtocol,
-		ResolveGateways:    c.providerSessionGatewaysResolverForSettings(settings, lease),
-		ResolveLineBinding: c.routeLineBindingResolver(settings),
-	})
+	return c.leaseRouteRestorer(settings).Restore(ctx, lease)
 }

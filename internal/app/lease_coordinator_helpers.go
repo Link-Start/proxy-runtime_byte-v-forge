@@ -84,3 +84,23 @@ func (c leaseCoordinator) leaseRouteRetirer() leaseapp.LeaseRouteRetirer {
 		ObserveFinalConcurrencyReleaseErr: c.warnFinalConcurrencyReleaseFailed,
 	}
 }
+
+func (c leaseCoordinator) leaseRouteRestorer(settings *runtimeSettingsFile) leaseapp.LeaseRouteRestorer {
+	return leaseapp.LeaseRouteRestorer{
+		Limiter:            c.deps.providerConcurrency,
+		Store:              c.deps.store,
+		DataPlane:          c.deps.dataPlane,
+		Factory:            c.deps.sessionProviders,
+		DefaultTTL:         leaseapp.DefaultDynamicIPStickyTTL,
+		TTLBuffer:          providerAccountConcurrencyTTLBuffer,
+		SlotReleaseTimeout: leaseRestoreSlotReleaseTimeout,
+		LocalProtocol:      c.deps.cfg.LocalProtocol,
+		Limit: func(lease *proxyruntimev1.ProxyDynamicLease) uint32 {
+			return dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), leaseapp.ConcurrencyPolicy(lease))
+		},
+		ResolveGateways: func(lease *proxyruntimev1.ProxyDynamicLease) leaseapp.ProviderSessionGatewaysResolver {
+			return c.providerSessionGatewaysResolverForSettings(settings, lease)
+		},
+		ResolveLineBinding: c.routeLineBindingResolver(settings),
+	}
+}

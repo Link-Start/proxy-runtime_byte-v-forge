@@ -977,6 +977,7 @@ Completed user-visible/runtime batches:
 - Restore lease session/listener materialization checks now live in the lease restore flow instead of the app-level coordinator.
 - Lease gateway and line-binding resolver construction is centralized on the coordinator adapter, so acquire and restore no longer duplicate resolver closures.
 - Lease route retirement dependencies are now composed through a lease-owned `LeaseRouteRetirer`; normal release and existing-lease replacement reuse it, and the app-level route-retire wrapper was removed.
+- Restore route dependencies are now composed through a lease-owned `LeaseRouteRestorer`; the coordinator only loads settings and supplies adapter functions for limits, gateways, and line binding.
 
 Still open:
 

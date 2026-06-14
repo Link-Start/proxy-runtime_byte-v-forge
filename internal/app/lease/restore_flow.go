@@ -11,6 +11,22 @@ import (
 
 var ErrRestoreLeaseRouteRequired = errors.New("lease session or listener is missing")
 
+type RestoreLeaseLimitFunc func(*proxyruntimev1.ProxyDynamicLease) uint32
+
+type LeaseRouteRestorer struct {
+	Limiter            ProviderAccountConcurrencyLimiter
+	Store              OrchestrationStore
+	DataPlane          DataPlaneApplier
+	Factory            SessionProviderFactory
+	Limit              RestoreLeaseLimitFunc
+	DefaultTTL         time.Duration
+	TTLBuffer          time.Duration
+	SlotReleaseTimeout time.Duration
+	LocalProtocol      string
+	ResolveGateways    ProviderSessionGatewaysResolverFactory
+	ResolveLineBinding RouteLineBindingResolver
+}
+
 type RestoreLeaseInput struct {
 	Limiter            ProviderAccountConcurrencyLimiter
 	Store              OrchestrationStore
@@ -24,6 +40,37 @@ type RestoreLeaseInput struct {
 	LocalProtocol      string
 	ResolveGateways    ProviderSessionGatewaysResolver
 	ResolveLineBinding RouteLineBindingResolver
+}
+
+func (r LeaseRouteRestorer) Restore(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+	return RestoreLease(ctx, RestoreLeaseInput{
+		Limiter:            r.Limiter,
+		Store:              r.Store,
+		DataPlane:          r.DataPlane,
+		Factory:            r.Factory,
+		Lease:              lease,
+		Limit:              r.limit(lease),
+		DefaultTTL:         r.DefaultTTL,
+		TTLBuffer:          r.TTLBuffer,
+		SlotReleaseTimeout: r.SlotReleaseTimeout,
+		LocalProtocol:      r.LocalProtocol,
+		ResolveGateways:    r.resolveGateways(lease),
+		ResolveLineBinding: r.ResolveLineBinding,
+	})
+}
+
+func (r LeaseRouteRestorer) limit(lease *proxyruntimev1.ProxyDynamicLease) uint32 {
+	if r.Limit == nil {
+		return 0
+	}
+	return r.Limit(lease)
+}
+
+func (r LeaseRouteRestorer) resolveGateways(lease *proxyruntimev1.ProxyDynamicLease) ProviderSessionGatewaysResolver {
+	if r.ResolveGateways == nil {
+		return nil
+	}
+	return r.ResolveGateways(lease)
 }
 
 func RestoreLease(ctx context.Context, input RestoreLeaseInput) error {

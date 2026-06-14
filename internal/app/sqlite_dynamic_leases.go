@@ -14,6 +14,11 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const sqliteCleanupPendingLeasePredicate = `(
+  json_extract(lease_json, '$.session.labels.route_cleanup_pending')='true'
+  OR json_extract(lease_json, '$.session.labels.provider_cleanup_pending')='true'
+)`
+
 func (s *SQLiteStore) SaveLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
 	if lease == nil || strings.TrimSpace(lease.GetLeaseId()) == "" {
 		return errors.New("lease_id is required")
@@ -72,11 +77,23 @@ LIMIT ?
 }
 
 func (s *SQLiteStore) ProviderAccountHasBlockingLease(ctx context.Context, providerAccountID string) (bool, error) {
-	leases, err := s.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID)
-	if err != nil {
-		return false, err
+	providerAccountID = strings.TrimSpace(providerAccountID)
+	if providerAccountID == "" {
+		return false, nil
 	}
-	return len(leases) > 0, nil
+	var exists bool
+	err := s.db.QueryRowContext(ctx, `
+SELECT EXISTS (
+  SELECT 1
+  FROM proxy_runtime_dynamic_leases
+  WHERE provider_account_id=?
+    AND (
+      (status=? AND (expires_at='' OR expires_at>?))
+      OR (status=? AND `+sqliteCleanupPendingLeasePredicate+`)
+    )
+)
+`, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String()).Scan(&exists)
+	return exists, err
 }
 
 func (s *SQLiteStore) BlockingLeaseFactsByProviderAccount(ctx context.Context, providerAccountID string) ([]*proxyruntimev1.ProxyDynamicLease, error) {
@@ -90,7 +107,7 @@ FROM proxy_runtime_dynamic_leases
 WHERE provider_account_id=?
   AND (
     (status=? AND (expires_at='' OR expires_at>?))
-    OR status=?
+    OR (status=? AND `+sqliteCleanupPendingLeasePredicate+`)
   )
 ORDER BY acquired_at DESC, updated_at DESC, lease_id
 `, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String())
@@ -109,7 +126,7 @@ func (s *SQLiteStore) CleanupPendingLeaseFacts(ctx context.Context) ([]*proxyrun
 	leases, err := s.leaseFactsByQuery(ctx, `
 SELECT lease_json
 FROM proxy_runtime_dynamic_leases
-WHERE status=?
+WHERE status=? AND `+sqliteCleanupPendingLeasePredicate+`
 ORDER BY acquired_at ASC, updated_at ASC, lease_id
 `, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String())
 	if err != nil {

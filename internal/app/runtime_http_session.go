@@ -19,10 +19,6 @@ type runtimeAuthSessionResponse struct {
 	AuthRequired  bool `json:"authRequired"`
 }
 
-type runtimeAuthLoginRequest struct {
-	Token string `json:"token"`
-}
-
 type runtimeAuthWebSocketTokenResponse struct {
 	Token string `json:"token"`
 }
@@ -44,14 +40,14 @@ func (api *runtimeHTTPAPI) handleAuthWebSocketToken(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
-	token, next, formSubmit, err := readRuntimeLoginRequest(ctx.Request)
+	login, err := readRuntimeLoginRequest(ctx.Request)
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return
 	}
-	if !authapp.TokenMatches(token, api.authToken) {
-		if formSubmit {
-			ctx.Redirect(http.StatusSeeOther, authapp.LoginRedirectWithError(next))
+	if !authapp.TokenMatches(login.Token, api.authToken) {
+		if login.FormSubmit {
+			ctx.Redirect(http.StatusSeeOther, authapp.LoginRedirectWithError(login.Next))
 			return
 		}
 		writeHTTPError(ctx.Writer, errors.New("unauthorized"), http.StatusUnauthorized)
@@ -61,8 +57,8 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
 	}
-	if formSubmit {
-		ctx.Redirect(http.StatusSeeOther, authapp.SafeRedirect(next))
+	if login.FormSubmit {
+		ctx.Redirect(http.StatusSeeOther, authapp.SafeRedirect(login.Next))
 		return
 	}
 	api.writeAuthSession(ctx, true)
@@ -189,6 +185,14 @@ func (api *runtimeHTTPAPI) clearSessionCookie(ctx *gin.Context) {
 		SameSite: http.SameSiteLaxMode,
 		Secure:   httpapi.ForwardedProto(ctx.Request) == "https",
 	})
+}
+
+func readRuntimeLoginRequest(req *http.Request) (authapp.LoginRequest, error) {
+	body, err := readRequestBody(req)
+	if err != nil {
+		return authapp.LoginRequest{}, err
+	}
+	return authapp.ParseLoginRequest(req, body)
 }
 
 var runtimeLoginTemplate = template.Must(template.New("runtime-login").Parse(`<!doctype html>

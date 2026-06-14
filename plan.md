@@ -686,6 +686,7 @@ Completed user-visible/runtime batches:
 - Runtime auth required/public-path rules are centralized in `internal/app/auth`.
 - HTTP JSON error response writing is extracted into `internal/app/httpapi`, with app-specific error-to-status mapping kept at the adapter edge.
 - Public HTTP route registration now uses the shared `httpapi.Route` model and is split from HTTP server setup.
+- Runtime login request parsing is extracted into `internal/app/auth`, leaving the Gin handler as body-read and response adapter.
 
 Still open:
 

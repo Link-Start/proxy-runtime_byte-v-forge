@@ -3,7 +3,6 @@ package mihomo
 import (
 	"io"
 	"log/slog"
-	"regexp"
 	"strings"
 	"sync"
 )
@@ -15,13 +14,6 @@ type processLogRing struct {
 	logger *slog.Logger
 	limit  int
 	lines  []string
-}
-
-type processLogWriter struct {
-	mu      sync.Mutex
-	ring    *processLogRing
-	stream  string
-	pending string
 }
 
 func newProcessLogRing(logger *slog.Logger, limit int) *processLogRing {
@@ -36,18 +28,6 @@ func newProcessLogRing(logger *slog.Logger, limit int) *processLogRing {
 
 func (r *processLogRing) Writer(stream string) io.Writer {
 	return &processLogWriter{ring: r, stream: strings.TrimSpace(stream)}
-}
-
-func (w *processLogWriter) Write(data []byte) (int, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-	text := w.pending + string(data)
-	parts := strings.Split(text, "\n")
-	w.pending = parts[len(parts)-1]
-	for _, line := range parts[:len(parts)-1] {
-		w.ring.Append(w.stream, line)
-	}
-	return len(data), nil
 }
 
 func (r *processLogRing) Append(stream string, line string) {
@@ -86,17 +66,4 @@ func (r *processLogRing) Tail() string {
 		start = 0
 	}
 	return strings.Join(r.lines[start:], " | ")
-}
-
-var processLogRedactors = []*regexp.Regexp{
-	regexp.MustCompile(`(?i)(authorization:\s*bearer\s+)[^\s]+`),
-	regexp.MustCompile(`(?i)([?&](?:token|secret|password|passwd|api_key|apikey)=)[^&\s]+`),
-	regexp.MustCompile(`(?i)\b((?:https?|socks5h?)://)([^/\s:@]+):([^@\s/]+)@`),
-}
-
-func redactProcessLogLine(line string) string {
-	line = processLogRedactors[0].ReplaceAllString(line, `${1}<redacted>`)
-	line = processLogRedactors[1].ReplaceAllString(line, `${1}<redacted>`)
-	line = processLogRedactors[2].ReplaceAllString(line, `${1}<redacted>:<redacted>@`)
-	return line
 }

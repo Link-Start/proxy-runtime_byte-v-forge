@@ -969,6 +969,7 @@ Completed user-visible/runtime batches:
 - Expired-active current-fact workflow now lives in `internal/app/lease`, including expiry predicate check, route cleanup failure persistence, provider-session cleanup failure persistence, and expired final-state save; the coordinator only injects provider release and warning observers.
 - Stale app-level lease route cleanup and final-save wrappers were removed after release, expiry, and cleanup-pending flows moved into `internal/app/lease`.
 - Restore single-lease flow now lives in `internal/app/lease`, including temporary concurrency-slot lifecycle, provider-session fetch, and dataplane route restore; the coordinator only loads restore inputs and injects gateway/line-binding resolvers.
+- Final provider-account concurrency release warnings are centralized on the lease coordinator and shared by release, expiry, and cleanup-pending flows instead of repeating app-level observer closures.
 
 Still open:
 

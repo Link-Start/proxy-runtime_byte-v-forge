@@ -28,9 +28,6 @@ func (c leaseCoordinator) retireLeaseRoute(ctx context.Context, lease *proxyrunt
 			_ = ctx
 			c.warn("provider session release failed", leaseapp.LabelAccountID, lease.GetAccountId(), leaseapp.LabelProviderAccountID, lease.GetProviderAccountId())
 		},
-		ObserveFinalConcurrencyReleaseErr: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
-			_ = ctx
-			c.warn("release provider account concurrency slot failed", "lease_id", lease.GetLeaseId(), "provider_account_id", lease.GetProviderAccountId())
-		},
+		ObserveFinalConcurrencyReleaseErr: c.warnFinalConcurrencyReleaseFailed,
 	})
 }

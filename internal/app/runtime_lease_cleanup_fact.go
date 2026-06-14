@@ -19,9 +19,6 @@ func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *pr
 		ReleaseProvider: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
 			return c.releaseLeaseProviderSession(ctx, lease)
 		},
-		ObserveFinalConcurrencyReleaseErr: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
-			_ = ctx
-			c.warn("release provider account concurrency slot failed", "lease_id", lease.GetLeaseId(), "provider_account_id", lease.GetProviderAccountId())
-		},
+		ObserveFinalConcurrencyReleaseErr: c.warnFinalConcurrencyReleaseFailed,
 	})
 }

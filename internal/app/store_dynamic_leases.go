@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -15,18 +14,7 @@ import (
 )
 
 func (s *PostgresStore) SaveLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	if lease == nil || strings.TrimSpace(lease.GetLeaseId()) == "" {
-		return errors.New("lease_id is required")
-	}
-	if strings.TrimSpace(lease.GetAccountId()) == "" {
-		return errors.New("lease account_id is required")
-	}
-	status := lease.GetStatus()
-	if status == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_UNSPECIFIED {
-		status = proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE
-		lease.Status = status
-	}
-	data, err := protojsoncodec.Marshal(lease)
+	fact, err := prepareDynamicLeaseFactSave(lease)
 	if err != nil {
 		return err
 	}
@@ -34,7 +22,7 @@ func (s *PostgresStore) SaveLeaseFact(ctx context.Context, lease *proxyruntimev1
 INSERT INTO proxy_runtime_dynamic_leases (lease_id, account_id, purpose, provider_account_id, status, lease_json, acquired_at, expires_at)
 VALUES ($1,$2,$3,$4,$5,$6::jsonb,$7,$8)
 ON CONFLICT (lease_id) DO UPDATE SET account_id=EXCLUDED.account_id, purpose=EXCLUDED.purpose, provider_account_id=EXCLUDED.provider_account_id, status=EXCLUDED.status, lease_json=EXCLUDED.lease_json, acquired_at=EXCLUDED.acquired_at, expires_at=EXCLUDED.expires_at, updated_at=now()
-`, strings.TrimSpace(lease.GetLeaseId()), strings.TrimSpace(lease.GetAccountId()), strings.TrimSpace(lease.GetPurpose()), strings.TrimSpace(lease.GetProviderAccountId()), status.String(), string(data), timestampValue(lease.GetAcquiredAt()), timestampValue(lease.GetExpiresAt()))
+`, fact.LeaseID, fact.AccountID, fact.Purpose, fact.ProviderAccountID, fact.Status.String(), fact.JSON, timestampValue(lease.GetAcquiredAt()), timestampValue(lease.GetExpiresAt()))
 	return err
 }
 

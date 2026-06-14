@@ -20,18 +20,7 @@ const sqliteCleanupPendingLeasePredicate = `(
 )`
 
 func (s *SQLiteStore) SaveLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	if lease == nil || strings.TrimSpace(lease.GetLeaseId()) == "" {
-		return errors.New("lease_id is required")
-	}
-	if strings.TrimSpace(lease.GetAccountId()) == "" {
-		return errors.New("lease account_id is required")
-	}
-	status := lease.GetStatus()
-	if status == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_UNSPECIFIED {
-		status = proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE
-		lease.Status = status
-	}
-	data, err := protojsoncodec.Marshal(lease)
+	fact, err := prepareDynamicLeaseFactSave(lease)
 	if err != nil {
 		return err
 	}
@@ -40,7 +29,7 @@ func (s *SQLiteStore) SaveLeaseFact(ctx context.Context, lease *proxyruntimev1.P
 INSERT INTO proxy_runtime_dynamic_leases (lease_id, account_id, purpose, provider_account_id, status, lease_json, acquired_at, expires_at, created_at, updated_at)
 VALUES (?,?,?,?,?,?,?,?,?,?)
 ON CONFLICT(lease_id) DO UPDATE SET account_id=excluded.account_id, purpose=excluded.purpose, provider_account_id=excluded.provider_account_id, status=excluded.status, lease_json=excluded.lease_json, acquired_at=excluded.acquired_at, expires_at=excluded.expires_at, updated_at=excluded.updated_at
-`, strings.TrimSpace(lease.GetLeaseId()), strings.TrimSpace(lease.GetAccountId()), strings.TrimSpace(lease.GetPurpose()), strings.TrimSpace(lease.GetProviderAccountId()), status.String(), string(data), sqliteTimestamp(lease.GetAcquiredAt()), sqliteTimestamp(lease.GetExpiresAt()), now, now)
+`, fact.LeaseID, fact.AccountID, fact.Purpose, fact.ProviderAccountID, fact.Status.String(), fact.JSON, sqliteTimestamp(lease.GetAcquiredAt()), sqliteTimestamp(lease.GetExpiresAt()), now, now)
 	return err
 }
 

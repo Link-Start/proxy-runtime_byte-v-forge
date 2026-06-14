@@ -789,6 +789,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native top-level settings normalization now delegates fixed-proxy and subscription list normalization to focused helpers.
 - Mihomo-native current-resource indexes are split into fixed-proxy and subscription index helpers.
 - Mihomo-native VLESS URI parsing now delegates security and network option extraction to focused parse helpers.
+- Mihomo-native VLESS URI rendering now delegates core, security, and network query construction to focused render helpers.
 
 Still open:
 

@@ -7,14 +7,22 @@ import (
 
 const gatewayListenerName = "proxy-runtime-gateway"
 
-func renderGateway(endpoint sourceplane.Endpoint, users []dataplane.ProxyUserRoute, sessions []dataplane.SessionRoute, profiles map[string]string) (mihomoListener, []mihomoGroup, []string, error) {
+type renderedGateway struct {
+	listener mihomoListener
+	groups   []mihomoGroup
+	rules    []string
+}
+
+func renderGateway(endpoint sourceplane.Endpoint, users []dataplane.ProxyUserRoute, sessions []dataplane.SessionRoute, profiles map[string]string) (renderedGateway, error) {
 	host, port, err := splitEndpoint(endpoint.Addr)
 	if err != nil {
-		return mihomoListener{}, nil, nil, err
+		return renderedGateway{}, err
 	}
 	listener := mihomoListener{Name: gatewayListenerName, Type: "mixed", Listen: host, Port: port, UDP: true}
 	listener.Users = renderUsers(users, sessions)
-	groups := renderUserGroups(users, sessions)
-	rules := renderUserRules(users, sessions, profiles)
-	return listener, groups, rules, nil
+	return renderedGateway{
+		listener: listener,
+		groups:   renderUserGroups(users, sessions),
+		rules:    renderUserRules(users, sessions, profiles),
+	}, nil
 }

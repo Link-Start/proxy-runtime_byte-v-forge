@@ -35,9 +35,9 @@ func renderProxyProjection(opts renderOptions) (renderedProxyProjection, error) 
 }
 
 func renderGatewayProjection(opts renderOptions, profileGroupsByID map[string]string) (renderedGatewayProjection, error) {
-	gateway, userGroups, userRules, err := renderGateway(opts.Endpoint, opts.ProxyUsers, opts.SessionRoutes, profileGroupsByID)
+	gateway, err := renderGateway(opts.Endpoint, opts.ProxyUsers, opts.SessionRoutes, profileGroupsByID)
 	if err != nil {
 		return renderedGatewayProjection{}, err
 	}
-	return renderedGatewayProjection{listener: gateway, groups: userGroups, rules: userRules}, nil
+	return renderedGatewayProjection{listener: gateway.listener, groups: gateway.groups, rules: gateway.rules}, nil
 }

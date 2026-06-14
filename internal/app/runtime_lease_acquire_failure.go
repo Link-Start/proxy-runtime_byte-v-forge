@@ -46,8 +46,7 @@ func (f *leaseAcquireFailure) cleanupProviderSession() bool {
 }
 
 func (f *leaseAcquireFailure) markCleanupPending(routePending bool, providerPending bool) {
-	lease := &proxyruntimev1.ProxyDynamicLease{Session: f.session}
-	leaseapp.MarkCleanupPending(lease, routePending, providerPending, leaseapp.CleanupFinalFailed)
+	leaseapp.MarkFailedAcquireCleanupPending(f.session, routePending, providerPending)
 }
 
 func (f *leaseAcquireFailure) save(message string) {

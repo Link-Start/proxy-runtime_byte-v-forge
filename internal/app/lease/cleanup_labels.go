@@ -40,3 +40,8 @@ func ClearCleanupPending(lease *proxyruntimev1.ProxyDynamicLease, routePending b
 		delete(lease.GetSession().Labels, ProviderCleanupPendingLabel)
 	}
 }
+
+func MarkFailedAcquireCleanupPending(session *proxyruntimev1.ProxySession, routePending bool, providerPending bool) {
+	lease := &proxyruntimev1.ProxyDynamicLease{Session: session}
+	MarkCleanupPending(lease, routePending, providerPending, CleanupFinalFailed)
+}

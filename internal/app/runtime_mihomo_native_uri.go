@@ -48,47 +48,8 @@ func mihomoNativeProxyFromURI(name string, rawURI string) (map[string]any, error
 	if fingerprint := firstNonEmpty(query.Get("fp"), query.Get("client-fingerprint")); fingerprint != "" {
 		config["client-fingerprint"] = fingerprint
 	}
-	if security == "tls" || security == "reality" {
-		config["tls"] = true
-	}
-	if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername")); serverName != "" {
-		config["servername"] = serverName
-	}
-	if security == "reality" {
-		reality := map[string]any{}
-		if value := firstNonEmpty(query.Get("pbk"), query.Get("public-key")); value != "" {
-			reality["public-key"] = value
-		}
-		if value := firstNonEmpty(query.Get("sid"), query.Get("short-id")); value != "" {
-			reality["short-id"] = value
-		}
-		if len(reality) > 0 {
-			config["reality-opts"] = reality
-		}
-	}
-	switch network {
-	case "ws", "websocket":
-		config["network"] = "ws"
-		opts := map[string]any{}
-		if value := strings.TrimSpace(query.Get("path")); value != "" {
-			opts["path"] = value
-		}
-		if value := strings.TrimSpace(query.Get("host")); value != "" {
-			opts["headers"] = map[string]string{"Host": value}
-		}
-		if len(opts) > 0 {
-			config["ws-opts"] = opts
-		}
-	case "grpc":
-		opts := map[string]any{}
-		if value := firstNonEmpty(query.Get("serviceName"), query.Get("service-name")); value != "" {
-			opts["grpc-service-name"] = value
-		}
-		if len(opts) > 0 {
-			config["grpc-opts"] = opts
-		}
-	case "tcp":
-	default:
+	applyVLESSSecurityOptions(config, query, security)
+	if err := applyVLESSNetworkOptions(config, query, network); err != nil {
 		return nil, fmt.Errorf("fixed proxy %q has unsupported vless network %q", name, network)
 	}
 	return config, nil

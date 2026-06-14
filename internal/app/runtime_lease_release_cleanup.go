@@ -37,10 +37,9 @@ func (c leaseCoordinator) releaseLeaseProviderSessionWithLock(ctx context.Contex
 }
 
 func (c leaseCoordinator) deleteLeaseRoute(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	if lease == nil || lease.GetSession() == nil || lease.GetListener() == nil {
+	route, ok := leaseapp.SessionRouteFromLease(lease, nil, "", c.deps.cfg.LocalProtocol)
+	if !ok {
 		return nil
 	}
-	listener := listenerFromProto(lease.GetListener())
-	route := leaseapp.SessionRoute{SessionID: lease.GetSession().GetSessionId(), Listener: localServiceFromListener(listener, c.deps.cfg.LocalProtocol)}
 	return leaseapp.DeleteSessionRoute(ctx, c.deps.dataPlane, route)
 }

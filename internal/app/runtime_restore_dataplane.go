@@ -13,11 +13,9 @@ func (c leaseCoordinator) restoreLeaseDataPlaneRoute(ctx context.Context, lease 
 	if err != nil {
 		return err
 	}
-	route := leaseapp.SessionRoute{
-		SessionID:   lease.GetSession().GetSessionId(),
-		Listener:    localServiceFromListener(listenerFromProto(lease.GetListener()), c.deps.cfg.LocalProtocol),
-		Pool:        leaseapp.ApplyNodeLabels(nodes, lineLabels),
-		DialerProxy: dialerProxy,
+	route, ok := leaseapp.SessionRouteFromLease(lease, leaseapp.ApplyNodeLabels(nodes, lineLabels), dialerProxy, c.deps.cfg.LocalProtocol)
+	if !ok {
+		return nil
 	}
 	return leaseapp.UpsertSessionRoute(ctx, c.deps.dataPlane, route)
 }

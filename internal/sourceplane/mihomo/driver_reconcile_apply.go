@@ -47,3 +47,11 @@ func (d *Driver) recordAppliedConfigProjection(configPath string, endpoint sourc
 	d.lastEndpoint = endpoint
 	d.lastError = ""
 }
+
+func (d *Driver) recordConfigProjectionError(err error) error {
+	if err == nil {
+		return nil
+	}
+	d.lastError = err.Error()
+	return err
+}

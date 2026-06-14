@@ -10,40 +10,33 @@ import (
 func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([]provider.Node, error) {
 	endpoint, err := normalizeEndpoint(cfg.Endpoint)
 	if err != nil {
-		d.lastError = err.Error()
-		return nil, err
+		return nil, d.recordConfigProjectionError(err)
 	}
 	dir, err := d.ensureConfigDir()
 	if err != nil {
-		d.lastError = err.Error()
-		return nil, err
+		return nil, d.recordConfigProjectionError(err)
 	}
 	baseOptions, baseConfig, err := d.renderConfigProjectionLocked(cfg, endpoint, dir)
 	if err != nil {
-		d.lastError = err.Error()
-		return nil, err
+		return nil, d.recordConfigProjectionError(err)
 	}
 	if err := ensureProviderConfigDir(dir); err != nil {
-		d.lastError = err.Error()
-		return nil, err
+		return nil, d.recordConfigProjectionError(err)
 	}
 	configPath := runtimeConfigPath(dir)
 
 	baseReloaded, err := d.applyBaseConfigProjectionLocked(ctx, configPath, baseConfig, endpoint)
 	if err != nil {
-		d.lastError = err.Error()
-		return nil, err
+		return nil, d.recordConfigProjectionError(err)
 	}
 
 	finalOptions := baseOptions
 	finalConfig, err := renderConfigProjection(finalOptions)
 	if err != nil {
-		d.lastError = err.Error()
-		return nil, err
+		return nil, d.recordConfigProjectionError(err)
 	}
 	if err := d.applyFinalConfigProjectionLocked(ctx, configPath, finalConfig, endpoint, baseReloaded); err != nil {
-		d.lastError = err.Error()
-		return nil, err
+		return nil, d.recordConfigProjectionError(err)
 	}
 	d.recordAppliedConfigProjection(configPath, endpoint, baseConfig, finalConfig)
 	return nil, nil

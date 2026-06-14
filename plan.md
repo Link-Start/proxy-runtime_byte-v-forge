@@ -851,6 +851,7 @@ Completed user-visible/runtime batches:
 - Postgres blocking and cleanup-pending lease queries now push cleanup-pending label predicates into SQL instead of scanning every failed lease in Go.
 - Postgres blocking and cleanup-pending lease list methods now return SQL-filtered rows directly, removing remaining Go-layer business filtering on those hot paths.
 - Playground active-lease replacement predicate now lives in `internal/app/lease`; runtime acquire only supplies playground account and username constants.
+- Postgres dynamic lease persistence is split into save, list/blocking/cleanup, lookup, and scan helpers so store responsibilities are no longer concentrated in one large file.
 
 Still open:
 

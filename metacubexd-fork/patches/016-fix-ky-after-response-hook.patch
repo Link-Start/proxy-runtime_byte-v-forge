@@ -1,0 +1,13 @@
+diff --git a/composables/useApi.ts b/composables/useApi.ts
+index 992f4d7..11e1236 100644
+--- a/composables/useApi.ts
++++ b/composables/useApi.ts
+@@ -224,7 +224,7 @@ export function useRequest() {
+     timeout: 5000,
+     hooks: {
+       afterResponse: [
+-        (_request, _options, response) => {
++        ({ response }) => {
+           if (!isUnauthorizedStatus(response.status)) return
+           if (endpoint.id === 'proxy-runtime-mihomo') {
+             endpointStore.setSelectedEndpoint('')

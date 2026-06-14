@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 func dynamicProfileConcurrencyHolder(profileID string) string {
@@ -47,7 +48,7 @@ func dynamicProfileSessionSeed(profileID string, accountID string, providerID st
 }
 
 func dynamicProfileSessionPolicy(input *proxyruntimev1.ProxySessionPolicy, endpointID string) *proxyruntimev1.ProxySessionPolicy {
-	policy := normalizeDynamicIPSessionPolicy(input)
+	policy := leaseapp.NormalizeDynamicIPSessionPolicy(input)
 	policy.Labels["dynamic_ip_endpoint_id"] = strings.TrimSpace(endpointID)
 	return policy
 }

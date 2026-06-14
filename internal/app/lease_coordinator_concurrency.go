@@ -33,6 +33,6 @@ func (c leaseCoordinator) refreshLeaseConcurrencySlot(ctx context.Context, lease
 		return err
 	}
 	policy := leaseapp.ConcurrencyPolicy(lease)
-	_, err = leaseapp.AcquireProviderAccountConcurrencySlot(ctx, c.deps.providerConcurrency, account.GetAccountId(), dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), policy, holder, leaseapp.ConcurrencySlotTTL(policy, defaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
+	_, err = leaseapp.AcquireProviderAccountConcurrencySlot(ctx, c.deps.providerConcurrency, account.GetAccountId(), dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), policy, holder, leaseapp.ConcurrencySlotTTL(policy, leaseapp.DefaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
 	return err
 }

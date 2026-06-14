@@ -25,10 +25,10 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 	if err != nil {
 		return nil, err
 	}
-	req.Policy = normalizeDynamicIPSessionPolicy(req.GetPolicy())
+	req.Policy = leaseapp.NormalizeDynamicIPSessionPolicy(req.GetPolicy())
 	leaseapp.ApplyRequestLabels(req)
-	if err := applyLeaseProfileDynamicIPPolicy(settings, req); err != nil {
-		return nil, err
+	if err := leaseapp.ApplyProfileDynamicIPPolicy(settings.GetEgressProfiles(), req); err != nil {
+		return nil, leaseProfilePolicyError(err)
 	}
 	selectionPolicy := normalizeDynamicIPSelectionPolicy(req)
 	requestedSessionID := leaseapp.RequestedSessionID(req)

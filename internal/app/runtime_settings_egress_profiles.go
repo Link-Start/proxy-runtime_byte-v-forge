@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
@@ -61,7 +62,7 @@ func egressProfileDynamicIPPolicyFromProto(in *proxyruntimev1.ProxySessionPolicy
 	if in == nil {
 		return nil
 	}
-	return normalizeDynamicIPSessionPolicy(in)
+	return leaseapp.NormalizeDynamicIPSessionPolicy(in)
 }
 
 func egressProfileMihomoNodeRefFromProto(in *proxyruntimev1.EgressProfileMihomoNodeRef) *proxyruntimev1.EgressProfileMihomoNodeRef {

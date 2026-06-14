@@ -16,33 +16,30 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 		return nil, failedPrecondition("no dynamic IP endpoint candidate", err)
 	}
 	providerAccountID := leaseapp.SelectedProviderAccountID(selection.plan)
-	providerAccount, err := c.deps.store.ProviderAccount(ctx, providerAccountID)
-	if err != nil {
-		return nil, err
-	}
 	leaseID, err := c.newLeaseID()
 	if err != nil {
 		return nil, internalError("generate lease id", err)
 	}
-	concurrencySlot, concurrencyHolder, err := leaseapp.AcquireAttemptConcurrencySlot(ctx, leaseapp.AcquireAttemptConcurrencyInput{
-		Limiter:    c.deps.providerConcurrency,
-		AccountID:  providerAccount.GetAccountId(),
-		Limit:      dynamicProviderConcurrencyLimit(settings, leaseapp.SelectedDynamicProviderID(selection.plan), req.GetPolicy()),
-		Policy:     req.GetPolicy(),
-		LeaseID:    leaseID,
-		DefaultTTL: leaseapp.DefaultDynamicIPStickyTTL,
-		TTLBuffer:  providerAccountConcurrencyTTLBuffer,
+	attemptSlot, stage, err := leaseapp.AcquireAttemptSlotForProviderAccount(ctx, leaseapp.AcquireAttemptSlotInput{
+		Store:             c.deps.store,
+		Limiter:           c.deps.providerConcurrency,
+		ProviderAccountID: providerAccountID,
+		Limit:             dynamicProviderConcurrencyLimit(settings, leaseapp.SelectedDynamicProviderID(selection.plan), req.GetPolicy()),
+		Policy:            req.GetPolicy(),
+		LeaseID:           leaseID,
+		DefaultTTL:        leaseapp.DefaultDynamicIPStickyTTL,
+		TTLBuffer:         providerAccountConcurrencyTTLBuffer,
 	})
 	if err != nil {
-		return nil, failedPrecondition("provider account concurrency limit reached", err)
+		return nil, acquireAttemptSlotError(stage, err)
 	}
 	return leaseapp.RunLockedAcquireAttempt(ctx, leaseapp.LockedAcquireAttemptInput{
 		Locks:             c.deps.locks,
 		ProviderAccountID: providerAccountID,
-		ConcurrencySlot:   concurrencySlot,
+		ConcurrencySlot:   attemptSlot.ConcurrencySlot,
 		ReleaseTimeout:    leaseAcquireSlotReleaseTimeout,
 		Action: func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
-			return c.acquireLeaseWithProviderAccountLock(ctx, advertisedHost, req, settings, selection, providerAccountID, leaseID, concurrencyHolder)
+			return c.acquireLeaseWithProviderAccountLock(ctx, advertisedHost, req, settings, selection, providerAccountID, leaseID, attemptSlot.ConcurrencyHolder)
 		},
 	})
 }

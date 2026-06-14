@@ -934,6 +934,7 @@ Completed user-visible/runtime batches:
 - Cleanup-pending and expiry account-level lock invocations now run through `internal/app/lease`; the coordinator supplies only cleanup actions.
 - Restore, expiry, and cleanup-pending batch loops now use a lease-owned batch processor for per-lease timeout, cancellation checks, error aggregation, and error observation callbacks.
 - Cleanup-pending and expiry current-fact reload plus not-found handling now live in `internal/app/lease`; the coordinator supplies only the current-fact cleanup action.
+- Acquire-attempt provider-account lookup and concurrency-slot acquisition now live in `internal/app/lease`; the coordinator maps only stage-specific errors.
 
 Still open:
 

@@ -831,6 +831,7 @@ Completed user-visible/runtime batches:
 - Mihomo dataplane driver now separates desired-config application, session-route mutation, and dataplane-to-sourceplane clone/projection helpers.
 - Mihomo render models are split into top-level config/group, render options, native config, provider/health-check, and gateway listener/user model files.
 - Mihomo process log handling now separates ring storage, writer buffering, and sensitive-output redaction helpers.
+- Mihomo egress naming helpers now separate profile group construction, profile display-name mapping, and rule target/node filter sanitization into focused files.
 
 Still open:
 

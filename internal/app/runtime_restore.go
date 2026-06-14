@@ -11,7 +11,11 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 )
 
-const startupLeaseRestoreTimeout = 2 * time.Minute
+const (
+	startupLeaseRestoreTimeout     = 2 * time.Minute
+	leaseRestoreRouteTimeout       = 20 * time.Second
+	leaseRestoreSlotReleaseTimeout = 5 * time.Second
+)
 
 func (r *Runtime) restoreActiveLeasesInBackground(ctx context.Context) {
 	r.markLeaseRestoreStarted()
@@ -47,7 +51,14 @@ func (c leaseCoordinator) restoreActiveLeases(ctx context.Context) error {
 		if !leaseapp.ActiveAt(lease, now) {
 			continue
 		}
-		if err := c.restoreLeaseRoute(ctx, lease); err != nil {
+		if err := ctx.Err(); err != nil {
+			restoreErrors = append(restoreErrors, err)
+			break
+		}
+		leaseCtx, cancel := context.WithTimeout(ctx, leaseRestoreRouteTimeout)
+		err := c.restoreLeaseRoute(leaseCtx, lease)
+		cancel()
+		if err != nil {
 			r.logger.Warn("restore proxy lease route failed", "account_id", lease.GetAccountId(), "error", err)
 			restoreErrors = append(restoreErrors, fmt.Errorf("restore lease route %q: %w", lease.GetLeaseId(), err))
 			continue
@@ -82,7 +93,9 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	keepSlot := false
 	defer func() {
 		if !keepSlot {
-			_ = slot.Release(ctx)
+			releaseCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), leaseRestoreSlotReleaseTimeout)
+			defer cancel()
+			_ = slot.Release(releaseCtx)
 		}
 	}()
 	providerCfg.Gateways = endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerCfg.ProviderID)

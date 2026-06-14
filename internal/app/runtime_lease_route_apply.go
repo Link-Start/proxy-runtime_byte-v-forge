@@ -25,8 +25,14 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertise
 	if err != nil {
 		return nil, err
 	}
-	session.Egress = egress
-	route := leaseapp.NewSessionRoute(session.GetSessionId(), listener, nodes, dialerProxy, c.deps.cfg.LocalProtocol)
+	route := leaseapp.NewAcquiredSessionRoute(leaseapp.AcquiredSessionRouteInput{
+		Session:       session,
+		Egress:        egress,
+		Listener:      listener,
+		Nodes:         nodes,
+		DialerProxy:   dialerProxy,
+		LocalProtocol: c.deps.cfg.LocalProtocol,
+	})
 	if err := c.applyAcquiredLeaseDataPlaneRoute(ctx, route, failure); err != nil {
 		return nil, err
 	}

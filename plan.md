@@ -887,6 +887,7 @@ Completed user-visible/runtime batches:
 - Failed-acquire compensation and failed fact persistence are now owned by a lease `FailedAcquireRecorder`; app wiring only constructs the recorder and passes route/application context.
 - Mihomo reconcile final projection apply and applied-state recording are split from top-level reconcile orchestration, keeping base apply, final apply, and status mutation in focused helpers.
 - Mihomo reconcile provider-directory creation and runtime config path construction are split into path helpers, leaving top-level reconcile focused on stage ordering.
+- Acquired lease session-route construction and session egress binding now live in `internal/app/lease`; route apply only invokes dataplane apply and persistence.
 
 Still open:
 

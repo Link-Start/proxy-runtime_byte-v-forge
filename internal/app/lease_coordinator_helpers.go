@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -17,13 +16,6 @@ func (c leaseCoordinator) now() time.Time {
 		return c.deps.clock.Now()
 	}
 	return time.Now()
-}
-
-func (c leaseCoordinator) newLeaseID() (string, error) {
-	if c.deps.ids == nil {
-		return "", fmt.Errorf("lease id generator is required")
-	}
-	return c.deps.ids.NewLeaseID()
 }
 
 func (c leaseCoordinator) clearExitCheckCache() {

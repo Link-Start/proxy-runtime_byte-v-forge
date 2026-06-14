@@ -7,8 +7,12 @@ import (
 )
 
 func acquireAttemptSlotError(err error) error {
-	if errors.Is(err, leaseapp.ErrAcquireAttemptConcurrencyLimit) {
+	switch {
+	case errors.Is(err, leaseapp.ErrAcquireAttemptLeaseID):
+		return internalError("generate lease id", err)
+	case errors.Is(err, leaseapp.ErrAcquireAttemptConcurrencyLimit):
 		return failedPrecondition("provider account concurrency limit reached", err)
+	default:
+		return err
 	}
-	return err
 }

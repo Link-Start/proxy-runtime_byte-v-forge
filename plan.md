@@ -957,6 +957,7 @@ Completed user-visible/runtime batches:
 - Lease release top-level lookup-plus-retire orchestration now lives in `internal/app/lease`; the coordinator only maps request/lookup errors and injects store, locks, and route-retire side effects.
 - Lease acquire request preparation and account-lock entry orchestration now lives in `internal/app/lease`; the coordinator only maps request validation errors and provides the locked acquire action.
 - Lease account-locked acquire orchestration now lives in `internal/app/lease`, including policy merge, existing-active reuse/replace, and attempt retry sequencing; the coordinator only loads settings, maps policy errors, and runs concrete attempts.
+- Lease selected-attempt preparation now lives in `internal/app/lease`, including provider-account selection extraction, lease ID allocation, and provider-account concurrency-slot acquisition; the coordinator only selects the endpoint and runs the locked provider-account action.
 
 Still open:
 

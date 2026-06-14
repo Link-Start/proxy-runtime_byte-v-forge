@@ -4,11 +4,22 @@ import (
 	"bytes"
 	"html/template"
 	"net/http"
+	"strings"
 )
 
 type LoginPageOptions struct {
 	Next      string
 	ShowError bool
+}
+
+func LoginPageOptionsFromRequest(req *http.Request) LoginPageOptions {
+	next := "/"
+	showError := false
+	if req != nil && req.URL != nil {
+		next = SafeRedirect(req.URL.Query().Get("next"))
+		showError = strings.TrimSpace(req.URL.Query().Get("error")) != ""
+	}
+	return LoginPageOptions{Next: next, ShowError: showError}
 }
 
 func LoginPageHTML(opts LoginPageOptions) ([]byte, error) {

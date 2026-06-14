@@ -909,6 +909,7 @@ Completed user-visible/runtime batches:
 - Auth login outcome decisions now live in the auth application; HTTP login handler only performs body read, cookie write, redirect, and response emission.
 - Mihomo gateway rendering now returns a structured projection instead of positional listener/group/rule tuples, making render sections less order-coupled.
 - Auth logout redirect sanitization now lives in the auth package, leaving the logout handler to clear the cookie and emit redirect/no-content only.
+- Auth login-page query parsing now lives in the auth package, so the login-page handler only redirects authenticated sessions or writes the page.
 
 Still open:
 

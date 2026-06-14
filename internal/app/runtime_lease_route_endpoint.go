@@ -26,20 +26,14 @@ func (c leaseCoordinator) acquiredLeaseEndpoint(ctx context.Context, input acqui
 		failure.BeforeRoute(ctx, "lease listener allocation failed")
 		return leaseapp.Listener{}, nil, nil, err
 	}
-	listenerProto := leaseapp.EgressListenerProto(listener, true, "http")
-	failure.SetListener(listenerProto)
 	egress, err := c.deps.localListenerEndpoint(listener, c.deps.sessionAdvertisedHost(input.advertisedHost, listener))
 	if err != nil {
 		failure.BeforeRoute(ctx, "lease endpoint build failed")
 		return leaseapp.Listener{}, nil, nil, err
 	}
-	failure.SetEgress(egress)
-	applyAcquiredLeaseEndpointMetadata(egress, input)
-	return listener, listenerProto, egress, nil
-}
-
-func applyAcquiredLeaseEndpointMetadata(egress *proxyruntimev1.ProxyEndpoint, input acquiredLeaseEndpointInput) {
-	leaseapp.ApplyAcquiredEndpointMetadata(egress, leaseapp.AcquiredEndpointMetadataInput{
+	endpoint := leaseapp.NewAcquiredEndpoint(leaseapp.AcquiredEndpointInput{
+		Listener:          listener,
+		Egress:            egress,
 		Request:           input.req,
 		SelectionPlan:     input.selection.plan,
 		ProviderClient:    input.providerClient,
@@ -47,5 +41,9 @@ func applyAcquiredLeaseEndpointMetadata(egress *proxyruntimev1.ProxyEndpoint, in
 		ConcurrencyHolder: input.concurrencyHolder,
 		Session:           input.session,
 		LineLabels:        input.lineLabels,
+		Managed:           true,
+		FallbackProtocol:  "http",
 	})
+	failure.SetEndpoint(endpoint)
+	return endpoint.Listener, endpoint.ListenerProto, endpoint.Egress, nil
 }

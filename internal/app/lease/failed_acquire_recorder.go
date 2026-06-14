@@ -61,6 +61,14 @@ func (r *FailedAcquireRecorder) SetEgress(egress *proxyruntimev1.ProxyEndpoint) 
 	}
 }
 
+func (r *FailedAcquireRecorder) SetEndpoint(endpoint AcquiredEndpoint) {
+	if r == nil {
+		return
+	}
+	r.listener = endpoint.ListenerProto
+	r.egress = endpoint.Egress
+}
+
 func (r *FailedAcquireRecorder) BeforeRoute(ctx context.Context, message string) {
 	if r == nil {
 		return

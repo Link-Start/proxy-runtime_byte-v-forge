@@ -891,6 +891,7 @@ Completed user-visible/runtime batches:
 - Acquired lease endpoint metadata input construction now lives in `internal/app/lease`, including provider name and session id extraction for endpoint labels.
 - Mihomo top-level config render now delegates proxy/provider/profile projection and gateway projection to focused section helpers before assembling final config fields.
 - Acquire route application now receives a single acquired-lease flow object instead of a long provider/session/listener parameter list, preparing the remaining route orchestration for package-level extraction.
+- Acquired endpoint projection now lives in `internal/app/lease`, combining listener proto creation, endpoint metadata application, and failed-acquire recorder endpoint state updates.
 
 Still open:
 

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 const dynamicIPEndpointHealthWindow = 6 * time.Hour
@@ -47,12 +48,10 @@ func dynamicIPEndpointHealthScoresFromLeases(leases []*proxyruntimev1.ProxyDynam
 			continue
 		}
 		stat := stats[endpointID]
-		switch lease.GetStatus() {
-		case proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED:
+		switch {
+		case leaseapp.HasFailedStatus(lease):
 			stat.failure++
-		case proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE,
-			proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_EXPIRED,
-			proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_RELEASED:
+		case leaseapp.HasSuccessfulAttemptStatus(lease):
 			stat.success++
 		}
 		stats[endpointID] = stat

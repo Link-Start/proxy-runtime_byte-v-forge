@@ -28,6 +28,18 @@ func HasReleasedStatus(lease *proxyruntimev1.ProxyDynamicLease) bool {
 	return hasStatus(lease, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_RELEASED)
 }
 
+func HasExpiredStatus(lease *proxyruntimev1.ProxyDynamicLease) bool {
+	return hasStatus(lease, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_EXPIRED)
+}
+
+func HasFailedStatus(lease *proxyruntimev1.ProxyDynamicLease) bool {
+	return hasStatus(lease, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED)
+}
+
+func HasSuccessfulAttemptStatus(lease *proxyruntimev1.ProxyDynamicLease) bool {
+	return HasActiveStatus(lease) || HasExpiredStatus(lease) || HasReleasedStatus(lease)
+}
+
 func hasStatus(lease *proxyruntimev1.ProxyDynamicLease, status proxyruntimev1.ProxyDynamicLeaseStatus) bool {
 	return lease != nil && lease.GetStatus() == status
 }

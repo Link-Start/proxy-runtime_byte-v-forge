@@ -769,6 +769,7 @@ Completed user-visible/runtime batches:
 - Runtime settings store writes now share a locked mutation helper for load, mutate, save, and view projection instead of repeating the sequence in each update method.
 - Mihomo native resource reference replacement now uses the store's changed-aware mutation helper instead of hand-written lock, load, and save orchestration.
 - Mihomo-native settings load/save facade methods are split from runtime settings persistence facade methods.
+- Postgres runtime settings persistence is split from Postgres Mihomo-native settings persistence.
 
 Still open:
 

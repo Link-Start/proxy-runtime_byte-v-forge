@@ -42,5 +42,5 @@ func (c leaseCoordinator) deleteLeaseRoute(ctx context.Context, lease *proxyrunt
 	}
 	listener := listenerFromProto(lease.GetListener())
 	route := leaseapp.SessionRoute{SessionID: lease.GetSession().GetSessionId(), Listener: localServiceFromListener(listener, c.deps.cfg.LocalProtocol)}
-	return c.deps.dataPlane.DeleteSessionRoute(ctx, route)
+	return leaseapp.DeleteSessionRoute(ctx, c.deps.dataPlane, route)
 }

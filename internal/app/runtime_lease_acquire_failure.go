@@ -31,7 +31,7 @@ func (f *leaseAcquireFailure) beforeRoute(message string) {
 }
 
 func (f *leaseAcquireFailure) afterRoute(route leaseapp.SessionRoute, message string) {
-	routeCleanupPending := f.coordinator.deps.dataPlane.DeleteSessionRoute(f.ctx, route) != nil
+	routeCleanupPending := leaseapp.DeleteSessionRoute(f.ctx, f.coordinator.deps.dataPlane, route) != nil
 	providerCleanupPending := f.cleanupProviderSession()
 	f.markCleanupPending(routeCleanupPending, providerCleanupPending)
 	f.save(message)

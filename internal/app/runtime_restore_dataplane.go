@@ -19,5 +19,5 @@ func (c leaseCoordinator) restoreLeaseDataPlaneRoute(ctx context.Context, lease 
 		Pool:        leaseapp.ApplyNodeLabels(nodes, lineLabels),
 		DialerProxy: dialerProxy,
 	}
-	return c.deps.dataPlane.UpsertSessionRoute(ctx, route)
+	return leaseapp.UpsertSessionRoute(ctx, c.deps.dataPlane, route)
 }

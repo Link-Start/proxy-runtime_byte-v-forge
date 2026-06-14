@@ -819,10 +819,11 @@ Completed user-visible/runtime batches:
 - Provider-account concurrency slot acquisition now uses a lease-owned helper directly; the app-level acquire wrapper was removed.
 - Provider-account concurrency slot release now uses a lease-owned helper, centralizing empty-holder and missing-limiter handling.
 - Lease account/provider-account/listener-allocation lock invocation now uses lease-owned helpers; coordinator no longer calls the lock manager methods directly.
+- Lease session route upsert/delete now goes through lease-owned helpers, leaving the runtime dataplane adapter as the only direct Mihomo dataplane bridge.
 
 Still open:
 
-- Fully extract lease application into `internal/app/lease`; remaining work is to move provider-session orchestration, listener input resolution, and route orchestration out of the current app-level coordinator. Data-plane route apply/delete, lease listener construction/endpoint/advertised-host projection, provider session access, lock invocation, and concurrency-slot acquire/release semantics now cross lease-owned models/ports, but the coordinator still drives the workflow.
+- Fully extract lease application into `internal/app/lease`; remaining work is to move provider-session orchestration, listener input resolution, and top-level route orchestration out of the current app-level coordinator. Data-plane route apply/delete helpers, lease listener construction/endpoint/advertised-host projection, provider session access, lock invocation, and concurrency-slot acquire/release semantics now cross lease-owned models/ports, but the coordinator still drives the workflow.
 - Continue splitting Mihomo sourceplane projection, validation, render, and apply stages so no single file owns the whole config pipeline.
 - Move settings orchestration into an explicit settings application package.
 - Separate `httpapi`, `auth`, and `dashboard` packages and keep handlers as thin transport adapters.

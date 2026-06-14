@@ -18,7 +18,7 @@ func acquiredLeaseSessionRoute(session *proxyruntimev1.ProxySession, listener le
 }
 
 func (c leaseCoordinator) applyAcquiredLeaseDataPlaneRoute(ctx context.Context, route leaseapp.SessionRoute, failure *leaseAcquireFailure) error {
-	if err := c.deps.dataPlane.UpsertSessionRoute(ctx, route); err != nil {
+	if err := leaseapp.UpsertSessionRoute(ctx, c.deps.dataPlane, route); err != nil {
 		failure.afterRoute(route, "dataplane route apply failed")
 		return unavailable("dataplane route apply failed", err)
 	}

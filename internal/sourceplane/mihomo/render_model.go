@@ -1,33 +1,5 @@
 package mihomo
 
-import (
-	"time"
-
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
-)
-
-type renderOptions struct {
-	EgressProfiles      []sourceplane.EgressProfile
-	Endpoint            sourceplane.Endpoint
-	ConfigDir           string
-	NativeConfig        mihomoNativeConfig
-	APIAddr             string
-	ControllerSecret    string
-	DashboardDir        string
-	DashboardURL        string
-	HealthCheckURL      string
-	HealthCheckInterval time.Duration
-	HealthCheckTimeout  time.Duration
-	BasePool            []provider.Node
-	AvailableProxies    map[string]struct{}
-	AvailableProviders  map[string]struct{}
-	ProxyUsers          []dataplane.ProxyUserRoute
-	SessionRoutes       []dataplane.SessionRoute
-	ProfileGroups       map[string]string
-}
-
 type mihomoConfig struct {
 	MixedPort          int                       `json:"mixed-port,omitempty"`
 	BindAddress        string                    `json:"bind-address,omitempty"`
@@ -46,50 +18,6 @@ type mihomoConfig struct {
 	Rules              []string                  `json:"rules"`
 }
 
-type mihomoNativeConfig struct {
-	FixedProxies   []mihomoNativeFixedProxy   `json:"fixed_proxies,omitempty"`
-	Proxies        []map[string]any           `json:"proxies,omitempty"`
-	Subscriptions  []mihomoNativeSubscription `json:"subscriptions,omitempty"`
-	ProxyProviders map[string]mihomoProvider  `json:"proxy-providers,omitempty"`
-	ProxyGroups    []mihomoGroup              `json:"proxy-groups,omitempty"`
-	Rules          []string                   `json:"rules,omitempty"`
-}
-
-type mihomoNativeFixedProxy struct {
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name"`
-	Type string `json:"type,omitempty"`
-	URI  string `json:"uri,omitempty"`
-}
-
-type mihomoNativeSubscription struct {
-	ID   string `json:"id,omitempty"`
-	Name string `json:"name"`
-	URL  string `json:"url,omitempty"`
-}
-
-type mihomoProvider struct {
-	Type        string              `json:"type"`
-	URL         string              `json:"url,omitempty"`
-	Path        string              `json:"path,omitempty"`
-	Proxy       string              `json:"proxy,omitempty"`
-	Interval    int                 `json:"interval,omitempty"`
-	Filter      string              `json:"filter,omitempty"`
-	Exclude     string              `json:"exclude-filter,omitempty"`
-	HealthCheck *mihomoHealthCheck  `json:"health-check,omitempty"`
-	Header      map[string][]string `json:"header,omitempty"`
-	Override    map[string]any      `json:"override,omitempty"`
-}
-
-type mihomoHealthCheck struct {
-	Enable         bool   `json:"enable"`
-	URL            string `json:"url,omitempty"`
-	Interval       int    `json:"interval,omitempty"`
-	Timeout        int    `json:"timeout,omitempty"`
-	Lazy           bool   `json:"lazy"`
-	ExpectedStatus uint32 `json:"expected-status,omitempty"`
-}
-
 type mihomoGroup struct {
 	Name           string   `json:"name"`
 	Type           string   `json:"type"`
@@ -103,20 +31,4 @@ type mihomoGroup struct {
 	Lazy           bool     `json:"lazy"`
 	ExpectedStatus uint32   `json:"expected-status,omitempty"`
 	Hidden         bool     `json:"hidden,omitempty"`
-}
-
-type mihomoListener struct {
-	Name   string       `json:"name"`
-	Type   string       `json:"type"`
-	Listen string       `json:"listen,omitempty"`
-	Port   int          `json:"port"`
-	Rule   string       `json:"rule,omitempty"`
-	Proxy  string       `json:"proxy,omitempty"`
-	UDP    bool         `json:"udp"`
-	Users  []mihomoUser `json:"users,omitempty"`
-}
-
-type mihomoUser struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
 }

@@ -829,6 +829,7 @@ Completed user-visible/runtime batches:
 - Mihomo process management now separates status, config-directory/safe-path handling, process start/wait/stop, and controller hot-reload HTTP helpers.
 - Mihomo driver reconcile now separates top-level orchestration from config projection/rendering and base apply/restart decisions.
 - Mihomo dataplane driver now separates desired-config application, session-route mutation, and dataplane-to-sourceplane clone/projection helpers.
+- Mihomo render models are split into top-level config/group, render options, native config, provider/health-check, and gateway listener/user model files.
 
 Still open:
 

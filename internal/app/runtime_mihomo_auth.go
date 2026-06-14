@@ -2,13 +2,10 @@ package app
 
 import (
 	"net/http"
-	"strings"
+
+	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
 )
 
 func applyMihomoControllerAuth(req *http.Request, token string) {
-	token = strings.TrimSpace(token)
-	if req == nil || token == "" {
-		return
-	}
-	req.Header.Set("Authorization", "Bearer "+token)
+	dashboardapp.ApplyControllerAuthorization(req, token)
 }

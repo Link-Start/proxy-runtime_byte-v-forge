@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
-	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
 	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
 )
@@ -33,19 +32,4 @@ func (api *runtimeHTTPAPI) authorize(ctx *gin.Context) bool {
 
 func (api *runtimeHTTPAPI) authRequired(requestPath string) bool {
 	return authapp.Required(api.authToken, requestPath)
-}
-
-func (api *runtimeHTTPAPI) forwardMihomoControllerAuthorization(out *http.Request, requestPath string) {
-	if out == nil {
-		return
-	}
-	if !httpapi.PathInPrefix(requestPath, "/mihomo/controller") {
-		return
-	}
-	token := strings.TrimSpace(api.authToken)
-	if token == "" {
-		return
-	}
-	out.Header.Set("Authorization", "Bearer "+strings.TrimSpace(token))
-	out.URL.RawQuery = dashboardapp.ControllerUpstreamRawQuery(out.URL.RawQuery)
 }

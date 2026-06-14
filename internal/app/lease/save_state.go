@@ -1,0 +1,22 @@
+package lease
+
+import (
+	"context"
+
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+)
+
+func SaveReleaseCleanupFailure(ctx context.Context, store OrchestrationStore, lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool, message string) error {
+	MarkReleaseCleanupFailure(lease, routePending, providerPending, message)
+	return store.SaveLeaseFact(ctx, lease)
+}
+
+func SaveExpiredCleanupFailure(ctx context.Context, store OrchestrationStore, lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool, message string) error {
+	MarkExpiredCleanupFailure(lease, routePending, providerPending, message)
+	return store.SaveLeaseFact(ctx, lease)
+}
+
+func SaveCleanupRetry(ctx context.Context, store OrchestrationStore, lease *proxyruntimev1.ProxyDynamicLease, message string) error {
+	MarkCleanupRetry(lease, message)
+	return store.SaveLeaseFact(ctx, lease)
+}

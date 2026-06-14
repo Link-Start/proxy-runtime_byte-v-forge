@@ -8,18 +8,15 @@ import (
 )
 
 func (c leaseCoordinator) saveLeaseReleaseCleanupFailure(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool, message string) error {
-	leaseapp.MarkReleaseCleanupFailure(lease, routePending, providerPending, message)
-	return c.deps.store.SaveLeaseFact(ctx, lease)
+	return leaseapp.SaveReleaseCleanupFailure(ctx, c.deps.store, lease, routePending, providerPending, message)
 }
 
 func (c leaseCoordinator) saveLeaseCleanupRetry(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, message string) error {
-	leaseapp.MarkCleanupRetry(lease, message)
-	return c.deps.store.SaveLeaseFact(ctx, lease)
+	return leaseapp.SaveCleanupRetry(ctx, c.deps.store, lease, message)
 }
 
 func (c leaseCoordinator) saveLeaseExpiredCleanupFailure(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool, message string) error {
-	leaseapp.MarkExpiredCleanupFailure(lease, routePending, providerPending, message)
-	return c.deps.store.SaveLeaseFact(ctx, lease)
+	return leaseapp.SaveExpiredCleanupFailure(ctx, c.deps.store, lease, routePending, providerPending, message)
 }
 
 func (c leaseCoordinator) saveLeaseExpired(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {

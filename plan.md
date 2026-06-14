@@ -861,6 +861,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease store list adapters now separate normal list queries, provider-account blocking queries, and worker cleanup/restore/expiry queries for both Postgres and SQLite.
 - Existing active-lease reuse versus replacement decisions now live in `internal/app/lease`; the acquire coordinator only refreshes slots or retires routes based on that decision.
 - Failed acquire lease fact ID generation, fact construction, and persistence now live in `internal/app/lease`; the coordinator only logs failed persistence.
+- Lease release/expired cleanup failure and cleanup retry Mark+Save flows now live in `internal/app/lease`, leaving coordinator wrappers as store adapters.
 
 Still open:
 

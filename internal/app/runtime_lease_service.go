@@ -26,23 +26,10 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 	if err != nil {
 		return nil, err
 	}
-	retirer := c.leaseRouteRetirer()
-	lease, err := leaseapp.RunAccountLockedAcquire(ctx, leaseapp.AccountLockedAcquireInput{
-		Store:               c.deps.store,
-		Request:             req,
-		EgressProfiles:      settings.GetEgressProfiles(),
-		Now:                 c.now().UTC(),
-		PlaygroundAccountID: playgroundProfileID,
-		PlaygroundUsername:  playgroundUsername,
-		Reuse:               c.refreshLeaseConcurrencySlot,
-		Replace:             retirer.Retire,
-		RunAttempt: func(int) (*proxyruntimev1.ProxyDynamicLease, error) {
-			return c.acquireLeaseAttempt(ctx, advertisedHost, req, settings)
-		},
-		Retry: retryLeaseAcquireAttempt,
-		Observe: func(attempt int, err error) {
-			c.warn("dynamic IP lease attempt failed", leaseapp.LabelAccountID, req.GetAccountId(), leaseapp.LabelPurpose, req.GetPurpose(), "attempt", attempt, "error_type", errorLogType(err))
-		},
+	runner := c.accountLockedAcquireRunner(ctx, settings, advertisedHost, req)
+	lease, err := runner.Run(ctx, leaseapp.AccountLockedAcquireRunnerInput{
+		Request:        req,
+		EgressProfiles: settings.GetEgressProfiles(),
 	})
 	if err != nil && leaseapp.IsAcquirePolicyError(err) {
 		return nil, leaseProfilePolicyError(err)

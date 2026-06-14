@@ -190,3 +190,22 @@ func (c leaseCoordinator) selectedAcquireAttemptRunner(settings *runtimeSettings
 		},
 	}
 }
+
+func (c leaseCoordinator) accountLockedAcquireRunner(ctx context.Context, settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.AccountLockedAcquireRunner {
+	retirer := c.leaseRouteRetirer()
+	return leaseapp.AccountLockedAcquireRunner{
+		Store:               c.deps.store,
+		Clock:               c.deps.clock,
+		PlaygroundAccountID: playgroundProfileID,
+		PlaygroundUsername:  playgroundUsername,
+		Reuse:               c.refreshLeaseConcurrencySlot,
+		Replace:             retirer.Retire,
+		RunAttempt: func(int) (*proxyruntimev1.ProxyDynamicLease, error) {
+			return c.acquireLeaseAttempt(ctx, advertisedHost, req, settings)
+		},
+		Retry: retryLeaseAcquireAttempt,
+		Observe: func(attempt int, err error) {
+			c.warn("dynamic IP lease attempt failed", leaseapp.LabelAccountID, req.GetAccountId(), leaseapp.LabelPurpose, req.GetPurpose(), "attempt", attempt, "error_type", errorLogType(err))
+		},
+	}
+}

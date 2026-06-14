@@ -982,6 +982,7 @@ Completed user-visible/runtime batches:
 - Provider-account acquire dependencies are now composed through a lease-owned `ProviderAccountAcquireRunner`; selected acquire attempts call the runner directly and the app-level provider-account acquire wrapper was removed.
 - Runtime settings repository adapter now centralizes repository availability checks instead of repeating nil checks across every settings operation.
 - Selected acquire attempt dependencies are now composed through a lease-owned `SelectedAcquireAttemptRunner`; the coordinator only selects a dynamic endpoint and maps app-specific errors.
+- Account-locked acquire dependencies are now composed through a lease-owned `AccountLockedAcquireRunner`; the coordinator loads settings and injects adapter callbacks instead of assembling the full acquire input inline.
 
 Still open:
 

@@ -22,6 +22,46 @@ type AccountLockedAcquireInput struct {
 	Observe             AcquireAttemptFailureObserver
 }
 
+type AccountLockedAcquireRunner struct {
+	Store               OrchestrationStore
+	Clock               Clock
+	PlaygroundAccountID string
+	PlaygroundUsername  string
+	Reuse               ExistingActiveLeaseAction
+	Replace             ExistingActiveLeaseAction
+	RunAttempt          AcquireAttemptRunner
+	Retry               AcquireAttemptRetryPolicy
+	Observe             AcquireAttemptFailureObserver
+}
+
+type AccountLockedAcquireRunnerInput struct {
+	Request        *proxyruntimev1.AcquireProxyLeaseRequest
+	EgressProfiles []*proxyruntimev1.EgressProfileSettings
+}
+
+func (r AccountLockedAcquireRunner) Run(ctx context.Context, input AccountLockedAcquireRunnerInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+	return RunAccountLockedAcquire(ctx, AccountLockedAcquireInput{
+		Store:               r.Store,
+		Request:             input.Request,
+		EgressProfiles:      input.EgressProfiles,
+		Now:                 r.now().UTC(),
+		PlaygroundAccountID: r.PlaygroundAccountID,
+		PlaygroundUsername:  r.PlaygroundUsername,
+		Reuse:               r.Reuse,
+		Replace:             r.Replace,
+		RunAttempt:          r.RunAttempt,
+		Retry:               r.Retry,
+		Observe:             r.Observe,
+	})
+}
+
+func (r AccountLockedAcquireRunner) now() time.Time {
+	if r.Clock != nil {
+		return r.Clock.Now()
+	}
+	return time.Now()
+}
+
 func RunAccountLockedAcquire(ctx context.Context, input AccountLockedAcquireInput) (*proxyruntimev1.ProxyDynamicLease, error) {
 	selectionPolicy, err := ApplyAcquireRequestPolicies(input.Request, input.EgressProfiles)
 	if err != nil {

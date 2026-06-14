@@ -677,6 +677,7 @@ Completed user-visible/runtime batches:
 - Lease cleanup label mutation is centralized in the lease package together with cleanup predicates.
 - Settings application service forwarding, update usecases, apply scheduling, Mihomo-native handlers, and validation are split into focused files.
 - Runtime settings store load/save and Mihomo-native persistence facades are split from settings update logic.
+- HTTP control-plane route declarations are split by auth, runtime status, provider, lease, check, and settings ownership.
 
 Still open:
 

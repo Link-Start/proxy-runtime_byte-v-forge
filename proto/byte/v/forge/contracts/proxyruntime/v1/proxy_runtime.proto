@@ -656,6 +656,19 @@ message GetProxyExitCheckSnapshotResponse { ProxyExitCheckSnapshot snapshot = 1;
 
 message GetProxyRuntimeSettingsRequest {}
 message GetProxyRuntimeSettingsResponse { ProxyRuntimeSettings settings = 1; }
+message GetProxyRuntimeStatusRequest {}
+message ProxyRuntimeStatus {
+  bool ready = 1;
+  string status = 2;
+  bool data_plane_running = 3;
+  bool data_plane_config_stale = 4;
+  bool reconcile_pending = 5;
+  bool reconcile_running = 6;
+  bool reconcile_failed = 7;
+  bool lease_restore_running = 8;
+  bool lease_restore_failed = 9;
+}
+message GetProxyRuntimeStatusResponse { ProxyRuntimeStatus status = 1; }
 message ListProxyIPFraudProvidersRequest {}
 message ListProxyIPFraudProvidersResponse { repeated ProxyIPFraudProviderDescriptor providers = 1; }
 message ListProxyIPGeoProvidersRequest {}
@@ -695,6 +708,7 @@ service ProxyRuntimeService {
   rpc GetProxyExitCheckSnapshot(GetProxyExitCheckSnapshotRequest) returns (GetProxyExitCheckSnapshotResponse);
   rpc ListProxyIPFraudProviders(ListProxyIPFraudProvidersRequest) returns (ListProxyIPFraudProvidersResponse);
   rpc ListProxyIPGeoProviders(ListProxyIPGeoProvidersRequest) returns (ListProxyIPGeoProvidersResponse);
+  rpc GetProxyRuntimeStatus(GetProxyRuntimeStatusRequest) returns (GetProxyRuntimeStatusResponse);
   rpc GetProxyRuntimeSettings(GetProxyRuntimeSettingsRequest) returns (GetProxyRuntimeSettingsResponse);
   rpc UpdateProxyRuntimeSettings(UpdateProxyRuntimeSettingsRequest) returns (UpdateProxyRuntimeSettingsResponse);
   rpc UpdateProxyEgressProfiles(UpdateProxyEgressProfilesRequest) returns (UpdateProxyEgressProfilesResponse);

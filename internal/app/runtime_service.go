@@ -10,6 +10,7 @@ type RuntimeService struct {
 	leases    runtimeLeaseApplication
 	checks    runtimeCheckApplication
 	settings  runtimeSettingsApplication
+	status    runtimeStatusApplication
 }
 
 var _ proxyruntimev1.ProxyRuntimeServiceServer = (*RuntimeService)(nil)
@@ -20,6 +21,7 @@ func NewRuntimeService(runtime *Runtime) *RuntimeService {
 		leases:    newRuntimeLeaseApplication(runtime),
 		checks:    newRuntimeCheckApplication(runtime),
 		settings:  newRuntimeSettingsApplication(runtime),
+		status:    newRuntimeStatusApplication(runtime),
 	}
 }
 

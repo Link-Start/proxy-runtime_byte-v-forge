@@ -25,6 +25,7 @@ func (api *runtimeHTTPAPI) registerControlPlaneHTTPRoutes(router *gin.Engine) {
 func (api *runtimeHTTPAPI) controlPlaneHTTPRoutes() []runtimeHTTPRoute {
 	return []runtimeHTTPRoute{
 		{methods: []string{http.MethodGet}, path: "/auth/ws-token", handler: api.handleAuthWebSocketToken},
+		{methods: []string{http.MethodGet}, path: "/runtime/status", handler: api.handleRuntimeStatus},
 		{methods: []string{http.MethodGet}, path: "/providers", handler: api.handleProviders},
 		{methods: []string{http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete}, path: "/provider-accounts", handler: api.handleProviderAccounts},
 		{methods: []string{http.MethodGet}, path: "/leases", handler: api.handleLeases},

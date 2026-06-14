@@ -25,6 +25,15 @@ func (api *runtimeHTTPAPI) handleReady(ctx *gin.Context) {
 	ctx.Status(http.StatusNoContent)
 }
 
+func (api *runtimeHTTPAPI) handleRuntimeStatus(ctx *gin.Context) {
+	response, err := api.service.GetProxyRuntimeStatus(ctx.Request.Context(), &proxyruntimev1.GetProxyRuntimeStatusRequest{})
+	if err != nil {
+		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
+		return
+	}
+	api.writeProto(ctx, response)
+}
+
 func (api *runtimeHTTPAPI) handleProviders(ctx *gin.Context) {
 	response, err := api.service.ListProxyProviders(ctx.Request.Context(), &proxyruntimev1.ListProxyProvidersRequest{})
 	if err != nil {

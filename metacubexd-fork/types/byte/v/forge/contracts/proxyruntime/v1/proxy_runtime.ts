@@ -682,6 +682,25 @@ export interface GetProxyRuntimeSettingsResponse {
   settings: ProxyRuntimeSettings | undefined;
 }
 
+export interface GetProxyRuntimeStatusRequest {
+}
+
+export interface ProxyRuntimeStatus {
+  ready: boolean;
+  status: string;
+  data_plane_running: boolean;
+  data_plane_config_stale: boolean;
+  reconcile_pending: boolean;
+  reconcile_running: boolean;
+  reconcile_failed: boolean;
+  lease_restore_running: boolean;
+  lease_restore_failed: boolean;
+}
+
+export interface GetProxyRuntimeStatusResponse {
+  status: ProxyRuntimeStatus | undefined;
+}
+
 export interface ListProxyIPFraudProvidersRequest {
 }
 

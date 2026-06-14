@@ -811,6 +811,7 @@ Completed user-visible/runtime batches:
 - Provider-account concurrency slot release-unless-kept semantics are centralized in `internal/app/lease`, and failed acquire slot cleanup now uses a bounded timeout.
 - Provider session create/fetch helpers are centralized in `internal/app/lease`; acquire and restore orchestration no longer call provider session methods directly.
 - Dynamic profile pool session fetch now reuses lease provider-session and concurrency-slot release helpers, with bounded cleanup timeout instead of background-context release.
+- Dynamic profile pool selection, node materialization/labeling, and session identity helpers are split into focused files instead of one mixed pool file.
 
 Still open:
 

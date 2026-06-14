@@ -920,6 +920,7 @@ Completed user-visible/runtime batches:
 - Mihomo top-level config render now builds a full section projection before assembling the final config object, separating section projection from config object construction.
 - Mihomo config projection now has an explicit validation stage before JSON encoding, checking required rendered config invariants with secret-free errors.
 - Mihomo render section projection, config assembly, and proxy/gateway section rendering now live in separate focused files instead of one mixed render file.
+- Mihomo proxy-section and gateway-section projection renderers are split into separate files, removing the remaining mixed `render_config_sections` file.
 - Auth authorization and dashboard login-redirect decisions now live in the auth application; Gin handlers only translate decisions into redirects, challenges, or JSON errors.
 - Dashboard reverse proxies now build once as a dashboard-owned proxy bundle during HTTP API construction, and routes reuse the prebuilt handlers.
 - Lease worker entrypoints now emit structured operation, duration, and lease identity logs for restore, expiry, cleanup-pending, and single-lease cleanup paths.

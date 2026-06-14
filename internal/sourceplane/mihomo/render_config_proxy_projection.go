@@ -7,12 +7,6 @@ type renderedProxyProjection struct {
 	profileGroupsBy map[string]string
 }
 
-type renderedGatewayProjection struct {
-	listener mihomoListener
-	groups   []mihomoGroup
-	rules    []string
-}
-
 func renderProxyProjection(opts renderOptions) (renderedProxyProjection, error) {
 	providerMap := cloneNativeProviders(opts.NativeConfig.ProxyProviders)
 	fixedConfigs, err := renderBaseProxyConfigs(opts)
@@ -32,12 +26,4 @@ func renderProxyProjection(opts renderOptions) (renderedProxyProjection, error) 
 		profileGroups:   profileProjection.groups,
 		profileGroupsBy: profileGroupsByID,
 	}, nil
-}
-
-func renderGatewayProjection(opts renderOptions, profileGroupsByID map[string]string) (renderedGatewayProjection, error) {
-	gateway, err := renderGateway(opts.Endpoint, opts.ProxyUsers, opts.SessionRoutes, profileGroupsByID)
-	if err != nil {
-		return renderedGatewayProjection{}, err
-	}
-	return renderedGatewayProjection{listener: gateway.listener, groups: gateway.groups, rules: gateway.rules}, nil
 }

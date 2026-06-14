@@ -805,6 +805,7 @@ Completed user-visible/runtime batches:
 - Active lease restore now separates input loading, concurrency-slot reservation, provider session refetch, and dataplane route replay into focused helpers.
 - Dynamic lease listener and endpoint flow now uses a lease-owned listener model; runtime-specific config listener conversion is confined to adapter/projection helpers.
 - Dynamic lease endpoint metadata and label writing are centralized in `internal/app/lease`, keeping acquired-route helpers from editing raw label keys directly.
+- Provider-session request label mutation for dynamic lease acquire is centralized in `internal/app/lease`, so provider-session creation no longer writes raw lease label keys directly.
 
 Still open:
 

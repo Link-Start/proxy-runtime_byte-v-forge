@@ -96,6 +96,20 @@ func SetAttemptLabel(req *proxyruntimev1.AcquireProxyLeaseRequest, attempt int) 
 	req.Policy.Labels[LabelAttempt] = strconv.Itoa(attempt)
 }
 
+func ApplyProviderSessionRequestLabels(req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, concurrencyHolder string) {
+	if req == nil {
+		return
+	}
+	requestedSessionID := RequestedSessionID(req)
+	ApplyRequestLabels(req)
+	if requestedSessionID != "" {
+		req.Policy.Labels[LabelSessionID] = requestedSessionID
+	}
+	req.Policy.Labels[LabelSelectionID] = selectionPlan.GetSelectionId()
+	req.Policy.Labels[LabelDynamicIPEndpointID] = selectionPlan.GetSelectedEndpoint().GetEndpointId()
+	req.Policy.Labels[LabelProviderAccountConcurrencyHolder] = concurrencyHolder
+}
+
 func firstNonEmpty(values ...string) string {
 	for _, value := range values {
 		if trimmed := strings.TrimSpace(value); trimmed != "" {

@@ -18,13 +18,7 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 	if err != nil {
 		return nil, invalidArgument("provider account configuration is invalid", err)
 	}
-	requestedSessionID := leaseapp.RequestedSessionID(req)
-	if requestedSessionID != "" {
-		req.Policy.Labels[leaseapp.LabelSessionID] = requestedSessionID
-	}
-	req.Policy.Labels[leaseapp.LabelSelectionID] = selection.plan.GetSelectionId()
-	req.Policy.Labels[leaseapp.LabelDynamicIPEndpointID] = selection.plan.GetSelectedEndpoint().GetEndpointId()
-	req.Policy.Labels[leaseapp.LabelProviderAccountConcurrencyHolder] = concurrencyHolder
+	leaseapp.ApplyProviderSessionRequestLabels(req, selection.plan, concurrencyHolder)
 	session, err := providerClient.CreateSession(ctx, req)
 	if err != nil {
 		return nil, unavailable("provider session create failed", err)

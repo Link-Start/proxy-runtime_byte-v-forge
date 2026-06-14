@@ -748,6 +748,7 @@ Completed user-visible/runtime batches:
 - Egress profile request conversion and validation are split from settings persistence updates into a focused settings request file.
 - Egress profile and ingress rule persistence updates are split from egress profile normalization/resource-ref helpers.
 - Mihomo-native resource reference replacement and enabled-resource lookup are split from egress profile normalization.
+- Settings enabled dynamic-provider and egress-profile ID index helpers are split from egress profile normalization.
 
 Still open:
 

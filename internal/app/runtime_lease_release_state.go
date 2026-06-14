@@ -20,8 +20,7 @@ func (c leaseCoordinator) saveLeaseExpiredCleanupFailure(ctx context.Context, le
 }
 
 func (c leaseCoordinator) saveLeaseExpired(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	leaseapp.MarkExpired(lease)
-	if err := c.deps.store.SaveLeaseFact(ctx, lease); err != nil {
+	if err := leaseapp.SaveExpired(ctx, c.deps.store, lease); err != nil {
 		return err
 	}
 	if err := c.releaseLeaseConcurrencySlot(ctx, lease); err != nil {
@@ -31,8 +30,7 @@ func (c leaseCoordinator) saveLeaseExpired(ctx context.Context, lease *proxyrunt
 }
 
 func (c leaseCoordinator) saveLeaseReleased(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	leaseapp.MarkReleased(lease)
-	if err := c.deps.store.SaveLeaseFact(ctx, lease); err != nil {
+	if err := leaseapp.SaveReleased(ctx, c.deps.store, lease); err != nil {
 		return err
 	}
 	if err := c.releaseLeaseConcurrencySlot(ctx, lease); err != nil {

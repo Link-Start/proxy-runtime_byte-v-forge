@@ -20,3 +20,13 @@ func SaveCleanupRetry(ctx context.Context, store OrchestrationStore, lease *prox
 	MarkCleanupRetry(lease, message)
 	return store.SaveLeaseFact(ctx, lease)
 }
+
+func SaveExpired(ctx context.Context, store OrchestrationStore, lease *proxyruntimev1.ProxyDynamicLease) error {
+	MarkExpired(lease)
+	return store.SaveLeaseFact(ctx, lease)
+}
+
+func SaveReleased(ctx context.Context, store OrchestrationStore, lease *proxyruntimev1.ProxyDynamicLease) error {
+	MarkReleased(lease)
+	return store.SaveLeaseFact(ctx, lease)
+}

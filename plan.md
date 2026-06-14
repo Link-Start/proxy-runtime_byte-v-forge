@@ -862,6 +862,7 @@ Completed user-visible/runtime batches:
 - Existing active-lease reuse versus replacement decisions now live in `internal/app/lease`; the acquire coordinator only refreshes slots or retires routes based on that decision.
 - Failed acquire lease fact ID generation, fact construction, and persistence now live in `internal/app/lease`; the coordinator only logs failed persistence.
 - Lease release/expired cleanup failure and cleanup retry Mark+Save flows now live in `internal/app/lease`, leaving coordinator wrappers as store adapters.
+- Lease final expired/released Mark+Save flows now live in `internal/app/lease`; coordinator finalization only releases concurrency slots and logs cleanup failures.
 
 Still open:
 

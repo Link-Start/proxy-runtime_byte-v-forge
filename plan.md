@@ -669,6 +669,7 @@ Completed user-visible/runtime batches:
 - First frontend/backend split steps are done for lease API and Mihomo-native update logic.
 - Mihomo-native config model, projection persistence, settings mapping, and URI rendering helpers are split into focused files.
 - Mihomo-native projection orchestration is separated from native JSON file path/load/save IO.
+- Mihomo-native settings mapping is split into focused conversion, normalization, indexing, and subscription-provider rendering files.
 - Mihomo sourceplane egress-profile rendering is split into line, exit, native-resource, dynamic-exit, and naming helpers.
 - Mihomo driver model, reconcile flow, and hot-reload candidate apply logic are separated into focused files.
 - Mihomo reconcile now uses explicit rendered-config projection and base-config apply helpers.

@@ -2,8 +2,6 @@ package mihomo
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
@@ -25,11 +23,11 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 		d.lastError = err.Error()
 		return nil, err
 	}
-	if err := os.MkdirAll(filepath.Join(dir, "providers"), 0o700); err != nil {
+	if err := ensureProviderConfigDir(dir); err != nil {
 		d.lastError = err.Error()
 		return nil, err
 	}
-	configPath := filepath.Join(dir, "config.json")
+	configPath := runtimeConfigPath(dir)
 
 	baseReloaded, err := d.applyBaseConfigProjectionLocked(ctx, configPath, baseConfig, endpoint)
 	if err != nil {

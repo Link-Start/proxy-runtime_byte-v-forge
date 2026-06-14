@@ -5,7 +5,6 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
 type leaseAcquireFailure struct {
@@ -13,14 +12,14 @@ type leaseAcquireFailure struct {
 	ctx               context.Context
 	req               *proxyruntimev1.AcquireProxyLeaseRequest
 	providerAccountID string
-	providerClient    provider.SessionProvider
+	providerClient    leaseapp.SessionProvider
 	session           *proxyruntimev1.ProxySession
 	listener          *proxyruntimev1.EgressListener
 	egress            *proxyruntimev1.ProxyEndpoint
 	plan              *proxyruntimev1.ProxyDynamicIPSelectionPlan
 }
 
-func newLeaseAcquireFailure(coordinator leaseCoordinator, ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest, providerAccountID string, providerClient provider.SessionProvider, session *proxyruntimev1.ProxySession, plan *proxyruntimev1.ProxyDynamicIPSelectionPlan) *leaseAcquireFailure {
+func newLeaseAcquireFailure(coordinator leaseCoordinator, ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest, providerAccountID string, providerClient leaseapp.SessionProvider, session *proxyruntimev1.ProxySession, plan *proxyruntimev1.ProxyDynamicIPSelectionPlan) *leaseAcquireFailure {
 	return &leaseAcquireFailure{coordinator: coordinator, ctx: ctx, req: req, providerAccountID: providerAccountID, providerClient: providerClient, session: session, plan: plan}
 }
 

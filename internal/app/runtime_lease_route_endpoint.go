@@ -5,7 +5,6 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
 type acquiredLeaseEndpointInput struct {
@@ -16,7 +15,7 @@ type acquiredLeaseEndpointInput struct {
 	providerAccountID string
 	leaseID           string
 	concurrencyHolder string
-	providerClient    provider.SessionProvider
+	providerClient    leaseapp.SessionProvider
 	session           *proxyruntimev1.ProxySession
 	lineLabels        map[string]string
 }

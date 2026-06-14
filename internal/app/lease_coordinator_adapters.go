@@ -6,7 +6,6 @@ import (
 	"net/http"
 
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	"github.com/byte-v-forge/proxy-runtime/internal/random"
@@ -19,7 +18,7 @@ type leaseRegistrySessionProviderFactory struct {
 	client   *http.Client
 }
 
-func (f leaseRegistrySessionProviderFactory) NewSessionProvider(providerCfg accountproxy.Config) (provider.SessionProvider, error) {
+func (f leaseRegistrySessionProviderFactory) NewSessionProvider(providerCfg accountproxy.Config) (leaseapp.SessionProvider, error) {
 	if f.registry == nil {
 		return nil, fmt.Errorf("provider session factory is required")
 	}

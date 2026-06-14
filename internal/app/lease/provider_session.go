@@ -5,10 +5,9 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
-func ReleaseProviderSession(ctx context.Context, providerClient provider.SessionProvider, session *proxyruntimev1.ProxySession) error {
+func ReleaseProviderSession(ctx context.Context, providerClient SessionProvider, session *proxyruntimev1.ProxySession) error {
 	if providerClient == nil || session == nil || strings.TrimSpace(session.GetSessionId()) == "" {
 		return nil
 	}

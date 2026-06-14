@@ -21,8 +21,15 @@ type OrchestrationStore interface {
 	ProviderConfig(context.Context, string) (accountproxy.Config, string, error)
 }
 
+type SessionProvider interface {
+	Name() string
+	CreateSession(context.Context, *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxySession, error)
+	FetchSession(context.Context, *proxyruntimev1.ProxySession) ([]provider.Node, error)
+	ReleaseSession(context.Context, *proxyruntimev1.ProxySession) error
+}
+
 type SessionProviderFactory interface {
-	NewSessionProvider(accountproxy.Config) (provider.SessionProvider, error)
+	NewSessionProvider(accountproxy.Config) (SessionProvider, error)
 }
 
 type LocalService struct {

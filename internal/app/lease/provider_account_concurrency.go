@@ -46,6 +46,13 @@ func ReleaseProviderAccountConcurrencySlot(ctx context.Context, limiter Provider
 	return limiter.Release(ctx, accountID, policy, holder)
 }
 
+func ReleaseLeaseConcurrencySlot(ctx context.Context, limiter ProviderAccountConcurrencyLimiter, lease *proxyruntimev1.ProxyDynamicLease) error {
+	if lease == nil {
+		return nil
+	}
+	return ReleaseProviderAccountConcurrencySlot(ctx, limiter, lease.GetProviderAccountId(), ConcurrencyPolicy(lease), ConcurrencyHolder(lease))
+}
+
 func ReleaseConcurrencySlotUnlessKept(ctx context.Context, slot ProviderAccountConcurrencySlot, keep bool) error {
 	if keep || slot == nil {
 		return nil

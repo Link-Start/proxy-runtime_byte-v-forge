@@ -8,13 +8,6 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
-func (c leaseCoordinator) releaseLeaseConcurrencySlot(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	if lease == nil {
-		return nil
-	}
-	return leaseapp.ReleaseProviderAccountConcurrencySlot(ctx, c.deps.providerConcurrency, lease.GetProviderAccountId(), leaseapp.ConcurrencyPolicy(lease), leaseapp.ConcurrencyHolder(lease))
-}
-
 func (c leaseCoordinator) refreshLeaseConcurrencySlot(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
 	if lease == nil {
 		return nil

@@ -23,7 +23,7 @@ func (c leaseCoordinator) saveLeaseExpired(ctx context.Context, lease *proxyrunt
 	if err := leaseapp.SaveExpired(ctx, c.deps.store, lease); err != nil {
 		return err
 	}
-	if err := c.releaseLeaseConcurrencySlot(ctx, lease); err != nil {
+	if err := leaseapp.ReleaseLeaseConcurrencySlot(ctx, c.deps.providerConcurrency, lease); err != nil {
 		c.warn("release provider account concurrency slot failed", "lease_id", lease.GetLeaseId(), "provider_account_id", lease.GetProviderAccountId())
 	}
 	return nil
@@ -33,7 +33,7 @@ func (c leaseCoordinator) saveLeaseReleased(ctx context.Context, lease *proxyrun
 	if err := leaseapp.SaveReleased(ctx, c.deps.store, lease); err != nil {
 		return err
 	}
-	if err := c.releaseLeaseConcurrencySlot(ctx, lease); err != nil {
+	if err := leaseapp.ReleaseLeaseConcurrencySlot(ctx, c.deps.providerConcurrency, lease); err != nil {
 		c.warn("release provider account concurrency slot failed", "lease_id", lease.GetLeaseId(), "provider_account_id", lease.GetProviderAccountId())
 	}
 	return nil

@@ -874,6 +874,7 @@ Completed user-visible/runtime batches:
 - Existing active-lease reuse/replace branching is now a single lease-owned decision enum; acquire orchestration only executes refresh or retire side effects.
 - Acquire request session-policy normalization, request label application, profile dynamic-IP policy merge, and selection policy derivation are now one lease-owned preparation helper.
 - Acquire active-lease lookup by requested session or account now lives in `internal/app/lease`; the coordinator passes the store port instead of owning lookup branching.
+- Lease finalization now calls a lease-owned concurrency-slot release helper directly; the app-level release wrapper was removed.
 
 Still open:
 

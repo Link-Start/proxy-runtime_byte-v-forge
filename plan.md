@@ -674,6 +674,7 @@ Completed user-visible/runtime batches:
 - Lease application now owns list/acquire/release response orchestration through repository/coordinator ports, and HTTP request details are reduced to an advertised host before entering lease orchestration.
 - Lease detail lookup is exposed through the lease application repository port and `GET /api/leases/{lease_id}`, so full lease detail can be fetched by ID instead of through list hot paths.
 - Lease application construction now uses an explicit dependency object with repository, coordinator, worker, logger, and clock ports; lease list duration/row logging lives in the lease application.
+- Lease list query parsing for status, legacy inactive mode, and bounded limits is centralized in the lease package; the Gin handler only adapts query values to application input.
 - Lease package is split into application, repository/coordinator ports, list options, operations, and predicates.
 - Lease restore/expire/cleanup worker entrypoints now go through the lease application worker port instead of direct Runtime coordinator calls.
 - Lease cleanup label mutation is centralized in the lease package together with cleanup predicates.

@@ -3,7 +3,6 @@ package app
 import (
 	"errors"
 	"net/http"
-	"strconv"
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -57,27 +56,11 @@ func (api *runtimeHTTPAPI) handleAcquireLease(ctx *gin.Context) {
 }
 
 func parseLeaseListOptions(ctx *gin.Context) (leaseapp.ListOptions, error) {
-	options := leaseapp.DefaultListOptions()
-	status := strings.TrimSpace(ctx.Query("status"))
-	if status == "" && ctx.Query("include_inactive") == "true" {
-		status = string(leaseapp.ListModeRecent)
+	options, err := leaseapp.ParseListOptions(ctx.Request.URL.Query())
+	if err != nil {
+		return leaseapp.ListOptions{}, invalidArgument(err.Error(), err)
 	}
-	if status != "" {
-		switch leaseapp.ListMode(status) {
-		case leaseapp.ListModeActive, leaseapp.ListModeRecent, leaseapp.ListModeHistory:
-			options.Mode = leaseapp.ListMode(status)
-		default:
-			return leaseapp.ListOptions{}, invalidArgument("unsupported lease list status", nil)
-		}
-	}
-	if rawLimit := strings.TrimSpace(ctx.Query("limit")); rawLimit != "" {
-		limit, err := strconv.Atoi(rawLimit)
-		if err != nil || limit <= 0 {
-			return leaseapp.ListOptions{}, invalidArgument("lease list limit must be a positive integer", err)
-		}
-		options.Limit = limit
-	}
-	return leaseapp.NormalizeListOptions(options), nil
+	return options, nil
 }
 
 func (api *runtimeHTTPAPI) handleReleaseLease(ctx *gin.Context) {

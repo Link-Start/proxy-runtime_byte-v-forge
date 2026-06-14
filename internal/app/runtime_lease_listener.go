@@ -11,15 +11,19 @@ import (
 func (r *Runtime) leaseListener(ctx context.Context, settings *runtimeSettingsFile, accountID string, leaseID string) (leaseapp.Listener, error) {
 	_ = ctx
 	leaseID = firstNonEmpty(leaseID, accountID)
-	listener, err := leaseapp.NewListener(leaseapp.ListenerInput{
-		ID:        "lease-" + shortHash(leaseID),
-		Addr:      r.cfg.LocalAddr,
-		Protocol:  r.cfg.LocalProtocol,
-		Route:     config.ListenerRouteProvider,
-		Username:  leaseListenerUsername(settings, accountID, leaseID),
-		Password:  leaseListenerPasswordValue(settings, accountID, r.cfg.LocalPassword),
-		AccountID: accountID,
-		LeaseID:   leaseID,
+	listener, err := leaseapp.NewDynamicListener(leaseapp.DynamicListenerInput{
+		ID:                  "lease-" + shortHash(leaseID),
+		Addr:                r.cfg.LocalAddr,
+		Protocol:            r.cfg.LocalProtocol,
+		Route:               config.ListenerRouteProvider,
+		AccountID:           accountID,
+		LeaseID:             leaseID,
+		DefaultUsername:     proxyRouteUsername(leaseID),
+		FallbackPassword:    r.cfg.LocalPassword,
+		IngressRules:        settings.GetIngressRules(),
+		PlaygroundAccountID: playgroundProfileID,
+		PlaygroundRuleID:    playgroundRuleID,
+		PlaygroundUsername:  playgroundUsername,
 	})
 	if errors.Is(err, leaseapp.ErrListenerPasswordRequired) {
 		return leaseapp.Listener{}, failedPrecondition(err.Error(), nil)

@@ -745,6 +745,7 @@ Completed user-visible/runtime batches:
 - Dynamic IP selector construction now uses explicit store, settings, provider-registry, concurrency, logger, and geo-lookup dependencies behind a dedicated Runtime wiring adapter.
 - Provider-account concurrency acquire/available/release is now a lease-owned port; app runtime keeps only the cache lifecycle/Redis-local adapter implementation.
 - Source-plane egress-profile projection helpers are split out of settings mutation code into a dedicated source projection file.
+- Egress profile request conversion and validation are split from settings persistence updates into a focused settings request file.
 
 Still open:
 

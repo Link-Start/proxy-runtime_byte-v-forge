@@ -32,10 +32,11 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, flow acqu
 		DialerProxy:   flow.dialerProxy,
 		LocalProtocol: c.deps.cfg.LocalProtocol,
 	})
-	if err := c.applyAcquiredLeaseDataPlaneRoute(ctx, route, flow.failure); err != nil {
-		return nil, err
-	}
-	lease, err := leaseapp.SaveAcquiredActiveFact(ctx, c.deps.store, leaseapp.AcquiredActiveFactInput{
+	lease, stage, err := leaseapp.ApplyAcquiredRoute(ctx, leaseapp.AcquiredRouteApplyInput{
+		Store:             c.deps.store,
+		DataPlane:         c.deps.dataPlane,
+		Failure:           flow.failure,
+		Route:             route,
 		LeaseID:           flow.leaseID,
 		Request:           flow.request,
 		ProviderAccountID: flow.providerAccountID,
@@ -46,8 +47,7 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, flow acqu
 		AcquiredAt:        c.now(),
 	})
 	if err != nil {
-		flow.failure.AfterRoute(ctx, route, "lease fact save failed")
-		return nil, internalError("lease fact save failed", err)
+		return nil, acquiredRouteApplyError(stage, err)
 	}
 	c.clearExitCheckCache()
 	if flow.request.GetAccountId() == playgroundProfileID {

@@ -919,6 +919,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease route line binding now lives in `internal/app/lease`, so acquire and restore share dialer-proxy plus node-label preparation.
 - Provider session acquisition now lives in `internal/app/lease`, including provider config gateway binding, session-provider factory use, create/fetch sequencing, and failure-stage classification.
 - Dynamic lease listener username/password resolution now lives in `internal/app/lease`; Runtime only supplies listener constants, ingress rules, and playground identifiers.
+- Acquired lease route apply now runs through `internal/app/lease`, combining dataplane upsert, failure compensation, and active fact persistence behind a stage-aware result.
 
 Still open:
 

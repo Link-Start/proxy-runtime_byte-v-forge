@@ -18,14 +18,7 @@ func (a runtimeSettingsApplication) UpdateProxyRuntimeSettings(ctx context.Conte
 	if err != nil {
 		return nil, err
 	}
-	after, err := a.runtime.settings.load(ctx)
-	changedUsernames := []string(nil)
-	if err != nil {
-		a.runtime.logger.Warn("load runtime settings after update failed", "error", err)
-	} else {
-		changedUsernames = changedInUserConnectionUsernames(before, after)
-	}
-	a.scheduleRuntimeSettingsApply(changedUsernames)
+	a.scheduleRuntimeSettingsApply(a.changedInUserConnectionUsernamesAfterUpdate(ctx, before, "load runtime settings after update failed"))
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }
 
@@ -50,14 +43,7 @@ func (a runtimeSettingsApplication) UpdateProxyEgressProfiles(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	after, err := a.runtime.settings.load(ctx)
-	changedUsernames := []string(nil)
-	if err != nil {
-		a.runtime.logger.Warn("load runtime settings after egress profile update failed", "error", err)
-	} else {
-		changedUsernames = changedInUserConnectionUsernames(before, after)
-	}
-	a.scheduleRuntimeSettingsApply(changedUsernames)
+	a.scheduleRuntimeSettingsApply(a.changedInUserConnectionUsernamesAfterUpdate(ctx, before, "load runtime settings after egress profile update failed"))
 	return &proxyruntimev1.UpdateProxyEgressProfilesResponse{Settings: settings}, nil
 }
 
@@ -70,14 +56,7 @@ func (a runtimeSettingsApplication) UpdateProxyIngressRules(ctx context.Context,
 	if err != nil {
 		return nil, err
 	}
-	after, err := a.runtime.settings.load(ctx)
-	changedUsernames := []string(nil)
-	if err != nil {
-		a.runtime.logger.Warn("load runtime settings after ingress rule update failed", "error", err)
-	} else {
-		changedUsernames = changedInUserConnectionUsernames(before, after)
-	}
-	a.scheduleRuntimeSettingsApply(changedUsernames)
+	a.scheduleRuntimeSettingsApply(a.changedInUserConnectionUsernamesAfterUpdate(ctx, before, "load runtime settings after ingress rule update failed"))
 	return &proxyruntimev1.UpdateProxyIngressRulesResponse{Settings: settings}, nil
 }
 
@@ -93,13 +72,15 @@ func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, 
 	if err != nil {
 		return nil, err
 	}
-	after, err := a.runtime.settings.load(ctx)
-	changedUsernames := []string(nil)
-	if err != nil {
-		a.runtime.logger.Warn("load runtime settings after in-user rule update failed", "error", err)
-	} else {
-		changedUsernames = changedInUserConnectionUsernames(before, after)
-	}
-	a.scheduleRuntimeSettingsApply(changedUsernames)
+	a.scheduleRuntimeSettingsApply(a.changedInUserConnectionUsernamesAfterUpdate(ctx, before, "load runtime settings after in-user rule update failed"))
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
+}
+
+func (a runtimeSettingsApplication) changedInUserConnectionUsernamesAfterUpdate(ctx context.Context, before *runtimeSettingsFile, errorMessage string) []string {
+	after, err := a.runtime.settings.load(ctx)
+	if err != nil {
+		a.runtime.logger.Warn(errorMessage, "error", err)
+		return nil
+	}
+	return changedInUserConnectionUsernames(before, after)
 }

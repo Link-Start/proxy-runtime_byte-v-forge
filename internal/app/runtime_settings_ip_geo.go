@@ -46,35 +46,6 @@ func ipGeoProviders(ctx context.Context, resolver secretref.Resolver, settings *
 	return providers, nil
 }
 
-func ipGeoProviderFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPGeoProviderSettings, current map[string][]*commonv1.SecretRef, index int, registry *ipgeo.Registry) (*proxyruntimev1.ProxyIPGeoProviderSettings, error) {
-	if in == nil {
-		return &proxyruntimev1.ProxyIPGeoProviderSettings{}, nil
-	}
-	id := strings.TrimSpace(in.GetProviderId())
-	if id == "" {
-		id = registry.DefaultProviderID(in.GetKind())
-	}
-	apiKeySecretRefs, err := ipGeoSecretRefsFromRequest(ctx, writer, in, id)
-	if err != nil {
-		return nil, err
-	}
-	if len(apiKeySecretRefs) == 0 && !in.GetClearApiKeys() && !in.GetAnonymous() {
-		apiKeySecretRefs = current[ipGeoProviderSecretKey(in.GetKind(), id)]
-	}
-	weight := in.GetWeight()
-	if weight == 0 {
-		weight = ipGeoProviderDefaultWeight(in.GetKind(), index, registry)
-	}
-	return &proxyruntimev1.ProxyIPGeoProviderSettings{
-		ProviderId:       id,
-		DisplayName:      strings.TrimSpace(in.GetDisplayName()),
-		Weight:           weight,
-		Kind:             in.GetKind(),
-		Anonymous:        in.GetAnonymous(),
-		ApiKeySecretRefs: apiKeySecretRefs,
-	}, nil
-}
-
 func normalizeIPGeoProvider(provider *proxyruntimev1.ProxyIPGeoProviderSettings, index int, registry *ipgeo.Registry) {
 	if provider == nil {
 		return
@@ -134,26 +105,6 @@ func ipGeoAuth(ctx context.Context, resolver secretref.Resolver, provider *proxy
 
 func cleanIPGeoSecretRefs(values []*commonv1.SecretRef) []*commonv1.SecretRef {
 	return cleanSecretRefs(values, "proxy-runtime", ipGeoAPIKeyPurpose)
-}
-
-func ipGeoSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPGeoProviderSettings, providerID string) ([]*commonv1.SecretRef, error) {
-	if refs := cleanIPGeoSecretRefs(in.GetApiKeySecretRefs()); len(refs) > 0 {
-		return refs, nil
-	}
-	rawValues := cleanList(in.GetApiKeyValues())
-	if len(rawValues) == 0 {
-		return nil, nil
-	}
-	out := make([]*commonv1.SecretRef, 0, len(rawValues))
-	for index, raw := range rawValues {
-		secretID := secretref.StableID("proxy-runtime-ip-geo-api-key", fmt.Sprintf("%d", in.GetKind()), providerID, fmt.Sprintf("%d", index))
-		saved, err := writeRuntimeSecret(ctx, writer, raw, secretID, ipGeoAPIKeyPurpose)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, saved)
-	}
-	return cleanIPGeoSecretRefs(out), nil
 }
 
 func ipGeoProviderDefaultWeight(kind proxyruntimev1.ProxyIPGeoProviderKind, index int, registry *ipgeo.Registry) uint32 {

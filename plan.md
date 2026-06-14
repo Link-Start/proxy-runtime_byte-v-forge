@@ -754,6 +754,7 @@ Completed user-visible/runtime batches:
 - Dynamic IP endpoint map and provider-instance projection helpers are split from settings model normalization.
 - Top-level settings request assembly now delegates IP fraud, IP geo, and dynamic IP provider list construction to focused request helpers.
 - Runtime secret reference resolution and shared default provider weighting are split from IP-fraud-specific settings helpers.
+- IP fraud and IP geo provider request conversion plus raw-secret persistence are split from provider runtime config/auth helpers.
 
 Still open:
 

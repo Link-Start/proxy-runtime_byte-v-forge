@@ -759,6 +759,7 @@ Completed user-visible/runtime batches:
 - IP fraud and IP geo provider runtime auth/config construction is split from provider settings normalization, with shared secret purpose constants instead of repeated literals.
 - IP fraud provider secret-key helper naming now matches IP geo ownership instead of using an ambiguous generic provider helper name.
 - Runtime settings secret-ref cleaning, cloning, configured checks, and resolution are centralized in the secret-ref helper file instead of the broad settings helper bucket.
+- Runtime-wide ID, region, map, duration, and expected-status helpers are moved out of settings helpers; request raw-value cleanup now lives with settings request helpers.
 
 Still open:
 

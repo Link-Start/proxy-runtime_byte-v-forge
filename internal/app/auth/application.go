@@ -36,6 +36,19 @@ func (a Application) NewClearSessionCookie(secure bool) *http.Cookie {
 	return NewClearSessionCookie(secure)
 }
 
+func (a Application) SetSessionCookie(w http.ResponseWriter, req *http.Request, now time.Time) error {
+	cookie, err := a.NewSessionCookie(now, httpapi.ForwardedProto(req) == "https")
+	if err != nil {
+		return err
+	}
+	http.SetCookie(w, cookie)
+	return nil
+}
+
+func (a Application) ClearSessionCookie(w http.ResponseWriter, req *http.Request) {
+	http.SetCookie(w, a.NewClearSessionCookie(httpapi.ForwardedProto(req) == "https"))
+}
+
 func (a Application) NewWebSocketToken(now time.Time) (string, error) {
 	return NewWebSocketToken(a.secret, now)
 }

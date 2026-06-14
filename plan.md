@@ -901,6 +901,7 @@ Completed user-visible/runtime batches:
 - Auth session and websocket-token response DTO/write helpers now live in `internal/app/auth`; HTTP session handlers no longer own auth JSON response shapes.
 - Dashboard bootstrap response writing now lives in `internal/app/dashboard`, and trailing-slash redirects use `internal/app/httpapi`, thinning dashboard handlers.
 - Auth login-page response writing and no-store auth JSON headers now live in `internal/app/auth`, further thinning auth HTTP session handlers.
+- Auth session cookie set/clear behavior now lives on the auth application, so HTTP session handlers no longer compute forwarded-proto cookie security flags.
 
 Still open:
 

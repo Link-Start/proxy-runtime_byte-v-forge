@@ -7,7 +7,6 @@ import (
 	"time"
 
 	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
-	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
 )
 
@@ -38,7 +37,7 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 		writeHTTPError(ctx.Writer, errors.New("unauthorized"), http.StatusUnauthorized)
 		return
 	}
-	if err := api.setSessionCookie(ctx); err != nil {
+	if err := api.auth.SetSessionCookie(ctx.Writer, ctx.Request, time.Now()); err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
 	}
@@ -50,7 +49,7 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleAuthLogout(ctx *gin.Context) {
-	api.clearSessionCookie(ctx)
+	api.auth.ClearSessionCookie(ctx.Writer, ctx.Request)
 	if redirect := strings.TrimSpace(ctx.Query("redirect")); redirect != "" {
 		ctx.Redirect(http.StatusSeeOther, authapp.SafeRedirect(redirect))
 		return
@@ -96,19 +95,6 @@ func (api *runtimeHTTPAPI) sessionAuthenticated(req *http.Request) bool {
 
 func (api *runtimeHTTPAPI) requestAuthenticated(req *http.Request) bool {
 	return api.auth.RequestAuthenticated(req, time.Now())
-}
-
-func (api *runtimeHTTPAPI) setSessionCookie(ctx *gin.Context) error {
-	cookie, err := api.auth.NewSessionCookie(time.Now(), httpapi.ForwardedProto(ctx.Request) == "https")
-	if err != nil {
-		return err
-	}
-	http.SetCookie(ctx.Writer, cookie)
-	return nil
-}
-
-func (api *runtimeHTTPAPI) clearSessionCookie(ctx *gin.Context) {
-	http.SetCookie(ctx.Writer, api.auth.NewClearSessionCookie(httpapi.ForwardedProto(ctx.Request) == "https"))
 }
 
 func readRuntimeLoginRequest(req *http.Request) (authapp.LoginRequest, error) {

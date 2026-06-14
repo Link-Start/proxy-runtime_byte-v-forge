@@ -38,10 +38,10 @@ RUN npm config set registry https://repo.huaweicloud.com/repository/npm/ \
     && npm install -g pnpm@10.34.1 \
     && pnpm config set registry https://repo.huaweicloud.com/repository/npm/ \
     && pnpm config set fetch-timeout 600000 \
-    && HUSKY=0 pnpm install --frozen-lockfile
+    && HUSKY=0 pnpm install --frozen-lockfile \
+    && pnpm add country-region-data@4.1.0 --save-exact
 COPY metacubexd-fork ./metacubexd-fork
 RUN for patch in metacubexd-fork/patches/*.patch; do git apply "${patch}"; done \
-    && pnpm add country-region-data@4.1.0 --save-exact \
     && for dir in pages components composables types; do \
          if [ -d "metacubexd-fork/${dir}" ]; then cp -R "metacubexd-fork/${dir}/." "${dir}/"; fi; \
        done \

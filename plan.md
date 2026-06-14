@@ -679,6 +679,7 @@ Completed user-visible/runtime batches:
 - Mihomo reconcile now uses explicit rendered-config projection and base-config apply helpers.
 - Source-plane dataplane config projection is split into a pure explicit-input builder; runtime wiring only loads settings, builds dynamic pool, and stores the snapshot.
 - Source-plane proxy-user route merge/dedup projection moved with the explicit-input projection builder, keeping runtime dataplane config assembly as wiring only.
+- Listener default config and proto/local-service projection helpers are split from Runtime route wiring into explicit-input projection functions.
 - Lease application now owns list/acquire/release response orchestration through repository/coordinator ports, and HTTP request details are reduced to an advertised host before entering lease orchestration.
 - Lease detail lookup is exposed through the lease application repository port and `GET /api/leases/{lease_id}`, so full lease detail can be fetched by ID instead of through list hot paths.
 - Lease application construction now uses an explicit dependency object with repository, coordinator, worker, logger, and clock ports; lease list duration/row logging lives in the lease application.

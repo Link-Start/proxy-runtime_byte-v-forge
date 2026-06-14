@@ -902,6 +902,7 @@ Completed user-visible/runtime batches:
 - Dashboard bootstrap response writing now lives in `internal/app/dashboard`, and trailing-slash redirects use `internal/app/httpapi`, thinning dashboard handlers.
 - Auth login-page response writing and no-store auth JSON headers now live in `internal/app/auth`, further thinning auth HTTP session handlers.
 - Auth session cookie set/clear behavior now lives on the auth application, so HTTP session handlers no longer compute forwarded-proto cookie security flags.
+- Mihomo-native settings get/update now run through `internal/app/settings`, with app code only adapting error mapping and injected loader/updater/default functions.
 
 Still open:
 

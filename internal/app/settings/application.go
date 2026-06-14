@@ -7,25 +7,31 @@ var ErrRepositoryRequired = errors.New("runtime settings repository is not confi
 type ApplyScheduler func([]string)
 
 type Dependencies struct {
-	Repository           Repository
-	ScheduleApply        ApplyScheduler
-	Logger               Logger
-	ValidateProfiles     ProfileValidator
-	IPFraudProviderViews IPFraudProviderViews
-	IPGeoProviderViews   IPGeoProviderViews
+	Repository                  Repository
+	ScheduleApply               ApplyScheduler
+	Logger                      Logger
+	ValidateProfiles            ProfileValidator
+	IPFraudProviderViews        IPFraudProviderViews
+	IPGeoProviderViews          IPGeoProviderViews
+	LoadMihomoNativeSettings    MihomoNativeLoader
+	UpdateMihomoNativeSettings  MihomoNativeUpdater
+	DefaultMihomoNativeSettings MihomoNativeDefault
 }
 
 type Application struct {
-	repository           Repository
-	scheduleApply        ApplyScheduler
-	logger               Logger
-	validateProfilesFunc ProfileValidator
-	ipFraudProviderViews IPFraudProviderViews
-	ipGeoProviderViews   IPGeoProviderViews
+	repository                  Repository
+	scheduleApply               ApplyScheduler
+	logger                      Logger
+	validateProfilesFunc        ProfileValidator
+	ipFraudProviderViews        IPFraudProviderViews
+	ipGeoProviderViews          IPGeoProviderViews
+	loadMihomoNativeSettings    MihomoNativeLoader
+	updateMihomoNativeSettings  MihomoNativeUpdater
+	defaultMihomoNativeSettings MihomoNativeDefault
 }
 
 func NewApplication(deps Dependencies) Application {
-	return Application{repository: deps.Repository, scheduleApply: deps.ScheduleApply, logger: deps.Logger, validateProfilesFunc: deps.ValidateProfiles, ipFraudProviderViews: deps.IPFraudProviderViews, ipGeoProviderViews: deps.IPGeoProviderViews}
+	return Application{repository: deps.Repository, scheduleApply: deps.ScheduleApply, logger: deps.Logger, validateProfilesFunc: deps.ValidateProfiles, ipFraudProviderViews: deps.IPFraudProviderViews, ipGeoProviderViews: deps.IPGeoProviderViews, loadMihomoNativeSettings: deps.LoadMihomoNativeSettings, updateMihomoNativeSettings: deps.UpdateMihomoNativeSettings, defaultMihomoNativeSettings: deps.DefaultMihomoNativeSettings}
 }
 
 func (a Application) repositoryOrError() (Repository, error) {

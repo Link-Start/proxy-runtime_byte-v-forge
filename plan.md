@@ -676,6 +676,7 @@ Completed user-visible/runtime batches:
 - Lease restore/expire/cleanup worker entrypoints now go through the lease application worker port instead of direct Runtime coordinator calls.
 - Lease cleanup label mutation is centralized in the lease package together with cleanup predicates.
 - Settings application service forwarding, update usecases, apply scheduling, Mihomo-native handlers, and validation are split into focused files.
+- Runtime settings store load/save and Mihomo-native persistence facades are split from settings update logic.
 
 Still open:
 

@@ -24,12 +24,6 @@ func (c leaseCoordinator) restoreActiveLeases(ctx context.Context) error {
 	restoreErrors := make([]error, 0)
 	for _, lease := range leases {
 		if !leaseActive(lease, now) {
-			if lease.GetStatus() == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE {
-				if err := c.expireLeaseFact(ctx, lease); err != nil {
-					r.logger.Warn("expire proxy lease during restore failed", "account_id", lease.GetAccountId(), "error", err)
-					restoreErrors = append(restoreErrors, fmt.Errorf("expire lease %q: %w", lease.GetLeaseId(), err))
-				}
-			}
 			continue
 		}
 		if err := c.restoreLeaseRoute(ctx, lease); err != nil {
@@ -37,9 +31,6 @@ func (c leaseCoordinator) restoreActiveLeases(ctx context.Context) error {
 			restoreErrors = append(restoreErrors, fmt.Errorf("restore lease route %q: %w", lease.GetLeaseId(), err))
 			continue
 		}
-	}
-	if err := c.cleanupPendingLeaseFacts(ctx); err != nil {
-		restoreErrors = append(restoreErrors, err)
 	}
 	return errors.Join(restoreErrors...)
 }

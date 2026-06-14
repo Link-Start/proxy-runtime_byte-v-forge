@@ -736,6 +736,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease release lookup, release state transition orchestration, provider-session release locking, and dataplane route deletion are split from the acquire service file into a focused release file.
 - Dynamic lease egress-profile policy resolution and playground replacement checks are split from the acquire service file into a focused profile helper file.
 - Dynamic lease listener allocation, endpoint materialization, dataplane route upsert, active fact persistence, and playground connection cleanup are split from the acquire service file into a focused route-apply file.
+- Provider account application now receives explicit repository, settings, descriptor, lock, lease-operation, and logger dependencies; provider usecase methods no longer dereference `*Runtime` directly.
 
 Still open:
 

@@ -8,32 +8,21 @@ import (
 )
 
 func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	return leaseapp.RunCurrentLeaseAction(ctx, leaseapp.CurrentLeaseActionInput{
-		Store:      c.deps.store,
-		Locks:      c.deps.locks,
-		Lease:      lease,
-		IsNotFound: isStoreNotFound,
-		Action: func(ctx context.Context, current *proxyruntimev1.ProxyDynamicLease) error {
-			if !leaseapp.NeedsExpiryCleanup(current, c.now().UTC()) {
-				return nil
-			}
-			if err := c.cleanupLeaseRoute(ctx, current, func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-				return c.saveLeaseExpiredCleanupFailure(ctx, lease, true, false, "expired lease route cleanup failed")
-			}); err != nil {
-				return err
-			}
-			releaseProvider := func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-				if releaseErr := c.releaseLeaseProviderSession(ctx, lease); releaseErr != nil {
-					_ = c.saveLeaseExpiredCleanupFailure(ctx, lease, false, true, "expired provider session cleanup failed")
-					return releaseErr
-				}
-				return nil
-			}
-			if err := leaseapp.ReleaseLeaseProviderSessionWithLock(ctx, c.deps.locks, current, releaseProvider); err != nil {
-				_ = c.saveLeaseExpiredCleanupFailure(ctx, current, false, true, "expired provider session cleanup lock failed")
-				return err
-			}
-			return c.saveLeaseExpired(ctx, current)
+	return leaseapp.ExpireLease(ctx, leaseapp.ExpireLeaseInput{
+		Store:         c.deps.store,
+		Limiter:       c.deps.providerConcurrency,
+		Locks:         c.deps.locks,
+		DataPlane:     c.deps.dataPlane,
+		LocalProtocol: c.deps.cfg.LocalProtocol,
+		Lease:         lease,
+		IsNotFound:    isStoreNotFound,
+		Now:           c.now().UTC(),
+		ReleaseProvider: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+			return c.releaseLeaseProviderSession(ctx, lease)
+		},
+		ObserveFinalConcurrencyReleaseErr: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
+			_ = ctx
+			c.warn("release provider account concurrency slot failed", "lease_id", lease.GetLeaseId(), "provider_account_id", lease.GetProviderAccountId())
 		},
 	})
 }

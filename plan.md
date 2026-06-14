@@ -841,6 +841,7 @@ Completed user-visible/runtime batches:
 - Mihomo native provider normalization now separates provider file path normalization from HTTP fetch proxy and User-Agent header normalization.
 - Mihomo top-level config rendering now separates base proxy assembly, profile projection, provider merging, and rule/base-group construction from final config assembly.
 - Mihomo dataplane config helpers now separate sourceplane projection, base config clone, profile clone, session-route clone, and provider-node deep clone.
+- Mihomo controller hot-reload HTTP handling now separates reload input validation, request construction/authorization, and response error parsing.
 
 Still open:
 

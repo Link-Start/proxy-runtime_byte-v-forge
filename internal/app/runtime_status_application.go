@@ -8,11 +8,15 @@ import (
 )
 
 type runtimeStatusApplication struct {
-	runtime *Runtime
+	runtimeStatus func() *proxyruntimev1.ProxyRuntimeStatus
 }
 
-func newRuntimeStatusApplication(runtime *Runtime) runtimeStatusApplication {
-	return runtimeStatusApplication{runtime: runtime}
+type runtimeStatusApplicationDependencies struct {
+	RuntimeStatus func() *proxyruntimev1.ProxyRuntimeStatus
+}
+
+func newRuntimeStatusApplication(deps runtimeStatusApplicationDependencies) runtimeStatusApplication {
+	return runtimeStatusApplication{runtimeStatus: deps.RuntimeStatus}
 }
 
 func (s *RuntimeService) GetProxyRuntimeStatus(ctx context.Context, _ *proxyruntimev1.GetProxyRuntimeStatusRequest) (*proxyruntimev1.GetProxyRuntimeStatusResponse, error) {
@@ -20,7 +24,10 @@ func (s *RuntimeService) GetProxyRuntimeStatus(ctx context.Context, _ *proxyrunt
 }
 
 func (a runtimeStatusApplication) GetProxyRuntimeStatus(context.Context) (*proxyruntimev1.GetProxyRuntimeStatusResponse, error) {
-	return &proxyruntimev1.GetProxyRuntimeStatusResponse{Status: a.runtime.runtimeStatus()}, nil
+	if a.runtimeStatus == nil {
+		return nil, internalError("runtime status provider is not configured", nil)
+	}
+	return &proxyruntimev1.GetProxyRuntimeStatusResponse{Status: a.runtimeStatus()}, nil
 }
 
 func (r *Runtime) runtimeStatus() *proxyruntimev1.ProxyRuntimeStatus {

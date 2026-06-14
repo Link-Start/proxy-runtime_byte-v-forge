@@ -740,6 +740,7 @@ Completed user-visible/runtime batches:
 - Runtime check application now receives explicit settings, HTTP-client, exit-IP probe, geo lookup, IP-fraud, edge-canary, and cache dependencies instead of reaching through `*Runtime`.
 - Runtime lease application construction now accepts the lease application dependency object directly; `RuntimeService` owns only wiring from `Runtime` to lease ports.
 - Runtime settings application construction now uses an explicit dependency object, and settings usecases guard missing repositories/loggers instead of dereferencing app fields directly.
+- Runtime status application now depends on an injected status snapshot function instead of holding `*Runtime`.
 
 Still open:
 

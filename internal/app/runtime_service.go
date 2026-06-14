@@ -24,7 +24,7 @@ func NewRuntimeService(runtime *Runtime) *RuntimeService {
 		leases:    newRuntimeLeaseApplication(runtimeLeaseDependencies(runtime)),
 		checks:    newRuntimeCheckApplication(runtimeCheckDependencies(runtime)),
 		settings:  newRuntimeSettingsApplication(runtimeSettingsDependencies(runtime)),
-		status:    newRuntimeStatusApplication(runtime),
+		status:    newRuntimeStatusApplication(runtimeStatusDependencies(runtime)),
 	}
 }
 
@@ -116,6 +116,15 @@ func runtimeSettingsDependencies(runtime *Runtime) runtimeSettingsApplicationDep
 			}, config)
 		},
 		ScheduleApply: runtime.scheduleRuntimeSettingsApply,
+	}
+}
+
+func runtimeStatusDependencies(runtime *Runtime) runtimeStatusApplicationDependencies {
+	if runtime == nil {
+		return runtimeStatusApplicationDependencies{}
+	}
+	return runtimeStatusApplicationDependencies{
+		RuntimeStatus: runtime.runtimeStatus,
 	}
 }
 

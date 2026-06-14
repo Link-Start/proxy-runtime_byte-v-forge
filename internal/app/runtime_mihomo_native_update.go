@@ -24,8 +24,6 @@ func updateMihomoNativeSettings(ctx context.Context, deps mihomoNativeUpdateDepe
 	if err := persistMihomoNativeUpdatePlan(ctx, deps, plan); err != nil {
 		return nil, err
 	}
-	if deps.AfterApply != nil {
-		deps.AfterApply()
-	}
+	runMihomoNativeUpdateAfterApply(deps.AfterApply)
 	return deps.Repository.loadMihomoNative(ctx)
 }

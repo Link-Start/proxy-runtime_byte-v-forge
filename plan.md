@@ -792,6 +792,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native VLESS URI rendering now delegates core, security, and network query construction to focused render helpers.
 - Mihomo-native update current-state loading and update-plan persistence/apply side effects are split into separate helpers.
 - Mihomo-native update repository port and dependency object are split from the update orchestration function.
+- Mihomo-native update after-apply hook invocation is isolated from the main update orchestration.
 
 Still open:
 

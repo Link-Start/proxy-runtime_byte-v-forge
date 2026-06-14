@@ -5,15 +5,13 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
 func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile, selection dynamicIPSelection, providerAccountID string, leaseID string, concurrencyHolder string) (*proxyruntimev1.ProxyDynamicLease, error) {
-	providerCfg, providerAccountID, err := c.deps.store.ProviderConfig(ctx, providerAccountID)
+	providerCfg, providerAccountID, err := leaseapp.ProviderConfigForGateway(ctx, c.deps.store, providerAccountID, selection.endpoint)
 	if err != nil {
 		return nil, err
 	}
-	providerCfg.Gateways = []accountproxy.Gateway{selection.endpoint}
 	providerClient, err := c.newSessionProvider(providerCfg)
 	if err != nil {
 		return nil, invalidArgument("provider account configuration is invalid", err)

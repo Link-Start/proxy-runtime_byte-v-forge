@@ -24,6 +24,10 @@ func ActiveAt(lease *proxyruntimev1.ProxyDynamicLease, now time.Time) bool {
 	return lease.GetExpiresAt() == nil || now.Before(lease.GetExpiresAt().AsTime())
 }
 
+func NeedsExpiryCleanup(lease *proxyruntimev1.ProxyDynamicLease, now time.Time) bool {
+	return HasActiveStatus(lease) && !ActiveAt(lease, now)
+}
+
 func HasActiveStatus(lease *proxyruntimev1.ProxyDynamicLease) bool {
 	return hasStatus(lease, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE)
 }

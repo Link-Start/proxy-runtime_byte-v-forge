@@ -19,10 +19,7 @@ func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyrunti
 			}
 			return err
 		}
-		if leaseapp.ActiveAt(current, c.now().UTC()) {
-			return nil
-		}
-		if !leaseapp.HasActiveStatus(current) {
+		if !leaseapp.NeedsExpiryCleanup(current, c.now().UTC()) {
 			return nil
 		}
 		if err := c.deleteLeaseRoute(ctx, current); err != nil {

@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 func applyLeaseProfileDynamicIPPolicy(settings *runtimeSettingsFile, req *proxyruntimev1.AcquireProxyLeaseRequest) error {
@@ -58,5 +59,5 @@ func playgroundLeaseNeedsReplacement(req *proxyruntimev1.AcquireProxyLeaseReques
 	if req.GetAccountId() != playgroundProfileID {
 		return false
 	}
-	return strings.TrimSpace(lease.GetListener().GetLabels()["proxy_username"]) != playgroundUsername
+	return strings.TrimSpace(lease.GetListener().GetLabels()[leaseapp.LabelProxyUsername]) != playgroundUsername
 }

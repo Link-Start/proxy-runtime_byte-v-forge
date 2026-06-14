@@ -815,6 +815,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease listener construction, listener labels, and password-required validation are centralized in `internal/app/lease`; runtime keeps only username/password input resolution and app-error mapping.
 - Dynamic lease listener endpoint projection now lives in `internal/app/lease`, including host/port parsing, protocol mapping, and proxy credential labels.
 - Dynamic lease advertised-host resolution now lives in `internal/app/lease`; runtime only passes configured/request host values.
+- Listener projection and playground replacement checks now reuse lease-owned proxy username/password and dynamic-listener mode constants instead of raw label strings.
 
 Still open:
 

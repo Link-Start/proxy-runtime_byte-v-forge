@@ -38,10 +38,10 @@ func protoListener(listener config.EgressListener, managed bool) *proxyruntimev1
 		if labels == nil {
 			labels = map[string]string{}
 		}
-		labels["proxy_username"] = listener.Username
-		labels["proxy_password"] = listener.Password
+		labels[leaseapp.LabelProxyUsername] = listener.Username
+		labels[leaseapp.LabelProxyPassword] = listener.Password
 	}
-	if labels["mode"] == "dynamic_ip_session_lease" {
+	if labels["mode"] == leaseapp.ListenerModeDynamicSessionLease {
 		kind = proxyruntimev1.EgressListenerKind_EGRESS_LISTENER_KIND_DYNAMIC_LEASE
 		routeID = listener.ID
 	}
@@ -57,7 +57,7 @@ func listenerFromProto(listener *proxyruntimev1.EgressListener) config.EgressLis
 		return config.EgressListener{}
 	}
 	labels := listener.GetLabels()
-	return config.EgressListener{ID: listener.GetListenerId(), Addr: listener.GetListenAddr(), Protocol: protocolName(listener.GetProtocol()), Route: config.ListenerRouteProvider, Username: labels["proxy_username"], Password: labels["proxy_password"], Labels: labels}
+	return config.EgressListener{ID: listener.GetListenerId(), Addr: listener.GetListenAddr(), Protocol: protocolName(listener.GetProtocol()), Route: config.ListenerRouteProvider, Username: labels[leaseapp.LabelProxyUsername], Password: labels[leaseapp.LabelProxyPassword], Labels: labels}
 }
 
 func listenerProtocol(listener config.EgressListener, fallback string) string {

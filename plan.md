@@ -671,6 +671,7 @@ Completed user-visible/runtime batches:
 - Mihomo sourceplane egress-profile rendering is split into line, exit, native-resource, dynamic-exit, and naming helpers.
 - Mihomo driver model, reconcile flow, and hot-reload candidate apply logic are separated into focused files.
 - Mihomo reconcile now uses explicit rendered-config projection and base-config apply helpers.
+- Lease application now owns list/acquire/release response orchestration through repository/coordinator ports, and HTTP request details are reduced to an advertised host before entering lease orchestration.
 
 Still open:
 

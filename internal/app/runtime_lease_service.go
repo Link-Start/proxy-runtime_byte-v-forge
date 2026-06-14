@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -16,7 +15,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Request, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (c leaseCoordinator) acquireLease(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
 	r := c.runtime
 	if req == nil {
 		return nil, invalidArgument("acquire request is required", nil)
@@ -28,13 +27,13 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 	var lease *proxyruntimev1.ProxyDynamicLease
 	err := r.leaseLocks.WithAccountLock(ctx, req.GetAccountId(), func(ctx context.Context) error {
 		var err error
-		lease, err = c.acquireLeaseWithAccountLock(ctx, httpReq, req)
+		lease, err = c.acquireLeaseWithAccountLock(ctx, advertisedHost, req)
 		return err
 	})
 	return lease, err
 }
 
-func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, httpReq *http.Request, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
 	r := c.runtime
 	req.Purpose = firstNonEmpty(req.GetPurpose(), "general")
 	settings, err := r.settings.load(ctx)
@@ -62,7 +61,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, httpR
 	var lastErr error
 	for attempt := 1; attempt <= dynamicIPSelectionMaxAttempts(selectionPolicy); attempt++ {
 		req.Policy.Labels["attempt"] = strconv.Itoa(attempt)
-		lease, err := c.acquireLeaseAttempt(ctx, httpReq, req, settings)
+		lease, err := c.acquireLeaseAttempt(ctx, advertisedHost, req, settings)
 		if err == nil {
 			return lease, nil
 		}
@@ -75,7 +74,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, httpR
 	return nil, lastErr
 }
 
-func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, httpReq *http.Request, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyDynamicLease, error) {
 	r := c.runtime
 	selection, err := r.dynamicIPSelector.selectDynamicIPEndpoint(ctx, req)
 	if err != nil {
@@ -104,7 +103,7 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, httpReq *http
 	var lease *proxyruntimev1.ProxyDynamicLease
 	err = r.leaseLocks.WithProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
 		var err error
-		lease, err = c.acquireLeaseWithProviderAccountLock(ctx, httpReq, req, settings, selection, providerAccountID, leaseID, concurrencyHolder)
+		lease, err = c.acquireLeaseWithProviderAccountLock(ctx, advertisedHost, req, settings, selection, providerAccountID, leaseID, concurrencyHolder)
 		if err == nil {
 			keepConcurrencySlot = true
 		}
@@ -113,7 +112,7 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, httpReq *http
 	return lease, err
 }
 
-func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Context, httpReq *http.Request, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile, selection dynamicIPSelection, providerAccountID string, leaseID string, concurrencyHolder string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile, selection dynamicIPSelection, providerAccountID string, leaseID string, concurrencyHolder string) (*proxyruntimev1.ProxyDynamicLease, error) {
 	r := c.runtime
 	providerCfg, providerAccountID, err := r.store.ProviderConfig(ctx, providerAccountID)
 	if err != nil {
@@ -150,13 +149,13 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 	var lease *proxyruntimev1.ProxyDynamicLease
 	err = r.leaseLocks.WithSessionListenerAllocationLock(ctx, func(ctx context.Context) error {
 		var err error
-		lease, err = c.applyAcquiredLeaseRoute(ctx, httpReq, req, settings, selection, providerAccountID, leaseID, concurrencyHolder, providerClient, session, nodes, dialerProxy, lineLabels, failure)
+		lease, err = c.applyAcquiredLeaseRoute(ctx, advertisedHost, req, settings, selection, providerAccountID, leaseID, concurrencyHolder, providerClient, session, nodes, dialerProxy, lineLabels, failure)
 		return err
 	})
 	return lease, err
 }
 
-func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, httpReq *http.Request, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile, selection dynamicIPSelection, providerAccountID string, leaseID string, concurrencyHolder string, providerClient provider.SessionProvider, session *proxyruntimev1.ProxySession, nodes []provider.Node, dialerProxy string, lineLabels map[string]string, failure *leaseAcquireFailure) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile, selection dynamicIPSelection, providerAccountID string, leaseID string, concurrencyHolder string, providerClient provider.SessionProvider, session *proxyruntimev1.ProxySession, nodes []provider.Node, dialerProxy string, lineLabels map[string]string, failure *leaseAcquireFailure) (*proxyruntimev1.ProxyDynamicLease, error) {
 	r := c.runtime
 	listener, err := r.leaseListener(ctx, settings, req.GetAccountId(), leaseID)
 	if err != nil {
@@ -165,7 +164,7 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, httpReq *
 	}
 	listenerProto := protoListener(listener, true)
 	failure.listener = listenerProto
-	egress, err := r.localListenerEndpoint(listener, r.sessionAdvertisedHost(httpReq, listener))
+	egress, err := r.localListenerEndpoint(listener, r.sessionAdvertisedHost(advertisedHost, listener))
 	if err != nil {
 		failure.beforeRoute("lease endpoint build failed")
 		return nil, err

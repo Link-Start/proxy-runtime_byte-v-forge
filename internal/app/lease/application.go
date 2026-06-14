@@ -28,12 +28,18 @@ type Repository interface {
 	ListRecentLeaseFacts(context.Context, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 }
 
-type Application struct {
-	repository Repository
+type Coordinator interface {
+	Acquire(context.Context, string, *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error)
+	Release(context.Context, *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error)
 }
 
-func NewApplication(repository Repository) *Application {
-	return &Application{repository: repository}
+type Application struct {
+	repository  Repository
+	coordinator Coordinator
+}
+
+func NewApplication(repository Repository, coordinator Coordinator) *Application {
+	return &Application{repository: repository, coordinator: coordinator}
 }
 
 func (a *Application) List(ctx context.Context, options ListOptions) ([]*proxyruntimev1.ProxyDynamicLease, error) {
@@ -49,6 +55,28 @@ func (a *Application) List(ctx context.Context, options ListOptions) ([]*proxyru
 	default:
 		return nil, fmt.Errorf("unsupported lease list status %q", options.Mode)
 	}
+}
+
+func (a *Application) Acquire(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.AcquireProxyLeaseResponse, error) {
+	if a == nil || a.coordinator == nil {
+		return nil, fmt.Errorf("lease coordinator is required")
+	}
+	lease, err := a.coordinator.Acquire(ctx, advertisedHost, req)
+	if err != nil {
+		return nil, err
+	}
+	return &proxyruntimev1.AcquireProxyLeaseResponse{Lease: lease, Egress: lease.GetEgress(), SelectionPlan: lease.GetSelectionPlan()}, nil
+}
+
+func (a *Application) Release(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ReleaseProxyLeaseResponse, error) {
+	if a == nil || a.coordinator == nil {
+		return nil, fmt.Errorf("lease coordinator is required")
+	}
+	lease, err := a.coordinator.Release(ctx, req)
+	if err != nil {
+		return nil, err
+	}
+	return &proxyruntimev1.ReleaseProxyLeaseResponse{Lease: lease}, nil
 }
 
 func DefaultListOptions() ListOptions {

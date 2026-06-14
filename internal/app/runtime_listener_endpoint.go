@@ -100,7 +100,7 @@ func (r *Runtime) localListenerEndpoint(listener config.EgressListener, advertis
 	return &proxyruntimev1.ProxyEndpoint{Id: listener.ID, Protocol: protocolFromName(listenerProtocol(listener, r.cfg.LocalProtocol)), Host: host, Port: port, Labels: labels}, nil
 }
 
-func (r *Runtime) sessionAdvertisedHost(req *http.Request, listener config.EgressListener) string {
+func (r *Runtime) sessionAdvertisedHost(advertisedHost string, listener config.EgressListener) string {
 	if host := strings.TrimSpace(r.cfg.SessionListener.AdvertisedHost); host != "" {
 		return host
 	}
@@ -113,7 +113,7 @@ func (r *Runtime) sessionAdvertisedHost(req *http.Request, listener config.Egres
 			return host
 		}
 	}
-	return advertisedProxyHost(req)
+	return strings.TrimSpace(advertisedHost)
 }
 
 func listenerBindHost(addr string) string {

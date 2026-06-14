@@ -1,0 +1,38 @@
+diff --git a/pages/setup.vue b/pages/setup.vue
+--- a/pages/setup.vue
++++ b/pages/setup.vue
+@@ -43,6 +43,22 @@ const currentOrigin = computed(() => {
+   return window.location.origin
+ })
+ 
++function queryStringValue(value: unknown): string {
++  if (Array.isArray(value)) {
++    return typeof value[0] === 'string' ? value[0] : ''
++  }
++  return typeof value === 'string' ? value : ''
++}
++
++function prefillEndpoint(id: string): boolean {
++  const endpoint = endpointStore.endpointList.find((item) => item.id === id)
++  if (!endpoint) return false
++  formData.url = endpoint.url
++  formData.secret = endpoint.secret || ''
++  endpointError.value = null
++  return true
++}
++
+ function onSetupSuccess(id: string) {
+   endpointStore.setSelectedEndpoint(id)
+   router.replace('/overview')
+@@ -118,6 +134,11 @@ onMounted(async () => {
+       : null)
+ 
+   if (search && typeof search === 'object') {
++    const endpointID = queryStringValue((search as any).endpoint)
++    if (endpointID && prefillEndpoint(endpointID)) {
++      return
++    }
++
+     const hostname = (search as any).hostname
+     if (hostname) {
+       const protocol = (search as any).http

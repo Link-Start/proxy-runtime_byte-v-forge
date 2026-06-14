@@ -27,18 +27,22 @@ func (api *runtimeHTTPAPI) registerMihomoDashboardRoutes(router *gin.Engine) {
 }
 
 func (api *runtimeHTTPAPI) handleMihomoDashboard(ctx *gin.Context) {
-	api.writeMihomoDashboardBootstrap(ctx, "/mihomo/controller", "/mihomo/ui/#/proxies")
+	api.writeMihomoDashboardBootstrap(ctx, "/mihomo/controller", "/mihomo/ui/#/proxies", "/mihomo/ui/#/setup?endpoint="+mihomoDashboardEndpointID)
 }
 
-func (api *runtimeHTTPAPI) writeMihomoDashboardBootstrap(ctx *gin.Context, endpointURL string, uiURL string) {
+func (api *runtimeHTTPAPI) writeMihomoDashboardBootstrap(ctx *gin.Context, endpointURL string, uiURL string, setupURL string) {
 	payload, err := json.Marshal(struct {
-		EndpointID  string `json:"endpointID"`
-		EndpointURL string `json:"endpointURL"`
-		UIURL       string `json:"uiURL"`
+		EndpointID   string `json:"endpointID"`
+		EndpointURL  string `json:"endpointURL"`
+		UIURL        string `json:"uiURL"`
+		SetupURL     string `json:"setupURL"`
+		AuthRequired bool   `json:"authRequired"`
 	}{
-		EndpointID:  mihomoDashboardEndpointID,
-		EndpointURL: endpointURL,
-		UIURL:       uiURL,
+		EndpointID:   mihomoDashboardEndpointID,
+		EndpointURL:  endpointURL,
+		UIURL:        uiURL,
+		SetupURL:     setupURL,
+		AuthRequired: strings.TrimSpace(api.authToken) != "",
 	})
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
@@ -69,8 +73,15 @@ try {
   }
 } catch (_) {}
 window.localStorage.setItem('endpointList', JSON.stringify([endpoint, ...endpoints]));
-window.localStorage.setItem('selectedEndpoint', endpoint.id);
-window.location.replace(new URL(config.uiURL, window.location.origin).href);
+if (endpoint.secret || !config.authRequired) {
+  window.localStorage.setItem('selectedEndpoint', endpoint.id);
+  window.location.replace(new URL(config.uiURL, window.location.origin).href);
+} else {
+  if (window.localStorage.getItem('selectedEndpoint') === endpoint.id) {
+    window.localStorage.removeItem('selectedEndpoint');
+  }
+  window.location.replace(new URL(config.setupURL, window.location.origin).href);
+}
 </script>
 </body>
 </html>`, payload)

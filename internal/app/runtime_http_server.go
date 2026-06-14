@@ -88,7 +88,7 @@ func (api *runtimeHTTPAPI) registerPublicHTTPRoutes(router *gin.Engine) {
 }
 
 func (api *runtimeHTTPAPI) handleDashboardEntry(ctx *gin.Context) {
-	api.writeMihomoDashboardBootstrap(ctx, "/mihomo/controller", "/mihomo/ui/#/proxies")
+	api.writeMihomoDashboardBootstrap(ctx, "/mihomo/controller", "/mihomo/ui/#/proxies", "/mihomo/ui/#/setup?endpoint="+mihomoDashboardEndpointID)
 }
 
 func (api *runtimeHTTPAPI) handleGinMethodNotAllowed(ctx *gin.Context) {

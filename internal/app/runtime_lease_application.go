@@ -39,6 +39,14 @@ func (s *RuntimeService) listProxyDynamicLeases(ctx context.Context, options lea
 	return s.leases.ListProxyDynamicLeaseFacts(ctx, options)
 }
 
+func (s *RuntimeService) getProxyDynamicLease(ctx context.Context, leaseID string) (*proxyruntimev1.ProxyDynamicLease, error) {
+	return s.leases.GetProxyDynamicLeaseFact(ctx, leaseID)
+}
+
+func (a runtimeLeaseApplication) GetProxyDynamicLeaseFact(ctx context.Context, leaseID string) (*proxyruntimev1.ProxyDynamicLease, error) {
+	return a.leases.Get(ctx, leaseID)
+}
+
 func (a runtimeLeaseApplication) ListProxyDynamicLeaseFacts(ctx context.Context, options leaseapp.ListOptions) (*proxyruntimev1.ListProxyDynamicLeasesResponse, error) {
 	options = leaseapp.NormalizeListOptions(options)
 	startedAt := time.Now()

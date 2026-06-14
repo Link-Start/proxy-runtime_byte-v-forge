@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
@@ -22,6 +23,24 @@ func (api *runtimeHTTPAPI) handleLeases(ctx *gin.Context) {
 		return
 	}
 	api.writeProto(ctx, response)
+}
+
+func (api *runtimeHTTPAPI) handleLease(ctx *gin.Context) {
+	leaseID := strings.TrimSpace(ctx.Param("lease_id"))
+	lease, err := api.service.getProxyDynamicLease(ctx.Request.Context(), leaseID)
+	if err != nil {
+		if errors.Is(err, leaseapp.ErrLeaseIDRequired) {
+			writeHTTPError(ctx.Writer, invalidArgument(err.Error(), err), http.StatusBadRequest)
+			return
+		}
+		if isStoreNotFound(err) {
+			writeHTTPError(ctx.Writer, errors.New("lease not found"), http.StatusNotFound)
+			return
+		}
+		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
+		return
+	}
+	api.writeProto(ctx, lease)
 }
 
 func (api *runtimeHTTPAPI) handleAcquireLease(ctx *gin.Context) {

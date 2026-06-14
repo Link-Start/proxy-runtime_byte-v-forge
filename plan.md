@@ -682,6 +682,7 @@ Completed user-visible/runtime batches:
 - Mihomo dashboard/controller URL, query sanitization, cache header, and error redaction helpers are extracted into `internal/app/dashboard`.
 - HTTP request helpers for path-prefix matching, forwarded protocol, and request IDs are extracted into `internal/app/httpapi`.
 - HTTP route declarations now use the shared `httpapi.Route` model instead of an app-local route shape.
+- HTTP request-body and proto JSON codec helpers are extracted into `internal/app/httpapi`, while app-level error mapping stays at the adapter boundary.
 
 Still open:
 

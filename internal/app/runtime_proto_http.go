@@ -1,11 +1,10 @@
 package app
 
 import (
-	"io"
+	"errors"
 	"net/http"
-	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
+	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
 	grpcstatus "google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -23,10 +22,10 @@ func (api *runtimeHTTPAPI) readProto(ctx *gin.Context, message proto.Message) bo
 		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return false
 	}
-	if len(strings.TrimSpace(string(body))) == 0 {
+	if httpapi.EmptyBody(body) {
 		return true
 	}
-	if err := protojsoncodec.Unmarshal(body, message); err != nil {
+	if err := httpapi.UnmarshalProto(body, message); err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return false
 	}
@@ -42,10 +41,10 @@ func (api *runtimeHTTPAPI) readOptionalProto(ctx *gin.Context, message proto.Mes
 		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return false
 	}
-	if len(strings.TrimSpace(string(body))) == 0 {
+	if httpapi.EmptyBody(body) {
 		return true
 	}
-	if err := protojsoncodec.Unmarshal(body, message); err != nil {
+	if err := httpapi.UnmarshalProto(body, message); err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return false
 	}
@@ -53,7 +52,7 @@ func (api *runtimeHTTPAPI) readOptionalProto(ctx *gin.Context, message proto.Mes
 }
 
 func (api *runtimeHTTPAPI) writeProto(ctx *gin.Context, message proto.Message) {
-	data, err := protojsoncodec.Marshal(message)
+	data, err := httpapi.MarshalProto(message)
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
@@ -63,20 +62,16 @@ func (api *runtimeHTTPAPI) writeProto(ctx *gin.Context, message proto.Message) {
 }
 
 func readRequestBody(req *http.Request) ([]byte, error) {
-	defer req.Body.Close()
-	data, err := io.ReadAll(io.LimitReader(req.Body, maxRuntimeHTTPRequestBodyBytes+1))
-	if err != nil {
-		return nil, err
-	}
-	if len(data) > maxRuntimeHTTPRequestBodyBytes {
+	data, err := httpapi.ReadRequestBody(req, maxRuntimeHTTPRequestBodyBytes)
+	if errors.Is(err, httpapi.ErrRequestBodyTooLarge) {
 		return nil, resourceExhausted("request body exceeds 1MiB", nil)
 	}
-	return data, nil
+	return data, err
 }
 
 func writeHTTPError(w http.ResponseWriter, err error, fallbackStatus int) {
 	httpStatus, code, message := httpErrorDetails(err, fallbackStatus)
-	data, marshalErr := protojsoncodec.Marshal(grpcstatus.New(code, message).Proto())
+	data, marshalErr := httpapi.MarshalProto(grpcstatus.New(code, message).Proto())
 	if marshalErr != nil {
 		httpStatus = http.StatusInternalServerError
 		data = []byte(`{"code":13,"message":"internal server error"}`)

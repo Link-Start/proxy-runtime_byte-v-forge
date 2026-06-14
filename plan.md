@@ -866,6 +866,7 @@ Completed user-visible/runtime batches:
 - Lease worker code now separates sweep-loop scheduling, expiry batch processing, single-lease expiry, cleanup batch processing, and single-lease cleanup into focused files.
 - Lease ID presence checks are centralized in `internal/app/lease`, removing duplicate string trimming from expiry and cleanup workers.
 - Expired-active lease cleanup eligibility is centralized in `internal/app/lease`, so expiry workers no longer compose active-status and expiry predicates directly.
+- Active lease fact construction and persistence now live in `internal/app/lease`; route apply orchestration keeps only endpoint/dataplane apply and failure compensation.
 
 Still open:
 

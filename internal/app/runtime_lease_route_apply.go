@@ -30,7 +30,7 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertise
 	if err := c.applyAcquiredLeaseDataPlaneRoute(ctx, route, failure); err != nil {
 		return nil, err
 	}
-	lease := leaseapp.NewActiveFact(leaseapp.ActiveFactInput{
+	lease, err := leaseapp.SaveActiveFact(ctx, c.deps.store, leaseapp.ActiveFactInput{
 		LeaseID:           leaseID,
 		AccountID:         req.GetAccountId(),
 		Purpose:           req.GetPurpose(),
@@ -41,7 +41,7 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertise
 		SelectionPlan:     selection.plan,
 		AcquiredAt:        c.now(),
 	})
-	if err := c.deps.store.SaveLeaseFact(ctx, lease); err != nil {
+	if err != nil {
 		failure.afterRoute(route, "lease fact save failed")
 		return nil, internalError("lease fact save failed", err)
 	}

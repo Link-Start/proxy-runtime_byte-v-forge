@@ -1,8 +1,6 @@
 import type {
   DeleteProxyProviderAccountRequest,
   DeleteProxyProviderAccountResponse,
-  AcquireProxyLeaseRequest,
-  AcquireProxyLeaseResponse,
   EgressProfileSettings,
   CheckProxyEdgeAccessRequest,
   CheckProxyEdgeAccessResponse,
@@ -18,14 +16,11 @@ import type {
   GetProxyRuntimeSettingsResponse,
   ListProxyIPFraudProvidersResponse,
   ListProxyIPGeoProvidersResponse,
-  ListProxyDynamicLeasesResponse,
   ListProxyProviderAccountsResponse,
   ListProxyProvidersResponse,
   ProxyDynamicIPProviderSettings,
   ProxyIngressRuleSettings,
   ProxyRuntimeMihomoNativeConfig,
-  ReleaseProxyLeaseRequest,
-  ReleaseProxyLeaseResponse,
   UpdateProxyRuntimeMihomoNativeConfigResponse,
   UpdateProxyRuntimeSettingsRequest,
   UpdateProxyRuntimeSettingsResponse,
@@ -42,11 +37,6 @@ import {
 } from '~/composables/proxyRuntimeFetch'
 
 const base = '/api'
-
-interface ProxyRuntimeLeaseListOptions {
-  limit?: number
-  status?: 'active' | 'history' | 'recent'
-}
 
 async function proxyRuntimeRequest<T>(
   path: string,
@@ -170,26 +160,5 @@ export function useProxyRuntimeApi() {
           }),
         },
       ),
-    listLeases: (options: ProxyRuntimeLeaseListOptions = {}) =>
-      proxyRuntimeRequest<ListProxyDynamicLeasesResponse>(
-        leaseListPath(options),
-      ),
-    acquireLease: (req: AcquireProxyLeaseRequest) =>
-      proxyRuntimeRequest<AcquireProxyLeaseResponse>('/leases/acquire', {
-        method: 'POST',
-        body: proxyRuntimeJsonBody(req),
-      }),
-    releaseLease: (req: ReleaseProxyLeaseRequest) =>
-      proxyRuntimeRequest<ReleaseProxyLeaseResponse>('/leases/release', {
-        method: 'POST',
-        body: proxyRuntimeJsonBody(req),
-      }),
   }
-}
-
-function leaseListPath(options: ProxyRuntimeLeaseListOptions) {
-  const query = new URLSearchParams()
-  query.set('status', options.status || 'active')
-  query.set('limit', String(options.limit || 50))
-  return `/leases?${query.toString()}`
 }

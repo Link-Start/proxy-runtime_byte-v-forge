@@ -8,6 +8,7 @@ const refreshIntervalMs = 15_000
 
 export function useProxyRuntimeDynamicLeases() {
   const api = useProxyRuntimeApi()
+  const leaseApi = useProxyRuntimeLeaseApi()
   const providers = ref<ProxyProviderDescriptor[]>([])
   const leases = ref<ProxyDynamicLease[]>([])
   const loading = ref(false)
@@ -24,7 +25,7 @@ export function useProxyRuntimeDynamicLeases() {
     try {
       const [providerRes, leaseRes] = await Promise.all([
         api.listProviders(),
-        api.listLeases({ status: 'active', limit: 50 }),
+        leaseApi.listLeases({ status: 'active', limit: 50 }),
       ])
       providers.value = providerRes.providers || []
       leases.value = leaseRes.leases || []
@@ -39,7 +40,7 @@ export function useProxyRuntimeDynamicLeases() {
     busyLeaseID.value = lease.lease_id
     error.value = ''
     try {
-      await api.releaseLease({
+      await leaseApi.releaseLease({
         account_id: lease.account_id,
         lease_id: lease.lease_id,
         purpose: lease.purpose,

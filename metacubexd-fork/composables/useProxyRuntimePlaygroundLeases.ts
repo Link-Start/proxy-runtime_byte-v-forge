@@ -18,7 +18,7 @@ export function useProxyRuntimePlaygroundLeases(
   runtime: ProxyRuntimeInUserRulesState,
   persist: () => Promise<void>,
 ) {
-  const api = useProxyRuntimeApi()
+  const leaseApi = useProxyRuntimeLeaseApi()
   const leases = ref<ProxyDynamicLease[]>([])
   const loading = ref(false)
   const busy = ref(false)
@@ -40,7 +40,8 @@ export function useProxyRuntimePlaygroundLeases(
     if (!options.preserveError) error.value = ''
     try {
       leases.value =
-        (await api.listLeases({ status: 'active', limit: 50 })).leases || []
+        (await leaseApi.listLeases({ status: 'active', limit: 50 })).leases ||
+        []
       if (options.preserveError) error.value = previousError
     } catch (err) {
       error.value = err instanceof Error ? err.message : String(err)
@@ -56,7 +57,7 @@ export function useProxyRuntimePlaygroundLeases(
     }
     await withBusy(async () => {
       await persist()
-      await api.acquireLease({
+      await leaseApi.acquireLease({
         account_id: profileID.value,
         purpose: playgroundPurpose,
         policy: playgroundLeasePolicy(runtime.form, profileID.value),
@@ -69,7 +70,7 @@ export function useProxyRuntimePlaygroundLeases(
 
   async function release(lease: ProxyDynamicLease) {
     await withBusy(async () => {
-      await api.releaseLease({
+      await leaseApi.releaseLease({
         account_id: lease.account_id,
         lease_id: lease.lease_id,
         purpose: lease.purpose || playgroundPurpose,

@@ -106,9 +106,31 @@ func (api *runtimeHTTPAPI) mihomoReverseProxy(mountPrefix string, upstreamPrefix
 		proxy.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, err error) {
 			writeHTTPError(w, err, http.StatusBadGateway)
 		}
-		proxy.ModifyResponse = redactMihomoControllerErrorResponse
+		requestPath := ctx.Request.URL.Path
+		proxy.ModifyResponse = func(resp *http.Response) error {
+			applyMihomoDashboardCacheHeaders(resp, requestPath)
+			return redactMihomoControllerErrorResponse(resp)
+		}
 		proxy.ServeHTTP(ctx.Writer, ctx.Request)
 	}
+}
+
+func applyMihomoDashboardCacheHeaders(resp *http.Response, requestPath string) {
+	if resp == nil || !mihomoDashboardNoStorePath(requestPath, resp.Header.Get("Content-Type")) {
+		return
+	}
+	resp.Header.Set("Cache-Control", "no-store")
+	resp.Header.Set("Pragma", "no-cache")
+	resp.Header.Set("Expires", "0")
+}
+
+func mihomoDashboardNoStorePath(requestPath string, contentType string) bool {
+	cleanPath := strings.TrimSuffix(requestPath, "/")
+	switch cleanPath {
+	case "", "/mihomo/ui", "/mihomo/ui/index.html", "/sw.js", "/mihomo/ui/sw.js", "/config.js", "/mihomo/ui/config.js", "/manifest.webmanifest", "/mihomo/ui/manifest.webmanifest":
+		return true
+	}
+	return strings.HasPrefix(strings.ToLower(contentType), "text/html")
 }
 
 func redactMihomoControllerErrorResponse(resp *http.Response) error {

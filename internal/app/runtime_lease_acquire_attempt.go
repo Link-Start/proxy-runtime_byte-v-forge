@@ -20,7 +20,7 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 	if err != nil {
 		return nil, internalError("generate lease id", err)
 	}
-	attemptSlot, stage, err := leaseapp.AcquireAttemptSlotForProviderAccount(ctx, leaseapp.AcquireAttemptSlotInput{
+	attemptSlot, _, err := leaseapp.AcquireAttemptSlotForProviderAccount(ctx, leaseapp.AcquireAttemptSlotInput{
 		Store:             c.deps.store,
 		Limiter:           c.deps.providerConcurrency,
 		ProviderAccountID: providerAccountID,
@@ -31,7 +31,7 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 		TTLBuffer:         providerAccountConcurrencyTTLBuffer,
 	})
 	if err != nil {
-		return nil, acquireAttemptSlotError(stage, err)
+		return nil, acquireAttemptSlotError(err)
 	}
 	return leaseapp.RunLockedAcquireAttempt(ctx, leaseapp.LockedAcquireAttemptInput{
 		Locks:             c.deps.locks,

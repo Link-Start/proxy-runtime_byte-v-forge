@@ -32,7 +32,7 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, flow acqu
 		DialerProxy:   flow.dialerProxy,
 		LocalProtocol: c.deps.cfg.LocalProtocol,
 	})
-	lease, stage, err := leaseapp.ApplyAcquiredRoute(ctx, leaseapp.AcquiredRouteApplyInput{
+	lease, _, err := leaseapp.ApplyAcquiredRoute(ctx, leaseapp.AcquiredRouteApplyInput{
 		Store:             c.deps.store,
 		DataPlane:         c.deps.dataPlane,
 		Failure:           flow.failure,
@@ -47,7 +47,7 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, flow acqu
 		AcquiredAt:        c.now(),
 	})
 	if err != nil {
-		return nil, acquiredRouteApplyError(stage, err)
+		return nil, acquiredRouteApplyError(err)
 	}
 	c.clearExitCheckCache()
 	if flow.request.GetAccountId() == playgroundProfileID {

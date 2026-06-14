@@ -1,12 +1,16 @@
 package app
 
-import leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+import (
+	"errors"
 
-func acquiredRouteApplyError(stage leaseapp.AcquiredRouteApplyStage, err error) error {
-	switch stage {
-	case leaseapp.AcquiredRouteApplyDataPlane:
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+)
+
+func acquiredRouteApplyError(err error) error {
+	switch {
+	case errors.Is(err, leaseapp.ErrAcquiredRouteDataPlane):
 		return unavailable("dataplane route apply failed", err)
-	case leaseapp.AcquiredRouteApplyFactSave:
+	case errors.Is(err, leaseapp.ErrAcquiredRouteFactSave):
 		return internalError("lease fact save failed", err)
 	default:
 		return err

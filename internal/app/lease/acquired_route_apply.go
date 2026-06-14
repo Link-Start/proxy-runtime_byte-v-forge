@@ -2,9 +2,16 @@ package lease
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+)
+
+var (
+	ErrAcquiredRouteDataPlane = errors.New("dataplane route apply failed")
+	ErrAcquiredRouteFactSave  = errors.New("lease fact save failed")
 )
 
 type AcquiredRouteApplyStage int
@@ -32,8 +39,8 @@ type AcquiredRouteApplyInput struct {
 
 func ApplyAcquiredRoute(ctx context.Context, input AcquiredRouteApplyInput) (*proxyruntimev1.ProxyDynamicLease, AcquiredRouteApplyStage, error) {
 	if err := UpsertSessionRoute(ctx, input.DataPlane, input.Route); err != nil {
-		input.Failure.AfterRoute(ctx, input.Route, "dataplane route apply failed")
-		return nil, AcquiredRouteApplyDataPlane, err
+		input.Failure.AfterRoute(ctx, input.Route, ErrAcquiredRouteDataPlane.Error())
+		return nil, AcquiredRouteApplyDataPlane, fmt.Errorf("%w: %w", ErrAcquiredRouteDataPlane, err)
 	}
 	lease, err := SaveAcquiredActiveFact(ctx, input.Store, AcquiredActiveFactInput{
 		LeaseID:           input.LeaseID,
@@ -46,8 +53,8 @@ func ApplyAcquiredRoute(ctx context.Context, input AcquiredRouteApplyInput) (*pr
 		AcquiredAt:        input.AcquiredAt,
 	})
 	if err != nil {
-		input.Failure.AfterRoute(ctx, input.Route, "lease fact save failed")
-		return nil, AcquiredRouteApplyFactSave, err
+		input.Failure.AfterRoute(ctx, input.Route, ErrAcquiredRouteFactSave.Error())
+		return nil, AcquiredRouteApplyFactSave, fmt.Errorf("%w: %w", ErrAcquiredRouteFactSave, err)
 	}
 	return lease, AcquiredRouteApplyNoError, nil
 }

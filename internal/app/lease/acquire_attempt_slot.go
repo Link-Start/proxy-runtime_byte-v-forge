@@ -2,10 +2,14 @@ package lease
 
 import (
 	"context"
+	"errors"
+	"fmt"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
+
+var ErrAcquireAttemptConcurrencyLimit = errors.New("provider account concurrency limit reached")
 
 type AcquireAttemptSlotStage int
 
@@ -46,7 +50,7 @@ func AcquireAttemptSlotForProviderAccount(ctx context.Context, input AcquireAtte
 		TTLBuffer:  input.TTLBuffer,
 	})
 	if err != nil {
-		return AcquireAttemptSlot{}, AcquireAttemptSlotConcurrencyAcquire, err
+		return AcquireAttemptSlot{}, AcquireAttemptSlotConcurrencyAcquire, fmt.Errorf("%w: %w", ErrAcquireAttemptConcurrencyLimit, err)
 	}
 	return AcquireAttemptSlot{ConcurrencySlot: slot, ConcurrencyHolder: holder}, AcquireAttemptSlotNoError, nil
 }

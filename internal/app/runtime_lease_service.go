@@ -33,15 +33,18 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 	selectionPolicy := normalizeDynamicIPSelectionPolicy(req)
 	requestedSessionID := leaseapp.RequestedSessionID(req)
 	existing, err := c.activeLeaseByRequest(ctx, req, requestedSessionID)
-	if err == nil && leaseapp.ActiveAt(existing, c.now().UTC()) {
-		if !req.GetForceNew() && !leaseapp.PlaygroundLeaseNeedsReplacement(req, existing, playgroundProfileID, playgroundUsername) {
+	if err == nil {
+		now := c.now().UTC()
+		if leaseapp.ReuseExistingActiveLease(req, existing, now, playgroundProfileID, playgroundUsername) {
 			if err := c.refreshLeaseConcurrencySlot(ctx, existing); err != nil {
 				return nil, err
 			}
 			return existing, nil
 		}
-		if err := c.retireLeaseRoute(ctx, existing); err != nil {
-			return nil, err
+		if leaseapp.ReplaceExistingActiveLease(req, existing, now, playgroundProfileID, playgroundUsername) {
+			if err := c.retireLeaseRoute(ctx, existing); err != nil {
+				return nil, err
+			}
 		}
 	}
 	var lastErr error

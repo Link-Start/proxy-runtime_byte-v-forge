@@ -953,7 +953,7 @@ Completed user-visible/runtime batches:
 - Settings dynamic-IP provider updates now use the shared settings update-and-schedule flow, and connection-cleanup update helpers are internal to the settings application instead of exported orchestration surface.
 - Mihomo-native settings update now exposes a settings-owned unavailable classification while keeping the concrete missing-updater dependency error internal to the settings package.
 - Runtime settings adapter now constructs the settings usecase once during application wiring instead of rebuilding usecase dependencies on every settings request.
-- Lease worker expired-active and cleanup-pending list-plus-batch orchestration now lives in `internal/app/lease`; the coordinator supplies only concrete cleanup actions and logging observers.
+- Lease worker restorable-active, expired-active, and cleanup-pending list-plus-batch orchestration now lives in `internal/app/lease`; the coordinator supplies only concrete cleanup actions and logging observers.
 
 Still open:
 

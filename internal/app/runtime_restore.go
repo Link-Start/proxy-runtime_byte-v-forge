@@ -34,27 +34,17 @@ func (r *Runtime) restoreActiveLeasesInBackground(ctx context.Context) {
 }
 
 func (c leaseCoordinator) restoreActiveLeases(ctx context.Context) error {
-	if c.deps.store == nil {
-		return nil
-	}
-	leases, err := c.deps.store.ListRestorableLeaseFacts(ctx)
-	if err != nil {
-		c.warn("list proxy leases for restore failed", "error", err)
-		return err
-	}
-	now := c.now().UTC()
-	return leaseapp.ProcessLeaseBatch(ctx, leaseapp.BatchInput{
-		Leases:      leases,
-		Timeout:     leaseRestoreRouteTimeout,
-		ErrorPrefix: "restore lease route",
-		ShouldRun: func(lease *proxyruntimev1.ProxyDynamicLease) bool {
-			return leaseapp.ActiveAt(lease, now)
-		},
+	return leaseapp.ProcessRestorableActiveFacts(ctx, leaseapp.WorkerBatchInput{
+		Store:   c.deps.store,
+		Timeout: leaseRestoreRouteTimeout,
 		Process: c.restoreLeaseRoute,
 		Observe: func(lease *proxyruntimev1.ProxyDynamicLease, err error) {
 			c.warn("restore proxy lease route failed", "account_id", lease.GetAccountId(), "error", err)
 		},
-	})
+		ObserveList: func(err error) {
+			c.warn("list proxy leases for restore failed", "error", err)
+		},
+	}, c.now().UTC())
 }
 
 func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {

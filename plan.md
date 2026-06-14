@@ -856,6 +856,7 @@ Completed user-visible/runtime batches:
 - SQLite blocking and cleanup-pending lease list methods now return SQL-filtered rows directly, removing duplicated Go-layer cleanup/active predicates from the adapter.
 - Obsolete dynamic lease Go-layer filter/sort helpers were removed after both stores moved blocking and cleanup predicates into SQL.
 - Lease session-route reconstruction from persisted listener/session proto now lives in `internal/app/lease`, so restore and release cleanup no longer rebuild route transport details in the app coordinator.
+- Reserved listener lease merging, active/route-cleanup predicates, and de-duplication now live in `internal/app/lease`; Runtime only loads active and cleanup-pending facts.
 
 Still open:
 

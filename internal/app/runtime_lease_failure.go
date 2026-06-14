@@ -6,14 +6,13 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/random"
 )
 
 func (c leaseCoordinator) saveFailedAcquireLeaseFact(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest, providerAccountID string, session *proxyruntimev1.ProxySession, egress *proxyruntimev1.ProxyEndpoint, listener *proxyruntimev1.EgressListener, plan *proxyruntimev1.ProxyDynamicIPSelectionPlan, message string) {
 	if req == nil || strings.TrimSpace(req.GetAccountId()) == "" {
 		return
 	}
-	leaseID, err := random.Hex(12)
+	leaseID, err := c.newLeaseID()
 	if err != nil {
 		return
 	}

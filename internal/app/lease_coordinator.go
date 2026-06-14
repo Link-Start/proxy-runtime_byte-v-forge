@@ -14,7 +14,10 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
+	"github.com/byte-v-forge/proxy-runtime/internal/random"
 )
+
+const leaseIDByteLength = 12
 
 type leaseCoordinatorSettings interface {
 	load(context.Context) (*runtimeSettingsFile, error)
@@ -54,6 +57,14 @@ func (m leaseRuntimeLockManager) WithSessionListenerAllocationLock(ctx context.C
 	})
 }
 
+type randomLeaseIDGenerator struct {
+	byteLength int
+}
+
+func (g randomLeaseIDGenerator) NewLeaseID() (string, error) {
+	return random.Hex(g.byteLength)
+}
+
 type leaseListenerFunc func(context.Context, *runtimeSettingsFile, string, string) (config.EgressListener, error)
 type leaseEndpointFunc func(config.EgressListener, string) (*proxyruntimev1.ProxyEndpoint, error)
 type leaseAdvertisedHostFunc func(string, config.EgressListener) string
@@ -65,6 +76,7 @@ type leaseCoordinatorDependencies struct {
 	store                   leaseapp.OrchestrationStore
 	settings                leaseCoordinatorSettings
 	clock                   leaseapp.Clock
+	ids                     leaseapp.IDGenerator
 	locks                   leaseapp.LockManager
 	dataPlane               leaseapp.DataPlaneApplier
 	dynamicIPSelector       *dynamicIPSelector
@@ -97,6 +109,7 @@ func newLeaseCoordinator(runtime *Runtime) leaseCoordinator {
 		store:                   store,
 		settings:                runtime.settings,
 		clock:                   leaseapp.SystemClock{},
+		ids:                     randomLeaseIDGenerator{byteLength: leaseIDByteLength},
 		locks:                   locks,
 		dataPlane:               runtime.dataPlane,
 		dynamicIPSelector:       runtime.dynamicIPSelector,
@@ -123,6 +136,13 @@ func (c leaseCoordinator) now() time.Time {
 		return c.deps.clock.Now()
 	}
 	return time.Now()
+}
+
+func (c leaseCoordinator) newLeaseID() (string, error) {
+	if c.deps.ids == nil {
+		return "", fmt.Errorf("lease id generator is required")
+	}
+	return c.deps.ids.NewLeaseID()
 }
 
 func (c leaseCoordinator) clearExitCheckCache() {

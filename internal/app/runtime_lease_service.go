@@ -10,7 +10,6 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
-	"github.com/byte-v-forge/proxy-runtime/internal/random"
 )
 
 func (c leaseCoordinator) acquireLease(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
@@ -81,7 +80,7 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 	if err != nil {
 		return nil, err
 	}
-	leaseID, err := random.Hex(12)
+	leaseID, err := c.newLeaseID()
 	if err != nil {
 		return nil, internalError("generate lease id", err)
 	}

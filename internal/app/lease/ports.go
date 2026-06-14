@@ -38,3 +38,7 @@ type LockManager interface {
 	WithProviderAccountLock(context.Context, string, LockFunc) error
 	WithSessionListenerAllocationLock(context.Context, LockFunc) error
 }
+
+type IDGenerator interface {
+	NewLeaseID() (string, error)
+}

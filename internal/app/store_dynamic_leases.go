@@ -111,7 +111,13 @@ FROM proxy_runtime_dynamic_leases
 WHERE provider_account_id=$1
 	AND (
 		(status=$2 AND (expires_at IS NULL OR expires_at > now()))
-		OR status=$3
+		OR (
+			status=$3
+			AND (
+				lease_json #>> '{session,labels,route_cleanup_pending}' = 'true'
+				OR lease_json #>> '{session,labels,provider_cleanup_pending}' = 'true'
+			)
+		)
 	)
 ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
 `, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String())
@@ -134,6 +140,10 @@ func (s *PostgresStore) CleanupPendingLeaseFacts(ctx context.Context) ([]*proxyr
 SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
 WHERE status=$1
+	AND (
+		lease_json #>> '{session,labels,route_cleanup_pending}' = 'true'
+		OR lease_json #>> '{session,labels,provider_cleanup_pending}' = 'true'
+	)
 ORDER BY acquired_at ASC NULLS LAST, updated_at ASC, lease_id
 `, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String())
 	if err != nil {

@@ -848,6 +848,7 @@ Completed user-visible/runtime batches:
 - Postgres and SQLite dynamic lease persistence now share lease save validation, default status normalization, identifier trimming, and proto JSON marshaling.
 - Postgres and SQLite dynamic lease reads now share proto JSON decode behavior instead of duplicating empty JSON and unmarshal handling.
 - Dynamic lease store queries now share lease fact filtering/sorting helpers, and Postgres list methods reuse the common row scan path instead of repeating scan loops.
+- Postgres blocking and cleanup-pending lease queries now push cleanup-pending label predicates into SQL instead of scanning every failed lease in Go.
 
 Still open:
 

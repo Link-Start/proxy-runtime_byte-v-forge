@@ -667,11 +667,12 @@ Completed user-visible/runtime batches:
 - Dashboard proxy creation was centralized/reused.
 - Runtime status is exposed by backend and surfaced in the Playground UI.
 - First frontend/backend split steps are done for lease API and Mihomo-native update logic.
+- Mihomo-native config model, projection persistence, settings mapping, and URI rendering helpers are split into focused files.
 
 Still open:
 
 - Fully extract lease application into `internal/app/lease` with repository, provider-session, data-plane applier, lock, clock, and logger ports.
-- Split Mihomo projection, validation, render, and apply stages so no single file owns the whole config pipeline.
+- Finish splitting Mihomo sourceplane projection, validation, render, and apply stages so no single file owns the whole config pipeline.
 - Move settings orchestration into an explicit settings application package.
 - Separate `httpapi`, `auth`, and `dashboard` packages and keep handlers as thin transport adapters.
 - Finish provider adapter capability boundaries and secret-handling audit.
@@ -680,8 +681,8 @@ Still open:
 
 ### Next Implementation Batches
 
-1. **Mihomo projection split, no behavior change**
-   - Move projection helpers, native update orchestration, validation, and render/apply boundaries into focused files/packages.
+1. **Finish Mihomo projection split, no behavior change**
+   - Move sourceplane projection helpers, native update orchestration, validation, and render/apply boundaries into focused files/packages.
    - Keep generated config output semantically identical.
    - Validate with focused diffs, `gofmt`, stale-reference search, and remote build/deploy validation only when artifacts are required.
 

@@ -49,13 +49,9 @@ func dynamicProviderConcurrencyLimit(settings *runtimeSettingsFile, dynamicProvi
 	return defaultDynamicProviderStickyConcurrencyLimit
 }
 
-func (r *Runtime) acquireProviderAccountConcurrencySlot(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, limit uint32, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (providerAccountConcurrencySlot, error) {
-	return acquireProviderAccountConcurrencySlot(ctx, r.providerConcurrency, account, limit, policy, holder, ttl)
-}
-
-func acquireProviderAccountConcurrencySlot(ctx context.Context, limiter providerAccountConcurrencyLimiter, account *proxyruntimev1.ProxyProviderAccount, limit uint32, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (providerAccountConcurrencySlot, error) {
+func acquireProviderAccountConcurrencySlot(ctx context.Context, limiter leaseapp.ProviderAccountConcurrencyLimiter, account *proxyruntimev1.ProxyProviderAccount, limit uint32, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (leaseapp.ProviderAccountConcurrencySlot, error) {
 	if limiter == nil {
-		return noopProviderAccountConcurrencySlot{}, nil
+		return leaseapp.NoopProviderAccountConcurrencySlot{}, nil
 	}
 	slot, err := limiter.Acquire(ctx, account.GetAccountId(), policy, limit, holder, ttl)
 	if err != nil {

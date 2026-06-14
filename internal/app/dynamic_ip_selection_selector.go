@@ -7,6 +7,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -26,7 +27,7 @@ type dynamicIPSelector struct {
 	store            dynamicIPSelectionStore
 	settings         dynamicIPSelectionSettings
 	accountProviders dynamicIPSelectionProviderRegistry
-	concurrency      providerAccountConcurrencyLimiter
+	concurrency      leaseapp.ProviderAccountConcurrencyLimiter
 	logger           dynamicIPSelectionLogger
 	lookupIPGeo      func(context.Context, string) (proxyExitGeo, error)
 }
@@ -35,7 +36,7 @@ type dynamicIPSelectorDependencies struct {
 	Store            dynamicIPSelectionStore
 	Settings         dynamicIPSelectionSettings
 	AccountProviders dynamicIPSelectionProviderRegistry
-	Concurrency      providerAccountConcurrencyLimiter
+	Concurrency      leaseapp.ProviderAccountConcurrencyLimiter
 	Logger           dynamicIPSelectionLogger
 	LookupIPGeo      func(context.Context, string) (proxyExitGeo, error)
 }

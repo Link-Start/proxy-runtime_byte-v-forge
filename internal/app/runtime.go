@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
@@ -25,7 +26,7 @@ type Runtime struct {
 	dataPlane           dataplane.Driver
 	store               *RuntimeStores
 	leaseLocks          leaseRuntimeLocks
-	providerConcurrency providerAccountConcurrencyLimiter
+	providerConcurrency leaseapp.ProviderAccountConcurrencyLimiter
 	leaseCoordinator    leaseCoordinator
 	dynamicIPSelector   *dynamicIPSelector
 	settings            *runtimeSettingsStore
@@ -58,7 +59,7 @@ type RuntimeDeps struct {
 	DataPlane           dataplane.Driver
 	Store               *RuntimeStores
 	LeaseLocks          leaseRuntimeLocks
-	ProviderConcurrency providerAccountConcurrencyLimiter
+	ProviderConcurrency leaseapp.ProviderAccountConcurrencyLimiter
 	ProviderHTTPClient  *http.Client
 	Logger              *slog.Logger
 }

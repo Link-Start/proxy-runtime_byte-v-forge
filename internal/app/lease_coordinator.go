@@ -34,7 +34,7 @@ type leaseCoordinatorDependencies struct {
 	dataPlane               leaseapp.DataPlaneApplier
 	dynamicIPSelector       *dynamicIPSelector
 	sessionProviders        leaseapp.SessionProviderFactory
-	providerConcurrency     providerAccountConcurrencyLimiter
+	providerConcurrency     leaseapp.ProviderAccountConcurrencyLimiter
 	logger                  leaseapp.Logger
 	exitCheckCache          *proxyExitCheckCache
 	leaseListener           leaseListenerFunc
@@ -100,7 +100,7 @@ func (c leaseCoordinator) activeLeaseByRequest(ctx context.Context, req *proxyru
 	return c.deps.store.ActiveLeaseFactByAccount(ctx, req.GetAccountId(), req.GetPurpose())
 }
 
-func (c leaseCoordinator) acquireProviderAccountConcurrencySlot(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, limit uint32, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (providerAccountConcurrencySlot, error) {
+func (c leaseCoordinator) acquireProviderAccountConcurrencySlot(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, limit uint32, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (leaseapp.ProviderAccountConcurrencySlot, error) {
 	return acquireProviderAccountConcurrencySlot(ctx, c.deps.providerConcurrency, account, limit, policy, holder, ttl)
 }
 

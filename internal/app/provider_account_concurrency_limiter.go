@@ -19,24 +19,14 @@ const (
 	defaultProviderAccountConcurrencySlotTTL = 15 * time.Minute
 )
 
-type providerAccountConcurrencyLimiter interface {
-	Close() error
-	Acquire(ctx context.Context, accountID string, policy *proxyruntimev1.ProxySessionPolicy, limit uint32, holder string, ttl time.Duration) (providerAccountConcurrencySlot, error)
-	Available(ctx context.Context, accountID string, policy *proxyruntimev1.ProxySessionPolicy, limit uint32, holder string) (bool, error)
-	Release(ctx context.Context, accountID string, policy *proxyruntimev1.ProxySessionPolicy, holder string) error
-}
-
-type providerAccountConcurrencySlot interface {
-	Release(context.Context) error
-}
-
-type noopProviderAccountConcurrencySlot struct{}
-
 type redisProviderAccountConcurrencyLimiter struct {
 	client *redis.Client
 }
 
-func (noopProviderAccountConcurrencySlot) Release(context.Context) error { return nil }
+type providerAccountConcurrencyRuntime interface {
+	leaseapp.ProviderAccountConcurrencyLimiter
+	Close() error
+}
 
 type redisProviderAccountConcurrencySlot struct {
 	limiter   *redisProviderAccountConcurrencyLimiter
@@ -45,7 +35,7 @@ type redisProviderAccountConcurrencySlot struct {
 	holder    string
 }
 
-func NewProviderAccountConcurrencyLimiter(ctx context.Context, cfg config.Config) (providerAccountConcurrencyLimiter, error) {
+func NewProviderAccountConcurrencyLimiter(ctx context.Context, cfg config.Config) (providerAccountConcurrencyRuntime, error) {
 	if strings.TrimSpace(cfg.RedisURL) == "" {
 		return newLocalProviderAccountConcurrencyLimiter(), nil
 	}
@@ -75,7 +65,7 @@ func (l *redisProviderAccountConcurrencyLimiter) Available(ctx context.Context, 
 	return result == 1, nil
 }
 
-func (l *redisProviderAccountConcurrencyLimiter) Acquire(ctx context.Context, accountID string, policy *proxyruntimev1.ProxySessionPolicy, limit uint32, holder string, ttl time.Duration) (providerAccountConcurrencySlot, error) {
+func (l *redisProviderAccountConcurrencyLimiter) Acquire(ctx context.Context, accountID string, policy *proxyruntimev1.ProxySessionPolicy, limit uint32, holder string, ttl time.Duration) (leaseapp.ProviderAccountConcurrencySlot, error) {
 	redisKey, cleanHolder, err := l.key(accountID, policy, holder)
 	if err != nil {
 		return nil, err

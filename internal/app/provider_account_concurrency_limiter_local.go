@@ -49,7 +49,7 @@ func (l *localProviderAccountConcurrencyLimiter) Available(ctx context.Context, 
 	return len(l.slots[key]) < int(limit), nil
 }
 
-func (l *localProviderAccountConcurrencyLimiter) Acquire(ctx context.Context, accountID string, policy *proxyruntimev1.ProxySessionPolicy, limit uint32, holder string, ttl time.Duration) (providerAccountConcurrencySlot, error) {
+func (l *localProviderAccountConcurrencyLimiter) Acquire(ctx context.Context, accountID string, policy *proxyruntimev1.ProxySessionPolicy, limit uint32, holder string, ttl time.Duration) (leaseapp.ProviderAccountConcurrencySlot, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}

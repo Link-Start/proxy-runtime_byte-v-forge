@@ -795,6 +795,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native update after-apply hook invocation is isolated from the main update orchestration.
 - Mihomo-native projection now separates Runtime wiring, repository port, and pure projection/import flow.
 - Mihomo-native projection import-from-existing-config migration is split from steady-state projection.
+- Dynamic lease line handling now separates Runtime native-settings wiring, egress-profile selection, Mihomo dialer resolution, and provider-node label application.
 
 Still open:
 

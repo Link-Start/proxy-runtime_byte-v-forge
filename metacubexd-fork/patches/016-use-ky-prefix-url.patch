@@ -1,0 +1,22 @@
+diff --git a/composables/useApi.ts b/composables/useApi.ts
+index 992f4d7..d6aa050 100644
+--- a/composables/useApi.ts
++++ b/composables/useApi.ts
+@@ -219,7 +219,7 @@ export function useRequest() {
+   }
+ 
+   return ky.create({
+-    prefix: endpoint.url,
++    prefixUrl: endpoint.url,
+     headers,
+     timeout: 5000,
+     hooks: {
+@@ -244,7 +244,7 @@ export function useGithubAPI() {
+   }
+ 
+   return ky.create({
+-    prefix: 'https://api.github.com',
++    prefixUrl: 'https://api.github.com',
+     headers,
+   })
+ }

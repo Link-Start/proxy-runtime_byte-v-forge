@@ -21,7 +21,7 @@ func ReleaseLeaseProviderSession(ctx context.Context, input ProviderSessionRelea
 	if !NeedsProviderSessionRelease(input.Lease) {
 		return nil
 	}
-	providerCfg, _, err := input.Store.ProviderConfig(ctx, input.Lease.GetProviderAccountId())
+	providerCfg, _, err := ProviderConfigForLease(ctx, input.Store, input.Lease)
 	if err != nil {
 		return err
 	}

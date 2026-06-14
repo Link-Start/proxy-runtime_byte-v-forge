@@ -971,6 +971,7 @@ Completed user-visible/runtime batches:
 - Restore single-lease flow now lives in `internal/app/lease`, including temporary concurrency-slot lifecycle, provider-session fetch, and dataplane route restore; the coordinator only loads runtime settings and injects gateway/line-binding resolvers.
 - Final provider-account concurrency release warnings are centralized on the lease coordinator and shared by release, expiry, and cleanup-pending flows instead of repeating app-level observer closures.
 - Restore provider config and provider-account identity loading now happens inside the lease restore flow; the coordinator only loads runtime settings and supplies concrete gateway/line-binding resolvers.
+- Provider-session release now reuses the lease-owned provider-config loader instead of directly reading store details in the release flow.
 
 Still open:
 

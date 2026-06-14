@@ -28,6 +28,26 @@ type ProviderAccountAcquireInput struct {
 	Apply              ProviderAccountAcquireApply
 }
 
+type ProviderAccountAcquireRunner struct {
+	Store              OrchestrationStore
+	IDs                IDGenerator
+	Clock              Clock
+	DataPlane          DataPlaneApplier
+	Logger             Logger
+	Factory            SessionProviderFactory
+	Locks              LockManager
+	ResolveLineBinding RouteLineBindingResolver
+	Apply              ProviderAccountAcquireApply
+}
+
+type ProviderAccountAcquireRunInput struct {
+	ProviderAccountID string
+	Gateway           accountproxy.Gateway
+	Request           *proxyruntimev1.AcquireProxyLeaseRequest
+	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	ConcurrencyHolder string
+}
+
 type ProviderAccountAcquireApplyInput struct {
 	ProviderAccountID string
 	ProviderClient    SessionProvider
@@ -39,6 +59,25 @@ type ProviderAccountAcquireApplyInput struct {
 }
 
 type ProviderAccountAcquireApply func(context.Context, ProviderAccountAcquireApplyInput) (*proxyruntimev1.ProxyDynamicLease, error)
+
+func (r ProviderAccountAcquireRunner) Acquire(ctx context.Context, input ProviderAccountAcquireRunInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+	return RunProviderAccountAcquire(ctx, ProviderAccountAcquireInput{
+		Store:              r.Store,
+		IDs:                r.IDs,
+		Clock:              r.Clock,
+		DataPlane:          r.DataPlane,
+		Logger:             r.Logger,
+		Factory:            r.Factory,
+		Locks:              r.Locks,
+		ProviderAccountID:  input.ProviderAccountID,
+		Gateway:            input.Gateway,
+		Request:            input.Request,
+		SelectionPlan:      input.SelectionPlan,
+		ConcurrencyHolder:  input.ConcurrencyHolder,
+		ResolveLineBinding: r.ResolveLineBinding,
+		Apply:              r.Apply,
+	})
+}
 
 func RunProviderAccountAcquire(ctx context.Context, input ProviderAccountAcquireInput) (*proxyruntimev1.ProxyDynamicLease, error) {
 	providerSession, err := AcquireProviderSession(ctx, ProviderSessionAcquireInput{

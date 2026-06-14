@@ -979,6 +979,7 @@ Completed user-visible/runtime batches:
 - Lease route retirement dependencies are now composed through a lease-owned `LeaseRouteRetirer`; normal release and existing-lease replacement reuse it, and the app-level route-retire wrapper was removed.
 - Restore route dependencies are now composed through a lease-owned `LeaseRouteRestorer`; the coordinator only loads settings and supplies adapter functions for limits, gateways, and line binding.
 - Acquired route apply dependencies are now composed through a lease-owned `AcquiredRouteApplier`; the app-level acquired-route flow struct and apply wrapper were removed.
+- Provider-account acquire dependencies are now composed through a lease-owned `ProviderAccountAcquireRunner`; selected acquire attempts call the runner directly and the app-level provider-account acquire wrapper was removed.
 
 Still open:
 

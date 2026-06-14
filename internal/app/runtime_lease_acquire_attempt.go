@@ -27,7 +27,18 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 		TTLBuffer:      providerAccountConcurrencyTTLBuffer,
 		ReleaseTimeout: leaseAcquireSlotReleaseTimeout,
 		Action: func(ctx context.Context, attempt leaseapp.SelectedAcquireAttempt) (*proxyruntimev1.ProxyDynamicLease, error) {
-			return c.acquireLeaseWithProviderAccountLock(ctx, advertisedHost, req, settings, selection, attempt.ProviderAccountID, attempt.LeaseID, attempt.ConcurrencyHolder)
+			runner := c.providerAccountAcquireRunner(settings, advertisedHost, req, selection.plan, attempt.LeaseID, attempt.ConcurrencyHolder)
+			lease, err := runner.Acquire(ctx, leaseapp.ProviderAccountAcquireRunInput{
+				ProviderAccountID: attempt.ProviderAccountID,
+				Gateway:           selection.endpoint,
+				Request:           req,
+				SelectionPlan:     selection.plan,
+				ConcurrencyHolder: attempt.ConcurrencyHolder,
+			})
+			if err != nil {
+				return nil, providerSessionAcquireError(err)
+			}
+			return lease, nil
 		},
 	})
 	if err != nil {

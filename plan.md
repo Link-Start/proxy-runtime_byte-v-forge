@@ -882,6 +882,7 @@ Completed user-visible/runtime batches:
 - Acquire-attempt concurrency slot acquisition now uses a lease-owned input helper for holder generation and TTL construction; app code only supplies provider limit policy inputs.
 - Provider config lookup for an acquired dynamic endpoint now goes through a lease-owned gateway binding helper instead of mutating provider gateways in the coordinator.
 - Failed-acquire route/provider cleanup-pending labeling now lives in `internal/app/lease`; the app failure helper only logs provider cleanup failures and persists the failed fact.
+- Provider session create-versus-fetch failure classification now lives in `internal/app/lease`; app-level acquire maps classified outcomes to transport errors and compensation.
 
 Still open:
 

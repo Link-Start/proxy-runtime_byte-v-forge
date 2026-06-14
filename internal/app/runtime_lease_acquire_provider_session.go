@@ -17,14 +17,15 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 		return nil, invalidArgument("provider account configuration is invalid", err)
 	}
 	session, nodes, err := leaseapp.CreateAndFetchProviderSession(ctx, providerClient, req, selection.plan, concurrencyHolder)
-	if err != nil && session == nil {
+	switch leaseapp.ClassifyProviderSessionError(session, err) {
+	case leaseapp.ProviderSessionCreateError:
 		return nil, unavailable("provider session create failed", err)
-	}
-	failure := newLeaseAcquireFailure(c, ctx, req, providerAccountID, providerClient, session, selection.plan)
-	if err != nil {
+	case leaseapp.ProviderSessionFetchError:
+		failure := newLeaseAcquireFailure(c, ctx, req, providerAccountID, providerClient, session, selection.plan)
 		failure.beforeRoute("provider session fetch failed")
 		return nil, unavailable("provider session fetch failed", err)
 	}
+	failure := newLeaseAcquireFailure(c, ctx, req, providerAccountID, providerClient, session, selection.plan)
 	dialerProxy, lineLabels, err := c.deps.dynamicLeaseDialerProxy(ctx, settings, req.GetAccountId())
 	if err != nil {
 		failure.beforeRoute("lease line resolution failed")

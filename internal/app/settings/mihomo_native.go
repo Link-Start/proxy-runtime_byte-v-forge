@@ -3,11 +3,15 @@ package settings
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
-var ErrMihomoNativeUpdaterRequired = errors.New("mihomo native settings updater is required")
+var (
+	ErrMihomoNativeUpdateUnavailable = errors.New("mihomo native settings update unavailable")
+	errMihomoNativeUpdaterRequired   = errors.New("mihomo native settings updater is required")
+)
 
 type MihomoNativeLoader func(context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
 type MihomoNativeUpdater func(context.Context, *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
@@ -38,7 +42,7 @@ func (a Application) loadMihomoNative(ctx context.Context) (*proxyruntimev1.Prox
 
 func (a Application) updateMihomoNative(ctx context.Context, config *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
 	if a.updateMihomoNativeSettings == nil {
-		return nil, ErrMihomoNativeUpdaterRequired
+		return nil, fmt.Errorf("%w: %w", ErrMihomoNativeUpdateUnavailable, errMihomoNativeUpdaterRequired)
 	}
 	return a.updateMihomoNativeSettings(ctx, config)
 }

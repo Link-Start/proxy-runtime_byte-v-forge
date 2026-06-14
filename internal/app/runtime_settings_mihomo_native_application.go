@@ -19,8 +19,8 @@ func (a runtimeSettingsApplication) GetProxyRuntimeMihomoNativeConfig(ctx contex
 func (a runtimeSettingsApplication) UpdateProxyRuntimeMihomoNativeConfig(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeMihomoNativeConfigRequest) (*proxyruntimev1.UpdateProxyRuntimeMihomoNativeConfigResponse, error) {
 	response, err := a.settingsUsecase().UpdateMihomoNative(ctx, req)
 	if err != nil {
-		if errors.Is(err, settingsapp.ErrMihomoNativeUpdaterRequired) {
-			return nil, internalError(err.Error(), err)
+		if errors.Is(err, settingsapp.ErrMihomoNativeUpdateUnavailable) {
+			return nil, internalError("mihomo native settings update unavailable", err)
 		}
 		return nil, err
 	}

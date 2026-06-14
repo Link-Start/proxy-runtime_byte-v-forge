@@ -951,6 +951,7 @@ Completed user-visible/runtime batches:
 - Final lease save and cleanup-progress APIs no longer return internal save stage values; provider-account concurrency release failures use a lease-owned sentinel error that the coordinator logs and swallows as before.
 - Final lease expired/released persistence now exposes explicit lease-owned APIs instead of requiring the coordinator to pass an internal final-state enum.
 - Settings dynamic-IP provider updates now use the shared settings update-and-schedule flow, and connection-cleanup update helpers are internal to the settings application instead of exported orchestration surface.
+- Mihomo-native settings update now exposes a settings-owned unavailable classification while keeping the concrete missing-updater dependency error internal to the settings package.
 
 Still open:
 

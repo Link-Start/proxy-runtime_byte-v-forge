@@ -36,7 +36,7 @@ func (r *Runtime) serveHTTP(ctx context.Context, errCh chan<- error) {
 }
 
 func (r *Runtime) httpHandler() http.Handler {
-	return newRuntimeHTTPAPI(r.service(), r.cfg.Mihomo.APIAddr, func() (bool, string) {
+	return newRuntimeHTTPAPI(r.service(), r.cfg.Mihomo.APIAddr, r.cfg.ControlAuthToken, func() (bool, string) {
 		status := r.dataPlane.Status()
 		if !status.Running {
 			return false, firstNonEmpty(status.LastError, "data plane is not running")
@@ -56,15 +56,16 @@ type runtimeReadyFunc func() (bool, string)
 type runtimeHTTPAPI struct {
 	service       *RuntimeService
 	mihomoAPIAddr string
+	authToken     string
 	ready         runtimeReadyFunc
 	logger        *slog.Logger
 }
 
-func newRuntimeHTTPAPI(service *RuntimeService, mihomoAPIAddr string, ready runtimeReadyFunc, logger *slog.Logger) *runtimeHTTPAPI {
+func newRuntimeHTTPAPI(service *RuntimeService, mihomoAPIAddr string, authToken string, ready runtimeReadyFunc, logger *slog.Logger) *runtimeHTTPAPI {
 	if logger == nil {
 		logger = slog.Default()
 	}
-	return &runtimeHTTPAPI{service: service, mihomoAPIAddr: mihomoAPIAddr, ready: ready, logger: logger}
+	return &runtimeHTTPAPI{service: service, mihomoAPIAddr: mihomoAPIAddr, authToken: strings.TrimSpace(authToken), ready: ready, logger: logger}
 }
 
 func (api *runtimeHTTPAPI) handler() http.Handler {
@@ -118,6 +119,10 @@ func (api *runtimeHTTPAPI) ginMiddleware() gin.HandlerFunc {
 			}
 			api.logger.Info("proxy-runtime http request", "request_id", requestID, "method", ctx.Request.Method, "path", ctx.Request.URL.Path, "status", ctx.Writer.Status(), "duration_ms", time.Since(start).Milliseconds())
 		}()
+		if !api.authorize(ctx) {
+			ctx.Abort()
+			return
+		}
 		ctx.Next()
 	}
 }

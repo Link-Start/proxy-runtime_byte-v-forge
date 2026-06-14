@@ -53,6 +53,7 @@ func renderConfig(opts renderOptions) (mihomoConfig, error) {
 		Mode:               "rule",
 		LogLevel:           "warning",
 		ExternalController: strings.TrimSpace(opts.APIAddr),
+		Secret:             strings.TrimSpace(opts.ControllerSecret),
 		ExternalUI:         strings.TrimSpace(opts.DashboardDir),
 		ExternalUIURL:      strings.TrimSpace(opts.DashboardURL),
 		Authentication:     renderAuthentication(gateway.Users),

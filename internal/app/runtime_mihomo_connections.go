@@ -51,7 +51,7 @@ func (r *Runtime) closeMihomoConnections(ctx context.Context, selector mihomoCon
 		return err
 	}
 	client := runtimehttp.New(5 * time.Second)
-	connections, err := listMihomoConnections(ctx, client, base)
+	connections, err := listMihomoConnections(ctx, client, base, r.cfg.ControlAuthToken)
 	if err != nil {
 		return err
 	}
@@ -60,7 +60,7 @@ func (r *Runtime) closeMihomoConnections(ctx context.Context, selector mihomoCon
 		if !connectionMatches(connection, targets, chains) {
 			continue
 		}
-		if err := deleteMihomoConnection(ctx, client, base, connection.ID); err != nil {
+		if err := deleteMihomoConnection(ctx, client, base, connection.ID, r.cfg.ControlAuthToken); err != nil {
 			failures = append(failures, err.Error())
 		}
 	}
@@ -70,11 +70,12 @@ func (r *Runtime) closeMihomoConnections(ctx context.Context, selector mihomoCon
 	return nil
 }
 
-func listMihomoConnections(ctx context.Context, client *http.Client, base *url.URL) ([]mihomoConnection, error) {
+func listMihomoConnections(ctx context.Context, client *http.Client, base *url.URL, token string) ([]mihomoConnection, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, mihomoControllerURL(base, "/connections"), nil)
 	if err != nil {
 		return nil, err
 	}
+	applyMihomoControllerAuth(req, token)
 	resp, err := client.Do(req)
 	if err != nil {
 		return nil, err
@@ -91,7 +92,7 @@ func listMihomoConnections(ctx context.Context, client *http.Client, base *url.U
 	return payload.Connections, nil
 }
 
-func deleteMihomoConnection(ctx context.Context, client *http.Client, base *url.URL, id string) error {
+func deleteMihomoConnection(ctx context.Context, client *http.Client, base *url.URL, id string, token string) error {
 	id = strings.TrimSpace(id)
 	if id == "" {
 		return nil
@@ -100,6 +101,7 @@ func deleteMihomoConnection(ctx context.Context, client *http.Client, base *url.
 	if err != nil {
 		return err
 	}
+	applyMihomoControllerAuth(req, token)
 	resp, err := client.Do(req)
 	if err != nil {
 		return err

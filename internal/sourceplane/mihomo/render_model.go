@@ -14,6 +14,7 @@ type renderOptions struct {
 	ConfigDir           string
 	NativeConfig        mihomoNativeConfig
 	APIAddr             string
+	ControllerSecret    string
 	DashboardDir        string
 	DashboardURL        string
 	HealthCheckURL      string
@@ -34,6 +35,7 @@ type mihomoConfig struct {
 	Mode               string                    `json:"mode"`
 	LogLevel           string                    `json:"log-level"`
 	ExternalController string                    `json:"external-controller,omitempty"`
+	Secret             string                    `json:"secret,omitempty"`
 	ExternalUI         string                    `json:"external-ui,omitempty"`
 	ExternalUIURL      string                    `json:"external-ui-url,omitempty"`
 	Authentication     []string                  `json:"authentication,omitempty"`

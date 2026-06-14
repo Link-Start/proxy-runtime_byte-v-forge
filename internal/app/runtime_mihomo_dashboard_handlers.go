@@ -61,6 +61,10 @@ let endpoints = [];
 try {
   const parsed = JSON.parse(window.localStorage.getItem('endpointList') || '[]');
   if (Array.isArray(parsed)) {
+    const existing = parsed.find((item) => item && item.id === endpoint.id);
+    if (existing && typeof existing.secret === 'string') {
+      endpoint.secret = existing.secret;
+    }
     endpoints = parsed.filter((item) => item && item.id !== endpoint.id && item.url !== endpoint.url);
   }
 } catch (_) {}

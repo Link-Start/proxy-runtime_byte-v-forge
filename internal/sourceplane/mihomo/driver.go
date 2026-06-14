@@ -23,11 +23,12 @@ const (
 )
 
 type Config struct {
-	Path         string
-	ConfigDir    string
-	APIAddr      string
-	DashboardDir string
-	DashboardURL string
+	Path             string
+	ConfigDir        string
+	APIAddr          string
+	ControllerSecret string
+	DashboardDir     string
+	DashboardURL     string
 }
 
 type Driver struct {
@@ -86,6 +87,7 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 		ConfigDir:           dir,
 		NativeConfig:        nativeConfig,
 		APIAddr:             d.cfg.APIAddr,
+		ControllerSecret:    d.cfg.ControllerSecret,
 		DashboardDir:        firstNonEmpty(d.cfg.DashboardDir, d.baseCfg.DashboardDir),
 		DashboardURL:        firstNonEmpty(d.cfg.DashboardURL, d.baseCfg.DashboardURL),
 		HealthCheckURL:      cfg.HealthCheckURL,

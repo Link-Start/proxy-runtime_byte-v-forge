@@ -14,6 +14,10 @@
 
 业务仓只通过 proxy ref、固定网关账号或契约调用本服务，不接触上游 provider 代理地址、密码、session material 或动态租约细节。provider 控制面访问与业务数据面出口在本服务内分离建模。
 
+## 可选控制面鉴权
+
+设置 `PROXY_RUNTIME_CONTROL_AUTH_TOKEN` 后，`/api/*` 与 `/mihomo/controller/*` 需要 `Authorization: Bearer <token>`。MetaCubeXD 会使用其 endpoint secret 交互；用户在 MetaCubeXD 中录入同一个 token 后，proxy-runtime 扩展页面会复用该 secret 调用 `/api`。
+
 ## 入口
 
 - 服务入口：`cmd/proxy-runtime`

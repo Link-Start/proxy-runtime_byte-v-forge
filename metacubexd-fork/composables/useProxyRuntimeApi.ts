@@ -45,10 +45,7 @@ async function proxyRuntimeRequest<T>(
 ): Promise<T> {
   const response = await fetch(`${base}${path}`, {
     ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init.headers || {}),
-    },
+    headers: proxyRuntimeHeaders(init.headers),
   })
   if (!response.ok) {
     let message = `${response.status} ${response.statusText}`
@@ -66,6 +63,33 @@ async function proxyRuntimeRequest<T>(
 }
 
 const jsonBody = (value: unknown) => JSON.stringify(value)
+
+function proxyRuntimeHeaders(init?: HeadersInit) {
+  const headers = new Headers(init)
+  headers.set('Content-Type', 'application/json')
+  const secret = proxyRuntimeEndpointSecret()
+  if (secret && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${secret}`)
+  }
+  return headers
+}
+
+function proxyRuntimeEndpointSecret() {
+  if (typeof window === 'undefined') return ''
+  const selectedEndpoint = window.localStorage.getItem('selectedEndpoint') || ''
+  try {
+    const endpoints = JSON.parse(
+      window.localStorage.getItem('endpointList') || '[]',
+    )
+    if (!Array.isArray(endpoints)) return ''
+    const endpoint =
+      endpoints.find((item) => item?.id === 'proxy-runtime-mihomo') ||
+      endpoints.find((item) => item?.id === selectedEndpoint)
+    return typeof endpoint?.secret === 'string' ? endpoint.secret.trim() : ''
+  } catch {
+    return ''
+  }
+}
 
 const emptyMihomoNativeConfig = (): ProxyRuntimeMihomoNativeConfig => ({
   fixed_proxies: [],

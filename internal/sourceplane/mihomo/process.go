@@ -104,6 +104,7 @@ func (d *Driver) reloadLocked(ctx context.Context, configPath string) error {
 		return err
 	}
 	req.Header.Set("Content-Type", "application/json")
+	setMihomoControllerAuthorization(req, d.cfg.ControllerSecret)
 	resp, err := d.apiClient.Do(req)
 	if err != nil {
 		return err
@@ -114,6 +115,14 @@ func (d *Driver) reloadLocked(ctx context.Context, configPath string) error {
 	}
 	data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
 	return fmt.Errorf("mihomo config reload returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(data)))
+}
+
+func setMihomoControllerAuthorization(req *http.Request, secret string) {
+	secret = strings.TrimSpace(secret)
+	if req == nil || secret == "" {
+		return
+	}
+	req.Header.Set("Authorization", "Bearer "+secret)
 }
 
 func (d *Driver) wait(process *processruntime.Process) {

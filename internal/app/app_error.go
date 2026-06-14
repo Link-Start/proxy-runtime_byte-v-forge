@@ -81,6 +81,8 @@ func httpErrorDetails(err error, fallbackStatus int) (int, codes.Code, string) {
 		}
 	}
 	switch fallbackStatus {
+	case http.StatusUnauthorized:
+		return fallbackStatus, codes.Unauthenticated, publicErrorMessage(err, fallbackStatus)
 	case http.StatusBadRequest:
 		return fallbackStatus, codes.InvalidArgument, publicErrorMessage(err, fallbackStatus)
 	case http.StatusNotFound:

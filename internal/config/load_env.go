@@ -70,6 +70,7 @@ func LoadFromEnv() (Config, error) {
 			AdvertisedHost: strings.TrimSpace(os.Getenv("PROXY_RUNTIME_SESSION_ADVERTISED_HOST")),
 		},
 		ProviderHTTPProxy: strings.TrimSpace(os.Getenv("PROXY_RUNTIME_PROVIDER_HTTP_PROXY")),
+		ControlAuthToken:  strings.TrimSpace(os.Getenv("PROXY_RUNTIME_CONTROL_AUTH_TOKEN")),
 		Provider:          normalizeConfigToken(envStringDefault("PROXY_RUNTIME_PROVIDER", ProviderTen24)),
 		ProxyUsers:        proxyUsers,
 		RefreshInterval:   refreshInterval,

@@ -75,6 +75,7 @@ type Config struct {
 	SessionListener   SessionListenerConfig
 	ProxyUsers        []ProxyUserRoute
 	ProviderHTTPProxy string
+	ControlAuthToken  string
 	Provider          string
 	RefreshInterval   time.Duration
 	RequestTimeout    time.Duration

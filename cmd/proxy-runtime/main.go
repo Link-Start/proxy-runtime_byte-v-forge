@@ -51,11 +51,12 @@ func main() {
 	}
 
 	dataPlane := mihomosource.New(mihomosource.Config{
-		Path:         cfg.Mihomo.Path,
-		ConfigDir:    cfg.Mihomo.ConfigDir,
-		APIAddr:      cfg.Mihomo.APIAddr,
-		DashboardDir: cfg.Mihomo.DashboardDir,
-		DashboardURL: cfg.Mihomo.DashboardURL,
+		Path:             cfg.Mihomo.Path,
+		ConfigDir:        cfg.Mihomo.ConfigDir,
+		APIAddr:          cfg.Mihomo.APIAddr,
+		ControllerSecret: cfg.ControlAuthToken,
+		DashboardDir:     cfg.Mihomo.DashboardDir,
+		DashboardURL:     cfg.Mihomo.DashboardURL,
 	}, logger)
 	store, err := app.NewControlStore(context.Background(), cfg, proxyProviders, logger)
 	if err != nil {

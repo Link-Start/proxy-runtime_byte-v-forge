@@ -1,15 +1,18 @@
 package mihomo
 
-func renderBaseProxyConfigs(opts renderOptions) ([]map[string]any, error) {
-	fixedConfigs := cloneNativeProxies(opts.NativeConfig.Proxies)
-	poolConfigs, _, err := renderProviderNodes("provider-pool", opts.BasePool)
-	if err != nil {
-		return nil, err
+import "strings"
+
+func newBaseRenderedConfig(opts renderOptions, gateway mihomoListener) mihomoConfig {
+	return mihomoConfig{
+		MixedPort:          gateway.Port,
+		BindAddress:        gateway.Listen,
+		AllowLAN:           true,
+		Mode:               "rule",
+		LogLevel:           "warning",
+		ExternalController: strings.TrimSpace(opts.APIAddr),
+		Secret:             strings.TrimSpace(opts.ControllerSecret),
+		ExternalUI:         strings.TrimSpace(opts.DashboardDir),
+		ExternalUIURL:      strings.TrimSpace(opts.DashboardURL),
+		Authentication:     renderAuthentication(gateway.Users),
 	}
-	fixedConfigs = append(fixedConfigs, poolConfigs...)
-	sessionConfigs, err := renderSessionRoutes(opts.SessionRoutes)
-	if err != nil {
-		return nil, err
-	}
-	return append(fixedConfigs, sessionConfigs...), nil
 }

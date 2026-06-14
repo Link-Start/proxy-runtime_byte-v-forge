@@ -903,6 +903,7 @@ Completed user-visible/runtime batches:
 - Auth login-page response writing and no-store auth JSON headers now live in `internal/app/auth`, further thinning auth HTTP session handlers.
 - Auth session cookie set/clear behavior now lives on the auth application, so HTTP session handlers no longer compute forwarded-proto cookie security flags.
 - Mihomo-native settings get/update now run through `internal/app/settings`, with app code only adapting error mapping and injected loader/updater/default functions.
+- Mihomo final config base-field assembly is split from top-level render orchestration, leaving renderConfig to compose projected sections and final rules only.
 
 Still open:
 

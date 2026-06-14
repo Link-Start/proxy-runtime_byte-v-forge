@@ -33,7 +33,7 @@ func (f *leaseAcquireFailure) beforeRoute(message string) {
 }
 
 func (f *leaseAcquireFailure) afterRoute(route dataplane.SessionRoute, message string) {
-	routeCleanupPending := f.coordinator.runtime.dataPlane.DeleteSessionRoute(f.ctx, route) != nil
+	routeCleanupPending := f.coordinator.deps.dataPlane.DeleteSessionRoute(f.ctx, route) != nil
 	providerCleanupPending := f.cleanupProviderSession()
 	f.markCleanupPending(routeCleanupPending, providerCleanupPending)
 	f.save(message)
@@ -41,7 +41,7 @@ func (f *leaseAcquireFailure) afterRoute(route dataplane.SessionRoute, message s
 
 func (f *leaseAcquireFailure) cleanupProviderSession() bool {
 	if err := releaseProviderSession(f.ctx, f.providerClient, f.session); err != nil {
-		f.coordinator.runtime.logger.Warn("provider session cleanup failed", "provider_id", f.providerClient.Name(), "account_id", f.req.GetAccountId())
+		f.coordinator.warn("provider session cleanup failed", "provider_id", f.providerClient.Name(), "account_id", f.req.GetAccountId())
 		return true
 	}
 	return false
@@ -49,7 +49,7 @@ func (f *leaseAcquireFailure) cleanupProviderSession() bool {
 
 func (f *leaseAcquireFailure) markCleanupPending(routePending bool, providerPending bool) {
 	lease := &proxyruntimev1.ProxyDynamicLease{Session: f.session}
-	leaseapp.MarkCleanupPending(lease, routePending, providerPending, leaseCleanupFinalFailed)
+	leaseapp.MarkCleanupPending(lease, routePending, providerPending, leaseapp.CleanupFinalFailed)
 }
 
 func (f *leaseAcquireFailure) save(message string) {

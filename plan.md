@@ -717,6 +717,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease data-plane operations now depend on a narrow session-route applier port instead of the full dataplane driver surface.
 - Dynamic lease orchestration now depends on a narrow lock-manager port that exposes only account, provider-account, and listener-allocation critical sections.
 - Lease coordinator logging now depends on the lease logger port instead of the concrete slog logger.
+- Dynamic lease failed-acquire, released, expired, cleanup-failure, and cleanup-retry status mutations are centralized in `internal/app/lease` lifecycle helpers; app-level persistence code now saves already-mutated lease facts instead of owning status transitions.
 
 Still open:
 

@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/random"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func (c leaseCoordinator) saveFailedAcquireLeaseFact(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest, providerAccountID string, session *proxyruntimev1.ProxySession, egress *proxyruntimev1.ProxyEndpoint, listener *proxyruntimev1.EgressListener, plan *proxyruntimev1.ProxyDynamicIPSelectionPlan, message string) {
@@ -17,25 +17,18 @@ func (c leaseCoordinator) saveFailedAcquireLeaseFact(ctx context.Context, req *p
 	if err != nil {
 		return
 	}
-	lease := &proxyruntimev1.ProxyDynamicLease{
-		LeaseId:           leaseID,
-		AccountId:         strings.TrimSpace(req.GetAccountId()),
-		Purpose:           firstNonEmpty(req.GetPurpose(), "general"),
-		ProviderAccountId: strings.TrimSpace(providerAccountID),
-		Status:            proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED,
+	lease := leaseapp.NewFailedAcquireFact(leaseapp.FailedAcquireFactInput{
+		LeaseID:           leaseID,
+		AccountID:         req.GetAccountId(),
+		Purpose:           req.GetPurpose(),
+		ProviderAccountID: providerAccountID,
 		Session:           session,
 		Egress:            egress,
 		Listener:          listener,
-		AcquiredAt:        timestamppb.New(c.now().UTC()),
 		SelectionPlan:     plan,
-		ErrorMessage:      strings.TrimSpace(message),
-	}
-	if session != nil {
-		lease.ExpiresAt = session.GetExpiresAt()
-	}
-	if lease.ErrorMessage == "" {
-		lease.ErrorMessage = "lease acquire failed"
-	}
+		Message:           message,
+		AcquiredAt:        c.now(),
+	})
 	if err := c.deps.store.SaveLeaseFact(ctx, lease); err != nil {
 		c.warn("save failed proxy lease fact failed", "account_id", lease.GetAccountId(), "provider_account_id", lease.GetProviderAccountId())
 	}

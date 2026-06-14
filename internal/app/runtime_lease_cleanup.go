@@ -10,12 +10,6 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
-const (
-	leaseCleanupFinalFailed   = "failed"
-	leaseCleanupFinalExpired  = "expired"
-	leaseCleanupFinalReleased = "released"
-)
-
 func (c leaseCoordinator) cleanupPendingLeaseFacts(ctx context.Context) error {
 	if c.deps.store == nil {
 		return nil
@@ -83,9 +77,9 @@ func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *pr
 		}
 		if !leaseapp.CleanupPending(current) {
 			switch leaseapp.CleanupFinalStatus(current) {
-			case leaseCleanupFinalExpired:
+			case leaseapp.CleanupFinalExpired:
 				return c.saveLeaseExpired(ctx, current)
-			case leaseCleanupFinalReleased:
+			case leaseapp.CleanupFinalReleased:
 				return c.saveLeaseReleased(ctx, current)
 			}
 			return c.deps.store.SaveLeaseFact(ctx, current)

@@ -8,28 +8,22 @@ import (
 )
 
 func (c leaseCoordinator) saveLeaseReleaseCleanupFailure(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool, message string) error {
-	leaseapp.MarkCleanupPending(lease, routePending, providerPending, leaseCleanupFinalReleased)
-	lease.Status = proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED
-	lease.ErrorMessage = message
+	leaseapp.MarkReleaseCleanupFailure(lease, routePending, providerPending, message)
 	return c.deps.store.SaveLeaseFact(ctx, lease)
 }
 
 func (c leaseCoordinator) saveLeaseCleanupRetry(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, message string) error {
-	lease.ErrorMessage = message
+	leaseapp.MarkCleanupRetry(lease, message)
 	return c.deps.store.SaveLeaseFact(ctx, lease)
 }
 
 func (c leaseCoordinator) saveLeaseExpiredCleanupFailure(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool, message string) error {
-	leaseapp.MarkCleanupPending(lease, routePending, providerPending, leaseCleanupFinalExpired)
-	lease.Status = proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED
-	lease.ErrorMessage = message
+	leaseapp.MarkExpiredCleanupFailure(lease, routePending, providerPending, message)
 	return c.deps.store.SaveLeaseFact(ctx, lease)
 }
 
 func (c leaseCoordinator) saveLeaseExpired(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	leaseapp.ClearCleanupPending(lease, true, true)
-	lease.Status = proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_EXPIRED
-	lease.ErrorMessage = ""
+	leaseapp.MarkExpired(lease)
 	if err := c.deps.store.SaveLeaseFact(ctx, lease); err != nil {
 		return err
 	}
@@ -40,9 +34,7 @@ func (c leaseCoordinator) saveLeaseExpired(ctx context.Context, lease *proxyrunt
 }
 
 func (c leaseCoordinator) saveLeaseReleased(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	leaseapp.ClearCleanupPending(lease, true, true)
-	lease.Status = proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_RELEASED
-	lease.ErrorMessage = ""
+	leaseapp.MarkReleased(lease)
 	if err := c.deps.store.SaveLeaseFact(ctx, lease); err != nil {
 		return err
 	}

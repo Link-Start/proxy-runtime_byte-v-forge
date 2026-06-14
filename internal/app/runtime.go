@@ -36,6 +36,8 @@ type Runtime struct {
 	refreshMu      sync.Mutex
 	reconcileMu    sync.RWMutex
 	reconcileState runtimeReconcileState
+	leaseRestoreMu sync.RWMutex
+	leaseRestore   runtimeLeaseRestoreState
 	fraudChecker   ipFraudCheckerCache
 	geoCache       ipGeoCache
 	exitCheckCache proxyExitCheckCache
@@ -98,12 +100,10 @@ func (r *Runtime) Run(ctx context.Context) error {
 		return err
 	}
 	defer r.dataPlane.Stop()
-	if err := r.leaseCoordinator.restoreActiveLeases(ctx); err != nil {
-		return err
-	}
 	errCh := make(chan error, 2)
 	go r.reconcileLoop(ctx)
 	go r.leaseExpiryLoop(ctx)
+	go r.restoreActiveLeasesInBackground(ctx)
 	go r.serveHTTP(ctx, errCh)
 	select {
 	case <-ctx.Done():

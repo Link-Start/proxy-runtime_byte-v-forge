@@ -10,6 +10,26 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 )
 
+const startupLeaseRestoreTimeout = 2 * time.Minute
+
+func (r *Runtime) restoreActiveLeasesInBackground(ctx context.Context) {
+	r.markLeaseRestoreStarted()
+	startedAt := time.Now()
+	restoreCtx, cancel := context.WithTimeout(ctx, startupLeaseRestoreTimeout)
+	defer cancel()
+	err := r.leaseCoordinator.restoreActiveLeases(restoreCtx)
+	r.markLeaseRestoreFinished(err)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			r.logger.Info("background proxy lease restore stopped", "duration_ms", time.Since(startedAt).Milliseconds())
+			return
+		}
+		r.logger.Warn("background proxy lease restore failed", "error", err, "duration_ms", time.Since(startedAt).Milliseconds())
+		return
+	}
+	r.logger.Info("background proxy lease restore finished", "duration_ms", time.Since(startedAt).Milliseconds())
+}
+
 func (c leaseCoordinator) restoreActiveLeases(ctx context.Context) error {
 	r := c.runtime
 	if r.store == nil {

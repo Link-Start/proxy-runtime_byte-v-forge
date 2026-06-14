@@ -8,6 +8,11 @@ type runtimeReconcileState struct {
 	lastError string
 }
 
+type runtimeLeaseRestoreState struct {
+	running   bool
+	lastError string
+}
+
 func (r *Runtime) markReconcilePending() {
 	r.reconcileMu.Lock()
 	defer r.reconcileMu.Unlock()
@@ -33,7 +38,7 @@ func (r *Runtime) markReconcileFinished(err error) {
 }
 
 func (r *Runtime) dataPlaneStatus() string {
-	return r.decorateRuntimeStatus(statusString(r.dataPlane.Status()))
+	return r.decorateLeaseRestoreStatus(r.decorateRuntimeStatus(statusString(r.dataPlane.Status())))
 }
 
 func statusString(status dataplane.Status) string {
@@ -56,6 +61,36 @@ func (r *Runtime) decorateRuntimeStatus(status string) string {
 		return status + "; reconcile pending"
 	case r.reconcileState.lastError != "":
 		return status + "; last reconcile failed"
+	default:
+		return status
+	}
+}
+
+func (r *Runtime) markLeaseRestoreStarted() {
+	r.leaseRestoreMu.Lock()
+	defer r.leaseRestoreMu.Unlock()
+	r.leaseRestore.running = true
+}
+
+func (r *Runtime) markLeaseRestoreFinished(err error) {
+	r.leaseRestoreMu.Lock()
+	defer r.leaseRestoreMu.Unlock()
+	r.leaseRestore.running = false
+	if err != nil {
+		r.leaseRestore.lastError = "failed"
+		return
+	}
+	r.leaseRestore.lastError = ""
+}
+
+func (r *Runtime) decorateLeaseRestoreStatus(status string) string {
+	r.leaseRestoreMu.RLock()
+	defer r.leaseRestoreMu.RUnlock()
+	switch {
+	case r.leaseRestore.running:
+		return status + "; restoring leases"
+	case r.leaseRestore.lastError != "":
+		return status + "; lease restore failed"
 	default:
 		return status
 	}

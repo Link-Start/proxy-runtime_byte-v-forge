@@ -2,6 +2,7 @@ package lease
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -85,6 +86,14 @@ func ApplyRequestLabels(req *proxyruntimev1.AcquireProxyLeaseRequest) {
 	}
 	req.Policy.Labels[LabelAccountID] = req.GetAccountId()
 	req.Policy.Labels[LabelPurpose] = req.GetPurpose()
+}
+
+func SetAttemptLabel(req *proxyruntimev1.AcquireProxyLeaseRequest, attempt int) {
+	if req == nil {
+		return
+	}
+	ApplyRequestLabels(req)
+	req.Policy.Labels[LabelAttempt] = strconv.Itoa(attempt)
 }
 
 func firstNonEmpty(values ...string) string {

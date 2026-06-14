@@ -732,6 +732,7 @@ Completed user-visible/runtime batches:
 - Lease coordinator runtime adapters for provider-session factory, lock manager, and ID generation are split from coordinator dependency wiring.
 - Source-plane proxy-user configured-route merge and dedup helpers are split from the top-level source-plane dataplane config builder.
 - Dynamic lease acquire/release request validation, account/purpose normalization, release lookup parsing, and release lease/account/purpose match validation are centralized in `internal/app/lease`.
+- Dynamic lease acquire attempt label writing is centralized in `internal/app/lease`, so runtime acquire retry logic no longer edits raw policy label keys directly.
 
 Still open:
 

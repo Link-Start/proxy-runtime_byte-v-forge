@@ -16,6 +16,7 @@ const (
 	LabelDynamicProviderID                = "dynamic_provider_id"
 	LabelDynamicIPEndpointID              = "dynamic_ip_endpoint_id"
 	LabelSelectionID                      = "selection_id"
+	LabelAttempt                          = "attempt"
 )
 
 func ConcurrencyMode(policy *proxyruntimev1.ProxySessionPolicy) proxyruntimev1.ProxySessionMode {

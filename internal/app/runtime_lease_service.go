@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"strconv"
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -51,7 +50,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 	}
 	var lastErr error
 	for attempt := 1; attempt <= dynamicIPSelectionMaxAttempts(selectionPolicy); attempt++ {
-		req.Policy.Labels["attempt"] = strconv.Itoa(attempt)
+		leaseapp.SetAttemptLabel(req, attempt)
 		lease, err := c.acquireLeaseAttempt(ctx, advertisedHost, req, settings)
 		if err == nil {
 			return lease, nil

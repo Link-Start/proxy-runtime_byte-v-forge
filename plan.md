@@ -878,6 +878,7 @@ Completed user-visible/runtime batches:
 - Release request lease lookup now lives in `internal/app/lease`, including lease-id/account fallback, release match validation, and not-found classification.
 - Release lock-window state refresh and route-retire eligibility now live in `internal/app/lease`; release orchestration only locks and executes route/provider cleanup side effects.
 - Lease route deletion from persisted lease facts now lives in `internal/app/lease`; release, expiry, and cleanup paths share the same session-route reconstruction and dataplane delete helper.
+- Acquire success active-fact persistence now uses a lease-owned acquired-fact input helper, so route apply no longer assembles account/purpose/session fact fields directly.
 
 Still open:
 

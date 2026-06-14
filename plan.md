@@ -950,6 +950,7 @@ Completed user-visible/runtime batches:
 - Lease acquire-attempt slot, acquired-route apply, and provider-session acquire APIs no longer return internal stage/error-kind values to the coordinator; callers now consume results plus classified errors only.
 - Final lease save and cleanup-progress APIs no longer return internal save stage values; provider-account concurrency release failures use a lease-owned sentinel error that the coordinator logs and swallows as before.
 - Final lease expired/released persistence now exposes explicit lease-owned APIs instead of requiring the coordinator to pass an internal final-state enum.
+- Settings dynamic-IP provider updates now use the shared settings update-and-schedule flow, and connection-cleanup update helpers are internal to the settings application instead of exported orchestration surface.
 
 Still open:
 

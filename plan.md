@@ -832,6 +832,7 @@ Completed user-visible/runtime batches:
 - Mihomo render models are split into top-level config/group, render options, native config, provider/health-check, and gateway listener/user model files.
 - Mihomo process log handling now separates ring storage, writer buffering, and sensitive-output redaction helpers.
 - Mihomo egress naming helpers now separate profile group construction, profile display-name mapping, and rule target/node filter sanitization into focused files.
+- Mihomo native config normalization now separates provider path/header normalization and fixed native group cleanup from the top-level normalization flow.
 
 Still open:
 

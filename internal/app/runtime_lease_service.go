@@ -69,7 +69,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 		if !retryLeaseAcquireAttempt(err) {
 			return nil, err
 		}
-		r.logger.Warn("dynamic IP lease attempt failed", "account_id", req.GetAccountId(), "purpose", req.GetPurpose(), "attempt", attempt, "reason", err.Error())
+		r.logger.Warn("dynamic IP lease attempt failed", "account_id", req.GetAccountId(), "purpose", req.GetPurpose(), "attempt", attempt, "error_type", errorLogType(err))
 	}
 	return nil, lastErr
 }

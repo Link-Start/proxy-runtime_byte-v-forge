@@ -3,6 +3,7 @@ package app
 import (
 	"errors"
 	"net/http"
+	"reflect"
 	"strings"
 
 	"google.golang.org/grpc/codes"
@@ -107,4 +108,11 @@ func publicErrorMessage(err error, status int) string {
 		return err.Error()
 	}
 	return http.StatusText(status)
+}
+
+func errorLogType(err error) string {
+	if err == nil {
+		return ""
+	}
+	return reflect.TypeOf(err).String()
 }

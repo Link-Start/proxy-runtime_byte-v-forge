@@ -56,17 +56,17 @@ func (r *Runtime) closeMihomoConnections(ctx context.Context, selector mihomoCon
 	if err != nil {
 		return err
 	}
-	var failures []string
+	failureCount := 0
 	for _, connection := range connections {
 		if !connectionMatches(connection, targets, chains) {
 			continue
 		}
 		if err := deleteMihomoConnection(ctx, client, base, connection.ID, r.cfg.ControlAuthToken); err != nil {
-			failures = append(failures, err.Error())
+			failureCount++
 		}
 	}
-	if len(failures) > 0 {
-		return fmt.Errorf("delete mihomo connections: %s", strings.Join(failures, "; "))
+	if failureCount > 0 {
+		return fmt.Errorf("delete mihomo connections failed for %d connection(s)", failureCount)
 	}
 	return nil
 }
@@ -83,8 +83,7 @@ func listMihomoConnections(ctx context.Context, client *http.Client, base *url.U
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-		return nil, fmt.Errorf("list mihomo connections returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(data)))
+		return nil, fmt.Errorf("list mihomo connections returned HTTP %d", resp.StatusCode)
 	}
 	var payload mihomoConnectionsResponse
 	if err := json.NewDecoder(io.LimitReader(resp.Body, 1<<20)).Decode(&payload); err != nil {
@@ -111,8 +110,7 @@ func deleteMihomoConnection(ctx context.Context, client *http.Client, base *url.
 	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
 		return nil
 	}
-	data, _ := io.ReadAll(io.LimitReader(resp.Body, 4096))
-	return fmt.Errorf("delete mihomo connection returned HTTP %d: %s", resp.StatusCode, strings.TrimSpace(string(data)))
+	return fmt.Errorf("delete mihomo connection returned HTTP %d", resp.StatusCode)
 }
 
 func mihomoControllerURL(base *url.URL, path string) string {

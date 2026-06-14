@@ -751,6 +751,7 @@ Completed user-visible/runtime batches:
 - Settings enabled dynamic-provider and egress-profile ID index helpers are split from egress profile normalization.
 - Mihomo-native update now separates current-projection loading and update-plan persistence/apply helpers from top-level orchestration.
 - Dynamic IP provider request validation is split from dynamic provider endpoint/model normalization.
+- Dynamic IP endpoint map and provider-instance projection helpers are split from settings model normalization.
 
 Still open:
 

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
@@ -18,7 +19,7 @@ func (r *Runtime) checkIPListener(ctx context.Context, listenerID string) (confi
 		return r.inUserCheckListener(ctx, strings.TrimPrefix(listenerID, inUserCheckListenerPrefix))
 	}
 	configs := r.baseListenerConfigs()
-	leases, err := r.store.ListLeaseFacts(ctx, false)
+	leases, err := r.store.ListActiveLeaseFacts(ctx, leaseapp.MaxListLimit)
 	if err != nil {
 		return config.EgressListener{}, err
 	}

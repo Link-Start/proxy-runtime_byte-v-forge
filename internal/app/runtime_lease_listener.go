@@ -64,20 +64,44 @@ func ingressRuleForProfile(settings *runtimeSettingsFile, profileID string) *pro
 }
 
 func (r *Runtime) listenerReservedLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	leases, err := r.store.ListLeaseFacts(ctx, true)
+	active, err := r.store.ListActiveLeaseFacts(ctx, leaseapp.MaxListLimit)
 	if err != nil {
 		return nil, err
 	}
-	out := make([]*proxyruntimev1.ProxyDynamicLease, 0, len(leases))
-	for _, lease := range leases {
+	cleanupPending, err := r.store.CleanupPendingLeaseFacts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return listenerReservedLeaseFacts(active, cleanupPending), nil
+}
+
+func listenerReservedLeaseFacts(active []*proxyruntimev1.ProxyDynamicLease, cleanupPending []*proxyruntimev1.ProxyDynamicLease) []*proxyruntimev1.ProxyDynamicLease {
+	out := make([]*proxyruntimev1.ProxyDynamicLease, 0, len(active)+len(cleanupPending))
+	seen := map[string]struct{}{}
+	appendReserved := func(lease *proxyruntimev1.ProxyDynamicLease) {
 		if lease.GetListener() == nil {
-			continue
+			return
 		}
-		if lease.GetStatus() == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE || leaseapp.RouteCleanupPending(lease) {
-			out = append(out, lease)
+		leaseID := strings.TrimSpace(lease.GetLeaseId())
+		if leaseID != "" {
+			if _, exists := seen[leaseID]; exists {
+				return
+			}
+			seen[leaseID] = struct{}{}
+		}
+		out = append(out, lease)
+	}
+	for _, lease := range active {
+		if lease.GetStatus() == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE {
+			appendReserved(lease)
 		}
 	}
-	return out, nil
+	for _, lease := range cleanupPending {
+		if leaseapp.RouteCleanupPending(lease) {
+			appendReserved(lease)
+		}
+	}
+	return out
 }
 
 func proxyRouteUsername(accountID string) string {

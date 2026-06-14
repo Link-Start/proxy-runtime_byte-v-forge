@@ -686,6 +686,7 @@ Completed user-visible/runtime batches:
 - Lease acquire and release application boundaries now log duration and stable lease/account/provider identifiers without emitting provider/session secrets or raw error text.
 - Dynamic lease retry and Mihomo connection cleanup paths no longer log or return raw provider/controller error bodies; logs use safe error types and HTTP status summaries.
 - Lease list query parsing for status, legacy inactive mode, and bounded limits is centralized in the lease package; the Gin handler only adapts query values to application input.
+- Listener resolution and reserved-listener checks no longer use the old unbounded `ListLeaseFacts`; they use bounded active lease queries plus cleanup-pending facts, and the unbounded store port was removed.
 - Lease package is split into application, repository/coordinator ports, list options, operations, and predicates.
 - Lease restore/expire/cleanup worker entrypoints now go through the lease application worker port instead of direct Runtime coordinator calls.
 - Lease cleanup label mutation is centralized in the lease package together with cleanup predicates.

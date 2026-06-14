@@ -38,30 +38,6 @@ ON CONFLICT (lease_id) DO UPDATE SET account_id=EXCLUDED.account_id, purpose=EXC
 	return err
 }
 
-func (s *PostgresStore) ListLeaseFacts(ctx context.Context, includeInactive bool) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	query := `SELECT lease_json::text FROM proxy_runtime_dynamic_leases`
-	args := []any{}
-	if !includeInactive {
-		query += ` WHERE status=$1 AND (expires_at IS NULL OR expires_at > now())`
-		args = append(args, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String())
-	}
-	query += ` ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id`
-	rows, err := s.pool.Query(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	out := []*proxyruntimev1.ProxyDynamicLease{}
-	for rows.Next() {
-		lease, err := scanLeaseFact(rows)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, lease)
-	}
-	return out, rows.Err()
-}
-
 func (s *PostgresStore) ListActiveLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	rows, err := s.pool.Query(ctx, `
 SELECT lease_json::text

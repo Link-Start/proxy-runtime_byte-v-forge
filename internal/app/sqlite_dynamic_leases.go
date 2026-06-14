@@ -39,18 +39,6 @@ ON CONFLICT(lease_id) DO UPDATE SET account_id=excluded.account_id, purpose=excl
 	return err
 }
 
-func (s *SQLiteStore) ListLeaseFacts(ctx context.Context, includeInactive bool) ([]*proxyruntimev1.ProxyDynamicLease, error) {
-	if includeInactive {
-		return s.allLeaseFacts(ctx)
-	}
-	return s.leaseFactsByQuery(ctx, `
-SELECT lease_json
-FROM proxy_runtime_dynamic_leases
-WHERE status=? AND (expires_at='' OR expires_at>?)
-ORDER BY acquired_at DESC, updated_at DESC, lease_id
-`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()))
-}
-
 func (s *SQLiteStore) ListActiveLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	return s.leaseFactsByQuery(ctx, `
 SELECT lease_json

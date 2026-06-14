@@ -21,20 +21,17 @@ func (c leaseCoordinator) saveLeaseExpiredCleanupFailure(ctx context.Context, le
 }
 
 func (c leaseCoordinator) saveLeaseExpired(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	return c.saveFinalLeaseState(ctx, lease, leaseapp.FinalLeaseStateExpired)
+	err := leaseapp.SaveExpiredFinalLeaseState(ctx, c.deps.store, c.deps.providerConcurrency, lease)
+	return c.finalLeaseSaveError(lease, err)
 }
 
 func (c leaseCoordinator) saveLeaseReleased(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	return c.saveFinalLeaseState(ctx, lease, leaseapp.FinalLeaseStateReleased)
+	err := leaseapp.SaveReleasedFinalLeaseState(ctx, c.deps.store, c.deps.providerConcurrency, lease)
+	return c.finalLeaseSaveError(lease, err)
 }
 
 func (c leaseCoordinator) saveLeaseCleanupProgress(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
 	err := leaseapp.SaveCleanupProgress(ctx, c.deps.store, c.deps.providerConcurrency, lease)
-	return c.finalLeaseSaveError(lease, err)
-}
-
-func (c leaseCoordinator) saveFinalLeaseState(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, state leaseapp.FinalLeaseState) error {
-	err := leaseapp.SaveFinalLeaseState(ctx, c.deps.store, c.deps.providerConcurrency, lease, state)
 	return c.finalLeaseSaveError(lease, err)
 }
 

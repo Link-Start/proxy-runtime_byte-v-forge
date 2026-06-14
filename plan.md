@@ -949,6 +949,7 @@ Completed user-visible/runtime batches:
 - Provider-session factory/create/fetch failures now return lease-owned sentinel errors; the coordinator handles fetch cleanup and transport mapping through error classification instead of switching provider-session error kind.
 - Lease acquire-attempt slot, acquired-route apply, and provider-session acquire APIs no longer return internal stage/error-kind values to the coordinator; callers now consume results plus classified errors only.
 - Final lease save and cleanup-progress APIs no longer return internal save stage values; provider-account concurrency release failures use a lease-owned sentinel error that the coordinator logs and swallows as before.
+- Final lease expired/released persistence now exposes explicit lease-owned APIs instead of requiring the coordinator to pass an internal final-state enum.
 
 Still open:
 

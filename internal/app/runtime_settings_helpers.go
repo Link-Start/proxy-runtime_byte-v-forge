@@ -4,8 +4,6 @@ import (
 	"strings"
 	"time"
 
-	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
@@ -27,41 +25,11 @@ func cleanList(values []string) []string {
 	return out
 }
 
-func cleanSecretRefs(values []*commonv1.SecretRef, provider string, purpose string) []*commonv1.SecretRef {
-	out := make([]*commonv1.SecretRef, 0, len(values))
-	seen := map[string]struct{}{}
-	for _, value := range values {
-		ref := secretref.Clone(value, provider, purpose)
-		if ref == nil {
-			continue
-		}
-		secretID := ref.GetSecretId()
-		if _, exists := seen[secretID]; exists {
-			continue
-		}
-		seen[secretID] = struct{}{}
-		out = append(out, ref)
-	}
-	return out
-}
-
-func cloneSecretRef(value *commonv1.SecretRef, provider string, purpose string) *commonv1.SecretRef {
-	refs := cleanSecretRefs([]*commonv1.SecretRef{value}, provider, purpose)
-	if len(refs) == 0 {
-		return nil
-	}
-	return refs[0]
-}
-
 func cloneRuntimeSettingsFile(settings *runtimeSettingsFile) *runtimeSettingsFile {
 	if settings == nil {
 		return nil
 	}
 	return proto.Clone(settings).(*runtimeSettingsFile)
-}
-
-func secretRefConfigured(value *commonv1.SecretRef) bool {
-	return secretref.Configured(value)
 }
 
 func cleanRegionCodes(values []string) []string {

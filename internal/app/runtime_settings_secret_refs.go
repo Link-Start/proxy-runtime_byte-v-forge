@@ -9,6 +9,36 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 )
 
+func cleanSecretRefs(values []*commonv1.SecretRef, provider string, purpose string) []*commonv1.SecretRef {
+	out := make([]*commonv1.SecretRef, 0, len(values))
+	seen := map[string]struct{}{}
+	for _, value := range values {
+		ref := secretref.Clone(value, provider, purpose)
+		if ref == nil {
+			continue
+		}
+		secretID := ref.GetSecretId()
+		if _, exists := seen[secretID]; exists {
+			continue
+		}
+		seen[secretID] = struct{}{}
+		out = append(out, ref)
+	}
+	return out
+}
+
+func cloneSecretRef(value *commonv1.SecretRef, provider string, purpose string) *commonv1.SecretRef {
+	refs := cleanSecretRefs([]*commonv1.SecretRef{value}, provider, purpose)
+	if len(refs) == 0 {
+		return nil
+	}
+	return refs[0]
+}
+
+func secretRefConfigured(value *commonv1.SecretRef) bool {
+	return secretref.Configured(value)
+}
+
 func resolveRuntimeSecretRefs(ctx context.Context, resolver secretref.Resolver, refs []*commonv1.SecretRef, purpose string) ([]string, error) {
 	refs = cleanSecretRefs(refs, "proxy-runtime", purpose)
 	if len(refs) == 0 {

@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -77,7 +76,7 @@ type leaseCoordinatorDependencies struct {
 	dynamicIPSelector       *dynamicIPSelector
 	sessionProviders        leaseSessionProviderFactory
 	providerConcurrency     providerAccountConcurrencyLimiter
-	logger                  *slog.Logger
+	logger                  leaseapp.Logger
 	exitCheckCache          *proxyExitCheckCache
 	leaseListener           leaseListenerFunc
 	localListenerEndpoint   leaseEndpointFunc

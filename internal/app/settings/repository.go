@@ -8,4 +8,5 @@ import (
 
 type Repository interface {
 	View(context.Context) (*proxyruntimev1.ProxyRuntimeSettings, error)
+	UpdateDynamicIPProviders(context.Context, []*proxyruntimev1.ProxyDynamicIPProviderSettings) (*proxyruntimev1.ProxyRuntimeSettings, error)
 }

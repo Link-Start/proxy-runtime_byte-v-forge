@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
@@ -41,4 +42,11 @@ func newRuntimeSettingsApplication(deps runtimeSettingsApplicationDependencies) 
 		updateMihomoNativeSettings: deps.UpdateMihomoNativeSettings,
 		scheduleApply:              deps.ScheduleApply,
 	}
+}
+
+func (a runtimeSettingsApplication) settingsUsecase() settingsapp.Application {
+	return settingsapp.NewApplication(settingsapp.Dependencies{
+		Repository:    runtimeSettingsRepositoryAdapter{repository: a.settings},
+		ScheduleApply: a.scheduleRuntimeSettingsApply,
+	})
 }

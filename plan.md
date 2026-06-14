@@ -893,6 +893,7 @@ Completed user-visible/runtime batches:
 - Acquire route application now receives a single acquired-lease flow object instead of a long provider/session/listener parameter list, preparing the remaining route orchestration for package-level extraction.
 - Acquired endpoint projection now lives in `internal/app/lease`, combining listener proto creation, endpoint metadata application, and failed-acquire recorder endpoint state updates.
 - Runtime settings read usecase now has an explicit `internal/app/settings` application and repository port; app-level settings read is reduced to an adapter call.
+- Dynamic IP provider settings update now runs through the explicit `internal/app/settings` application with a repository adapter and apply scheduler instead of app-local update flow.
 
 Still open:
 

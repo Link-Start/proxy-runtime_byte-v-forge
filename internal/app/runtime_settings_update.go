@@ -20,13 +20,7 @@ func (a runtimeSettingsApplication) UpdateProxyRuntimeSettings(ctx context.Conte
 }
 
 func (a runtimeSettingsApplication) UpdateProxyDynamicIPProviders(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
-	settings, err := a.updateSettingsAndScheduleApply(func(repository runtimeSettingsRepository) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-		return repository.updateDynamicIPProviders(ctx, req.GetDynamicIpProviders())
-	})
-	if err != nil {
-		return nil, err
-	}
-	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
+	return a.settingsUsecase().UpdateDynamicIPProviders(ctx, req.GetDynamicIpProviders())
 }
 
 func (a runtimeSettingsApplication) UpdateProxyEgressProfiles(ctx context.Context, req *proxyruntimev1.UpdateProxyEgressProfilesRequest) (*proxyruntimev1.UpdateProxyEgressProfilesResponse, error) {

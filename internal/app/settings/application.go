@@ -4,12 +4,20 @@ import "errors"
 
 var ErrRepositoryRequired = errors.New("runtime settings repository is not configured")
 
-type Application struct {
-	repository Repository
+type ApplyScheduler func([]string)
+
+type Dependencies struct {
+	Repository    Repository
+	ScheduleApply ApplyScheduler
 }
 
-func NewApplication(repository Repository) Application {
-	return Application{repository: repository}
+type Application struct {
+	repository    Repository
+	scheduleApply ApplyScheduler
+}
+
+func NewApplication(deps Dependencies) Application {
+	return Application{repository: deps.Repository, scheduleApply: deps.ScheduleApply}
 }
 
 func (a Application) repositoryOrError() (Repository, error) {
@@ -17,4 +25,10 @@ func (a Application) repositoryOrError() (Repository, error) {
 		return nil, ErrRepositoryRequired
 	}
 	return a.repository, nil
+}
+
+func (a Application) schedule(changedUsernames []string) {
+	if a.scheduleApply != nil {
+		a.scheduleApply(changedUsernames)
+	}
 }

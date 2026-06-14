@@ -8,5 +8,5 @@ import (
 )
 
 func (a runtimeSettingsApplication) GetProxyRuntimeSettings(ctx context.Context) (*proxyruntimev1.GetProxyRuntimeSettingsResponse, error) {
-	return settingsapp.NewApplication(runtimeSettingsReadRepository{repository: a.settings}).Get(ctx)
+	return a.settingsUsecase().Get(ctx)
 }

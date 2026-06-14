@@ -38,10 +38,8 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 		failure.BeforeRoute(ctx, "lease line resolution failed")
 		return nil, err
 	}
-	var lease *proxyruntimev1.ProxyDynamicLease
-	err = leaseapp.WithSessionListenerAllocationLock(ctx, c.deps.locks, func(ctx context.Context) error {
-		var err error
-		lease, err = c.applyAcquiredLeaseRoute(ctx, acquiredLeaseFlow{
+	return leaseapp.RunSessionListenerAllocation(ctx, c.deps.locks, func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
+		return c.applyAcquiredLeaseRoute(ctx, acquiredLeaseFlow{
 			advertisedHost:    advertisedHost,
 			request:           req,
 			settings:          settings,
@@ -56,7 +54,5 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 			lineLabels:        lineBinding.Labels,
 			failure:           failure,
 		})
-		return err
 	})
-	return lease, err
 }

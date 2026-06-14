@@ -49,9 +49,6 @@ func (c leaseCoordinator) restoreActiveLeases(ctx context.Context) error {
 }
 
 func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	if lease.GetSession() == nil || lease.GetListener() == nil {
-		return errors.New("lease session or listener is missing")
-	}
 	settings, err := c.deps.settings.load(ctx)
 	if err != nil {
 		return err

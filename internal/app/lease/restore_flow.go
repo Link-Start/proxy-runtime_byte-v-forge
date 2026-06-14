@@ -2,11 +2,14 @@ package lease
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
+
+var ErrRestoreLeaseRouteRequired = errors.New("lease session or listener is missing")
 
 type RestoreLeaseInput struct {
 	Limiter            ProviderAccountConcurrencyLimiter
@@ -24,6 +27,9 @@ type RestoreLeaseInput struct {
 }
 
 func RestoreLease(ctx context.Context, input RestoreLeaseInput) error {
+	if input.Lease.GetSession() == nil || input.Lease.GetListener() == nil {
+		return ErrRestoreLeaseRouteRequired
+	}
 	providerCfg, providerAccountID, err := ProviderConfigForLease(ctx, input.Store, input.Lease)
 	if err != nil {
 		return err

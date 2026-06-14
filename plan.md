@@ -872,6 +872,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease Mihomo line dialer helpers now separate profile label/error construction, native fixed/subscription lookup, and Mihomo node naming helpers.
 - Dynamic IP selection policy normalization, attempt parsing, max-attempt resolution, and selection keys now live in `internal/app/lease`; app-level lease acquire retains only retry error classification.
 - Existing active-lease reuse/replace branching is now a single lease-owned decision enum; acquire orchestration only executes refresh or retire side effects.
+- Acquire request session-policy normalization, request label application, profile dynamic-IP policy merge, and selection policy derivation are now one lease-owned preparation helper.
 
 Still open:
 

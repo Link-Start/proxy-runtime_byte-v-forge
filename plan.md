@@ -672,6 +672,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native settings mapping is split into focused conversion, normalization, indexing, and subscription-provider rendering files.
 - Mihomo-native update now separates pure update-plan construction and validation from persistence, file save, reference replacement, and reconcile scheduling side effects.
 - Mihomo-native native JSON file IO now depends on an explicit config directory instead of direct `*Runtime` access.
+- Mihomo-native projection orchestration now uses an explicit settings repository port and config directory; `Runtime` only wires dependencies.
 - Mihomo sourceplane egress-profile rendering is split into line, exit, native-resource, dynamic-exit, and naming helpers.
 - Mihomo driver model, reconcile flow, and hot-reload candidate apply logic are separated into focused files.
 - Mihomo reconcile now uses explicit rendered-config projection and base-config apply helpers.

@@ -7,16 +7,28 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
+type mihomoNativeSettingsRepository interface {
+	loadMihomoNative(context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
+	saveMihomoNative(context.Context, *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) error
+}
+
 func (r *Runtime) projectMihomoNativeSettings(ctx context.Context) error {
 	if r == nil || r.settings == nil {
 		return nil
 	}
-	view, err := r.settings.loadMihomoNative(ctx)
+	return projectMihomoNativeSettings(ctx, r.settings, r.cfg.Mihomo.ConfigDir)
+}
+
+func projectMihomoNativeSettings(ctx context.Context, settings mihomoNativeSettingsRepository, configDir string) error {
+	if settings == nil {
+		return nil
+	}
+	view, err := settings.loadMihomoNative(ctx)
 	if err != nil {
 		return err
 	}
 	if mihomoNativeSettingsEmpty(view) {
-		migrated, err := r.importMihomoNativeProjection(ctx)
+		migrated, err := importMihomoNativeProjection(ctx, settings, configDir)
 		if err != nil {
 			return err
 		}
@@ -24,18 +36,18 @@ func (r *Runtime) projectMihomoNativeSettings(ctx context.Context) error {
 			view = migrated
 		}
 	}
-	if mihomoNativeSettingsEmpty(view) && strings.TrimSpace(r.cfg.Mihomo.ConfigDir) == "" {
+	if mihomoNativeSettingsEmpty(view) && strings.TrimSpace(configDir) == "" {
 		return nil
 	}
 	config, err := mihomoNativeConfigFileFromSettings(view)
 	if err != nil {
 		return err
 	}
-	return saveMihomoNativeConfig(r.cfg.Mihomo.ConfigDir, config)
+	return saveMihomoNativeConfig(configDir, config)
 }
 
-func (r *Runtime) importMihomoNativeProjection(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
-	config, exists, err := loadMihomoNativeProjection(r.cfg.Mihomo.ConfigDir)
+func importMihomoNativeProjection(ctx context.Context, settings mihomoNativeSettingsRepository, configDir string) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+	config, exists, err := loadMihomoNativeProjection(configDir)
 	if err != nil || !exists {
 		return nil, err
 	}
@@ -43,7 +55,7 @@ func (r *Runtime) importMihomoNativeProjection(ctx context.Context) (*proxyrunti
 	if mihomoNativeSettingsEmpty(view) {
 		return nil, nil
 	}
-	if err := r.settings.saveMihomoNative(ctx, view); err != nil {
+	if err := settings.saveMihomoNative(ctx, view); err != nil {
 		return nil, err
 	}
 	return view, nil

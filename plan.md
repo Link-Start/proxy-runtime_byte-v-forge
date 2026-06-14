@@ -752,6 +752,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native update now separates current-projection loading and update-plan persistence/apply helpers from top-level orchestration.
 - Dynamic IP provider request validation is split from dynamic provider endpoint/model normalization.
 - Dynamic IP endpoint map and provider-instance projection helpers are split from settings model normalization.
+- Top-level settings request assembly now delegates IP fraud, IP geo, and dynamic IP provider list construction to focused request helpers.
 
 Still open:
 

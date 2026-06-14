@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
@@ -32,11 +31,7 @@ func (c leaseCoordinator) retireLeaseRoute(ctx context.Context, lease *proxyrunt
 }
 
 func (c leaseCoordinator) releaseLeaseProviderSessionWithLock(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	providerAccountID := strings.TrimSpace(lease.GetProviderAccountId())
-	if providerAccountID == "" {
-		return c.releaseLeaseProviderSession(ctx, lease)
-	}
-	return c.deps.locks.WithProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
+	return leaseapp.WithProviderAccountLock(ctx, c.deps.locks, lease.GetProviderAccountId(), func(ctx context.Context) error {
 		return c.releaseLeaseProviderSession(ctx, lease)
 	})
 }

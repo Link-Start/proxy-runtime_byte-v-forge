@@ -36,7 +36,7 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 		_ = leaseapp.ReleaseConcurrencySlotUnlessKept(releaseCtx, concurrencySlot, keepConcurrencySlot)
 	}()
 	var lease *proxyruntimev1.ProxyDynamicLease
-	err = c.deps.locks.WithProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
+	err = leaseapp.WithProviderAccountLock(ctx, c.deps.locks, providerAccountID, func(ctx context.Context) error {
 		var err error
 		lease, err = c.acquireLeaseWithProviderAccountLock(ctx, advertisedHost, req, settings, selection, providerAccountID, leaseID, concurrencyHolder)
 		if err == nil {

@@ -17,7 +17,7 @@ func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.
 		return lease, nil
 	}
 	accountID := strings.TrimSpace(lease.GetAccountId())
-	err = c.deps.locks.WithAccountLock(ctx, accountID, func(ctx context.Context) error {
+	err = leaseapp.WithAccountLock(ctx, c.deps.locks, accountID, func(ctx context.Context) error {
 		current, err := c.deps.store.LeaseFactByID(ctx, lease.GetLeaseId())
 		if err != nil && !isStoreNotFound(err) {
 			return err

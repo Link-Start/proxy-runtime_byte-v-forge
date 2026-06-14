@@ -63,7 +63,7 @@ func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyrunti
 	if lease == nil || strings.TrimSpace(lease.GetLeaseId()) == "" {
 		return nil
 	}
-	return c.deps.locks.WithAccountLock(ctx, lease.GetAccountId(), func(ctx context.Context) error {
+	return leaseapp.WithAccountLock(ctx, c.deps.locks, lease.GetAccountId(), func(ctx context.Context) error {
 		current, err := c.deps.store.LeaseFactByID(ctx, lease.GetLeaseId())
 		if err != nil {
 			if isStoreNotFound(err) {
@@ -88,12 +88,8 @@ func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyrunti
 			}
 			return nil
 		}
-		if strings.TrimSpace(current.GetProviderAccountId()) != "" {
-			if err := c.deps.locks.WithProviderAccountLock(ctx, current.GetProviderAccountId(), releaseProvider); err != nil {
-				_ = c.saveLeaseExpiredCleanupFailure(ctx, current, false, true, "expired provider session cleanup lock failed")
-				return err
-			}
-		} else if err := releaseProvider(ctx); err != nil {
+		if err := leaseapp.WithProviderAccountLock(ctx, c.deps.locks, current.GetProviderAccountId(), releaseProvider); err != nil {
+			_ = c.saveLeaseExpiredCleanupFailure(ctx, current, false, true, "expired provider session cleanup lock failed")
 			return err
 		}
 		return c.saveLeaseExpired(ctx, current)

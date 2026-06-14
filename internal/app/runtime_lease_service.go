@@ -12,7 +12,7 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, advertisedHost strin
 		return nil, invalidArgument(err.Error(), err)
 	}
 	var lease *proxyruntimev1.ProxyDynamicLease
-	err := c.deps.locks.WithAccountLock(ctx, req.GetAccountId(), func(ctx context.Context) error {
+	err := leaseapp.WithAccountLock(ctx, c.deps.locks, req.GetAccountId(), func(ctx context.Context) error {
 		var err error
 		lease, err = c.acquireLeaseWithAccountLock(ctx, advertisedHost, req)
 		return err

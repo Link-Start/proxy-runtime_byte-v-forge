@@ -35,7 +35,7 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 	}
 	nodes = leaseapp.ApplyNodeLabels(nodes, lineLabels)
 	var lease *proxyruntimev1.ProxyDynamicLease
-	err = c.deps.locks.WithSessionListenerAllocationLock(ctx, func(ctx context.Context) error {
+	err = leaseapp.WithSessionListenerAllocationLock(ctx, c.deps.locks, func(ctx context.Context) error {
 		var err error
 		lease, err = c.applyAcquiredLeaseRoute(ctx, advertisedHost, req, settings, selection, providerAccountID, leaseID, concurrencyHolder, providerClient, session, nodes, dialerProxy, lineLabels, failure)
 		return err

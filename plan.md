@@ -776,6 +776,7 @@ Completed user-visible/runtime batches:
 - Runtime settings and Mihomo-native settings decode helpers are storage-adapter agnostic instead of being owned by the Postgres adapter files.
 - Runtime settings store mutation primitives are split from concrete store update methods.
 - Runtime settings store read projection is split from concrete store update methods.
+- Mihomo-native fixed-proxy URI parsing, URI rendering, and JSON value extraction are split into focused helpers.
 
 Still open:
 

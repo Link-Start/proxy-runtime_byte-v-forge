@@ -112,11 +112,6 @@ func (s *runtimeSettingsStore) loadLocked(ctx context.Context) (*runtimeSettings
 		return nil, err
 	}
 	settings = normalizeRuntimeSettingsWithProviders(settings, s.ipFraudProviders, s.ipGeoProviders)
-	if ensurePlaygroundInUserRules(settings) {
-		if err := s.store.SaveRuntimeSettings(ctx, settings); err != nil {
-			return nil, err
-		}
-	}
 	return settings, nil
 }
 

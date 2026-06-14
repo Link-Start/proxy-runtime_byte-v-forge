@@ -1,9 +1,8 @@
 package app
 
 import (
-	"strings"
-
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 func proxyRouteUsername(accountID string) string {
@@ -15,10 +14,5 @@ func proxyRouteUsername(accountID string) string {
 }
 
 func playgroundIngressRule(settings *runtimeSettingsFile) *proxyruntimev1.ProxyIngressRuleSettings {
-	for _, rule := range settings.GetIngressRules() {
-		if rule.GetRuleId() == playgroundRuleID || strings.TrimSpace(rule.GetUsername()) == playgroundUsername {
-			return rule
-		}
-	}
-	return nil
+	return leaseapp.PlaygroundIngressRule(settings.GetIngressRules(), playgroundRuleID, playgroundUsername)
 }

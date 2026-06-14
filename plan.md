@@ -844,6 +844,7 @@ Completed user-visible/runtime batches:
 - Mihomo controller hot-reload HTTP handling now separates reload input validation, request construction/authorization, and response error parsing.
 - Mihomo native egress rendering now resolves resource/node targets once through a shared target resolver before target or group rendering.
 - Dynamic IP lease policy normalization and in-user profile dynamic-IP policy merge now live in `internal/app/lease`; app-level lease acquire keeps only transport error mapping and settings adaptation.
+- Lease listener ingress-rule lookup and password fallback resolution now live in `internal/app/lease`; runtime listener helpers only adapt runtime constants/settings.
 
 Still open:
 

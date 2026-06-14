@@ -2,21 +2,23 @@ package app
 
 import (
 	"context"
-	"log/slog"
 	"net/http"
-	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 type runtimeLeaseApplication struct {
-	logger *slog.Logger
 	leases *leaseapp.Application
 }
 
 func newRuntimeLeaseApplication(runtime *Runtime) runtimeLeaseApplication {
-	return runtimeLeaseApplication{logger: runtime.logger, leases: leaseapp.NewApplication(runtime.store, runtime.leaseCoordinator, runtime.leaseCoordinator)}
+	return runtimeLeaseApplication{leases: leaseapp.NewApplication(leaseapp.Dependencies{
+		Repository:  runtime.store,
+		Coordinator: runtime.leaseCoordinator,
+		Worker:      runtime.leaseCoordinator,
+		Logger:      runtime.logger,
+	})}
 }
 
 func (s *RuntimeService) ListProxyDynamicLeases(ctx context.Context, _ *proxyruntimev1.ListProxyDynamicLeasesRequest) (*proxyruntimev1.ListProxyDynamicLeasesResponse, error) {
@@ -48,14 +50,10 @@ func (a runtimeLeaseApplication) GetProxyDynamicLeaseFact(ctx context.Context, l
 }
 
 func (a runtimeLeaseApplication) ListProxyDynamicLeaseFacts(ctx context.Context, options leaseapp.ListOptions) (*proxyruntimev1.ListProxyDynamicLeasesResponse, error) {
-	options = leaseapp.NormalizeListOptions(options)
-	startedAt := time.Now()
 	leases, err := a.leases.List(ctx, options)
 	if err != nil {
-		a.logger.Warn("list proxy dynamic leases failed", "mode", options.Mode, "limit", options.Limit, "duration_ms", time.Since(startedAt).Milliseconds(), "error", err)
 		return nil, err
 	}
-	a.logger.Info("list proxy dynamic leases finished", "mode", options.Mode, "limit", options.Limit, "rows", len(leases), "duration_ms", time.Since(startedAt).Milliseconds())
 	return &proxyruntimev1.ListProxyDynamicLeasesResponse{Leases: leases}, nil
 }
 

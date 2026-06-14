@@ -3,6 +3,7 @@ package lease
 import (
 	"context"
 	"fmt"
+	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
@@ -27,4 +28,27 @@ func (a *Application) Release(ctx context.Context, req *proxyruntimev1.ReleasePr
 		return nil, err
 	}
 	return &proxyruntimev1.ReleaseProxyLeaseResponse{Lease: lease}, nil
+}
+
+func (a *Application) now() time.Time {
+	if a != nil && a.clock != nil {
+		return a.clock.Now()
+	}
+	return time.Now()
+}
+
+func (a *Application) sinceMilliseconds(startedAt time.Time) int64 {
+	return a.now().Sub(startedAt).Milliseconds()
+}
+
+func (a *Application) info(message string, args ...any) {
+	if a != nil && a.logger != nil {
+		a.logger.Info(message, args...)
+	}
+}
+
+func (a *Application) warn(message string, args ...any) {
+	if a != nil && a.logger != nil {
+		a.logger.Warn(message, args...)
+	}
 }

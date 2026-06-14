@@ -28,6 +28,17 @@ func (a *Application) List(ctx context.Context, options ListOptions) ([]*proxyru
 		return nil, nil
 	}
 	options = NormalizeListOptions(options)
+	startedAt := a.now()
+	leases, err := a.list(ctx, options)
+	if err != nil {
+		a.warn("list proxy dynamic leases failed", "mode", options.Mode, "limit", options.Limit, "duration_ms", a.sinceMilliseconds(startedAt), "error", err)
+		return nil, err
+	}
+	a.info("list proxy dynamic leases finished", "mode", options.Mode, "limit", options.Limit, "rows", len(leases), "duration_ms", a.sinceMilliseconds(startedAt))
+	return leases, nil
+}
+
+func (a *Application) list(ctx context.Context, options ListOptions) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	switch options.Mode {
 	case ListModeActive:
 		return a.repository.ListActiveLeaseFacts(ctx, options.Limit)

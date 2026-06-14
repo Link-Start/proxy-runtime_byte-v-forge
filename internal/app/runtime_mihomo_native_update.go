@@ -28,7 +28,7 @@ func updateMihomoNativeSettings(ctx context.Context, runtime *Runtime, view *pro
 	if err := runtime.settings.saveMihomoNative(ctx, mihomoNativeSettingsFromConfig(plan.Config)); err != nil {
 		return nil, internalError("save mihomo native settings", err)
 	}
-	if err := saveMihomoNativeConfig(runtime, plan.Config); err != nil {
+	if err := saveMihomoNativeConfig(runtime.cfg.Mihomo.ConfigDir, plan.Config); err != nil {
 		return nil, internalError("save mihomo native config", err)
 	}
 	_, err = runtime.settings.replaceMihomoResourceRefs(ctx, plan.ResourceReplacements)

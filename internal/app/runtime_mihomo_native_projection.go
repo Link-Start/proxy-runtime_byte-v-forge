@@ -31,11 +31,11 @@ func (r *Runtime) projectMihomoNativeSettings(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	return saveMihomoNativeConfig(r, config)
+	return saveMihomoNativeConfig(r.cfg.Mihomo.ConfigDir, config)
 }
 
 func (r *Runtime) importMihomoNativeProjection(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
-	config, exists, err := loadMihomoNativeProjection(r)
+	config, exists, err := loadMihomoNativeProjection(r.cfg.Mihomo.ConfigDir)
 	if err != nil || !exists {
 		return nil, err
 	}

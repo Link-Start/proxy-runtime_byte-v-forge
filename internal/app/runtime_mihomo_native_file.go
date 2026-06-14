@@ -9,13 +9,6 @@ import (
 	"strings"
 )
 
-func mihomoNativeConfigPath(runtime *Runtime) (string, error) {
-	if runtime == nil {
-		return "", errors.New("runtime is required")
-	}
-	return mihomoNativeConfigPathFromDir(runtime.cfg.Mihomo.ConfigDir)
-}
-
 func mihomoNativeConfigPathFromDir(configDir string) (string, error) {
 	configDir = strings.TrimSpace(configDir)
 	if configDir == "" {
@@ -24,8 +17,8 @@ func mihomoNativeConfigPathFromDir(configDir string) (string, error) {
 	return filepath.Join(configDir, mihomoNativeFileName), nil
 }
 
-func loadMihomoNativeProjection(runtime *Runtime) (mihomoNativeConfigFile, bool, error) {
-	path, err := mihomoNativeConfigPath(runtime)
+func loadMihomoNativeProjection(configDir string) (mihomoNativeConfigFile, bool, error) {
+	path, err := mihomoNativeConfigPathFromDir(configDir)
 	if err != nil {
 		return mihomoNativeConfigFile{}, false, nil
 	}
@@ -49,8 +42,8 @@ func loadMihomoNativeProjection(runtime *Runtime) (mihomoNativeConfigFile, bool,
 	return config, true, nil
 }
 
-func saveMihomoNativeConfig(runtime *Runtime, config mihomoNativeConfigFile) error {
-	path, err := mihomoNativeConfigPath(runtime)
+func saveMihomoNativeConfig(configDir string, config mihomoNativeConfigFile) error {
+	path, err := mihomoNativeConfigPathFromDir(configDir)
 	if err != nil {
 		return err
 	}

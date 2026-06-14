@@ -2,21 +2,17 @@ package app
 
 import (
 	"context"
-	"database/sql"
-	"errors"
-	"time"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 )
 
 func (s *SQLiteStore) LoadRuntimeSettings(ctx context.Context) (*runtimeSettingsFile, error) {
-	var raw string
-	err := s.db.QueryRowContext(ctx, `SELECT setting_json FROM proxy_runtime_settings WHERE setting_key=?`, runtimeSettingsKey).Scan(&raw)
-	if errors.Is(err, sql.ErrNoRows) {
-		return normalizeRuntimeSettings(nil), nil
-	}
+	raw, found, err := s.loadRuntimeSettingJSON(ctx, runtimeSettingsKey)
 	if err != nil {
 		return nil, err
+	}
+	if !found {
+		return normalizeRuntimeSettings(nil), nil
 	}
 	return decodeRuntimeSettings(raw)
 }
@@ -26,7 +22,5 @@ func (s *SQLiteStore) SaveRuntimeSettings(ctx context.Context, settings *runtime
 	if err != nil {
 		return err
 	}
-	now := sqliteTime(time.Now().UTC())
-	_, err = s.db.ExecContext(ctx, `INSERT INTO proxy_runtime_settings (setting_key, setting_json, updated_at) VALUES (?,?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_json=excluded.setting_json, updated_at=excluded.updated_at`, runtimeSettingsKey, string(data), now)
-	return err
+	return s.saveRuntimeSettingJSON(ctx, runtimeSettingsKey, data)
 }

@@ -772,6 +772,7 @@ Completed user-visible/runtime batches:
 - Postgres runtime settings persistence is split from Postgres Mihomo-native settings persistence.
 - SQLite runtime settings persistence is split from SQLite Mihomo-native settings persistence.
 - Postgres runtime and Mihomo-native settings persistence now share a single private JSON key/value load/save helper.
+- SQLite runtime and Mihomo-native settings persistence now share a single private JSON key/value load/save helper.
 
 Still open:
 

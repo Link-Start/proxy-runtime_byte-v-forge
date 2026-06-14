@@ -48,34 +48,14 @@ type leaseCoordinator struct {
 	deps leaseCoordinatorDependencies
 }
 
-func newLeaseCoordinator(runtime *Runtime) leaseCoordinator {
-	var store leaseapp.OrchestrationStore
-	if runtime.store != nil {
-		store = runtime.store
+func newLeaseCoordinator(deps leaseCoordinatorDependencies) leaseCoordinator {
+	if deps.clock == nil {
+		deps.clock = leaseapp.SystemClock{}
 	}
-	var locks leaseapp.LockManager
-	if runtime.leaseLocks != nil {
-		locks = leaseRuntimeLockManager{locks: runtime.leaseLocks}
+	if deps.ids == nil {
+		deps.ids = randomLeaseIDGenerator{byteLength: leaseIDByteLength}
 	}
-	return leaseCoordinator{deps: leaseCoordinatorDependencies{
-		cfg:                     runtime.cfg,
-		store:                   store,
-		settings:                runtime.settings,
-		clock:                   leaseapp.SystemClock{},
-		ids:                     randomLeaseIDGenerator{byteLength: leaseIDByteLength},
-		locks:                   locks,
-		dataPlane:               runtime.dataPlane,
-		dynamicIPSelector:       runtime.dynamicIPSelector,
-		sessionProviders:        leaseRegistrySessionProviderFactory{registry: runtime.accountProviders, client: runtime.providerHTTPClient},
-		providerConcurrency:     runtime.providerConcurrency,
-		logger:                  runtime.logger,
-		exitCheckCache:          &runtime.exitCheckCache,
-		leaseListener:           runtime.leaseListener,
-		localListenerEndpoint:   runtime.localListenerEndpoint,
-		sessionAdvertisedHost:   runtime.sessionAdvertisedHost,
-		dynamicLeaseDialerProxy: runtime.dynamicLeaseDialerProxy,
-		closeInUserConnections:  runtime.closeMihomoInUserConnections,
-	}}
+	return leaseCoordinator{deps: deps}
 }
 
 func (c leaseCoordinator) warn(message string, args ...any) {

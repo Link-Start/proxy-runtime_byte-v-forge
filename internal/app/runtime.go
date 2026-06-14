@@ -90,7 +90,7 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 		reconcileCh:         make(chan struct{}, 1),
 	}
 	runtime.dynamicIPSelector = newDynamicIPSelector(runtime)
-	runtime.leaseCoordinator = newLeaseCoordinator(runtime)
+	runtime.leaseCoordinator = newLeaseCoordinator(runtimeLeaseCoordinatorDependencies(runtime))
 	runtime.appService = NewRuntimeService(runtime)
 	return runtime, nil
 }

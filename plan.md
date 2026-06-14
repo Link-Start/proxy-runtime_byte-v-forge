@@ -741,6 +741,7 @@ Completed user-visible/runtime batches:
 - Runtime lease application construction now accepts the lease application dependency object directly; `RuntimeService` owns only wiring from `Runtime` to lease ports.
 - Runtime settings application construction now uses an explicit dependency object, and settings usecases guard missing repositories/loggers instead of dereferencing app fields directly.
 - Runtime status application now depends on an injected status snapshot function instead of holding `*Runtime`.
+- Lease coordinator construction now accepts explicit orchestration dependencies; `Runtime` is only adapted in a dedicated wiring file.
 
 Still open:
 

@@ -876,6 +876,7 @@ Completed user-visible/runtime batches:
 - Acquire active-lease lookup by requested session or account now lives in `internal/app/lease`; the coordinator passes the store port instead of owning lookup branching.
 - Lease finalization now calls a lease-owned concurrency-slot release helper directly; the app-level release wrapper was removed.
 - Release request lease lookup now lives in `internal/app/lease`, including lease-id/account fallback, release match validation, and not-found classification.
+- Release lock-window state refresh and route-retire eligibility now live in `internal/app/lease`; release orchestration only locks and executes route/provider cleanup side effects.
 
 Still open:
 

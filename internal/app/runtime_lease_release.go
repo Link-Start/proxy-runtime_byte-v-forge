@@ -13,23 +13,14 @@ func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.
 	if err != nil {
 		return nil, err
 	}
-	if leaseapp.HasReleasedStatus(lease) {
+	if !leaseapp.ReleaseNeedsRouteRetire(lease) {
 		return lease, nil
 	}
 	accountID := strings.TrimSpace(lease.GetAccountId())
 	err = leaseapp.WithAccountLock(ctx, c.deps.locks, accountID, func(ctx context.Context) error {
-		current, err := c.deps.store.LeaseFactByID(ctx, lease.GetLeaseId())
-		if err != nil && !isStoreNotFound(err) {
+		lease, err = leaseapp.RefreshReleaseLease(ctx, c.deps.store, lease, isStoreNotFound)
+		if err != nil || !leaseapp.ReleaseNeedsRouteRetire(lease) {
 			return err
-		}
-		if current != nil {
-			lease = current
-		}
-		if leaseapp.HasReleasedStatus(lease) {
-			return nil
-		}
-		if !leaseapp.HasActiveStatus(lease) {
-			return nil
 		}
 		return c.retireLeaseRoute(ctx, lease)
 	})

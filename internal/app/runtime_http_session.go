@@ -73,25 +73,14 @@ func (api *runtimeHTTPAPI) writeAuthSession(ctx *gin.Context, authenticated bool
 }
 
 func (api *runtimeHTTPAPI) redirectToLoginIfRequired(ctx *gin.Context) bool {
-	if !api.authRequired("/ui") || api.sessionAuthenticated(ctx.Request) {
+	redirectURL, required := api.auth.LoginRedirectIfRequired(ctx.Request, "/ui", time.Now())
+	if !required {
 		return false
 	}
-	api.redirectToLogin(ctx, ctx.Request.URL.RequestURI())
+	ctx.Redirect(http.StatusSeeOther, redirectURL)
 	return true
-}
-
-func (api *runtimeHTTPAPI) redirectLoginPreferred(req *http.Request) bool {
-	return api.auth.LoginRedirectPreferred(req, controlPlaneHTTPPrefix)
-}
-
-func (api *runtimeHTTPAPI) redirectToLogin(ctx *gin.Context, next string) {
-	ctx.Redirect(http.StatusSeeOther, authapp.LoginRedirect(next))
 }
 
 func (api *runtimeHTTPAPI) sessionAuthenticated(req *http.Request) bool {
 	return api.auth.SessionAuthenticated(req, time.Now())
-}
-
-func (api *runtimeHTTPAPI) requestAuthenticated(req *http.Request) bool {
-	return api.auth.RequestAuthenticated(req, time.Now())
 }

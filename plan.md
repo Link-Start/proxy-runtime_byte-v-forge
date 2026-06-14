@@ -915,6 +915,7 @@ Completed user-visible/runtime batches:
 - Dashboard reverse proxies now build once as a dashboard-owned proxy bundle during HTTP API construction, and routes reuse the prebuilt handlers.
 - Lease worker entrypoints now emit structured operation, duration, and lease identity logs for restore, expiry, cleanup-pending, and single-lease cleanup paths.
 - Dynamic lease acquire attempt retry loops now live in `internal/app/lease`; the coordinator supplies only the concrete attempt action, retry classifier, and warning observer.
+- Existing-active lease lookup, reuse, and replacement decisions now run through `internal/app/lease`; the coordinator only supplies route/slot side-effect callbacks.
 
 Still open:
 

@@ -1,6 +1,7 @@
 package lease
 
 import (
+	"context"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -14,6 +15,33 @@ const (
 	ExistingActiveLeaseReplace
 )
 
+type ExistingActiveLeaseAction func(context.Context, *proxyruntimev1.ProxyDynamicLease) error
+
+type ExistingActiveLeaseInput struct {
+	Store               OrchestrationStore
+	Request             *proxyruntimev1.AcquireProxyLeaseRequest
+	Now                 time.Time
+	PlaygroundAccountID string
+	PlaygroundUsername  string
+	Reuse               ExistingActiveLeaseAction
+	Replace             ExistingActiveLeaseAction
+}
+
+func HandleExistingActiveLease(ctx context.Context, input ExistingActiveLeaseInput) (*proxyruntimev1.ProxyDynamicLease, bool, error) {
+	existing, err := ActiveLeaseByRequest(ctx, input.Store, input.Request, RequestedSessionID(input.Request))
+	if err != nil {
+		return nil, false, nil
+	}
+	switch DecideExistingActiveLease(input.Request, existing, input.Now, input.PlaygroundAccountID, input.PlaygroundUsername) {
+	case ExistingActiveLeaseReuse:
+		return existing, true, runExistingActiveLeaseAction(ctx, input.Reuse, existing)
+	case ExistingActiveLeaseReplace:
+		return nil, false, runExistingActiveLeaseAction(ctx, input.Replace, existing)
+	default:
+		return nil, false, nil
+	}
+}
+
 func DecideExistingActiveLease(req *proxyruntimev1.AcquireProxyLeaseRequest, lease *proxyruntimev1.ProxyDynamicLease, now time.Time, playgroundAccountID string, playgroundUsername string) ExistingActiveLeaseDecision {
 	if !ActiveAt(lease, now) {
 		return ExistingActiveLeaseIgnore
@@ -22,4 +50,11 @@ func DecideExistingActiveLease(req *proxyruntimev1.AcquireProxyLeaseRequest, lea
 		return ExistingActiveLeaseReuse
 	}
 	return ExistingActiveLeaseReplace
+}
+
+func runExistingActiveLeaseAction(ctx context.Context, action ExistingActiveLeaseAction, lease *proxyruntimev1.ProxyDynamicLease) error {
+	if action == nil {
+		return nil
+	}
+	return action(ctx, lease)
 }

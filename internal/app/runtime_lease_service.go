@@ -29,20 +29,20 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 	if err != nil {
 		return nil, leaseProfilePolicyError(err)
 	}
-	requestedSessionID := leaseapp.RequestedSessionID(req)
-	existing, err := leaseapp.ActiveLeaseByRequest(ctx, c.deps.store, req, requestedSessionID)
-	if err == nil {
-		switch leaseapp.DecideExistingActiveLease(req, existing, c.now().UTC(), playgroundProfileID, playgroundUsername) {
-		case leaseapp.ExistingActiveLeaseReuse:
-			if err := c.refreshLeaseConcurrencySlot(ctx, existing); err != nil {
-				return nil, err
-			}
-			return existing, nil
-		case leaseapp.ExistingActiveLeaseReplace:
-			if err := c.retireLeaseRoute(ctx, existing); err != nil {
-				return nil, err
-			}
-		}
+	existing, handled, err := leaseapp.HandleExistingActiveLease(ctx, leaseapp.ExistingActiveLeaseInput{
+		Store:               c.deps.store,
+		Request:             req,
+		Now:                 c.now().UTC(),
+		PlaygroundAccountID: playgroundProfileID,
+		PlaygroundUsername:  playgroundUsername,
+		Reuse:               c.refreshLeaseConcurrencySlot,
+		Replace:             c.retireLeaseRoute,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if handled {
+		return existing, nil
 	}
 	return leaseapp.RunAcquireAttempts(
 		req,

@@ -5,21 +5,14 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
-
-func releaseProviderSession(ctx context.Context, providerClient provider.SessionProvider, session *proxyruntimev1.ProxySession) error {
-	if providerClient == nil || session == nil || strings.TrimSpace(session.GetSessionId()) == "" {
-		return nil
-	}
-	return providerClient.ReleaseSession(ctx, session)
-}
 
 func (c leaseCoordinator) releaseLeaseProviderSession(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
 	if lease == nil || lease.GetSession() == nil || strings.TrimSpace(lease.GetProviderAccountId()) == "" {
 		return nil
 	}
-	if statelessProviderSession(lease.GetSession()) {
+	if leaseapp.StatelessProviderSession(lease.GetSession()) {
 		return nil
 	}
 	providerCfg, _, err := c.deps.store.ProviderConfig(ctx, lease.GetProviderAccountId())
@@ -35,14 +28,5 @@ func (c leaseCoordinator) releaseLeaseProviderSession(ctx context.Context, lease
 	if err != nil {
 		return err
 	}
-	return releaseProviderSession(ctx, providerClient, lease.GetSession())
-}
-
-func statelessProviderSession(session *proxyruntimev1.ProxySession) bool {
-	switch strings.TrimSpace(session.GetLabels()["session_mode"]) {
-	case "username_parameter", "provider_configured":
-		return true
-	default:
-		return false
-	}
+	return leaseapp.ReleaseProviderSession(ctx, providerClient, lease.GetSession())
 }

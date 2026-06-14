@@ -40,7 +40,7 @@ func (f *leaseAcquireFailure) afterRoute(route dataplane.SessionRoute, message s
 }
 
 func (f *leaseAcquireFailure) cleanupProviderSession() bool {
-	if err := releaseProviderSession(f.ctx, f.providerClient, f.session); err != nil {
+	if err := leaseapp.ReleaseProviderSession(f.ctx, f.providerClient, f.session); err != nil {
 		f.coordinator.warn("provider session cleanup failed", "provider_id", f.providerClient.Name(), "account_id", f.req.GetAccountId())
 		return true
 	}

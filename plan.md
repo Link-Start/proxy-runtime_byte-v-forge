@@ -724,6 +724,7 @@ Completed user-visible/runtime batches:
 - Acquire request session-id label parsing is centralized in `internal/app/lease`, so lease orchestration no longer owns sticky-session label aliases.
 - Acquire request account/purpose label injection is centralized in `internal/app/lease`; dynamic IP policy normalization remains in the runtime dynamic-IP layer.
 - Lease orchestration store, provider-session factory, data-plane applier, and lock-manager ports are now defined in `internal/app/lease`; the app layer only adapts runtime registry and lock implementations to those ports.
+- Provider-session release and stateless-session detection are centralized in `internal/app/lease`, keeping provider session cleanup semantics out of app-level acquire/release failure handling.
 
 Still open:
 

@@ -722,6 +722,7 @@ Completed user-visible/runtime batches:
 - Active dynamic lease fact construction and active/released status checks are centralized in `internal/app/lease`, removing direct status-enum writes and checks from lease runtime orchestration.
 - Dynamic IP endpoint health scoring now uses lease status predicates from `internal/app/lease` instead of interpreting active/expired/released/failed enums locally.
 - Acquire request session-id label parsing is centralized in `internal/app/lease`, so lease orchestration no longer owns sticky-session label aliases.
+- Acquire request account/purpose label injection is centralized in `internal/app/lease`; dynamic IP policy normalization remains in the runtime dynamic-IP layer.
 
 Still open:
 

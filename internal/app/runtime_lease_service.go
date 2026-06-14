@@ -36,7 +36,8 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 	if err != nil {
 		return nil, err
 	}
-	normalizeLeasePolicy(req)
+	req.Policy = normalizeDynamicIPSessionPolicy(req.GetPolicy())
+	leaseapp.ApplyRequestLabels(req)
 	if err := applyLeaseProfileDynamicIPPolicy(settings, req); err != nil {
 		return nil, err
 	}
@@ -386,13 +387,4 @@ func (c leaseCoordinator) deleteLeaseRoute(ctx context.Context, lease *proxyrunt
 	listener := listenerFromProto(lease.GetListener())
 	route := dataplane.SessionRoute{SessionID: lease.GetSession().GetSessionId(), Listener: localServiceFromListener(listener, c.deps.cfg.LocalProtocol)}
 	return c.deps.dataPlane.DeleteSessionRoute(ctx, route)
-}
-
-func normalizeLeasePolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) {
-	req.Policy = normalizeDynamicIPSessionPolicy(req.GetPolicy())
-	if req.Policy.Labels == nil {
-		req.Policy.Labels = map[string]string{}
-	}
-	req.Policy.Labels["account_id"] = req.GetAccountId()
-	req.Policy.Labels["purpose"] = req.GetPurpose()
 }

@@ -685,6 +685,7 @@ Completed user-visible/runtime batches:
 - HTTP request-body and proto JSON codec helpers are extracted into `internal/app/httpapi`, while app-level error mapping stays at the adapter boundary.
 - Runtime auth required/public-path rules are centralized in `internal/app/auth`.
 - HTTP JSON error response writing is extracted into `internal/app/httpapi`, with app-specific error-to-status mapping kept at the adapter edge.
+- Public HTTP route registration now uses the shared `httpapi.Route` model and is split from HTTP server setup.
 
 Still open:
 

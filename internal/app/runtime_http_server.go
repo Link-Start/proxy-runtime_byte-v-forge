@@ -83,17 +83,6 @@ func (api *runtimeHTTPAPI) handler() http.Handler {
 	return router
 }
 
-func (api *runtimeHTTPAPI) registerPublicHTTPRoutes(router *gin.Engine) {
-	router.GET("/healthz", api.handleHealth)
-	router.GET("/readyz", api.handleReady)
-	router.GET("/login", api.handleAuthLoginPage)
-	router.GET("/api/auth/session", api.handleAuthSession)
-	router.POST("/api/auth/login", api.handleAuthLogin)
-	router.POST("/api/auth/logout", api.handleAuthLogout)
-	router.GET("/", api.handleDashboardEntry)
-	router.HEAD("/", api.handleDashboardEntry)
-}
-
 func (api *runtimeHTTPAPI) handleDashboardEntry(ctx *gin.Context) {
 	if api.redirectToLoginIfRequired(ctx) {
 		return

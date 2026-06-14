@@ -928,6 +928,7 @@ Completed user-visible/runtime batches:
 - Cleanup-pending progress persistence now runs through `internal/app/lease`, including cleanup-final status handling and final concurrency-slot release.
 - Lease route cleanup now uses a lease-owned helper with failure recording callbacks across normal release, expiry cleanup, and cleanup-pending retry paths.
 - Acquire-attempt provider-account locking and temporary concurrency-slot release/keep behavior now live in `internal/app/lease`; the coordinator supplies only the concrete locked attempt action.
+- Restore route dataplane upsert and temporary concurrency-slot keep/release lifecycle now run through `internal/app/lease`; restore orchestration supplies only provider-node fetch and line-binding resolvers.
 
 Still open:
 

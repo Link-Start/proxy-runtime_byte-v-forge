@@ -12,9 +12,3 @@ func (c leaseCoordinator) acquireRestoreLeaseConcurrencySlot(ctx context.Context
 	policy := leaseapp.ConcurrencyPolicy(lease)
 	return leaseapp.AcquireProviderAccountConcurrencySlot(ctx, c.deps.providerConcurrency, providerAccount.GetAccountId(), dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), policy, holder, leaseapp.ConcurrencySlotTTL(policy, leaseapp.DefaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
 }
-
-func releaseRestoreLeaseConcurrencySlotUnlessKept(ctx context.Context, slot leaseapp.ProviderAccountConcurrencySlot, keep *bool) {
-	releaseCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), leaseRestoreSlotReleaseTimeout)
-	defer cancel()
-	_ = leaseapp.ReleaseConcurrencySlotUnlessKept(releaseCtx, slot, keep != nil && *keep)
-}

@@ -77,15 +77,15 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	if err != nil {
 		return err
 	}
-	keepSlot := false
-	defer releaseRestoreLeaseConcurrencySlotUnlessKept(ctx, slot, &keepSlot)
-	nodes, err := c.restoreLeaseSessionNodes(ctx, lease, inputs.settings, inputs.providerConfig)
-	if err != nil {
-		return err
-	}
-	if err := c.restoreLeaseDataPlaneRoute(ctx, lease, inputs.settings, nodes); err != nil {
-		return err
-	}
-	keepSlot = true
-	return nil
+	return leaseapp.RunTemporaryConcurrencySlot(ctx, leaseapp.TemporaryConcurrencySlotInput{
+		Slot:           slot,
+		ReleaseTimeout: leaseRestoreSlotReleaseTimeout,
+		Action: func(ctx context.Context) error {
+			nodes, err := c.restoreLeaseSessionNodes(ctx, lease, inputs.settings, inputs.providerConfig)
+			if err != nil {
+				return err
+			}
+			return c.restoreLeaseDataPlaneRoute(ctx, lease, inputs.settings, nodes)
+		},
+	})
 }

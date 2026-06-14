@@ -9,15 +9,13 @@ import (
 )
 
 func (c leaseCoordinator) restoreLeaseDataPlaneRoute(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, settings *runtimeSettingsFile, nodes []provider.Node) error {
-	lineBinding, err := leaseapp.PrepareRouteLineBinding(ctx, nodes, lease.GetAccountId(), func(ctx context.Context, accountID string) (string, map[string]string, error) {
-		return c.deps.dynamicLeaseDialerProxy(ctx, settings, accountID)
+	return leaseapp.RestoreLeaseRoute(ctx, leaseapp.RestoreRouteInput{
+		DataPlane:     c.deps.dataPlane,
+		Lease:         lease,
+		Nodes:         nodes,
+		LocalProtocol: c.deps.cfg.LocalProtocol,
+		ResolveLineBinding: func(ctx context.Context, accountID string) (string, map[string]string, error) {
+			return c.deps.dynamicLeaseDialerProxy(ctx, settings, accountID)
+		},
 	})
-	if err != nil {
-		return err
-	}
-	route, ok := leaseapp.SessionRouteFromLease(lease, lineBinding.Nodes, lineBinding.DialerProxy, c.deps.cfg.LocalProtocol)
-	if !ok {
-		return nil
-	}
-	return leaseapp.UpsertSessionRoute(ctx, c.deps.dataPlane, route)
 }

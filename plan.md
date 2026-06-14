@@ -946,6 +946,7 @@ Completed user-visible/runtime batches:
 - Cleanup-pending and expiry current-fact reload plus not-found handling now live in `internal/app/lease`; the coordinator supplies only the current-fact cleanup action.
 - Acquire-attempt provider-account lookup and concurrency-slot acquisition now live in `internal/app/lease`; the coordinator maps only stage-specific errors.
 - Acquire-attempt concurrency-limit and acquired-route apply/fact-save failures now return lease-owned sentinel errors; the coordinator maps transport errors via error classification instead of inspecting lease stage enums.
+- Provider-session factory/create/fetch failures now return lease-owned sentinel errors; the coordinator handles fetch cleanup and transport mapping through error classification instead of switching provider-session error kind.
 
 Still open:
 

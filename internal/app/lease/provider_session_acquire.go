@@ -38,13 +38,13 @@ func AcquireProviderSession(ctx context.Context, input ProviderSessionAcquireInp
 	result := ProviderSessionAcquireResult{ProviderAccountID: accountID, ProviderClient: providerClient}
 	if err != nil {
 		result.ErrorKind = ProviderSessionFactoryError
-		return result, err
+		return result, ProviderSessionStageError(result.ErrorKind, err)
 	}
 	session, nodes, err := CreateAndFetchProviderSession(ctx, providerClient, input.Request, input.SelectionPlan, input.ConcurrencyHolder)
 	result.Session = session
 	result.Nodes = nodes
 	result.ErrorKind = ClassifyProviderSessionError(session, err)
-	return result, err
+	return result, ProviderSessionStageError(result.ErrorKind, err)
 }
 
 func NewSessionProvider(factory SessionProviderFactory, providerCfg accountproxy.Config) (SessionProvider, error) {

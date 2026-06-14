@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
@@ -17,18 +18,12 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 		SelectionPlan:     selection.plan,
 		ConcurrencyHolder: concurrencyHolder,
 	})
-	switch providerSession.ErrorKind {
-	case leaseapp.ProviderSessionFactoryError:
-		return nil, invalidArgument("provider account configuration is invalid", err)
-	case leaseapp.ProviderSessionCreateError:
-		return nil, unavailable("provider session create failed", err)
-	case leaseapp.ProviderSessionFetchError:
-		failure := c.newFailedAcquireRecorder(req, providerSession.ProviderAccountID, providerSession.ProviderClient, providerSession.Session, selection.plan)
-		failure.BeforeRoute(ctx, "provider session fetch failed")
-		return nil, unavailable("provider session fetch failed", err)
-	}
 	if err != nil {
-		return nil, err
+		if errors.Is(err, leaseapp.ErrProviderSessionFetch) {
+			failure := c.newFailedAcquireRecorder(req, providerSession.ProviderAccountID, providerSession.ProviderClient, providerSession.Session, selection.plan)
+			failure.BeforeRoute(ctx, "provider session fetch failed")
+		}
+		return nil, providerSessionAcquireError(err)
 	}
 	failure := c.newFailedAcquireRecorder(req, providerSession.ProviderAccountID, providerSession.ProviderClient, providerSession.Session, selection.plan)
 	lineBinding, err := leaseapp.PrepareRouteLineBinding(ctx, providerSession.Nodes, req.GetAccountId(), func(ctx context.Context, accountID string) (string, map[string]string, error) {

@@ -3,13 +3,19 @@ package lease
 import (
 	"context"
 	"errors"
+	"fmt"
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
-var ErrSessionProviderRequired = errors.New("provider session provider is required")
+var (
+	ErrSessionProviderRequired = errors.New("provider session provider is required")
+	ErrProviderSessionFactory  = errors.New("provider session factory failed")
+	ErrProviderSessionCreate   = errors.New("provider session create failed")
+	ErrProviderSessionFetch    = errors.New("provider session fetch failed")
+)
 
 type ProviderSessionErrorKind int
 
@@ -28,6 +34,22 @@ func ClassifyProviderSessionError(session *proxyruntimev1.ProxySession, err erro
 		return ProviderSessionCreateError
 	}
 	return ProviderSessionFetchError
+}
+
+func ProviderSessionStageError(kind ProviderSessionErrorKind, err error) error {
+	if err == nil {
+		return nil
+	}
+	switch kind {
+	case ProviderSessionFactoryError:
+		return fmt.Errorf("%w: %w", ErrProviderSessionFactory, err)
+	case ProviderSessionCreateError:
+		return fmt.Errorf("%w: %w", ErrProviderSessionCreate, err)
+	case ProviderSessionFetchError:
+		return fmt.Errorf("%w: %w", ErrProviderSessionFetch, err)
+	default:
+		return err
+	}
 }
 
 func CreateAndFetchProviderSession(ctx context.Context, providerClient SessionProvider, req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, concurrencyHolder string) (*proxyruntimev1.ProxySession, []provider.Node, error) {

@@ -16,23 +16,22 @@ func releaseProviderSession(ctx context.Context, providerClient provider.Session
 }
 
 func (c leaseCoordinator) releaseLeaseProviderSession(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	r := c.runtime
 	if lease == nil || lease.GetSession() == nil || strings.TrimSpace(lease.GetProviderAccountId()) == "" {
 		return nil
 	}
 	if statelessProviderSession(lease.GetSession()) {
 		return nil
 	}
-	providerCfg, _, err := r.store.ProviderConfig(ctx, lease.GetProviderAccountId())
+	providerCfg, _, err := c.deps.store.ProviderConfig(ctx, lease.GetProviderAccountId())
 	if err != nil {
 		return err
 	}
-	settings, err := r.settings.load(ctx)
+	settings, err := c.deps.settings.load(ctx)
 	if err != nil {
 		return err
 	}
 	providerCfg.Gateways = endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerCfg.ProviderID)
-	providerClient, err := r.accountProviders.NewSessionProvider(providerCfg, r.providerHTTPClient)
+	providerClient, err := c.newSessionProvider(providerCfg)
 	if err != nil {
 		return err
 	}

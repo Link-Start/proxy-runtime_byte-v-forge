@@ -67,51 +67,18 @@ func providerAccountConcurrencyModeText(policy *proxyruntimev1.ProxySessionPolic
 }
 
 func (r *Runtime) acquireProviderAccountConcurrencySlot(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, limit uint32, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (providerAccountConcurrencySlot, error) {
-	if r.providerConcurrency == nil {
+	return acquireProviderAccountConcurrencySlot(ctx, r.providerConcurrency, account, limit, policy, holder, ttl)
+}
+
+func acquireProviderAccountConcurrencySlot(ctx context.Context, limiter providerAccountConcurrencyLimiter, account *proxyruntimev1.ProxyProviderAccount, limit uint32, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (providerAccountConcurrencySlot, error) {
+	if limiter == nil {
 		return noopProviderAccountConcurrencySlot{}, nil
 	}
-	slot, err := r.providerConcurrency.Acquire(ctx, account.GetAccountId(), policy, limit, holder, ttl)
+	slot, err := limiter.Acquire(ctx, account.GetAccountId(), policy, limit, holder, ttl)
 	if err != nil {
 		return nil, fmt.Errorf("provider account %q %s concurrency limit reached: %w", account.GetAccountId(), providerAccountConcurrencyModeText(policy), err)
 	}
 	return slot, nil
-}
-
-func (r *Runtime) releaseLeaseConcurrencySlot(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	if lease == nil {
-		return nil
-	}
-	accountID := strings.TrimSpace(lease.GetProviderAccountId())
-	holder := leaseConcurrencyHolder(lease)
-	if accountID == "" || holder == "" {
-		return nil
-	}
-	if r.providerConcurrency == nil {
-		return nil
-	}
-	return r.providerConcurrency.Release(ctx, accountID, leaseConcurrencyPolicy(lease), holder)
-}
-
-func (r *Runtime) refreshLeaseConcurrencySlot(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	if lease == nil {
-		return nil
-	}
-	accountID := strings.TrimSpace(lease.GetProviderAccountId())
-	holder := leaseConcurrencyHolder(lease)
-	if accountID == "" || holder == "" {
-		return nil
-	}
-	account, err := r.store.ProviderAccount(ctx, accountID)
-	if err != nil {
-		return err
-	}
-	settings, err := r.settings.load(ctx)
-	if err != nil {
-		return err
-	}
-	policy := leaseConcurrencyPolicy(lease)
-	_, err = r.acquireProviderAccountConcurrencySlot(ctx, account, dynamicProviderConcurrencyLimit(settings, leaseDynamicProviderID(lease), policy), policy, holder, leaseConcurrencySlotTTL(policy))
-	return err
 }
 
 func leaseConcurrencyPolicy(lease *proxyruntimev1.ProxyDynamicLease) *proxyruntimev1.ProxySessionPolicy {

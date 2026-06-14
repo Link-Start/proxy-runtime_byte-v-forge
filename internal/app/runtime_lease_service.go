@@ -16,7 +16,6 @@ import (
 )
 
 func (c leaseCoordinator) acquireLease(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
-	r := c.runtime
 	if req == nil {
 		return nil, invalidArgument("acquire request is required", nil)
 	}
@@ -25,7 +24,7 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, advertisedHost strin
 		return nil, invalidArgument("account_id is required", nil)
 	}
 	var lease *proxyruntimev1.ProxyDynamicLease
-	err := r.leaseLocks.WithAccountLock(ctx, req.GetAccountId(), func(ctx context.Context) error {
+	err := c.deps.locks.WithAccountLock(ctx, req.GetAccountId(), func(ctx context.Context) error {
 		var err error
 		lease, err = c.acquireLeaseWithAccountLock(ctx, advertisedHost, req)
 		return err
@@ -34,9 +33,8 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, advertisedHost strin
 }
 
 func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
-	r := c.runtime
 	req.Purpose = firstNonEmpty(req.GetPurpose(), "general")
-	settings, err := r.settings.load(ctx)
+	settings, err := c.deps.settings.load(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -46,10 +44,10 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 	}
 	selectionPolicy := normalizeDynamicIPSelectionPolicy(req)
 	requestedSessionID := requestedLeaseSessionID(req)
-	existing, err := r.activeLeaseByRequest(ctx, req, requestedSessionID)
+	existing, err := c.activeLeaseByRequest(ctx, req, requestedSessionID)
 	if err == nil && leaseapp.ActiveAt(existing, time.Now().UTC()) {
 		if !req.GetForceNew() && !playgroundLeaseNeedsReplacement(req, existing) {
-			if err := r.refreshLeaseConcurrencySlot(ctx, existing); err != nil {
+			if err := c.refreshLeaseConcurrencySlot(ctx, existing); err != nil {
 				return nil, err
 			}
 			return existing, nil
@@ -69,19 +67,18 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 		if !retryLeaseAcquireAttempt(err) {
 			return nil, err
 		}
-		r.logger.Warn("dynamic IP lease attempt failed", "account_id", req.GetAccountId(), "purpose", req.GetPurpose(), "attempt", attempt, "error_type", errorLogType(err))
+		c.warn("dynamic IP lease attempt failed", "account_id", req.GetAccountId(), "purpose", req.GetPurpose(), "attempt", attempt, "error_type", errorLogType(err))
 	}
 	return nil, lastErr
 }
 
 func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyDynamicLease, error) {
-	r := c.runtime
-	selection, err := r.dynamicIPSelector.selectDynamicIPEndpoint(ctx, req)
+	selection, err := c.deps.dynamicIPSelector.selectDynamicIPEndpoint(ctx, req)
 	if err != nil {
 		return nil, failedPrecondition("no dynamic IP endpoint candidate", err)
 	}
 	providerAccountID := selection.plan.GetSelectedEndpoint().GetProviderAccountId()
-	providerAccount, err := r.store.ProviderAccount(ctx, providerAccountID)
+	providerAccount, err := c.deps.store.ProviderAccount(ctx, providerAccountID)
 	if err != nil {
 		return nil, err
 	}
@@ -90,7 +87,7 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 		return nil, internalError("generate lease id", err)
 	}
 	concurrencyHolder := "lease:" + leaseID
-	concurrencySlot, err := r.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, selection.plan.GetSelectedEndpoint().GetDynamicProviderId(), req.GetPolicy()), req.GetPolicy(), concurrencyHolder, leaseConcurrencySlotTTL(req.GetPolicy()))
+	concurrencySlot, err := c.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, selection.plan.GetSelectedEndpoint().GetDynamicProviderId(), req.GetPolicy()), req.GetPolicy(), concurrencyHolder, leaseConcurrencySlotTTL(req.GetPolicy()))
 	if err != nil {
 		return nil, failedPrecondition("provider account concurrency limit reached", err)
 	}
@@ -101,7 +98,7 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 		}
 	}()
 	var lease *proxyruntimev1.ProxyDynamicLease
-	err = r.leaseLocks.WithProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
+	err = c.deps.locks.WithProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
 		var err error
 		lease, err = c.acquireLeaseWithProviderAccountLock(ctx, advertisedHost, req, settings, selection, providerAccountID, leaseID, concurrencyHolder)
 		if err == nil {
@@ -113,13 +110,12 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 }
 
 func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile, selection dynamicIPSelection, providerAccountID string, leaseID string, concurrencyHolder string) (*proxyruntimev1.ProxyDynamicLease, error) {
-	r := c.runtime
-	providerCfg, providerAccountID, err := r.store.ProviderConfig(ctx, providerAccountID)
+	providerCfg, providerAccountID, err := c.deps.store.ProviderConfig(ctx, providerAccountID)
 	if err != nil {
 		return nil, err
 	}
 	providerCfg.Gateways = []accountproxy.Gateway{selection.endpoint}
-	providerClient, err := r.accountProviders.NewSessionProvider(providerCfg, r.providerHTTPClient)
+	providerClient, err := c.newSessionProvider(providerCfg)
 	if err != nil {
 		return nil, invalidArgument("provider account configuration is invalid", err)
 	}
@@ -140,14 +136,14 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 		failure.beforeRoute("provider session fetch failed")
 		return nil, unavailable("provider session fetch failed", err)
 	}
-	dialerProxy, lineLabels, err := r.dynamicLeaseDialerProxy(ctx, settings, req.GetAccountId())
+	dialerProxy, lineLabels, err := c.deps.dynamicLeaseDialerProxy(ctx, settings, req.GetAccountId())
 	if err != nil {
 		failure.beforeRoute("lease line resolution failed")
 		return nil, err
 	}
 	nodes = applyDynamicLeaseLineLabels(nodes, lineLabels)
 	var lease *proxyruntimev1.ProxyDynamicLease
-	err = r.leaseLocks.WithSessionListenerAllocationLock(ctx, func(ctx context.Context) error {
+	err = c.deps.locks.WithSessionListenerAllocationLock(ctx, func(ctx context.Context) error {
 		var err error
 		lease, err = c.applyAcquiredLeaseRoute(ctx, advertisedHost, req, settings, selection, providerAccountID, leaseID, concurrencyHolder, providerClient, session, nodes, dialerProxy, lineLabels, failure)
 		return err
@@ -156,15 +152,14 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 }
 
 func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile, selection dynamicIPSelection, providerAccountID string, leaseID string, concurrencyHolder string, providerClient provider.SessionProvider, session *proxyruntimev1.ProxySession, nodes []provider.Node, dialerProxy string, lineLabels map[string]string, failure *leaseAcquireFailure) (*proxyruntimev1.ProxyDynamicLease, error) {
-	r := c.runtime
-	listener, err := r.leaseListener(ctx, settings, req.GetAccountId(), leaseID)
+	listener, err := c.deps.leaseListener(ctx, settings, req.GetAccountId(), leaseID)
 	if err != nil {
 		failure.beforeRoute("lease listener allocation failed")
 		return nil, err
 	}
 	listenerProto := protoListener(listener, true)
 	failure.listener = listenerProto
-	egress, err := r.localListenerEndpoint(listener, r.sessionAdvertisedHost(advertisedHost, listener))
+	egress, err := c.deps.localListenerEndpoint(listener, c.deps.sessionAdvertisedHost(advertisedHost, listener))
 	if err != nil {
 		failure.beforeRoute("lease endpoint build failed")
 		return nil, err
@@ -200,20 +195,20 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertise
 		egress.Labels[key] = value
 	}
 	session.Egress = egress
-	route := dataplane.SessionRoute{SessionID: session.GetSessionId(), Listener: localServiceFromListener(listener, r.cfg.LocalProtocol), Pool: nodes, DialerProxy: dialerProxy}
-	if err := r.dataPlane.UpsertSessionRoute(ctx, route); err != nil {
+	route := dataplane.SessionRoute{SessionID: session.GetSessionId(), Listener: localServiceFromListener(listener, c.deps.cfg.LocalProtocol), Pool: nodes, DialerProxy: dialerProxy}
+	if err := c.deps.dataPlane.UpsertSessionRoute(ctx, route); err != nil {
 		failure.afterRoute(route, "dataplane route apply failed")
 		return nil, unavailable("dataplane route apply failed", err)
 	}
 	now := time.Now().UTC()
 	lease := &proxyruntimev1.ProxyDynamicLease{LeaseId: leaseID, AccountId: req.GetAccountId(), Purpose: req.GetPurpose(), ProviderAccountId: providerAccountID, Status: proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE, Session: session, Egress: egress, Listener: listenerProto, AcquiredAt: timestamppb.New(now), ExpiresAt: session.GetExpiresAt(), SelectionPlan: selection.plan}
-	if err := r.store.SaveLeaseFact(ctx, lease); err != nil {
+	if err := c.deps.store.SaveLeaseFact(ctx, lease); err != nil {
 		failure.afterRoute(route, "lease fact save failed")
 		return nil, internalError("lease fact save failed", err)
 	}
-	r.exitCheckCache.clear()
+	c.clearExitCheckCache()
 	if req.GetAccountId() == playgroundProfileID {
-		r.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
+		c.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
 	}
 	return lease, nil
 }
@@ -266,13 +261,6 @@ func egressProfileByID(settings *runtimeSettingsFile, profileID string) *proxyru
 	return nil
 }
 
-func (r *Runtime) activeLeaseByRequest(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest, sessionID string) (*proxyruntimev1.ProxyDynamicLease, error) {
-	if strings.TrimSpace(sessionID) != "" {
-		return r.store.ActiveLeaseFactBySession(ctx, req.GetAccountId(), req.GetPurpose(), sessionID)
-	}
-	return r.store.ActiveLeaseFactByAccount(ctx, req.GetAccountId(), req.GetPurpose())
-}
-
 func playgroundLeaseNeedsReplacement(req *proxyruntimev1.AcquireProxyLeaseRequest, lease *proxyruntimev1.ProxyDynamicLease) bool {
 	if req.GetAccountId() != playgroundProfileID {
 		return false
@@ -281,7 +269,6 @@ func playgroundLeaseNeedsReplacement(req *proxyruntimev1.AcquireProxyLeaseReques
 }
 
 func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
-	r := c.runtime
 	lease, err := c.leaseByReleaseRequest(ctx, req)
 	if err != nil {
 		return nil, err
@@ -290,8 +277,8 @@ func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.
 		return lease, nil
 	}
 	accountID := strings.TrimSpace(lease.GetAccountId())
-	err = r.leaseLocks.WithAccountLock(ctx, accountID, func(ctx context.Context) error {
-		current, err := r.store.LeaseFactByID(ctx, lease.GetLeaseId())
+	err = c.deps.locks.WithAccountLock(ctx, accountID, func(ctx context.Context) error {
+		current, err := c.deps.store.LeaseFactByID(ctx, lease.GetLeaseId())
 		if err != nil && !isStoreNotFound(err) {
 			return err
 		}
@@ -310,7 +297,6 @@ func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.
 }
 
 func (c leaseCoordinator) leaseByReleaseRequest(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
-	r := c.runtime
 	if req == nil {
 		return nil, invalidArgument("release request is required", nil)
 	}
@@ -318,7 +304,7 @@ func (c leaseCoordinator) leaseByReleaseRequest(ctx context.Context, req *proxyr
 	accountID := strings.TrimSpace(req.GetAccountId())
 	purpose := strings.TrimSpace(req.GetPurpose())
 	if leaseID != "" {
-		lease, err := r.store.LeaseFactByID(ctx, leaseID)
+		lease, err := c.deps.store.LeaseFactByID(ctx, leaseID)
 		if err != nil {
 			if isStoreNotFound(err) {
 				return nil, invalidArgument("lease_id not found", nil)
@@ -336,14 +322,14 @@ func (c leaseCoordinator) leaseByReleaseRequest(ctx context.Context, req *proxyr
 	if accountID == "" {
 		return nil, invalidArgument("lease_id or account_id is required", nil)
 	}
-	lease, err := r.store.ActiveLeaseFactByAccount(ctx, accountID, purpose)
+	lease, err := c.deps.store.ActiveLeaseFactByAccount(ctx, accountID, purpose)
 	if err == nil {
 		return lease, nil
 	}
 	if !isStoreNotFound(err) {
 		return nil, err
 	}
-	lease, err = r.store.LatestLeaseFactByAccount(ctx, accountID, purpose)
+	lease, err = c.deps.store.LatestLeaseFactByAccount(ctx, accountID, purpose)
 	if err != nil {
 		if isStoreNotFound(err) {
 			return nil, invalidArgument("active lease not found", nil)
@@ -354,7 +340,6 @@ func (c leaseCoordinator) leaseByReleaseRequest(ctx context.Context, req *proxyr
 }
 
 func (c leaseCoordinator) retireLeaseRoute(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	r := c.runtime
 	if lease == nil {
 		return nil
 	}
@@ -362,13 +347,13 @@ func (c leaseCoordinator) retireLeaseRoute(ctx context.Context, lease *proxyrunt
 		_ = c.saveLeaseReleaseCleanupFailure(ctx, lease, true, false, "lease route cleanup failed")
 		return err
 	}
-	r.exitCheckCache.clear()
+	c.clearExitCheckCache()
 	if lease.GetAccountId() == playgroundProfileID {
-		r.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
+		c.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
 	}
 	releaseErr := c.releaseLeaseProviderSessionWithLock(ctx, lease)
 	if releaseErr != nil {
-		r.logger.Warn("provider session release failed", "account_id", lease.GetAccountId(), "provider_account_id", lease.GetProviderAccountId())
+		c.warn("provider session release failed", "account_id", lease.GetAccountId(), "provider_account_id", lease.GetProviderAccountId())
 		if err := c.saveLeaseReleaseCleanupFailure(ctx, lease, false, true, "provider session release failed"); err != nil {
 			return err
 		}
@@ -382,19 +367,18 @@ func (c leaseCoordinator) releaseLeaseProviderSessionWithLock(ctx context.Contex
 	if providerAccountID == "" {
 		return c.releaseLeaseProviderSession(ctx, lease)
 	}
-	return c.runtime.leaseLocks.WithProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
+	return c.deps.locks.WithProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
 		return c.releaseLeaseProviderSession(ctx, lease)
 	})
 }
 
 func (c leaseCoordinator) deleteLeaseRoute(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	r := c.runtime
 	if lease == nil || lease.GetSession() == nil || lease.GetListener() == nil {
 		return nil
 	}
 	listener := listenerFromProto(lease.GetListener())
-	route := dataplane.SessionRoute{SessionID: lease.GetSession().GetSessionId(), Listener: localServiceFromListener(listener, r.cfg.LocalProtocol)}
-	return r.dataPlane.DeleteSessionRoute(ctx, route)
+	route := dataplane.SessionRoute{SessionID: lease.GetSession().GetSessionId(), Listener: localServiceFromListener(listener, c.deps.cfg.LocalProtocol)}
+	return c.deps.dataPlane.DeleteSessionRoute(ctx, route)
 }
 
 func normalizeLeasePolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) {

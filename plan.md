@@ -711,10 +711,11 @@ Completed user-visible/runtime batches:
 - HTTP request ID, authorization handoff, panic recovery, and request logging middleware are extracted into `internal/app/httpapi`; panic logs no longer include the recovered payload.
 - Runtime auth secret handling, required-path checks, login token matching, session verification, session cookies, and WebSocket token minting are routed through `internal/app/auth.Application`.
 - Runtime login page rendering and login redirect URL construction are owned by `internal/app/auth`, leaving Gin handlers to set headers and write responses.
+- Lease coordinator wiring now uses explicit store, settings, lock, dataplane, provider-session factory, concurrency limiter, logger, and runtime-callback dependencies instead of holding `*Runtime`; acquire/release/restore/expire/cleanup paths no longer dereference the large runtime object directly.
 
 Still open:
 
-- Fully extract lease application into `internal/app/lease` with repository, provider-session, data-plane applier, lock, clock, and logger ports.
+- Fully extract lease application into `internal/app/lease`; remaining work is to move provider-session creation, data-plane route apply/delete, listener allocation, locks, and concurrency-slot behavior behind lease-owned ports instead of the current app-level coordinator.
 - Continue splitting Mihomo sourceplane projection, validation, render, and apply stages so no single file owns the whole config pipeline.
 - Move settings orchestration into an explicit settings application package.
 - Separate `httpapi`, `auth`, and `dashboard` packages and keep handlers as thin transport adapters.

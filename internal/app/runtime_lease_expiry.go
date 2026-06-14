@@ -35,11 +35,10 @@ func (r *Runtime) leaseExpiryLoop(ctx context.Context) {
 }
 
 func (c leaseCoordinator) expireDueLeaseFacts(ctx context.Context) error {
-	r := c.runtime
-	if r.store == nil {
+	if c.deps.store == nil {
 		return nil
 	}
-	leases, err := r.store.ExpiredActiveLeaseFacts(ctx)
+	leases, err := c.deps.store.ExpiredActiveLeaseFacts(ctx)
 	if err != nil {
 		return err
 	}
@@ -53,7 +52,7 @@ func (c leaseCoordinator) expireDueLeaseFacts(ctx context.Context) error {
 		err := c.expireLeaseFact(attemptCtx, lease)
 		cancel()
 		if err != nil {
-			r.logger.Warn("expire proxy lease failed", "lease_id", lease.GetLeaseId(), "account_id", lease.GetAccountId(), "provider_account_id", lease.GetProviderAccountId())
+			c.warn("expire proxy lease failed", "lease_id", lease.GetLeaseId(), "account_id", lease.GetAccountId(), "provider_account_id", lease.GetProviderAccountId())
 			expireErrors = append(expireErrors, fmt.Errorf("expire lease fact %q: %w", lease.GetLeaseId(), err))
 		}
 	}
@@ -61,12 +60,11 @@ func (c leaseCoordinator) expireDueLeaseFacts(ctx context.Context) error {
 }
 
 func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	r := c.runtime
 	if lease == nil || strings.TrimSpace(lease.GetLeaseId()) == "" {
 		return nil
 	}
-	return r.leaseLocks.WithAccountLock(ctx, lease.GetAccountId(), func(ctx context.Context) error {
-		current, err := r.store.LeaseFactByID(ctx, lease.GetLeaseId())
+	return c.deps.locks.WithAccountLock(ctx, lease.GetAccountId(), func(ctx context.Context) error {
+		current, err := c.deps.store.LeaseFactByID(ctx, lease.GetLeaseId())
 		if err != nil {
 			if isStoreNotFound(err) {
 				return nil
@@ -91,7 +89,7 @@ func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyrunti
 			return nil
 		}
 		if strings.TrimSpace(current.GetProviderAccountId()) != "" {
-			if err := r.leaseLocks.WithProviderAccountLock(ctx, current.GetProviderAccountId(), releaseProvider); err != nil {
+			if err := c.deps.locks.WithProviderAccountLock(ctx, current.GetProviderAccountId(), releaseProvider); err != nil {
 				_ = c.saveLeaseExpiredCleanupFailure(ctx, current, false, true, "expired provider session cleanup lock failed")
 				return err
 			}

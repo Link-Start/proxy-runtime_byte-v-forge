@@ -17,13 +17,12 @@ const (
 )
 
 func (c leaseCoordinator) cleanupPendingLeaseFacts(ctx context.Context) error {
-	r := c.runtime
-	if r.store == nil {
+	if c.deps.store == nil {
 		return nil
 	}
-	leases, err := r.store.CleanupPendingLeaseFacts(ctx)
+	leases, err := c.deps.store.CleanupPendingLeaseFacts(ctx)
 	if err != nil {
-		r.logger.Warn("list proxy lease cleanup facts failed", "error", err)
+		c.warn("list proxy lease cleanup facts failed", "error", err)
 		return err
 	}
 	cleanupErrors := make([]error, 0)
@@ -36,7 +35,7 @@ func (c leaseCoordinator) cleanupPendingLeaseFacts(ctx context.Context) error {
 		err := c.cleanupPendingLeaseFact(attemptCtx, lease)
 		cancel()
 		if err != nil {
-			r.logger.Warn("cleanup proxy lease fact failed", "lease_id", lease.GetLeaseId(), "account_id", lease.GetAccountId(), "provider_account_id", lease.GetProviderAccountId())
+			c.warn("cleanup proxy lease fact failed", "lease_id", lease.GetLeaseId(), "account_id", lease.GetAccountId(), "provider_account_id", lease.GetProviderAccountId())
 			cleanupErrors = append(cleanupErrors, fmt.Errorf("cleanup lease fact %q: %w", lease.GetLeaseId(), err))
 		}
 	}
@@ -44,12 +43,11 @@ func (c leaseCoordinator) cleanupPendingLeaseFacts(ctx context.Context) error {
 }
 
 func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	r := c.runtime
 	if lease == nil || strings.TrimSpace(lease.GetLeaseId()) == "" {
 		return nil
 	}
-	return r.leaseLocks.WithAccountLock(ctx, lease.GetAccountId(), func(ctx context.Context) error {
-		current, err := r.store.LeaseFactByID(ctx, lease.GetLeaseId())
+	return c.deps.locks.WithAccountLock(ctx, lease.GetAccountId(), func(ctx context.Context) error {
+		current, err := c.deps.store.LeaseFactByID(ctx, lease.GetLeaseId())
 		if err != nil {
 			if isStoreNotFound(err) {
 				return nil
@@ -75,7 +73,7 @@ func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *pr
 				return nil
 			}
 			if strings.TrimSpace(current.GetProviderAccountId()) != "" {
-				if err := r.leaseLocks.WithProviderAccountLock(ctx, current.GetProviderAccountId(), releaseProvider); err != nil {
+				if err := c.deps.locks.WithProviderAccountLock(ctx, current.GetProviderAccountId(), releaseProvider); err != nil {
 					return err
 				}
 			} else if err := releaseProvider(ctx); err != nil {
@@ -90,8 +88,8 @@ func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *pr
 			case leaseCleanupFinalReleased:
 				return c.saveLeaseReleased(ctx, current)
 			}
-			return r.store.SaveLeaseFact(ctx, current)
+			return c.deps.store.SaveLeaseFact(ctx, current)
 		}
-		return r.store.SaveLeaseFact(ctx, current)
+		return c.deps.store.SaveLeaseFact(ctx, current)
 	})
 }

@@ -89,8 +89,8 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 		logger:              logger,
 		reconcileCh:         make(chan struct{}, 1),
 	}
-	runtime.leaseCoordinator = newLeaseCoordinator(runtime)
 	runtime.dynamicIPSelector = newDynamicIPSelector(runtime)
+	runtime.leaseCoordinator = newLeaseCoordinator(runtime)
 	runtime.appService = NewRuntimeService(runtime)
 	return runtime, nil
 }

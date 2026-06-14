@@ -11,7 +11,6 @@ import (
 )
 
 func (c leaseCoordinator) saveFailedAcquireLeaseFact(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest, providerAccountID string, session *proxyruntimev1.ProxySession, egress *proxyruntimev1.ProxyEndpoint, listener *proxyruntimev1.EgressListener, plan *proxyruntimev1.ProxyDynamicIPSelectionPlan, message string) {
-	r := c.runtime
 	if req == nil || strings.TrimSpace(req.GetAccountId()) == "" {
 		return
 	}
@@ -38,7 +37,7 @@ func (c leaseCoordinator) saveFailedAcquireLeaseFact(ctx context.Context, req *p
 	if lease.ErrorMessage == "" {
 		lease.ErrorMessage = "lease acquire failed"
 	}
-	if err := r.store.SaveLeaseFact(ctx, lease); err != nil {
-		r.logger.Warn("save failed proxy lease fact failed", "account_id", lease.GetAccountId(), "provider_account_id", lease.GetProviderAccountId())
+	if err := c.deps.store.SaveLeaseFact(ctx, lease); err != nil {
+		c.warn("save failed proxy lease fact failed", "account_id", lease.GetAccountId(), "provider_account_id", lease.GetProviderAccountId())
 	}
 }

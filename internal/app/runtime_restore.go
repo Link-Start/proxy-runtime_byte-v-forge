@@ -36,13 +36,12 @@ func (r *Runtime) restoreActiveLeasesInBackground(ctx context.Context) {
 }
 
 func (c leaseCoordinator) restoreActiveLeases(ctx context.Context) error {
-	r := c.runtime
-	if r.store == nil {
+	if c.deps.store == nil {
 		return nil
 	}
-	leases, err := r.store.ListRestorableLeaseFacts(ctx)
+	leases, err := c.deps.store.ListRestorableLeaseFacts(ctx)
 	if err != nil {
-		r.logger.Warn("list proxy leases for restore failed", "error", err)
+		c.warn("list proxy leases for restore failed", "error", err)
 		return err
 	}
 	now := time.Now().UTC()
@@ -59,7 +58,7 @@ func (c leaseCoordinator) restoreActiveLeases(ctx context.Context) error {
 		err := c.restoreLeaseRoute(leaseCtx, lease)
 		cancel()
 		if err != nil {
-			r.logger.Warn("restore proxy lease route failed", "account_id", lease.GetAccountId(), "error", err)
+			c.warn("restore proxy lease route failed", "account_id", lease.GetAccountId(), "error", err)
 			restoreErrors = append(restoreErrors, fmt.Errorf("restore lease route %q: %w", lease.GetLeaseId(), err))
 			continue
 		}
@@ -68,25 +67,24 @@ func (c leaseCoordinator) restoreActiveLeases(ctx context.Context) error {
 }
 
 func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	r := c.runtime
 	if lease.GetSession() == nil || lease.GetListener() == nil {
 		return errors.New("lease session or listener is missing")
 	}
-	providerCfg, _, err := r.store.ProviderConfig(ctx, lease.GetProviderAccountId())
+	providerCfg, _, err := c.deps.store.ProviderConfig(ctx, lease.GetProviderAccountId())
 	if err != nil {
 		return err
 	}
-	providerAccount, err := r.store.ProviderAccount(ctx, lease.GetProviderAccountId())
+	providerAccount, err := c.deps.store.ProviderAccount(ctx, lease.GetProviderAccountId())
 	if err != nil {
 		return err
 	}
-	settings, err := r.settings.load(ctx)
+	settings, err := c.deps.settings.load(ctx)
 	if err != nil {
 		return err
 	}
 	holder := leaseConcurrencyHolder(lease)
 	policy := leaseConcurrencyPolicy(lease)
-	slot, err := r.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, leaseDynamicProviderID(lease), policy), policy, holder, leaseConcurrencySlotTTL(policy))
+	slot, err := c.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, leaseDynamicProviderID(lease), policy), policy, holder, leaseConcurrencySlotTTL(policy))
 	if err != nil {
 		return err
 	}
@@ -99,7 +97,7 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 		}
 	}()
 	providerCfg.Gateways = endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerCfg.ProviderID)
-	providerClient, err := r.accountProviders.NewSessionProvider(providerCfg, r.providerHTTPClient)
+	providerClient, err := c.newSessionProvider(providerCfg)
 	if err != nil {
 		return err
 	}
@@ -107,18 +105,18 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	if err != nil {
 		return err
 	}
-	dialerProxy, lineLabels, err := r.dynamicLeaseDialerProxy(ctx, settings, lease.GetAccountId())
+	dialerProxy, lineLabels, err := c.deps.dynamicLeaseDialerProxy(ctx, settings, lease.GetAccountId())
 	if err != nil {
 		return err
 	}
 	nodes = applyDynamicLeaseLineLabels(nodes, lineLabels)
 	route := dataplane.SessionRoute{
 		SessionID:   lease.GetSession().GetSessionId(),
-		Listener:    localServiceFromListener(listenerFromProto(lease.GetListener()), r.cfg.LocalProtocol),
+		Listener:    localServiceFromListener(listenerFromProto(lease.GetListener()), c.deps.cfg.LocalProtocol),
 		Pool:        nodes,
 		DialerProxy: dialerProxy,
 	}
-	if err := r.dataPlane.UpsertSessionRoute(ctx, route); err != nil {
+	if err := c.deps.dataPlane.UpsertSessionRoute(ctx, route); err != nil {
 		return err
 	}
 	keepSlot = true

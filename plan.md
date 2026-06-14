@@ -820,6 +820,7 @@ Completed user-visible/runtime batches:
 - Provider-account concurrency slot release now uses a lease-owned helper, centralizing empty-holder and missing-limiter handling.
 - Lease account/provider-account/listener-allocation lock invocation now uses lease-owned helpers; coordinator no longer calls the lock manager methods directly.
 - Lease session route upsert/delete now goes through lease-owned helpers, leaving the runtime dataplane adapter as the only direct Mihomo dataplane bridge.
+- Acquired-lease session route and lease-listener local-service construction now live in `internal/app/lease`, removing app-level listener route helpers.
 
 Still open:
 

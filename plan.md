@@ -807,6 +807,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease endpoint metadata and label writing are centralized in `internal/app/lease`, keeping acquired-route helpers from editing raw label keys directly.
 - Provider-session request label mutation for dynamic lease acquire is centralized in `internal/app/lease`, so provider-session creation no longer writes raw lease label keys directly.
 - Provider session creation now crosses a lease-owned `SessionProvider` port instead of exposing `provider.SessionProvider` through lease orchestration dependencies.
+- Dynamic lease node line-label application is centralized in `internal/app/lease`, removing the app-level line-label mutation helper.
 
 Still open:
 

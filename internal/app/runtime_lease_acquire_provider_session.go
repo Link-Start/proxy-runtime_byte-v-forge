@@ -34,7 +34,7 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 		failure.beforeRoute("lease line resolution failed")
 		return nil, err
 	}
-	nodes = applyDynamicLeaseLineLabels(nodes, lineLabels)
+	nodes = leaseapp.ApplyNodeLabels(nodes, lineLabels)
 	var lease *proxyruntimev1.ProxyDynamicLease
 	err = c.deps.locks.WithSessionListenerAllocationLock(ctx, func(ctx context.Context) error {
 		var err error

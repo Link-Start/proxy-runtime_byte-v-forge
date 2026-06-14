@@ -31,7 +31,65 @@ type AcquiredRouteFlowInput struct {
 	AfterApply        AcquiredRouteSuccessObserver
 }
 
+type AcquiredRouteApplier struct {
+	Store            OrchestrationStore
+	DataPlane        DataPlaneApplier
+	Clock            Clock
+	LocalProtocol    string
+	Managed          bool
+	FallbackProtocol string
+	ResolveListener  AcquiredEndpointListenerResolver
+	ResolveEgress    AcquiredEndpointEgressResolver
+	AfterApply       AcquiredRouteSuccessObserver
+}
+
+type AcquiredRouteApplierInput struct {
+	Failure           *FailedAcquireRecorder
+	LeaseID           string
+	Request           *proxyruntimev1.AcquireProxyLeaseRequest
+	ProviderClient    SessionProvider
+	ProviderAccountID string
+	ConcurrencyHolder string
+	Session           *proxyruntimev1.ProxySession
+	Nodes             []provider.Node
+	DialerProxy       string
+	LineLabels        map[string]string
+	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+}
+
 type AcquiredRouteSuccessObserver func(context.Context, *proxyruntimev1.ProxyDynamicLease)
+
+func (a AcquiredRouteApplier) Apply(ctx context.Context, input AcquiredRouteApplierInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+	return ApplyAcquiredRouteFlow(ctx, AcquiredRouteFlowInput{
+		Store:             a.Store,
+		DataPlane:         a.DataPlane,
+		Failure:           input.Failure,
+		LeaseID:           input.LeaseID,
+		Request:           input.Request,
+		ProviderClient:    input.ProviderClient,
+		ProviderAccountID: input.ProviderAccountID,
+		ConcurrencyHolder: input.ConcurrencyHolder,
+		Session:           input.Session,
+		Nodes:             input.Nodes,
+		DialerProxy:       input.DialerProxy,
+		LineLabels:        input.LineLabels,
+		LocalProtocol:     a.LocalProtocol,
+		SelectionPlan:     input.SelectionPlan,
+		AcquiredAt:        a.now(),
+		Managed:           a.Managed,
+		FallbackProtocol:  a.FallbackProtocol,
+		ResolveListener:   a.ResolveListener,
+		ResolveEgress:     a.ResolveEgress,
+		AfterApply:        a.AfterApply,
+	})
+}
+
+func (a AcquiredRouteApplier) now() time.Time {
+	if a.Clock != nil {
+		return a.Clock.Now()
+	}
+	return time.Now()
+}
 
 func ApplyAcquiredRouteFlow(ctx context.Context, input AcquiredRouteFlowInput) (*proxyruntimev1.ProxyDynamicLease, error) {
 	endpoint, err := MaterializeAcquiredEndpoint(ctx, AcquiredEndpointMaterializeInput{

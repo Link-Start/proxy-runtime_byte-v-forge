@@ -104,3 +104,27 @@ func (c leaseCoordinator) leaseRouteRestorer(settings *runtimeSettingsFile) leas
 		ResolveLineBinding: c.routeLineBindingResolver(settings),
 	}
 }
+
+func (c leaseCoordinator) acquiredRouteApplier(settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.AcquiredRouteApplier {
+	return leaseapp.AcquiredRouteApplier{
+		Store:            c.deps.store,
+		DataPlane:        c.deps.dataPlane,
+		Clock:            c.deps.clock,
+		LocalProtocol:    c.deps.cfg.LocalProtocol,
+		Managed:          true,
+		FallbackProtocol: "http",
+		ResolveListener: func(ctx context.Context, accountID string, leaseID string) (leaseapp.Listener, error) {
+			return c.deps.leaseListener(ctx, settings, accountID, leaseID)
+		},
+		ResolveEgress: func(ctx context.Context, listener leaseapp.Listener) (*proxyruntimev1.ProxyEndpoint, error) {
+			_ = ctx
+			return c.deps.localListenerEndpoint(listener, c.deps.sessionAdvertisedHost(advertisedHost, listener))
+		},
+		AfterApply: func(ctx context.Context, _ *proxyruntimev1.ProxyDynamicLease) {
+			c.clearExitCheckCache()
+			if req.GetAccountId() == playgroundProfileID {
+				c.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
+			}
+		},
+	}
+}

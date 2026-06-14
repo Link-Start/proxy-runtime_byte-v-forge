@@ -879,6 +879,7 @@ Completed user-visible/runtime batches:
 - Release lock-window state refresh and route-retire eligibility now live in `internal/app/lease`; release orchestration only locks and executes route/provider cleanup side effects.
 - Lease route deletion from persisted lease facts now lives in `internal/app/lease`; release, expiry, and cleanup paths share the same session-route reconstruction and dataplane delete helper.
 - Acquire success active-fact persistence now uses a lease-owned acquired-fact input helper, so route apply no longer assembles account/purpose/session fact fields directly.
+- Acquire-attempt concurrency slot acquisition now uses a lease-owned input helper for holder generation and TTL construction; app code only supplies provider limit policy inputs.
 
 Still open:
 

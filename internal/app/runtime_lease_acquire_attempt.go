@@ -24,8 +24,15 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 	if err != nil {
 		return nil, internalError("generate lease id", err)
 	}
-	concurrencyHolder := leaseapp.HolderForLeaseID(leaseID)
-	concurrencySlot, err := leaseapp.AcquireProviderAccountConcurrencySlot(ctx, c.deps.providerConcurrency, providerAccount.GetAccountId(), dynamicProviderConcurrencyLimit(settings, selection.plan.GetSelectedEndpoint().GetDynamicProviderId(), req.GetPolicy()), req.GetPolicy(), concurrencyHolder, leaseapp.ConcurrencySlotTTL(req.GetPolicy(), leaseapp.DefaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
+	concurrencySlot, concurrencyHolder, err := leaseapp.AcquireAttemptConcurrencySlot(ctx, leaseapp.AcquireAttemptConcurrencyInput{
+		Limiter:    c.deps.providerConcurrency,
+		AccountID:  providerAccount.GetAccountId(),
+		Limit:      dynamicProviderConcurrencyLimit(settings, selection.plan.GetSelectedEndpoint().GetDynamicProviderId(), req.GetPolicy()),
+		Policy:     req.GetPolicy(),
+		LeaseID:    leaseID,
+		DefaultTTL: leaseapp.DefaultDynamicIPStickyTTL,
+		TTLBuffer:  providerAccountConcurrencyTTLBuffer,
+	})
 	if err != nil {
 		return nil, failedPrecondition("provider account concurrency limit reached", err)
 	}

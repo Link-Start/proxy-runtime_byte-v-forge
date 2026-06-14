@@ -1,7 +1,6 @@
 package app
 
 import (
-	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -29,20 +28,21 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return
 	}
-	if !api.auth.TokenMatches(login.Token) {
-		if login.FormSubmit {
-			ctx.Redirect(http.StatusSeeOther, authapp.LoginRedirectWithError(login.Next))
-			return
-		}
-		writeHTTPError(ctx.Writer, errors.New("unauthorized"), http.StatusUnauthorized)
+	decision, err := api.auth.DecideLogin(login)
+	if err != nil {
+		writeHTTPError(ctx.Writer, err, http.StatusUnauthorized)
+		return
+	}
+	if !decision.Authenticated {
+		ctx.Redirect(http.StatusSeeOther, decision.RedirectURL)
 		return
 	}
 	if err := api.auth.SetSessionCookie(ctx.Writer, ctx.Request, time.Now()); err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
 	}
-	if login.FormSubmit {
-		ctx.Redirect(http.StatusSeeOther, authapp.SafeRedirect(login.Next))
+	if decision.RedirectURL != "" {
+		ctx.Redirect(http.StatusSeeOther, decision.RedirectURL)
 		return
 	}
 	api.writeAuthSession(ctx, true)

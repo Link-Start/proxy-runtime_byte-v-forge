@@ -906,6 +906,7 @@ Completed user-visible/runtime batches:
 - Mihomo final config base-field assembly is split from top-level render orchestration, leaving renderConfig to compose projected sections and final rules only.
 - Auth login request reading now lives in `internal/app/auth` with the HTTP layer injecting the shared bounded body reader for existing error mapping.
 - Proxy-user referenced egress-profile validation now lives in `internal/app/settings`; app wiring only provides the failed-precondition error factory.
+- Auth login outcome decisions now live in the auth application; HTTP login handler only performs body read, cookie write, redirect, and response emission.
 
 Still open:
 

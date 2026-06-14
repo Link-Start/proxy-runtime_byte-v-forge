@@ -746,6 +746,7 @@ Completed user-visible/runtime batches:
 - Provider-account concurrency acquire/available/release is now a lease-owned port; app runtime keeps only the cache lifecycle/Redis-local adapter implementation.
 - Source-plane egress-profile projection helpers are split out of settings mutation code into a dedicated source projection file.
 - Egress profile request conversion and validation are split from settings persistence updates into a focused settings request file.
+- Egress profile and ingress rule persistence updates are split from egress profile normalization/resource-ref helpers.
 
 Still open:
 

@@ -244,6 +244,9 @@ func profileDynamicIPLeasePolicy(profilePolicy *proxyruntimev1.ProxySessionPolic
 	request := normalizeDynamicIPSessionPolicy(requestPolicy)
 	policy.StickyTtl = cloneDuration(request.GetStickyTtl())
 	policy.Labels = cloneStringMap(policy.GetLabels())
+	if policy.Labels == nil {
+		policy.Labels = map[string]string{}
+	}
 	for key, value := range request.GetLabels() {
 		policy.Labels[key] = value
 	}

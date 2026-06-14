@@ -689,6 +689,7 @@ Completed user-visible/runtime batches:
 - Runtime login request parsing is extracted into `internal/app/auth`, leaving the Gin handler as body-read and response adapter.
 - Runtime auth session cookie construction and clearing are centralized in `internal/app/auth`.
 - MetaCubeXD bootstrap HTML, reverse proxy construction, controller auth injection, query sanitization, cache headers, and upstream error redaction are centralized in `internal/app/dashboard`.
+- HTTP request ID, authorization handoff, panic recovery, and request logging middleware are extracted into `internal/app/httpapi`; panic logs no longer include the recovered payload.
 
 Still open:
 

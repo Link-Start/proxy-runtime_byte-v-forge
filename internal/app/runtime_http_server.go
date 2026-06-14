@@ -107,24 +107,11 @@ func (api *runtimeHTTPAPI) handleGinNoRoute(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) ginMiddleware() gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		requestID := httpapi.RequestID(ctx.Request)
-		ctx.Header("X-Request-Id", requestID)
-		start := time.Now()
-		defer func() {
-			if recovered := recover(); recovered != nil {
-				if !ctx.Writer.Written() {
-					writeHTTPError(ctx.Writer, internalError("", nil), http.StatusInternalServerError)
-				}
-				ctx.Abort()
-				api.logger.Error("proxy-runtime http panic", "request_id", requestID, "method", ctx.Request.Method, "path", ctx.Request.URL.Path, "error", recovered)
-			}
-			api.logger.Info("proxy-runtime http request", "request_id", requestID, "method", ctx.Request.Method, "path", ctx.Request.URL.Path, "status", ctx.Writer.Status(), "duration_ms", time.Since(start).Milliseconds())
-		}()
-		if !api.authorize(ctx) {
-			ctx.Abort()
-			return
-		}
-		ctx.Next()
-	}
+	return httpapi.Middleware(httpapi.MiddlewareOptions{
+		Logger:    api.logger,
+		Authorize: api.authorize,
+		WritePanicError: func(w http.ResponseWriter) {
+			writeHTTPError(w, internalError("", nil), http.StatusInternalServerError)
+		},
+	})
 }

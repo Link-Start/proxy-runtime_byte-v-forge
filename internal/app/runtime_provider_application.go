@@ -4,10 +4,13 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
+
+const providerAccountDeleteTimeout = 2 * time.Minute
 
 type runtimeProviderApplication struct {
 	runtime *Runtime
@@ -87,9 +90,14 @@ func (a runtimeProviderApplication) normalizeProviderAccountDynamicProvider(ctx 
 }
 
 func (a runtimeProviderApplication) DeleteProxyProviderAccount(ctx context.Context, req *proxyruntimev1.DeleteProxyProviderAccountRequest) (*proxyruntimev1.DeleteProxyProviderAccountResponse, error) {
-	if err := a.deleteProviderAccount(ctx, req.GetAccountId()); err != nil {
-		return nil, invalidArgument("", err)
+	providerAccountID := strings.TrimSpace(req.GetAccountId())
+	if providerAccountID == "" {
+		return nil, invalidArgument("provider account_id is required", nil)
 	}
+	if _, err := a.runtime.store.ProviderAccount(ctx, providerAccountID); err != nil {
+		return nil, invalidArgument("provider account is not configured", err)
+	}
+	a.deleteProviderAccountInBackground(providerAccountID)
 	return &proxyruntimev1.DeleteProxyProviderAccountResponse{}, nil
 }
 
@@ -165,4 +173,16 @@ func (a runtimeProviderApplication) deleteProviderAccount(ctx context.Context, p
 			}
 		}
 	}
+}
+
+func (a runtimeProviderApplication) deleteProviderAccountInBackground(providerAccountID string) {
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), providerAccountDeleteTimeout)
+		defer cancel()
+		if err := a.deleteProviderAccount(ctx, providerAccountID); err != nil {
+			a.runtime.logger.Warn("delete provider account failed", "provider_account_id", providerAccountID, "error", err)
+			return
+		}
+		a.runtime.logger.Info("delete provider account finished", "provider_account_id", providerAccountID)
+	}()
 }

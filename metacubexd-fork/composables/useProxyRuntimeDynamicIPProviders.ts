@@ -92,9 +92,11 @@ export function useProxyRuntimeDynamicIPProviders() {
   async function deleteProvider(provider: ProxyDynamicIPProviderSettings) {
     await withSave(async () => {
       const dynamicProviderID = provider.dynamic_provider_id
+      const deletedAccountIDs: string[] = []
       for (const account of state.accounts.value) {
         if (account.dynamic_provider_id === dynamicProviderID) {
           await api.deleteProviderAccount({ account_id: account.account_id })
+          deletedAccountIDs.push(account.account_id)
         }
       }
       await api.updateDynamicIPProviders(
@@ -105,6 +107,7 @@ export function useProxyRuntimeDynamicIPProviders() {
         ),
       )
       await load()
+      removeAccounts(deletedAccountIDs)
     })
   }
 
@@ -144,8 +147,16 @@ export function useProxyRuntimeDynamicIPProviders() {
   async function deleteAccount(accountID: string) {
     await withSave(async () => {
       await api.deleteProviderAccount({ account_id: accountID })
-      await load()
+      removeAccounts([accountID])
     })
+  }
+
+  function removeAccounts(accountIDs: string[]) {
+    const deleted = new Set(accountIDs.map((accountID) => accountID.trim()))
+    if (deleted.size === 0) return
+    state.accounts.value = state.accounts.value.filter(
+      (account) => !deleted.has(account.account_id),
+    )
   }
 
   return {

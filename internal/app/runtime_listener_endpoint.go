@@ -74,7 +74,7 @@ func (r *Runtime) inUserCheckListener(ctx context.Context, username string) (con
 	return config.EgressListener{}, fmt.Errorf("in-user %q is not configured", username)
 }
 
-func (r *Runtime) localListenerEndpoint(listener config.EgressListener, advertisedHost string) (*proxyruntimev1.ProxyEndpoint, error) {
+func (r *Runtime) localListenerEndpoint(listener leaseapp.Listener, advertisedHost string) (*proxyruntimev1.ProxyEndpoint, error) {
 	hostPort, err := localListenHostPort(listener.Addr)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (r *Runtime) localListenerEndpoint(listener config.EgressListener, advertis
 	return &proxyruntimev1.ProxyEndpoint{Id: listener.ID, Protocol: protocolFromName(listenerProtocol(listener, r.cfg.LocalProtocol)), Host: host, Port: port, Labels: labels}, nil
 }
 
-func (r *Runtime) sessionAdvertisedHost(advertisedHost string, listener config.EgressListener) string {
+func (r *Runtime) sessionAdvertisedHost(advertisedHost string, listener leaseapp.Listener) string {
 	if host := strings.TrimSpace(r.cfg.SessionListener.AdvertisedHost); host != "" {
 		return host
 	}

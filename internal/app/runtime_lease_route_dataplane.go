@@ -5,14 +5,13 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
-func acquiredLeaseSessionRoute(session *proxyruntimev1.ProxySession, listener config.EgressListener, nodes []provider.Node, dialerProxy string, fallbackProtocol string) leaseapp.SessionRoute {
+func acquiredLeaseSessionRoute(session *proxyruntimev1.ProxySession, listener leaseapp.Listener, nodes []provider.Node, dialerProxy string, fallbackProtocol string) leaseapp.SessionRoute {
 	return leaseapp.SessionRoute{
 		SessionID:   session.GetSessionId(),
-		Listener:    localServiceFromListener(listener, fallbackProtocol),
+		Listener:    localServiceFromLeaseListener(listener, fallbackProtocol),
 		Pool:        nodes,
 		DialerProxy: dialerProxy,
 	}

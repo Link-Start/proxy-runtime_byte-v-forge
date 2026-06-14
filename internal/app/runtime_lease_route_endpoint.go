@@ -6,7 +6,6 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
@@ -23,18 +22,18 @@ type acquiredLeaseEndpointInput struct {
 	lineLabels        map[string]string
 }
 
-func (c leaseCoordinator) acquiredLeaseEndpoint(ctx context.Context, input acquiredLeaseEndpointInput, failure *leaseAcquireFailure) (config.EgressListener, *proxyruntimev1.EgressListener, *proxyruntimev1.ProxyEndpoint, error) {
+func (c leaseCoordinator) acquiredLeaseEndpoint(ctx context.Context, input acquiredLeaseEndpointInput, failure *leaseAcquireFailure) (leaseapp.Listener, *proxyruntimev1.EgressListener, *proxyruntimev1.ProxyEndpoint, error) {
 	listener, err := c.deps.leaseListener(ctx, input.settings, input.req.GetAccountId(), input.leaseID)
 	if err != nil {
 		failure.beforeRoute("lease listener allocation failed")
-		return config.EgressListener{}, nil, nil, err
+		return leaseapp.Listener{}, nil, nil, err
 	}
-	listenerProto := protoListener(listener, true)
+	listenerProto := protoLeaseListener(listener, true)
 	failure.listener = listenerProto
 	egress, err := c.deps.localListenerEndpoint(listener, c.deps.sessionAdvertisedHost(input.advertisedHost, listener))
 	if err != nil {
 		failure.beforeRoute("lease endpoint build failed")
-		return config.EgressListener{}, nil, nil, err
+		return leaseapp.Listener{}, nil, nil, err
 	}
 	failure.egress = egress
 	applyAcquiredLeaseEndpointMetadata(egress, input)

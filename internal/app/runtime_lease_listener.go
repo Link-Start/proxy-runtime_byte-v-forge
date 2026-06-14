@@ -4,10 +4,11 @@ import (
 	"context"
 	"strings"
 
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
-func (r *Runtime) leaseListener(ctx context.Context, settings *runtimeSettingsFile, accountID string, leaseID string) (config.EgressListener, error) {
+func (r *Runtime) leaseListener(ctx context.Context, settings *runtimeSettingsFile, accountID string, leaseID string) (leaseapp.Listener, error) {
 	_ = ctx
 	leaseID = firstNonEmpty(leaseID, accountID)
 	id := "lease-" + shortHash(leaseID)
@@ -20,9 +21,9 @@ func (r *Runtime) leaseListener(ctx context.Context, settings *runtimeSettingsFi
 		}
 	}
 	if strings.TrimSpace(password) == "" {
-		return config.EgressListener{}, failedPrecondition("dynamic lease listener password is not configured", nil)
+		return leaseapp.Listener{}, failedPrecondition("dynamic lease listener password is not configured", nil)
 	}
-	return config.EgressListener{
+	return leaseapp.Listener{
 		ID:       id,
 		Addr:     r.cfg.LocalAddr,
 		Protocol: r.cfg.LocalProtocol,

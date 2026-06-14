@@ -12,9 +12,9 @@ type leaseCoordinatorSettings interface {
 	load(context.Context) (*runtimeSettingsFile, error)
 }
 
-type leaseListenerFunc func(context.Context, *runtimeSettingsFile, string, string) (config.EgressListener, error)
-type leaseEndpointFunc func(config.EgressListener, string) (*proxyruntimev1.ProxyEndpoint, error)
-type leaseAdvertisedHostFunc func(string, config.EgressListener) string
+type leaseListenerFunc func(context.Context, *runtimeSettingsFile, string, string) (leaseapp.Listener, error)
+type leaseEndpointFunc func(leaseapp.Listener, string) (*proxyruntimev1.ProxyEndpoint, error)
+type leaseAdvertisedHostFunc func(string, leaseapp.Listener) string
 type leaseDialerProxyFunc func(context.Context, *runtimeSettingsFile, string) (string, map[string]string, error)
 type leaseConnectionCleanupFunc func(context.Context, []string)
 

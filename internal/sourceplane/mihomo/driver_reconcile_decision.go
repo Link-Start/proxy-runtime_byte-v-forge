@@ -14,6 +14,10 @@ type baseConfigProjectionDecision struct {
 	mode configProjectionApplyMode
 }
 
+type finalConfigProjectionDecision struct {
+	mode configProjectionApplyMode
+}
+
 type baseConfigProjectionApplyResult struct {
 	changed bool
 }
@@ -22,6 +26,12 @@ type baseConfigProjectionDecisionInput struct {
 	running          bool
 	currentEndpoint  sourceplane.Endpoint
 	nextEndpoint     sourceplane.Endpoint
+	currentSignature string
+	nextSignature    string
+}
+
+type finalConfigProjectionDecisionInput struct {
+	baseChanged      bool
 	currentSignature string
 	nextSignature    string
 }
@@ -36,10 +46,21 @@ func decideBaseConfigProjectionApply(input baseConfigProjectionDecisionInput) ba
 	return baseConfigProjectionDecision{mode: configProjectionApplyNoop}
 }
 
+func decideFinalConfigProjectionApply(input finalConfigProjectionDecisionInput) finalConfigProjectionDecision {
+	if !input.baseChanged && input.currentSignature == input.nextSignature {
+		return finalConfigProjectionDecision{mode: configProjectionApplyNoop}
+	}
+	return finalConfigProjectionDecision{mode: configProjectionApplyReload}
+}
+
 func (d baseConfigProjectionDecision) changed() bool {
 	return d.mode != configProjectionApplyNoop
 }
 
 func (d baseConfigProjectionDecision) result() baseConfigProjectionApplyResult {
 	return baseConfigProjectionApplyResult{changed: d.changed()}
+}
+
+func (d finalConfigProjectionDecision) reloadRequired() bool {
+	return d.mode == configProjectionApplyReload
 }

@@ -30,7 +30,12 @@ func (d *Driver) applyBaseConfigProjectionLocked(ctx context.Context, configPath
 
 func (d *Driver) applyFinalConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint, baseApply baseConfigProjectionApplyResult) error {
 	d.desiredSig = config.signature
-	if !baseApply.changed && config.signature == d.signature {
+	decision := decideFinalConfigProjectionApply(finalConfigProjectionDecisionInput{
+		baseChanged:      baseApply.changed,
+		currentSignature: d.signature,
+		nextSignature:    config.signature,
+	})
+	if !decision.reloadRequired() {
 		return nil
 	}
 	return d.reloadConfigDataLocked(ctx, configPath, config.data, endpoint)

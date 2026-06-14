@@ -787,6 +787,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native update plan construction now separates top-level plan wiring from fixed-proxy and subscription mutation helpers.
 - Mihomo-native stable resource ID generation is split from settings normalization.
 - Mihomo-native top-level settings normalization now delegates fixed-proxy and subscription list normalization to focused helpers.
+- Mihomo-native current-resource indexes are split into fixed-proxy and subscription index helpers.
 
 Still open:
 

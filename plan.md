@@ -672,6 +672,7 @@ Completed user-visible/runtime batches:
 - Mihomo driver model, reconcile flow, and hot-reload candidate apply logic are separated into focused files.
 - Mihomo reconcile now uses explicit rendered-config projection and base-config apply helpers.
 - Lease application now owns list/acquire/release response orchestration through repository/coordinator ports, and HTTP request details are reduced to an advertised host before entering lease orchestration.
+- Lease package is split into application, repository/coordinator ports, list options, operations, and predicates.
 
 Still open:
 

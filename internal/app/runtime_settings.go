@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"log/slog"
 	"sync"
 	"time"
@@ -77,19 +76,9 @@ func (s *runtimeSettingsStore) updateDynamicIPProviders(ctx context.Context, pro
 	if err != nil {
 		return nil, err
 	}
-	settings.DynamicIpProviders = make([]*proxyruntimev1.ProxyDynamicIPProviderSettings, 0, len(providers))
-	seen := map[string]struct{}{}
-	for index, provider := range providers {
-		item := dynamicIPProviderFromProto(provider)
-		if err := validateDynamicIPProvider(item, index, s.accountProviders); err != nil {
-			return nil, err
-		}
-		id := dynamicIPProviderID(item)
-		if _, exists := seen[id]; exists {
-			return nil, fmt.Errorf("dynamic_ip_providers[%d] duplicates dynamic provider %q", index, id)
-		}
-		seen[id] = struct{}{}
-		settings.DynamicIpProviders = append(settings.DynamicIpProviders, item)
+	settings.DynamicIpProviders, err = dynamicIPProvidersFromRequest(providers, s.accountProviders)
+	if err != nil {
+		return nil, err
 	}
 	if err := s.saveLocked(ctx, settings); err != nil {
 		return nil, err

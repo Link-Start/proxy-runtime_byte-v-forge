@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -44,25 +43,18 @@ func (c leaseCoordinator) restoreActiveLeases(ctx context.Context) error {
 		return err
 	}
 	now := c.now().UTC()
-	restoreErrors := make([]error, 0)
-	for _, lease := range leases {
-		if !leaseapp.ActiveAt(lease, now) {
-			continue
-		}
-		if err := ctx.Err(); err != nil {
-			restoreErrors = append(restoreErrors, err)
-			break
-		}
-		leaseCtx, cancel := context.WithTimeout(ctx, leaseRestoreRouteTimeout)
-		err := c.restoreLeaseRoute(leaseCtx, lease)
-		cancel()
-		if err != nil {
+	return leaseapp.ProcessLeaseBatch(ctx, leaseapp.BatchInput{
+		Leases:      leases,
+		Timeout:     leaseRestoreRouteTimeout,
+		ErrorPrefix: "restore lease route",
+		ShouldRun: func(lease *proxyruntimev1.ProxyDynamicLease) bool {
+			return leaseapp.ActiveAt(lease, now)
+		},
+		Process: c.restoreLeaseRoute,
+		Observe: func(lease *proxyruntimev1.ProxyDynamicLease, err error) {
 			c.warn("restore proxy lease route failed", "account_id", lease.GetAccountId(), "error", err)
-			restoreErrors = append(restoreErrors, fmt.Errorf("restore lease route %q: %w", lease.GetLeaseId(), err))
-			continue
-		}
-	}
-	return errors.Join(restoreErrors...)
+		},
+	})
 }
 
 func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {

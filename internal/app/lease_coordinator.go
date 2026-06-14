@@ -38,6 +38,11 @@ type leaseSessionProviderFactory interface {
 	NewSessionProvider(accountproxy.Config) (provider.SessionProvider, error)
 }
 
+type leaseDataPlaneApplier interface {
+	UpsertSessionRoute(context.Context, dataplane.SessionRoute) error
+	DeleteSessionRoute(context.Context, dataplane.SessionRoute) error
+}
+
 type leaseRegistrySessionProviderFactory struct {
 	registry *providerregistry.Registry
 	client   *http.Client
@@ -62,7 +67,7 @@ type leaseCoordinatorDependencies struct {
 	settings                leaseCoordinatorSettings
 	clock                   leaseapp.Clock
 	locks                   leaseRuntimeLocks
-	dataPlane               dataplane.Driver
+	dataPlane               leaseDataPlaneApplier
 	dynamicIPSelector       *dynamicIPSelector
 	sessionProviders        leaseSessionProviderFactory
 	providerConcurrency     providerAccountConcurrencyLimiter

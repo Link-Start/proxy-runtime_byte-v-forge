@@ -714,6 +714,7 @@ Completed user-visible/runtime batches:
 - Lease coordinator wiring now uses explicit store, settings, lock, dataplane, provider-session factory, concurrency limiter, logger, and runtime-callback dependencies instead of holding `*Runtime`; acquire/release/restore/expire/cleanup paths no longer dereference the large runtime object directly.
 - Lease coordinator time-dependent lease predicates and timestamps now use an injected clock port instead of direct `time.Now()` calls in lease acquire, failed-acquire recording, restore, and expiry logic.
 - Provider session creation in lease orchestration is now behind a lease-owned factory port; registry and HTTP client details are confined to the runtime wiring adapter.
+- Dynamic lease data-plane operations now depend on a narrow session-route applier port instead of the full dataplane driver surface.
 
 Still open:
 

@@ -827,6 +827,7 @@ Completed user-visible/runtime batches:
 - Mihomo gateway rendering now separates listener assembly from user authentication, IN-USER rule generation, and hidden session group naming.
 - Mihomo-native egress rendering now separates resource/node resolution and availability checks from profile layer render flow.
 - Mihomo process management now separates status, config-directory/safe-path handling, process start/wait/stop, and controller hot-reload HTTP helpers.
+- Mihomo driver reconcile now separates top-level orchestration from config projection/rendering and base apply/restart decisions.
 
 Still open:
 

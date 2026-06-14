@@ -1,0 +1,34 @@
+package mihomo
+
+import (
+	"context"
+	"path/filepath"
+	"time"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+)
+
+func (d *Driver) applyBaseConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint) (bool, error) {
+	restartRequired := !d.running || d.lastEndpoint != endpoint
+	baseChanged := d.baseSig != config.signature
+	if restartRequired {
+		if err := writeConfigData(configPath, config.data); err != nil {
+			return false, err
+		}
+		d.stopLocked()
+		if err := d.startLocked(ctx, filepath.Dir(configPath), configPath); err != nil {
+			return false, err
+		}
+		if err := waitForEndpoint(ctx, endpoint.Addr, 3*time.Second); err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	if baseChanged {
+		if err := d.reloadConfigDataLocked(ctx, configPath, config.data, endpoint); err != nil {
+			return false, err
+		}
+		return true, nil
+	}
+	return false, nil
+}

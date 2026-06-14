@@ -780,6 +780,7 @@ Completed user-visible/runtime batches:
 - Mihomo connection cleanup now separates runtime orchestration, controller HTTP client calls, response models, and selector matching helpers.
 - Source-plane egress profile kind mapping is split from egress profile projection.
 - Source-plane egress profile list assembly is split from line and exit projection helpers.
+- Source-plane proxy-user route merge now delegates username set and deduplicating append behavior to focused route helpers.
 
 Still open:
 

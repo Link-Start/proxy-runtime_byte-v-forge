@@ -770,6 +770,7 @@ Completed user-visible/runtime batches:
 - Mihomo native resource reference replacement now uses the store's changed-aware mutation helper instead of hand-written lock, load, and save orchestration.
 - Mihomo-native settings load/save facade methods are split from runtime settings persistence facade methods.
 - Postgres runtime settings persistence is split from Postgres Mihomo-native settings persistence.
+- SQLite runtime settings persistence is split from SQLite Mihomo-native settings persistence.
 
 Still open:
 

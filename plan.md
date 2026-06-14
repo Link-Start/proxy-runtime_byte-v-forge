@@ -778,6 +778,7 @@ Completed user-visible/runtime batches:
 - Runtime settings store read projection is split from concrete store update methods.
 - Mihomo-native fixed-proxy URI parsing, URI rendering, and JSON value extraction are split into focused helpers.
 - Mihomo connection cleanup now separates runtime orchestration, controller HTTP client calls, response models, and selector matching helpers.
+- Source-plane egress profile kind mapping is split from egress profile projection.
 
 Still open:
 

@@ -4,6 +4,7 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
@@ -14,5 +15,5 @@ func (c leaseCoordinator) restoreLeaseSessionNodes(ctx context.Context, lease *p
 	if err != nil {
 		return nil, err
 	}
-	return providerClient.FetchSession(ctx, lease.GetSession())
+	return leaseapp.FetchProviderSession(ctx, providerClient, lease.GetSession())
 }

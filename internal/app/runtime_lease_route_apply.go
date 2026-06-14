@@ -5,53 +5,52 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
-func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile, selection dynamicIPSelection, providerAccountID string, leaseID string, concurrencyHolder string, providerClient leaseapp.SessionProvider, session *proxyruntimev1.ProxySession, nodes []provider.Node, dialerProxy string, lineLabels map[string]string, failure *leaseapp.FailedAcquireRecorder) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, flow acquiredLeaseFlow) (*proxyruntimev1.ProxyDynamicLease, error) {
 	input := acquiredLeaseEndpointInput{
-		advertisedHost:    advertisedHost,
-		req:               req,
-		settings:          settings,
-		selection:         selection,
-		providerAccountID: providerAccountID,
-		leaseID:           leaseID,
-		concurrencyHolder: concurrencyHolder,
-		providerClient:    providerClient,
-		session:           session,
-		lineLabels:        lineLabels,
+		advertisedHost:    flow.advertisedHost,
+		req:               flow.request,
+		settings:          flow.settings,
+		selection:         flow.selection,
+		providerAccountID: flow.providerAccountID,
+		leaseID:           flow.leaseID,
+		concurrencyHolder: flow.concurrencyHolder,
+		providerClient:    flow.providerClient,
+		session:           flow.session,
+		lineLabels:        flow.lineLabels,
 	}
-	listener, listenerProto, egress, err := c.acquiredLeaseEndpoint(ctx, input, failure)
+	listener, listenerProto, egress, err := c.acquiredLeaseEndpoint(ctx, input, flow.failure)
 	if err != nil {
 		return nil, err
 	}
 	route := leaseapp.NewAcquiredSessionRoute(leaseapp.AcquiredSessionRouteInput{
-		Session:       session,
+		Session:       flow.session,
 		Egress:        egress,
 		Listener:      listener,
-		Nodes:         nodes,
-		DialerProxy:   dialerProxy,
+		Nodes:         flow.nodes,
+		DialerProxy:   flow.dialerProxy,
 		LocalProtocol: c.deps.cfg.LocalProtocol,
 	})
-	if err := c.applyAcquiredLeaseDataPlaneRoute(ctx, route, failure); err != nil {
+	if err := c.applyAcquiredLeaseDataPlaneRoute(ctx, route, flow.failure); err != nil {
 		return nil, err
 	}
 	lease, err := leaseapp.SaveAcquiredActiveFact(ctx, c.deps.store, leaseapp.AcquiredActiveFactInput{
-		LeaseID:           leaseID,
-		Request:           req,
-		ProviderAccountID: providerAccountID,
-		Session:           session,
+		LeaseID:           flow.leaseID,
+		Request:           flow.request,
+		ProviderAccountID: flow.providerAccountID,
+		Session:           flow.session,
 		Egress:            egress,
 		Listener:          listenerProto,
-		SelectionPlan:     selection.plan,
+		SelectionPlan:     flow.selection.plan,
 		AcquiredAt:        c.now(),
 	})
 	if err != nil {
-		failure.AfterRoute(ctx, route, "lease fact save failed")
+		flow.failure.AfterRoute(ctx, route, "lease fact save failed")
 		return nil, internalError("lease fact save failed", err)
 	}
 	c.clearExitCheckCache()
-	if req.GetAccountId() == playgroundProfileID {
+	if flow.request.GetAccountId() == playgroundProfileID {
 		c.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
 	}
 	return lease, nil

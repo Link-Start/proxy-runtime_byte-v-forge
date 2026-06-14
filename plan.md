@@ -858,6 +858,7 @@ Completed user-visible/runtime batches:
 - Lease session-route reconstruction from persisted listener/session proto now lives in `internal/app/lease`, so restore and release cleanup no longer rebuild route transport details in the app coordinator.
 - Reserved listener lease merging, active/route-cleanup predicates, and de-duplication now live in `internal/app/lease`; Runtime only loads active and cleanup-pending facts.
 - Lease runtime Redis lock implementation is split into construction, acquisition, lock state, renewal, token generation, and Lua scripts instead of one mixed infrastructure file.
+- Dynamic lease store list adapters now separate normal list queries, provider-account blocking queries, and worker cleanup/restore/expiry queries for both Postgres and SQLite.
 
 Still open:
 

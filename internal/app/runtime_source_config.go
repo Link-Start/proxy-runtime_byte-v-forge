@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
+	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 )
 
 func (r *Runtime) dataPlaneConfig(ctx context.Context) (dataplane.Config, error) {
@@ -18,23 +18,23 @@ func (r *Runtime) dataPlaneConfig(ctx context.Context) (dataplane.Config, error)
 		return dataplane.Config{}, err
 	}
 	r.setDynamicProfilePoolSnapshot(pool)
-	return dataplane.Config{
-		EgressProfiles:    sourcePlaneEgressProfiles(settings),
-		Endpoint:          sourceplane.Endpoint{Addr: r.cfg.LocalAddr, Protocol: "socks5"},
+	return sourcePlaneDataPlaneConfig(sourcePlaneConfigInput{
+		Settings:          settings,
+		Pool:              pool,
+		LocalAddr:         r.cfg.LocalAddr,
 		HealthCheckURL:    r.cfg.Mihomo.HealthCheckURL,
 		HealthCheckPeriod: r.cfg.Mihomo.HealthCheckInterval,
 		HealthCheckWait:   r.cfg.Mihomo.HealthCheckTimeout,
 		DashboardDir:      r.cfg.Mihomo.DashboardDir,
 		DashboardURL:      r.cfg.Mihomo.DashboardURL,
-		Pool:              pool,
-		ProxyUsers:        r.proxyUserRoutes(settings),
-	}, nil
+		ProxyUsers:        r.cfg.ProxyUsers,
+	}), nil
 }
 
-func (r *Runtime) proxyUserRoutes(settings *runtimeSettingsFile) []dataplane.ProxyUserRoute {
+func sourcePlaneProxyUserRoutesWithConfigured(settings *runtimeSettingsFile, configured []config.ProxyUserRoute) []dataplane.ProxyUserRoute {
 	out := sourcePlaneProxyUserRoutes(settings)
 	seen := proxyRouteUsernames(out)
-	for _, user := range r.cfg.ProxyUsers {
+	for _, user := range configured {
 		out = appendProxyUserRoute(out, seen, dataplane.ProxyUserRoute{
 			ID:        user.ID,
 			Username:  user.Username,

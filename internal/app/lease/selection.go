@@ -16,3 +16,11 @@ func EndpointID(lease *proxyruntimev1.ProxyDynamicLease) string {
 		lease.GetSession().GetPolicy().GetLabels()[LabelDynamicIPEndpointID],
 	))
 }
+
+func SelectedProviderAccountID(plan *proxyruntimev1.ProxyDynamicIPSelectionPlan) string {
+	return strings.TrimSpace(plan.GetSelectedEndpoint().GetProviderAccountId())
+}
+
+func SelectedDynamicProviderID(plan *proxyruntimev1.ProxyDynamicIPSelectionPlan) string {
+	return strings.TrimSpace(plan.GetSelectedEndpoint().GetDynamicProviderId())
+}

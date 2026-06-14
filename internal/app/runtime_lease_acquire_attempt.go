@@ -15,7 +15,7 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 	if err != nil {
 		return nil, failedPrecondition("no dynamic IP endpoint candidate", err)
 	}
-	providerAccountID := selection.plan.GetSelectedEndpoint().GetProviderAccountId()
+	providerAccountID := leaseapp.SelectedProviderAccountID(selection.plan)
 	providerAccount, err := c.deps.store.ProviderAccount(ctx, providerAccountID)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 	concurrencySlot, concurrencyHolder, err := leaseapp.AcquireAttemptConcurrencySlot(ctx, leaseapp.AcquireAttemptConcurrencyInput{
 		Limiter:    c.deps.providerConcurrency,
 		AccountID:  providerAccount.GetAccountId(),
-		Limit:      dynamicProviderConcurrencyLimit(settings, selection.plan.GetSelectedEndpoint().GetDynamicProviderId(), req.GetPolicy()),
+		Limit:      dynamicProviderConcurrencyLimit(settings, leaseapp.SelectedDynamicProviderID(selection.plan), req.GetPolicy()),
 		Policy:     req.GetPolicy(),
 		LeaseID:    leaseID,
 		DefaultTTL: leaseapp.DefaultDynamicIPStickyTTL,

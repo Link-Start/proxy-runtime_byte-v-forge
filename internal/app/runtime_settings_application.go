@@ -10,7 +10,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
-const runtimeSettingsRollbackTimeout = 30 * time.Second
+const runtimeSettingsConnectionCleanupTimeout = 10 * time.Second
 
 type runtimeSettingsApplication struct {
 	runtime *Runtime
@@ -89,41 +89,22 @@ func (a runtimeSettingsApplication) UpdateProxyRuntimeSettings(ctx context.Conte
 		return nil, err
 	}
 	after, err := a.runtime.settings.load(ctx)
+	changedUsernames := []string(nil)
 	if err != nil {
-		if rollbackErr := a.rollbackRuntimeSettings(before); rollbackErr != nil {
-			return nil, internalError("runtime settings rollback failed", fmt.Errorf("%w; rollback failed: %v", err, rollbackErr))
-		}
-		return nil, err
+		a.runtime.logger.Warn("load runtime settings after update failed", "error", err)
+	} else {
+		changedUsernames = changedInUserConnectionUsernames(before, after)
 	}
-	a.runtime.resetIPFraudChecker()
-	a.runtime.geoCache.clear()
-	a.runtime.exitCheckCache.clear()
-	if err := a.runtime.runReconcile(ctx); err != nil {
-		if rollbackErr := a.rollbackRuntimeSettings(before); rollbackErr != nil {
-			return nil, internalError("runtime settings rollback failed", fmt.Errorf("%w; rollback failed: %v", err, rollbackErr))
-		}
-		return nil, unavailable("runtime settings apply failed", err)
-	}
-	a.runtime.closeMihomoInUserConnections(ctx, changedInUserConnectionUsernames(before, after))
+	a.scheduleRuntimeSettingsApply(changedUsernames)
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }
 
 func (a runtimeSettingsApplication) UpdateProxyDynamicIPProviders(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
-	before, err := a.runtime.settings.load(ctx)
-	if err != nil {
-		return nil, err
-	}
 	settings, err := a.runtime.settings.updateDynamicIPProviders(ctx, req.GetDynamicIpProviders())
 	if err != nil {
 		return nil, err
 	}
-	if err := a.runtime.runReconcile(ctx); err != nil {
-		if rollbackErr := a.rollbackRuntimeSettings(before); rollbackErr != nil {
-			return nil, internalError("dynamic ip provider settings rollback failed", fmt.Errorf("%w; rollback failed: %v", err, rollbackErr))
-		}
-		return nil, unavailable("dynamic ip provider settings apply failed", err)
-	}
-	a.runtime.exitCheckCache.clear()
+	a.scheduleRuntimeSettingsApply(nil)
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }
 
@@ -139,13 +120,14 @@ func (a runtimeSettingsApplication) UpdateProxyEgressProfiles(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	if err := a.runtime.runReconcile(ctx); err != nil {
-		if rollbackErr := a.rollbackRuntimeSettings(before); rollbackErr != nil {
-			return nil, internalError("egress profile settings rollback failed", fmt.Errorf("%w; rollback failed: %v", err, rollbackErr))
-		}
-		return nil, unavailable("egress profile settings apply failed", err)
+	after, err := a.runtime.settings.load(ctx)
+	changedUsernames := []string(nil)
+	if err != nil {
+		a.runtime.logger.Warn("load runtime settings after egress profile update failed", "error", err)
+	} else {
+		changedUsernames = changedInUserConnectionUsernames(before, after)
 	}
-	a.runtime.exitCheckCache.clear()
+	a.scheduleRuntimeSettingsApply(changedUsernames)
 	return &proxyruntimev1.UpdateProxyEgressProfilesResponse{Settings: settings}, nil
 }
 
@@ -159,20 +141,13 @@ func (a runtimeSettingsApplication) UpdateProxyIngressRules(ctx context.Context,
 		return nil, err
 	}
 	after, err := a.runtime.settings.load(ctx)
+	changedUsernames := []string(nil)
 	if err != nil {
-		if rollbackErr := a.rollbackRuntimeSettings(before); rollbackErr != nil {
-			return nil, internalError("ingress rule settings rollback failed", fmt.Errorf("%w; rollback failed: %v", err, rollbackErr))
-		}
-		return nil, err
+		a.runtime.logger.Warn("load runtime settings after ingress rule update failed", "error", err)
+	} else {
+		changedUsernames = changedInUserConnectionUsernames(before, after)
 	}
-	if err := a.runtime.runReconcile(ctx); err != nil {
-		if rollbackErr := a.rollbackRuntimeSettings(before); rollbackErr != nil {
-			return nil, internalError("ingress rule settings rollback failed", fmt.Errorf("%w; rollback failed: %v", err, rollbackErr))
-		}
-		return nil, unavailable("ingress rule settings apply failed", err)
-	}
-	a.runtime.exitCheckCache.clear()
-	a.runtime.closeMihomoInUserConnections(ctx, changedInUserConnectionUsernames(before, after))
+	a.scheduleRuntimeSettingsApply(changedUsernames)
 	return &proxyruntimev1.UpdateProxyIngressRulesResponse{Settings: settings}, nil
 }
 
@@ -189,39 +164,29 @@ func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, 
 		return nil, err
 	}
 	after, err := a.runtime.settings.load(ctx)
+	changedUsernames := []string(nil)
 	if err != nil {
-		if rollbackErr := a.rollbackRuntimeSettings(before); rollbackErr != nil {
-			return nil, internalError("in-user rule settings rollback failed", fmt.Errorf("%w; rollback failed: %v", err, rollbackErr))
-		}
-		return nil, err
+		a.runtime.logger.Warn("load runtime settings after in-user rule update failed", "error", err)
+	} else {
+		changedUsernames = changedInUserConnectionUsernames(before, after)
 	}
-	if err := a.runtime.runReconcile(ctx); err != nil {
-		if rollbackErr := a.rollbackRuntimeSettings(before); rollbackErr != nil {
-			return nil, internalError("in-user rule settings rollback failed", fmt.Errorf("%w; rollback failed: %v", err, rollbackErr))
-		}
-		return nil, unavailable("in-user rule settings apply failed", err)
-	}
-	a.runtime.exitCheckCache.clear()
-	a.runtime.closeMihomoInUserConnections(ctx, changedInUserConnectionUsernames(before, after))
+	a.scheduleRuntimeSettingsApply(changedUsernames)
 	return &proxyruntimev1.UpdateProxyRuntimeSettingsResponse{Settings: settings}, nil
 }
 
-func (a runtimeSettingsApplication) rollbackRuntimeSettings(settings *runtimeSettingsFile) error {
-	if a.runtime == nil || a.runtime.settings == nil || settings == nil {
-		return nil
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), runtimeSettingsRollbackTimeout)
-	defer cancel()
-	if err := a.runtime.settings.replace(ctx, cloneRuntimeSettingsFile(settings)); err != nil {
-		return fmt.Errorf("restore runtime settings: %w", err)
-	}
+func (a runtimeSettingsApplication) scheduleRuntimeSettingsApply(changedUsernames []string) {
 	a.runtime.resetIPFraudChecker()
 	a.runtime.geoCache.clear()
 	a.runtime.exitCheckCache.clear()
-	if err := a.runtime.runReconcile(ctx); err != nil {
-		return fmt.Errorf("reconcile restored runtime settings: %w", err)
+	a.runtime.requestReconcile()
+	if len(changedUsernames) == 0 {
+		return
 	}
-	return nil
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), runtimeSettingsConnectionCleanupTimeout)
+		defer cancel()
+		a.runtime.closeMihomoInUserConnections(ctx, changedUsernames)
+	}()
 }
 
 func (a runtimeSettingsApplication) GetProxyRuntimeMihomoNativeConfig(ctx context.Context, _ *proxyruntimev1.GetProxyRuntimeMihomoNativeConfigRequest) (*proxyruntimev1.GetProxyRuntimeMihomoNativeConfigResponse, error) {

@@ -960,6 +960,7 @@ Completed user-visible/runtime batches:
 - Lease selected-attempt preparation now lives in `internal/app/lease`, including provider-account selection extraction, lease ID allocation, and provider-account concurrency-slot acquisition; the coordinator only selects the endpoint and runs the locked provider-account action.
 - Lease selected-attempt provider-account locking and temporary concurrency-slot keep/release lifecycle now run through `internal/app/lease`; the coordinator only supplies the locked provider-account action.
 - Lease provider-account acquire orchestration now lives in `internal/app/lease`, including provider-session create/fetch cleanup recording, line binding, and listener-allocation locking; the coordinator only adapts line resolution, route apply, and transport error mapping.
+- Acquired endpoint route construction plus dataplane/fact apply now lives in `internal/app/lease`; the coordinator only resolves endpoint material and runs local success side effects.
 
 Still open:
 

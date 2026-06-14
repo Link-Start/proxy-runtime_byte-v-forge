@@ -24,25 +24,20 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, flow acqu
 	if err != nil {
 		return nil, err
 	}
-	route := leaseapp.NewAcquiredSessionRoute(leaseapp.AcquiredSessionRouteInput{
-		Session:       flow.session,
-		Egress:        egress,
-		Listener:      listener,
-		Nodes:         flow.nodes,
-		DialerProxy:   flow.dialerProxy,
-		LocalProtocol: c.deps.cfg.LocalProtocol,
-	})
-	lease, err := leaseapp.ApplyAcquiredRoute(ctx, leaseapp.AcquiredRouteApplyInput{
+	lease, err := leaseapp.ApplyAcquiredEndpointRoute(ctx, leaseapp.AcquiredEndpointRouteApplyInput{
 		Store:             c.deps.store,
 		DataPlane:         c.deps.dataPlane,
 		Failure:           flow.failure,
-		Route:             route,
 		LeaseID:           flow.leaseID,
 		Request:           flow.request,
 		ProviderAccountID: flow.providerAccountID,
 		Session:           flow.session,
 		Egress:            egress,
-		Listener:          listenerProto,
+		Listener:          listener,
+		ListenerProto:     listenerProto,
+		Nodes:             flow.nodes,
+		DialerProxy:       flow.dialerProxy,
+		LocalProtocol:     c.deps.cfg.LocalProtocol,
 		SelectionPlan:     flow.selection.plan,
 		AcquiredAt:        c.now(),
 	})

@@ -959,6 +959,7 @@ Completed user-visible/runtime batches:
 - Lease account-locked acquire orchestration now lives in `internal/app/lease`, including policy merge, existing-active reuse/replace, and attempt retry sequencing; the coordinator only loads settings, maps policy errors, and runs concrete attempts.
 - Lease selected-attempt preparation now lives in `internal/app/lease`, including provider-account selection extraction, lease ID allocation, and provider-account concurrency-slot acquisition; the coordinator only selects the endpoint and runs the locked provider-account action.
 - Lease selected-attempt provider-account locking and temporary concurrency-slot keep/release lifecycle now run through `internal/app/lease`; the coordinator only supplies the locked provider-account action.
+- Lease provider-account acquire orchestration now lives in `internal/app/lease`, including provider-session create/fetch cleanup recording, line binding, and listener-allocation locking; the coordinator only adapts line resolution, route apply, and transport error mapping.
 
 Still open:
 

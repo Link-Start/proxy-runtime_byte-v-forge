@@ -16,7 +16,7 @@ type runtimeLeaseApplication struct {
 }
 
 func newRuntimeLeaseApplication(runtime *Runtime) runtimeLeaseApplication {
-	return runtimeLeaseApplication{logger: runtime.logger, leases: leaseapp.NewApplication(runtime.store, runtime.leaseCoordinator)}
+	return runtimeLeaseApplication{logger: runtime.logger, leases: leaseapp.NewApplication(runtime.store, runtime.leaseCoordinator, runtime.leaseCoordinator)}
 }
 
 func (s *RuntimeService) ListProxyDynamicLeases(ctx context.Context, _ *proxyruntimev1.ListProxyDynamicLeasesRequest) (*proxyruntimev1.ListProxyDynamicLeasesResponse, error) {
@@ -57,4 +57,20 @@ func (a runtimeLeaseApplication) AcquireProxyLease(ctx context.Context, advertis
 
 func (a runtimeLeaseApplication) ReleaseProxyLease(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ReleaseProxyLeaseResponse, error) {
 	return a.leases.Release(ctx, req)
+}
+
+func (a runtimeLeaseApplication) RestoreActiveLeases(ctx context.Context) error {
+	return a.leases.RestoreActive(ctx)
+}
+
+func (a runtimeLeaseApplication) ExpireDueLeaseFacts(ctx context.Context) error {
+	return a.leases.ExpireDue(ctx)
+}
+
+func (a runtimeLeaseApplication) CleanupPendingLeaseFacts(ctx context.Context) error {
+	return a.leases.CleanupPending(ctx)
+}
+
+func (a runtimeLeaseApplication) CleanupPendingLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+	return a.leases.Cleanup(ctx, lease)
 }

@@ -163,12 +163,12 @@ func (a runtimeProviderApplication) deleteProviderAccount(ctx context.Context, p
 		}
 		for _, lease := range leases {
 			if leaseapp.CleanupPending(lease) {
-				if err := a.runtime.leaseCoordinator.cleanupPendingLeaseFact(ctx, lease); err != nil {
+				if err := a.runtime.service().leases.CleanupPendingLeaseFact(ctx, lease); err != nil {
 					return fmt.Errorf("cleanup proxy lease %q for provider account %q: %w", lease.GetLeaseId(), providerAccountID, err)
 				}
 				continue
 			}
-			if _, err := a.runtime.leaseCoordinator.releaseLease(ctx, &proxyruntimev1.ReleaseProxyLeaseRequest{LeaseId: lease.GetLeaseId(), AccountId: lease.GetAccountId(), Purpose: lease.GetPurpose()}); err != nil {
+			if _, err := a.runtime.service().leases.ReleaseProxyLease(ctx, &proxyruntimev1.ReleaseProxyLeaseRequest{LeaseId: lease.GetLeaseId(), AccountId: lease.GetAccountId(), Purpose: lease.GetPurpose()}); err != nil {
 				return fmt.Errorf("release blocking proxy lease %q for provider account %q: %w", lease.GetLeaseId(), providerAccountID, err)
 			}
 		}

@@ -15,3 +15,10 @@ type Coordinator interface {
 	Acquire(context.Context, string, *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error)
 	Release(context.Context, *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error)
 }
+
+type Worker interface {
+	RestoreActive(context.Context) error
+	ExpireDue(context.Context) error
+	CleanupPending(context.Context) error
+	Cleanup(context.Context, *proxyruntimev1.ProxyDynamicLease) error
+}

@@ -673,6 +673,7 @@ Completed user-visible/runtime batches:
 - Mihomo reconcile now uses explicit rendered-config projection and base-config apply helpers.
 - Lease application now owns list/acquire/release response orchestration through repository/coordinator ports, and HTTP request details are reduced to an advertised host before entering lease orchestration.
 - Lease package is split into application, repository/coordinator ports, list options, operations, and predicates.
+- Lease restore/expire/cleanup worker entrypoints now go through the lease application worker port instead of direct Runtime coordinator calls.
 
 Still open:
 

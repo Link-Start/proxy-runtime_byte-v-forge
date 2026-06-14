@@ -24,10 +24,10 @@ func (r *Runtime) leaseExpiryLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		case <-ticker.C:
-			if err := r.leaseCoordinator.expireDueLeaseFacts(ctx); err != nil {
+			if err := r.service().leases.ExpireDueLeaseFacts(ctx); err != nil {
 				r.logger.Warn("expire proxy leases failed", "error", err)
 			}
-			if err := r.leaseCoordinator.cleanupPendingLeaseFacts(ctx); err != nil {
+			if err := r.service().leases.CleanupPendingLeaseFacts(ctx); err != nil {
 				r.logger.Warn("cleanup pending proxy leases failed", "error", err)
 			}
 		}

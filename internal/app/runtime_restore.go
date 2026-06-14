@@ -22,7 +22,7 @@ func (r *Runtime) restoreActiveLeasesInBackground(ctx context.Context) {
 	startedAt := time.Now()
 	restoreCtx, cancel := context.WithTimeout(ctx, startupLeaseRestoreTimeout)
 	defer cancel()
-	err := r.leaseCoordinator.restoreActiveLeases(restoreCtx)
+	err := r.service().leases.RestoreActiveLeases(restoreCtx)
 	r.markLeaseRestoreFinished(err)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {

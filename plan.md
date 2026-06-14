@@ -781,6 +781,7 @@ Completed user-visible/runtime batches:
 - Source-plane egress profile kind mapping is split from egress profile projection.
 - Source-plane egress profile list assembly is split from line and exit projection helpers.
 - Source-plane proxy-user route merge now delegates username set and deduplicating append behavior to focused route helpers.
+- Mihomo-native conversion now separates config-to-settings projection, settings-to-config rendering input, and proto/native shape conversion.
 
 Still open:
 

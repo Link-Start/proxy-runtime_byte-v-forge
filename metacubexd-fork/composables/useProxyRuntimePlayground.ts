@@ -7,6 +7,7 @@ export function useProxyRuntimePlayground() {
   const gatewayHost = ref('')
   const gatewayPort = '30081'
   const copied = ref('')
+  const refreshing = ref(false)
   const leases = useProxyRuntimePlaygroundLeases(runtime, save)
   const dynamicExit = computed(() => runtime.form.exit_kind === EgressProfileExitKind.EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP)
   const lineUsesNode = computed(() => runtime.form.line_kind === EgressProfileLineKind.EGRESS_PROFILE_LINE_KIND_MIHOMO_NODE)
@@ -28,14 +29,20 @@ export function useProxyRuntimePlayground() {
   })
 
   async function refresh() {
-    await runtime.load()
-    const changed = hydratePlayground()
-    if (changed) {
-      await save()
-      return
+    if (refreshing.value) return
+    refreshing.value = true
+    try {
+      await runtime.load()
+      const changed = hydratePlayground()
+      if (changed) {
+        await save()
+      } else {
+        await leases.load()
+      }
+      await checks.load()
+    } finally {
+      refreshing.value = false
     }
-    await leases.load()
-    await checks.load()
   }
 
   function hydratePlayground() {
@@ -101,7 +108,7 @@ export function useProxyRuntimePlayground() {
     }, 1200)
   }
 
-  return { canSave, checks, copied, copyText, credentials, curlCommand, dynamicExit, gatewayHost, gatewayPort, leases, proxyAuthority, regeneratePassword, refresh, runtime, save }
+  return { canSave, checks, copied, copyText, credentials, curlCommand, dynamicExit, gatewayHost, gatewayPort, leases, proxyAuthority, refresh, refreshing, regeneratePassword, runtime, save }
 }
 
 function newPassword() {

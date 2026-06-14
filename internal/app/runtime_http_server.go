@@ -55,28 +55,25 @@ func (r *Runtime) httpHandler() http.Handler {
 type runtimeReadyFunc func() (bool, string)
 
 type runtimeHTTPAPI struct {
-	service           *RuntimeService
-	mihomoAPIAddr     string
-	authToken         string
-	auth              authapp.Application
-	ready             runtimeReadyFunc
-	logger            *slog.Logger
-	dashboardFallback gin.HandlerFunc
+	service          *RuntimeService
+	auth             authapp.Application
+	ready            runtimeReadyFunc
+	logger           *slog.Logger
+	dashboardProxies dashboardProxyHandlers
 }
 
 func newRuntimeHTTPAPI(service *RuntimeService, mihomoAPIAddr string, authToken string, ready runtimeReadyFunc, logger *slog.Logger) *runtimeHTTPAPI {
 	if logger == nil {
 		logger = slog.Default()
 	}
+	trimmedAuthToken := strings.TrimSpace(authToken)
 	api := &runtimeHTTPAPI{
-		service:       service,
-		mihomoAPIAddr: mihomoAPIAddr,
-		authToken:     strings.TrimSpace(authToken),
-		auth:          authapp.NewApplication(authToken),
-		ready:         ready,
-		logger:        logger,
+		service: service,
+		auth:    authapp.NewApplication(trimmedAuthToken),
+		ready:   ready,
+		logger:  logger,
 	}
-	api.dashboardFallback = api.mihomoReverseProxy("/", "/ui/")
+	api.dashboardProxies = newDashboardProxyHandlers(mihomoAPIAddr, trimmedAuthToken)
 	return api
 }
 
@@ -112,7 +109,7 @@ func (api *runtimeHTTPAPI) handleGinNoRoute(ctx *gin.Context) {
 	if api.redirectToLoginIfRequired(ctx) {
 		return
 	}
-	api.dashboardFallback(ctx)
+	api.dashboardProxies.fallback(ctx)
 }
 
 func (api *runtimeHTTPAPI) ginMiddleware() gin.HandlerFunc {

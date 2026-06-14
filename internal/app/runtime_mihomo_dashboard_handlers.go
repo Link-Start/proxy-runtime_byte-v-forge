@@ -11,9 +11,9 @@ import (
 func (api *runtimeHTTPAPI) registerMihomoDashboardRoutes(router *gin.Engine) {
 	router.GET("/mihomo/dashboard", api.handleMihomoDashboard)
 	router.GET("/mihomo/ui", httpapi.RedirectToTrailingSlash)
-	router.Any("/mihomo/ui/*path", api.mihomoReverseProxy("/mihomo/ui/", "/ui/"))
-	router.Any("/mihomo/controller", api.mihomoReverseProxy("/mihomo/controller", "/"))
-	router.Any("/mihomo/controller/*path", api.mihomoReverseProxy("/mihomo/controller/", "/"))
+	router.Any("/mihomo/ui/*path", api.dashboardProxies.ui)
+	router.Any("/mihomo/controller", api.dashboardProxies.controller)
+	router.Any("/mihomo/controller/*path", api.dashboardProxies.controller)
 }
 
 func (api *runtimeHTTPAPI) handleMihomoDashboard(ctx *gin.Context) {
@@ -31,18 +31,31 @@ func (api *runtimeHTTPAPI) writeMihomoDashboardBootstrap(ctx *gin.Context, endpo
 	}
 }
 
-func (api *runtimeHTTPAPI) mihomoReverseProxy(mountPrefix string, upstreamPrefix string) gin.HandlerFunc {
-	proxy, err := dashboardapp.NewReverseProxy(dashboardapp.ReverseProxyOptions{
-		APIAddr:        api.mihomoAPIAddr,
-		MountPrefix:    mountPrefix,
-		UpstreamPrefix: upstreamPrefix,
-		AuthToken:      api.authToken,
-		WriteError:     writeHTTPError,
+type dashboardProxyHandlers struct {
+	fallback   gin.HandlerFunc
+	ui         gin.HandlerFunc
+	controller gin.HandlerFunc
+}
+
+func newDashboardProxyHandlers(apiAddr string, authToken string) dashboardProxyHandlers {
+	bundle, err := dashboardapp.NewReverseProxyBundle(dashboardapp.ReverseProxyBundleOptions{
+		APIAddr:    apiAddr,
+		AuthToken:  authToken,
+		WriteError: writeHTTPError,
 	})
 	if err != nil {
-		return func(ctx *gin.Context) {
-			writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
-		}
+		errorHandler := dashboardProxyErrorHandler(err)
+		return dashboardProxyHandlers{fallback: errorHandler, ui: errorHandler, controller: errorHandler}
 	}
-	return gin.WrapH(proxy)
+	return dashboardProxyHandlers{
+		fallback:   gin.WrapH(bundle.Root),
+		ui:         gin.WrapH(bundle.UI),
+		controller: gin.WrapH(bundle.Controller),
+	}
+}
+
+func dashboardProxyErrorHandler(err error) gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
+	}
 }

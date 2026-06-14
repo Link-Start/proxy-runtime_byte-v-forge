@@ -912,6 +912,7 @@ Completed user-visible/runtime batches:
 - Auth login-page query parsing now lives in the auth package, so the login-page handler only redirects authenticated sessions or writes the page.
 - Mihomo hot-reload now separates candidate config path construction and endpoint readiness waiting from the reload-and-commit orchestration.
 - Auth authorization and dashboard login-redirect decisions now live in the auth application; Gin handlers only translate decisions into redirects, challenges, or JSON errors.
+- Dashboard reverse proxies now build once as a dashboard-owned proxy bundle during HTTP API construction, and routes reuse the prebuilt handlers.
 
 Still open:
 

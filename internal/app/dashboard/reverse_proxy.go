@@ -19,6 +19,44 @@ type ReverseProxyOptions struct {
 	WriteError     ProxyErrorWriter
 }
 
+type ReverseProxyBundleOptions struct {
+	APIAddr    string
+	AuthToken  string
+	WriteError ProxyErrorWriter
+}
+
+type ReverseProxyBundle struct {
+	Root       http.Handler
+	UI         http.Handler
+	Controller http.Handler
+}
+
+func NewReverseProxyBundle(opts ReverseProxyBundleOptions) (ReverseProxyBundle, error) {
+	root, err := newBundledReverseProxy(opts, "/", "/ui/")
+	if err != nil {
+		return ReverseProxyBundle{}, err
+	}
+	ui, err := newBundledReverseProxy(opts, "/mihomo/ui", "/ui/")
+	if err != nil {
+		return ReverseProxyBundle{}, err
+	}
+	controller, err := newBundledReverseProxy(opts, "/mihomo/controller", "/")
+	if err != nil {
+		return ReverseProxyBundle{}, err
+	}
+	return ReverseProxyBundle{Root: root, UI: ui, Controller: controller}, nil
+}
+
+func newBundledReverseProxy(opts ReverseProxyBundleOptions, mountPrefix string, upstreamPrefix string) (http.Handler, error) {
+	return NewReverseProxy(ReverseProxyOptions{
+		APIAddr:        opts.APIAddr,
+		MountPrefix:    mountPrefix,
+		UpstreamPrefix: upstreamPrefix,
+		AuthToken:      opts.AuthToken,
+		WriteError:     opts.WriteError,
+	})
+}
+
 type proxyContextKey string
 
 const proxyRequestPathKey proxyContextKey = "request_path"

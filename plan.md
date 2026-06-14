@@ -922,6 +922,7 @@ Completed user-visible/runtime batches:
 - Acquired lease route apply now runs through `internal/app/lease`, combining dataplane upsert, failure compensation, and active fact persistence behind a stage-aware result.
 - Release lock-window refresh and route-retire invocation now live in `internal/app/lease`; the coordinator supplies only the concrete retire side effect.
 - Lease final released/expired state persistence now uses a lease-owned staged helper that also releases provider-account concurrency slots.
+- Provider session release now runs through `internal/app/lease`, including stateless-session skipping, provider config loading, gateway binding, factory use, and provider release invocation.
 
 Still open:
 

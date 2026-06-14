@@ -2,31 +2,23 @@ package app
 
 import (
 	"context"
-	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
 func (c leaseCoordinator) releaseLeaseProviderSession(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	if lease == nil || lease.GetSession() == nil || strings.TrimSpace(lease.GetProviderAccountId()) == "" {
-		return nil
-	}
-	if leaseapp.StatelessProviderSession(lease.GetSession()) {
-		return nil
-	}
-	providerCfg, _, err := c.deps.store.ProviderConfig(ctx, lease.GetProviderAccountId())
-	if err != nil {
-		return err
-	}
-	settings, err := c.deps.settings.load(ctx)
-	if err != nil {
-		return err
-	}
-	providerCfg.Gateways = endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerCfg.ProviderID)
-	providerClient, err := leaseapp.NewSessionProvider(c.deps.sessionProviders, providerCfg)
-	if err != nil {
-		return err
-	}
-	return leaseapp.ReleaseProviderSession(ctx, providerClient, lease.GetSession())
+	return leaseapp.ReleaseLeaseProviderSession(ctx, leaseapp.ProviderSessionReleaseInput{
+		Store:   c.deps.store,
+		Factory: c.deps.sessionProviders,
+		Lease:   lease,
+		ResolveGateways: func(ctx context.Context, providerID string) ([]accountproxy.Gateway, error) {
+			settings, err := c.deps.settings.load(ctx)
+			if err != nil {
+				return nil, err
+			}
+			return endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerID), nil
+		},
+	})
 }

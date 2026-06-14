@@ -14,6 +14,16 @@ type LoginRequest struct {
 	FormSubmit bool
 }
 
+type RequestBodyReader func(*http.Request) ([]byte, error)
+
+func ReadLoginRequest(req *http.Request, readBody RequestBodyReader) (LoginRequest, error) {
+	body, err := readBody(req)
+	if err != nil {
+		return LoginRequest{}, err
+	}
+	return ParseLoginRequest(req, body)
+}
+
 type loginJSONRequest struct {
 	Token string `json:"token"`
 }

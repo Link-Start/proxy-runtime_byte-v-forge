@@ -24,7 +24,7 @@ func (api *runtimeHTTPAPI) handleAuthWebSocketToken(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
-	login, err := readRuntimeLoginRequest(ctx.Request)
+	login, err := authapp.ReadLoginRequest(ctx.Request, readRequestBody)
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return
@@ -95,12 +95,4 @@ func (api *runtimeHTTPAPI) sessionAuthenticated(req *http.Request) bool {
 
 func (api *runtimeHTTPAPI) requestAuthenticated(req *http.Request) bool {
 	return api.auth.RequestAuthenticated(req, time.Now())
-}
-
-func readRuntimeLoginRequest(req *http.Request) (authapp.LoginRequest, error) {
-	body, err := readRequestBody(req)
-	if err != nil {
-		return authapp.LoginRequest{}, err
-	}
-	return authapp.ParseLoginRequest(req, body)
 }

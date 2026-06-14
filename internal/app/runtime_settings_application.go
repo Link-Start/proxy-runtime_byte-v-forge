@@ -10,14 +10,7 @@ import (
 )
 
 type runtimeSettingsApplication struct {
-	logger                     *slog.Logger
-	settings                   runtimeSettingsRepository
-	proxyUsers                 []config.ProxyUserRoute
-	ipFraudProviderViews       func() []*proxyruntimev1.ProxyIPFraudProviderDescriptor
-	ipGeoProviderViews         func() []*proxyruntimev1.ProxyIPGeoProviderDescriptor
-	loadMihomoNativeSettings   func(context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
-	updateMihomoNativeSettings func(context.Context, *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
-	scheduleApply              func([]string)
+	usecase settingsapp.Application
 }
 
 type runtimeSettingsApplicationDependencies struct {
@@ -33,28 +26,17 @@ type runtimeSettingsApplicationDependencies struct {
 
 func newRuntimeSettingsApplication(deps runtimeSettingsApplicationDependencies) runtimeSettingsApplication {
 	return runtimeSettingsApplication{
-		logger:                     deps.Logger,
-		settings:                   deps.Settings,
-		proxyUsers:                 append([]config.ProxyUserRoute(nil), deps.ProxyUsers...),
-		ipFraudProviderViews:       deps.IPFraudProviderViews,
-		ipGeoProviderViews:         deps.IPGeoProviderViews,
-		loadMihomoNativeSettings:   deps.LoadMihomoNativeSettings,
-		updateMihomoNativeSettings: deps.UpdateMihomoNativeSettings,
-		scheduleApply:              deps.ScheduleApply,
+		usecase: settingsapp.NewApplication(settingsapp.Dependencies{
+			Repository:                  runtimeSettingsRepositoryAdapter{repository: deps.Settings},
+			ScheduleApply:               deps.ScheduleApply,
+			Logger:                      deps.Logger,
+			ProxyUsers:                  append([]config.ProxyUserRoute(nil), deps.ProxyUsers...),
+			ProfileValidationError:      func(message string) error { return failedPrecondition(message, nil) },
+			IPFraudProviderViews:        deps.IPFraudProviderViews,
+			IPGeoProviderViews:          deps.IPGeoProviderViews,
+			LoadMihomoNativeSettings:    deps.LoadMihomoNativeSettings,
+			UpdateMihomoNativeSettings:  deps.UpdateMihomoNativeSettings,
+			DefaultMihomoNativeSettings: func() *proxyruntimev1.ProxyRuntimeMihomoNativeConfig { return normalizeMihomoNativeSettings(nil) },
+		}),
 	}
-}
-
-func (a runtimeSettingsApplication) settingsUsecase() settingsapp.Application {
-	return settingsapp.NewApplication(settingsapp.Dependencies{
-		Repository:                  runtimeSettingsRepositoryAdapter{repository: a.settings},
-		ScheduleApply:               a.scheduleRuntimeSettingsApply,
-		Logger:                      a.logger,
-		ProxyUsers:                  a.proxyUsers,
-		ProfileValidationError:      func(message string) error { return failedPrecondition(message, nil) },
-		IPFraudProviderViews:        a.ipFraudProviderViews,
-		IPGeoProviderViews:          a.ipGeoProviderViews,
-		LoadMihomoNativeSettings:    a.loadMihomoNativeSettings,
-		UpdateMihomoNativeSettings:  a.updateMihomoNativeSettings,
-		DefaultMihomoNativeSettings: func() *proxyruntimev1.ProxyRuntimeMihomoNativeConfig { return normalizeMihomoNativeSettings(nil) },
-	})
 }

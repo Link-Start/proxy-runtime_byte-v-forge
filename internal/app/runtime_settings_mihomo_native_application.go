@@ -9,7 +9,7 @@ import (
 )
 
 func (a runtimeSettingsApplication) GetProxyRuntimeMihomoNativeConfig(ctx context.Context, req *proxyruntimev1.GetProxyRuntimeMihomoNativeConfigRequest) (*proxyruntimev1.GetProxyRuntimeMihomoNativeConfigResponse, error) {
-	response, err := a.settingsUsecase().GetMihomoNative(ctx, req)
+	response, err := a.usecase.GetMihomoNative(ctx, req)
 	if err != nil {
 		return nil, internalError("load mihomo native config", err)
 	}
@@ -17,7 +17,7 @@ func (a runtimeSettingsApplication) GetProxyRuntimeMihomoNativeConfig(ctx contex
 }
 
 func (a runtimeSettingsApplication) UpdateProxyRuntimeMihomoNativeConfig(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeMihomoNativeConfigRequest) (*proxyruntimev1.UpdateProxyRuntimeMihomoNativeConfigResponse, error) {
-	response, err := a.settingsUsecase().UpdateMihomoNative(ctx, req)
+	response, err := a.usecase.UpdateMihomoNative(ctx, req)
 	if err != nil {
 		if errors.Is(err, settingsapp.ErrMihomoNativeUpdateUnavailable) {
 			return nil, internalError("mihomo native settings update unavailable", err)

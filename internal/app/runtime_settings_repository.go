@@ -15,16 +15,3 @@ type runtimeSettingsRepository interface {
 	updateIngressRules(context.Context, []*proxyruntimev1.ProxyIngressRuleSettings) (*proxyruntimev1.ProxyRuntimeSettings, error)
 	updateInUserRules(context.Context, []*proxyruntimev1.EgressProfileSettings, []*proxyruntimev1.ProxyIngressRuleSettings) (*proxyruntimev1.ProxyRuntimeSettings, error)
 }
-
-func (a runtimeSettingsApplication) settingsRepository() (runtimeSettingsRepository, error) {
-	if a.settings == nil {
-		return nil, internalError("runtime settings repository is not configured", nil)
-	}
-	return a.settings, nil
-}
-
-func (a runtimeSettingsApplication) warn(message string, args ...any) {
-	if a.logger != nil {
-		a.logger.Warn(message, args...)
-	}
-}

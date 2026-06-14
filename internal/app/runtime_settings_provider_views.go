@@ -7,9 +7,9 @@ import (
 )
 
 func (a runtimeSettingsApplication) ListProxyIPFraudProviders(ctx context.Context) (*proxyruntimev1.ListProxyIPFraudProvidersResponse, error) {
-	return a.settingsUsecase().ListIPFraudProviders(ctx)
+	return a.usecase.ListIPFraudProviders(ctx)
 }
 
 func (a runtimeSettingsApplication) ListProxyIPGeoProviders(ctx context.Context) (*proxyruntimev1.ListProxyIPGeoProvidersResponse, error) {
-	return a.settingsUsecase().ListIPGeoProviders(ctx)
+	return a.usecase.ListIPGeoProviders(ctx)
 }

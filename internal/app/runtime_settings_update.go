@@ -7,21 +7,21 @@ import (
 )
 
 func (a runtimeSettingsApplication) UpdateProxyRuntimeSettings(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
-	return a.settingsUsecase().UpdateRuntimeSettings(ctx, req)
+	return a.usecase.UpdateRuntimeSettings(ctx, req)
 }
 
 func (a runtimeSettingsApplication) UpdateProxyDynamicIPProviders(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
-	return a.settingsUsecase().UpdateDynamicIPProviders(ctx, req.GetDynamicIpProviders())
+	return a.usecase.UpdateDynamicIPProviders(ctx, req.GetDynamicIpProviders())
 }
 
 func (a runtimeSettingsApplication) UpdateProxyEgressProfiles(ctx context.Context, req *proxyruntimev1.UpdateProxyEgressProfilesRequest) (*proxyruntimev1.UpdateProxyEgressProfilesResponse, error) {
-	return a.settingsUsecase().UpdateEgressProfiles(ctx, req)
+	return a.usecase.UpdateEgressProfiles(ctx, req)
 }
 
 func (a runtimeSettingsApplication) UpdateProxyIngressRules(ctx context.Context, req *proxyruntimev1.UpdateProxyIngressRulesRequest) (*proxyruntimev1.UpdateProxyIngressRulesResponse, error) {
-	return a.settingsUsecase().UpdateIngressRules(ctx, req)
+	return a.usecase.UpdateIngressRules(ctx, req)
 }
 
 func (a runtimeSettingsApplication) UpdateProxyInUserRules(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
-	return a.settingsUsecase().UpdateInUserRules(ctx, req)
+	return a.usecase.UpdateInUserRules(ctx, req)
 }

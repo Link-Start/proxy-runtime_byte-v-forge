@@ -7,13 +7,6 @@ import (
 
 const runtimeSettingsConnectionCleanupTimeout = 10 * time.Second
 
-func (a runtimeSettingsApplication) scheduleRuntimeSettingsApply(changedUsernames []string) {
-	if a.scheduleApply == nil {
-		return
-	}
-	a.scheduleApply(changedUsernames)
-}
-
 func (r *Runtime) scheduleRuntimeSettingsApply(changedUsernames []string) {
 	r.resetIPFraudChecker()
 	r.geoCache.clear()

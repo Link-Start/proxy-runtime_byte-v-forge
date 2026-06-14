@@ -10,23 +10,11 @@ func mihomoNativeConfigFileFromSettings(view *proxyruntimev1.ProxyRuntimeMihomoN
 		Subscriptions:  make([]mihomoNativeSubscription, 0, len(view.GetSubscriptions())),
 		ProxyProviders: map[string]mihomoNativeProvider{},
 	}
-	for _, item := range view.GetFixedProxies() {
-		proxy := nativeFixedProxyFromProto(item)
-		rendered, err := mihomoNativeProxyFromURI(proxy.Name, proxy.URI)
-		if err != nil {
-			return mihomoNativeConfigFile{}, err
-		}
-		proxy.Type = jsonStringValue(rendered["type"])
-		config.FixedProxies = append(config.FixedProxies, proxy)
-		config.Proxies = append(config.Proxies, rendered)
+	if err := appendMihomoNativeFixedProxyConfig(&config, view.GetFixedProxies()); err != nil {
+		return mihomoNativeConfigFile{}, err
 	}
-	for _, item := range view.GetSubscriptions() {
-		provider, subscription, err := mihomoNativeSubscriptionProvider(nativeSubscriptionFromProto(item))
-		if err != nil {
-			return mihomoNativeConfigFile{}, err
-		}
-		config.Subscriptions = append(config.Subscriptions, subscription)
-		config.ProxyProviders[subscription.Name] = provider
+	if err := appendMihomoNativeSubscriptionConfig(&config, view.GetSubscriptions()); err != nil {
+		return mihomoNativeConfigFile{}, err
 	}
 	return config, nil
 }

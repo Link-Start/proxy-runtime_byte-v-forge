@@ -7,18 +7,6 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
-type mihomoNativeSettingsRepository interface {
-	loadMihomoNative(context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
-	saveMihomoNative(context.Context, *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) error
-}
-
-func (r *Runtime) projectMihomoNativeSettings(ctx context.Context) error {
-	if r == nil || r.settings == nil {
-		return nil
-	}
-	return projectMihomoNativeSettings(ctx, r.settings, r.cfg.Mihomo.ConfigDir)
-}
-
 func projectMihomoNativeSettings(ctx context.Context, settings mihomoNativeSettingsRepository, configDir string) error {
 	if settings == nil {
 		return nil

@@ -838,6 +838,7 @@ Completed user-visible/runtime batches:
 - Mihomo endpoint handling now separates endpoint normalization, address parsing/dial-address resolution, and listener readiness waiting.
 - Mihomo native egress resolution now separates native node-name stripping, resource lookup, and proxy/provider availability checks.
 - Mihomo dynamic egress rendering now separates exit group rendering, dynamic node filtering, provider-id matching, and cloned proxy naming.
+- Mihomo native provider normalization now separates provider file path normalization from HTTP fetch proxy and User-Agent header normalization.
 
 Still open:
 

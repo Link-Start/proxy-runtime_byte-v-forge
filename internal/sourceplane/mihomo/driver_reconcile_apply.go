@@ -7,37 +7,44 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 )
 
-func (d *Driver) applyBaseConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint) (bool, error) {
-	restartRequired := !d.running || d.lastEndpoint != endpoint
-	baseChanged := d.baseSig != config.signature
-	if restartRequired {
-		if err := writeConfigData(configPath, config.data); err != nil {
-			return false, err
+func (d *Driver) applyBaseConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint) (baseConfigProjectionApplyResult, error) {
+	decision := decideBaseConfigProjectionApply(baseConfigProjectionDecisionInput{
+		running:          d.running,
+		currentEndpoint:  d.lastEndpoint,
+		nextEndpoint:     endpoint,
+		currentSignature: d.baseSig,
+		nextSignature:    config.signature,
+	})
+	switch decision.mode {
+	case configProjectionApplyRestart:
+		if err := d.restartConfigProjectionLocked(ctx, configPath, config, endpoint); err != nil {
+			return baseConfigProjectionApplyResult{}, err
 		}
-		d.stopLocked()
-		if err := d.startLocked(ctx, filepath.Dir(configPath), configPath); err != nil {
-			return false, err
-		}
-		if err := waitForReloadEndpoint(ctx, endpoint); err != nil {
-			return false, err
-		}
-		return true, nil
-	}
-	if baseChanged {
+	case configProjectionApplyReload:
 		if err := d.reloadConfigDataLocked(ctx, configPath, config.data, endpoint); err != nil {
-			return false, err
+			return baseConfigProjectionApplyResult{}, err
 		}
-		return true, nil
 	}
-	return false, nil
+	return decision.result(), nil
 }
 
-func (d *Driver) applyFinalConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint, baseReloaded bool) error {
+func (d *Driver) applyFinalConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint, baseApply baseConfigProjectionApplyResult) error {
 	d.desiredSig = config.signature
-	if !baseReloaded && config.signature == d.signature {
+	if !baseApply.changed && config.signature == d.signature {
 		return nil
 	}
 	return d.reloadConfigDataLocked(ctx, configPath, config.data, endpoint)
+}
+
+func (d *Driver) restartConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint) error {
+	if err := writeConfigData(configPath, config.data); err != nil {
+		return err
+	}
+	d.stopLocked()
+	if err := d.startLocked(ctx, filepath.Dir(configPath), configPath); err != nil {
+		return err
+	}
+	return waitForReloadEndpoint(ctx, endpoint)
 }
 
 func (d *Driver) recordAppliedConfigProjection(configPath string, endpoint sourceplane.Endpoint, baseConfig renderedMihomoConfig, finalConfig renderedMihomoConfig) {

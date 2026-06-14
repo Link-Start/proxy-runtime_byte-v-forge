@@ -25,7 +25,7 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 	}
 	configPath := runtimeConfigPath(dir)
 
-	baseReloaded, err := d.applyBaseConfigProjectionLocked(ctx, configPath, baseConfig, endpoint)
+	baseApply, err := d.applyBaseConfigProjectionLocked(ctx, configPath, baseConfig, endpoint)
 	if err != nil {
 		return nil, d.recordConfigProjectionError(err)
 	}
@@ -35,7 +35,7 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 	if err != nil {
 		return nil, d.recordConfigProjectionError(err)
 	}
-	if err := d.applyFinalConfigProjectionLocked(ctx, configPath, finalConfig, endpoint, baseReloaded); err != nil {
+	if err := d.applyFinalConfigProjectionLocked(ctx, configPath, finalConfig, endpoint, baseApply); err != nil {
 		return nil, d.recordConfigProjectionError(err)
 	}
 	d.recordAppliedConfigProjection(configPath, endpoint, baseConfig, finalConfig)

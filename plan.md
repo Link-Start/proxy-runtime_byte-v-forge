@@ -913,6 +913,7 @@ Completed user-visible/runtime batches:
 - Auth login-page query parsing now lives in the auth package, so the login-page handler only redirects authenticated sessions or writes the page.
 - Mihomo hot-reload now separates candidate config path construction and endpoint readiness waiting from the reload-and-commit orchestration.
 - Mihomo reconcile error recording is centralized so stage orchestration no longer repeats dataplane status mutation at every failure branch.
+- Mihomo base-config apply now has explicit restart/reload/noop decision and apply-result models before final projection apply, separating policy from process/reload effects.
 - Auth authorization and dashboard login-redirect decisions now live in the auth application; Gin handlers only translate decisions into redirects, challenges, or JSON errors.
 - Dashboard reverse proxies now build once as a dashboard-owned proxy bundle during HTTP API construction, and routes reuse the prebuilt handlers.
 - Lease worker entrypoints now emit structured operation, duration, and lease identity logs for restore, expiry, cleanup-pending, and single-lease cleanup paths.

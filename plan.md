@@ -763,6 +763,7 @@ Completed user-visible/runtime batches:
 - The obsolete runtime settings helper bucket was removed after its last clone helper became unused.
 - Runtime settings update usecases now share an explicit update/apply scheduling flow helper for load-before, persist-update, changed-user detection, and apply scheduling.
 - Dynamic provider settings update now uses the same explicit update/apply scheduling flow instead of hand-written repository and scheduler orchestration.
+- Runtime settings application construction, repository port, read usecase, and provider descriptor views are split into focused files instead of one mixed application file.
 
 Still open:
 

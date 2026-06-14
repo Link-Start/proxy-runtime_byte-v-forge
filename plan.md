@@ -867,6 +867,7 @@ Completed user-visible/runtime batches:
 - Lease ID presence checks are centralized in `internal/app/lease`, removing duplicate string trimming from expiry and cleanup workers.
 - Expired-active lease cleanup eligibility is centralized in `internal/app/lease`, so expiry workers no longer compose active-status and expiry predicates directly.
 - Active lease fact construction and persistence now live in `internal/app/lease`; route apply orchestration keeps only endpoint/dataplane apply and failure compensation.
+- Provider session create+fetch sequencing now lives in `internal/app/lease`; acquire orchestration only maps create/fetch errors and performs failure compensation.
 
 Still open:
 

@@ -18,12 +18,11 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 	if err != nil {
 		return nil, invalidArgument("provider account configuration is invalid", err)
 	}
-	session, err := leaseapp.CreateProviderSession(ctx, providerClient, req, selection.plan, concurrencyHolder)
-	if err != nil {
+	session, nodes, err := leaseapp.CreateAndFetchProviderSession(ctx, providerClient, req, selection.plan, concurrencyHolder)
+	if err != nil && session == nil {
 		return nil, unavailable("provider session create failed", err)
 	}
 	failure := newLeaseAcquireFailure(c, ctx, req, providerAccountID, providerClient, session, selection.plan)
-	nodes, err := leaseapp.FetchProviderSession(ctx, providerClient, session)
 	if err != nil {
 		failure.beforeRoute("provider session fetch failed")
 		return nil, unavailable("provider session fetch failed", err)

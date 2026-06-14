@@ -11,6 +11,18 @@ import (
 
 var ErrSessionProviderRequired = errors.New("provider session provider is required")
 
+func CreateAndFetchProviderSession(ctx context.Context, providerClient SessionProvider, req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, concurrencyHolder string) (*proxyruntimev1.ProxySession, []provider.Node, error) {
+	session, err := CreateProviderSession(ctx, providerClient, req, selectionPlan, concurrencyHolder)
+	if err != nil {
+		return nil, nil, err
+	}
+	nodes, err := FetchProviderSession(ctx, providerClient, session)
+	if err != nil {
+		return session, nil, err
+	}
+	return session, nodes, nil
+}
+
 func CreateProviderSession(ctx context.Context, providerClient SessionProvider, req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, concurrencyHolder string) (*proxyruntimev1.ProxySession, error) {
 	if providerClient == nil {
 		return nil, ErrSessionProviderRequired

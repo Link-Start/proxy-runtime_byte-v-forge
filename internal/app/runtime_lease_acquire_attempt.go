@@ -5,7 +5,6 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
 func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyDynamicLease, error) {
@@ -40,48 +39,6 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 		if err == nil {
 			keepConcurrencySlot = true
 		}
-		return err
-	})
-	return lease, err
-}
-
-func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile, selection dynamicIPSelection, providerAccountID string, leaseID string, concurrencyHolder string) (*proxyruntimev1.ProxyDynamicLease, error) {
-	providerCfg, providerAccountID, err := c.deps.store.ProviderConfig(ctx, providerAccountID)
-	if err != nil {
-		return nil, err
-	}
-	providerCfg.Gateways = []accountproxy.Gateway{selection.endpoint}
-	providerClient, err := c.newSessionProvider(providerCfg)
-	if err != nil {
-		return nil, invalidArgument("provider account configuration is invalid", err)
-	}
-	requestedSessionID := leaseapp.RequestedSessionID(req)
-	if requestedSessionID != "" {
-		req.Policy.Labels[leaseapp.LabelSessionID] = requestedSessionID
-	}
-	req.Policy.Labels[leaseapp.LabelSelectionID] = selection.plan.GetSelectionId()
-	req.Policy.Labels[leaseapp.LabelDynamicIPEndpointID] = selection.plan.GetSelectedEndpoint().GetEndpointId()
-	req.Policy.Labels[leaseapp.LabelProviderAccountConcurrencyHolder] = concurrencyHolder
-	session, err := providerClient.CreateSession(ctx, req)
-	if err != nil {
-		return nil, unavailable("provider session create failed", err)
-	}
-	failure := newLeaseAcquireFailure(c, ctx, req, providerAccountID, providerClient, session, selection.plan)
-	nodes, err := providerClient.FetchSession(ctx, session)
-	if err != nil {
-		failure.beforeRoute("provider session fetch failed")
-		return nil, unavailable("provider session fetch failed", err)
-	}
-	dialerProxy, lineLabels, err := c.deps.dynamicLeaseDialerProxy(ctx, settings, req.GetAccountId())
-	if err != nil {
-		failure.beforeRoute("lease line resolution failed")
-		return nil, err
-	}
-	nodes = applyDynamicLeaseLineLabels(nodes, lineLabels)
-	var lease *proxyruntimev1.ProxyDynamicLease
-	err = c.deps.locks.WithSessionListenerAllocationLock(ctx, func(ctx context.Context) error {
-		var err error
-		lease, err = c.applyAcquiredLeaseRoute(ctx, advertisedHost, req, settings, selection, providerAccountID, leaseID, concurrencyHolder, providerClient, session, nodes, dialerProxy, lineLabels, failure)
 		return err
 	})
 	return lease, err

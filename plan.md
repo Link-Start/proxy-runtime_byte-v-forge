@@ -797,6 +797,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native projection import-from-existing-config migration is split from steady-state projection.
 - Dynamic lease line handling now separates Runtime native-settings wiring, egress-profile selection, Mihomo dialer resolution, and provider-node label application.
 - Dynamic lease listener handling now separates listener construction, password/ingress lookup, reserved-lease aggregation, and listener identity helpers.
+- Dynamic lease release now separates top-level release orchestration, release request lookup, and route/provider-session cleanup helpers.
 
 Still open:
 

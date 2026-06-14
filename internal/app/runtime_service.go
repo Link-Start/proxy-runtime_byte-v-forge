@@ -19,7 +19,7 @@ var _ proxyruntimev1.ProxyRuntimeServiceServer = (*RuntimeService)(nil)
 func NewRuntimeService(runtime *Runtime) *RuntimeService {
 	return &RuntimeService{
 		providers: newRuntimeProviderApplication(runtimeProviderDependencies(runtime)),
-		leases:    newRuntimeLeaseApplication(runtime),
+		leases:    newRuntimeLeaseApplication(runtimeLeaseDependencies(runtime)),
 		checks:    newRuntimeCheckApplication(runtimeCheckDependencies(runtime)),
 		settings:  newRuntimeSettingsApplication(runtime),
 		status:    newRuntimeStatusApplication(runtime),
@@ -47,6 +47,18 @@ func runtimeProviderDependencies(runtime *Runtime) runtimeProviderApplicationDep
 			return runtime.service().leases
 		},
 		Logger: runtime.logger,
+	}
+}
+
+func runtimeLeaseDependencies(runtime *Runtime) leaseapp.Dependencies {
+	if runtime == nil {
+		return leaseapp.Dependencies{}
+	}
+	return leaseapp.Dependencies{
+		Repository:  runtime.store,
+		Coordinator: runtime.leaseCoordinator,
+		Worker:      runtime.leaseCoordinator,
+		Logger:      runtime.logger,
 	}
 }
 

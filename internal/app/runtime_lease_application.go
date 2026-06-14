@@ -12,13 +12,8 @@ type runtimeLeaseApplication struct {
 	leases *leaseapp.Application
 }
 
-func newRuntimeLeaseApplication(runtime *Runtime) runtimeLeaseApplication {
-	return runtimeLeaseApplication{leases: leaseapp.NewApplication(leaseapp.Dependencies{
-		Repository:  runtime.store,
-		Coordinator: runtime.leaseCoordinator,
-		Worker:      runtime.leaseCoordinator,
-		Logger:      runtime.logger,
-	})}
+func newRuntimeLeaseApplication(deps leaseapp.Dependencies) runtimeLeaseApplication {
+	return runtimeLeaseApplication{leases: leaseapp.NewApplication(deps)}
 }
 
 func (s *RuntimeService) ListProxyDynamicLeases(ctx context.Context, _ *proxyruntimev1.ListProxyDynamicLeasesRequest) (*proxyruntimev1.ListProxyDynamicLeasesResponse, error) {

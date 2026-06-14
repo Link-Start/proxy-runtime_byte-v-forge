@@ -22,6 +22,8 @@ type secretStore interface {
 type runtimeSettingsPersistence interface {
 	LoadRuntimeSettings(context.Context) (*runtimeSettingsFile, error)
 	SaveRuntimeSettings(context.Context, *runtimeSettingsFile) error
+	LoadMihomoNativeSettings(context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
+	SaveMihomoNativeSettings(context.Context, *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) error
 }
 
 type providerAccountStore interface {

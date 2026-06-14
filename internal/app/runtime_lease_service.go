@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -35,14 +36,15 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, httpReq *http.Reques
 func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, httpReq *http.Request, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
 	r := c.runtime
 	req.Purpose = firstNonEmpty(req.GetPurpose(), "general")
-	normalizeLeasePolicy(req)
 	settings, err := r.settings.load(ctx)
 	if err != nil {
 		return nil, err
 	}
-	if err := validateLeaseProfileDynamicIP(settings, req); err != nil {
+	normalizeLeasePolicy(req)
+	if err := applyLeaseProfileDynamicIPPolicy(settings, req); err != nil {
 		return nil, err
 	}
+	selectionPolicy := normalizeDynamicIPSelectionPolicy(req)
 	requestedSessionID := requestedLeaseSessionID(req)
 	existing, err := r.activeLeaseByRequest(ctx, req, requestedSessionID)
 	if err == nil && leaseActive(existing, time.Now().UTC()) {
@@ -56,6 +58,24 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, httpR
 			return nil, err
 		}
 	}
+	var lastErr error
+	for attempt := 1; attempt <= dynamicIPSelectionMaxAttempts(selectionPolicy); attempt++ {
+		req.Policy.Labels["attempt"] = strconv.Itoa(attempt)
+		lease, err := c.acquireLeaseAttempt(ctx, httpReq, req, settings)
+		if err == nil {
+			return lease, nil
+		}
+		lastErr = err
+		if !retryLeaseAcquireAttempt(err) {
+			return nil, err
+		}
+		r.logger.Warn("dynamic IP lease attempt failed", "account_id", req.GetAccountId(), "purpose", req.GetPurpose(), "attempt", attempt, "reason", err.Error())
+	}
+	return nil, lastErr
+}
+
+func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, httpReq *http.Request, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyDynamicLease, error) {
+	r := c.runtime
 	selection, err := r.dynamicIPSelector.selectDynamicIPEndpoint(ctx, req)
 	if err != nil {
 		return nil, failedPrecondition("no dynamic IP endpoint candidate", err)
@@ -120,7 +140,7 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 		failure.beforeRoute("provider session fetch failed")
 		return nil, unavailable("provider session fetch failed", err)
 	}
-	dialerProxy, lineLabels, err := r.dynamicLeaseDialerProxy(settings, req.GetAccountId())
+	dialerProxy, lineLabels, err := r.dynamicLeaseDialerProxy(ctx, settings, req.GetAccountId())
 	if err != nil {
 		failure.beforeRoute("lease line resolution failed")
 		return nil, err
@@ -161,6 +181,21 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, httpReq *
 	egress.Labels["dynamic_provider_id"] = selection.plan.GetSelectedEndpoint().GetDynamicProviderId()
 	egress.Labels["dynamic_ip_endpoint_id"] = selection.plan.GetSelectedEndpoint().GetEndpointId()
 	egress.Labels["provider_account_concurrency_holder"] = concurrencyHolder
+	if countryCode := strings.TrimSpace(selection.plan.GetPolicy().GetCountryCode()); countryCode != "" {
+		egress.Labels["country_code"] = countryCode
+	}
+	if region := strings.TrimSpace(firstNonEmpty(req.GetPolicy().GetRegion(), selection.plan.GetPolicy().GetRegion())); region != "" {
+		egress.Labels["region"] = region
+	}
+	if state := strings.TrimSpace(req.GetPolicy().GetState()); state != "" {
+		egress.Labels["state"] = state
+	}
+	if city := strings.TrimSpace(req.GetPolicy().GetCity()); city != "" {
+		egress.Labels["city"] = city
+	}
+	if asn := strings.TrimSpace(req.GetPolicy().GetAsn()); asn != "" {
+		egress.Labels["asn"] = asn
+	}
 	for key, value := range lineLabels {
 		egress.Labels[key] = value
 	}
@@ -183,7 +218,7 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, httpReq *
 	return lease, nil
 }
 
-func validateLeaseProfileDynamicIP(settings *runtimeSettingsFile, req *proxyruntimev1.AcquireProxyLeaseRequest) error {
+func applyLeaseProfileDynamicIPPolicy(settings *runtimeSettingsFile, req *proxyruntimev1.AcquireProxyLeaseRequest) error {
 	profile := egressProfileByID(settings, req.GetAccountId())
 	if profile == nil {
 		if req.GetPurpose() == "in-user-profile" {
@@ -200,7 +235,19 @@ func validateLeaseProfileDynamicIP(settings *runtimeSettingsFile, req *proxyrunt
 	if req.GetPolicy().GetMode() != proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY {
 		return invalidArgument("lease request must use sticky dynamic IP", nil)
 	}
+	req.Policy = profileDynamicIPLeasePolicy(profile.GetExit().GetDynamicIpPolicy(), req.GetPolicy())
 	return nil
+}
+
+func profileDynamicIPLeasePolicy(profilePolicy *proxyruntimev1.ProxySessionPolicy, requestPolicy *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxySessionPolicy {
+	policy := normalizeDynamicIPSessionPolicy(profilePolicy)
+	request := normalizeDynamicIPSessionPolicy(requestPolicy)
+	policy.StickyTtl = cloneDuration(request.GetStickyTtl())
+	policy.Labels = cloneStringMap(policy.GetLabels())
+	for key, value := range request.GetLabels() {
+		policy.Labels[key] = value
+	}
+	return policy
 }
 
 func egressProfileByID(settings *runtimeSettingsFile, profileID string) *proxyruntimev1.EgressProfileSettings {

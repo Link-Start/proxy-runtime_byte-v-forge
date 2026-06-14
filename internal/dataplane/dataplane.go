@@ -18,9 +18,11 @@ type Driver interface {
 }
 
 type Status struct {
-	Running    bool
-	ConfigPath string
-	LastError  string
+	Running           bool
+	ConfigPath        string
+	DesiredConfigHash string
+	AppliedConfigHash string
+	LastError         string
 }
 
 type Config struct {

@@ -183,6 +183,53 @@ func egressProfilesFromRequest(in []*proxyruntimev1.EgressProfileSettings, nativ
 	return out, nil
 }
 
+func (s *runtimeSettingsStore) updateEgressProfiles(ctx context.Context, profiles []*proxyruntimev1.EgressProfileSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	settings, err := s.loadLocked(ctx)
+	if err != nil {
+		return nil, err
+	}
+	nativeResourceIDs, err := s.enabledMihomoResourceIDs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	nextProfiles, err := egressProfilesFromRequest(profiles, nativeResourceIDs, enabledDynamicProviderEndpointIDs(settings))
+	if err != nil {
+		return nil, err
+	}
+	nextRules, err := ingressRulesFromRequest(settings.GetIngressRules(), nextProfiles)
+	if err != nil {
+		return nil, err
+	}
+	applyInUserSessionLabels(nextProfiles, nextRules)
+	settings.EgressProfiles = nextProfiles
+	settings.IngressRules = nextRules
+	if err := s.saveLocked(ctx, settings); err != nil {
+		return nil, err
+	}
+	return runtimeSettingsView(settings), nil
+}
+
+func (s *runtimeSettingsStore) updateIngressRules(ctx context.Context, rules []*proxyruntimev1.ProxyIngressRuleSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	settings, err := s.loadLocked(ctx)
+	if err != nil {
+		return nil, err
+	}
+	nextRules, err := ingressRulesFromRequest(rules, settings.GetEgressProfiles())
+	if err != nil {
+		return nil, err
+	}
+	applyInUserSessionLabels(settings.EgressProfiles, nextRules)
+	settings.IngressRules = nextRules
+	if err := s.saveLocked(ctx, settings); err != nil {
+		return nil, err
+	}
+	return runtimeSettingsView(settings), nil
+}
+
 type mihomoNativeResourceReplacement struct {
 	ResourceID string
 	FixedProxy bool
@@ -242,8 +289,30 @@ func replaceMihomoNodeRef(ref *proxyruntimev1.EgressProfileMihomoNodeRef, replac
 	return current != nextResourceID
 }
 
-func (s *runtimeSettingsStore) enabledMihomoResourceIDs(_ context.Context) (map[string]struct{}, error) {
-	return nil, nil
+func (s *runtimeSettingsStore) enabledMihomoResourceIDs(ctx context.Context) (map[string]struct{}, error) {
+	view, err := s.loadMihomoNativeLocked(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := map[string]struct{}{}
+	for _, proxy := range view.GetFixedProxies() {
+		normalized := normalizeMihomoNativeFixedProxy(nativeFixedProxyFromProto(proxy), nil)
+		addEnabledMihomoResourceID(out, normalized.ID)
+		addEnabledMihomoResourceID(out, normalized.Name)
+	}
+	for _, subscription := range view.GetSubscriptions() {
+		normalized := normalizeMihomoNativeSubscription(nativeSubscriptionFromProto(subscription), nil)
+		addEnabledMihomoResourceID(out, normalized.ID)
+		addEnabledMihomoResourceID(out, normalized.Name)
+	}
+	return out, nil
+}
+
+func addEnabledMihomoResourceID(resources map[string]struct{}, value string) {
+	value = strings.TrimSpace(value)
+	if value != "" {
+		resources[value] = struct{}{}
+	}
 }
 
 func enabledDynamicProviderIDs(settings *runtimeSettingsFile) map[string]struct{} {

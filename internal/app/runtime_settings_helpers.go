@@ -6,6 +6,7 @@ import (
 
 	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
@@ -50,6 +51,13 @@ func cloneSecretRef(value *commonv1.SecretRef, provider string, purpose string) 
 		return nil
 	}
 	return refs[0]
+}
+
+func cloneRuntimeSettingsFile(settings *runtimeSettingsFile) *runtimeSettingsFile {
+	if settings == nil {
+		return nil
+	}
+	return proto.Clone(settings).(*runtimeSettingsFile)
 }
 
 func secretRefConfigured(value *commonv1.SecretRef) bool {

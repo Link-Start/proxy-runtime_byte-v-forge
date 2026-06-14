@@ -38,10 +38,16 @@ func (r *Runtime) serveHTTP(ctx context.Context, errCh chan<- error) {
 func (r *Runtime) httpHandler() http.Handler {
 	return newRuntimeHTTPAPI(r.service(), r.cfg.Mihomo.APIAddr, func() (bool, string) {
 		status := r.dataPlane.Status()
-		if status.Running {
-			return true, ""
+		if !status.Running {
+			return false, firstNonEmpty(status.LastError, "data plane is not running")
 		}
-		return false, firstNonEmpty(status.LastError, "data plane is not running")
+		if status.LastError != "" {
+			return false, "data plane reconcile failed"
+		}
+		if status.DesiredConfigHash != "" && status.DesiredConfigHash != status.AppliedConfigHash {
+			return false, "data plane config projection is stale"
+		}
+		return true, ""
 	}, r.logger).handler()
 }
 

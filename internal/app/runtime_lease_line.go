@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -8,15 +9,19 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
-func (r *Runtime) dynamicLeaseDialerProxy(settings *runtimeSettingsFile, profileID string) (string, map[string]string, error) {
+func (r *Runtime) dynamicLeaseDialerProxy(ctx context.Context, settings *runtimeSettingsFile, profileID string) (string, map[string]string, error) {
 	settings = normalizeRuntimeSettings(settings)
 	profiles := dynamicLeaseLineProfiles(settings, profileID)
 	if len(profiles) == 0 {
 		return "", nil, nil
 	}
-	nativeConfig, err := loadMihomoNativeConfig(r)
+	nativeSettings, err := r.settings.loadMihomoNative(ctx)
 	if err != nil {
-		return "", nil, fmt.Errorf("load mihomo native config for lease line: %w", err)
+		return "", nil, fmt.Errorf("load mihomo native settings for lease line: %w", err)
+	}
+	nativeConfig, err := mihomoNativeConfigFileFromSettings(nativeSettings)
+	if err != nil {
+		return "", nil, fmt.Errorf("render mihomo native settings for lease line: %w", err)
 	}
 	for _, profile := range profiles {
 		dialer, labels, err := dynamicLeaseProfileDialerProxy(profile, nativeConfig)

@@ -9,8 +9,6 @@ PLUGIN="${PROTOC_GEN_TS_PROTO:-}"
 if [[ -z "${PLUGIN}" ]]; then
   if [[ -x "${ROOT}/node_modules/.bin/protoc-gen-ts_proto" ]]; then
     PLUGIN="${ROOT}/node_modules/.bin/protoc-gen-ts_proto"
-  elif [[ -x "${ROOT}/../webui/node_modules/.bin/protoc-gen-ts_proto" ]]; then
-    PLUGIN="${ROOT}/../webui/node_modules/.bin/protoc-gen-ts_proto"
   fi
 fi
 

@@ -7,9 +7,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net"
-	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -18,7 +16,6 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"google.golang.org/protobuf/proto"
 )
 
 const (
@@ -28,7 +25,6 @@ const (
 	defaultProviderHealthPeriod = 300
 	defaultProviderHealthWait   = 5000
 	defaultProviderUserAgent    = "mihomo/1.18.3"
-	maxSubscriptionContentBytes = 2 * 1024 * 1024
 	mihomoNativeRollbackTimeout = 30 * time.Second
 )
 
@@ -52,7 +48,6 @@ type mihomoNativeConfigFile struct {
 	ProxyProviders map[string]mihomoNativeProvider `json:"proxy-providers,omitempty"`
 	ProxyGroups    []mihomoNativeGroup             `json:"proxy-groups,omitempty"`
 	Rules          []string                        `json:"rules,omitempty"`
-	Extra          map[string]json.RawMessage      `json:"-"`
 }
 
 type mihomoNativeProvider struct {
@@ -95,36 +90,86 @@ func mihomoNativeConfigPath(runtime *Runtime) (string, error) {
 	if runtime == nil {
 		return "", errors.New("runtime is required")
 	}
-	configDir := strings.TrimSpace(runtime.cfg.Mihomo.ConfigDir)
+	return mihomoNativeConfigPathFromDir(runtime.cfg.Mihomo.ConfigDir)
+}
+
+func mihomoNativeConfigPathFromDir(configDir string) (string, error) {
+	configDir = strings.TrimSpace(configDir)
 	if configDir == "" {
 		return "", errors.New("mihomo config dir is required")
 	}
 	return filepath.Join(configDir, mihomoNativeFileName), nil
 }
 
-func loadMihomoNativeConfig(runtime *Runtime) (mihomoNativeConfigFile, error) {
+func (r *Runtime) projectMihomoNativeSettings(ctx context.Context) error {
+	if r == nil || r.settings == nil {
+		return nil
+	}
+	view, err := r.settings.loadMihomoNative(ctx)
+	if err != nil {
+		return err
+	}
+	if mihomoNativeSettingsEmpty(view) {
+		migrated, err := r.importMihomoNativeProjection(ctx)
+		if err != nil {
+			return err
+		}
+		if !mihomoNativeSettingsEmpty(migrated) {
+			view = migrated
+		}
+	}
+	if mihomoNativeSettingsEmpty(view) && strings.TrimSpace(r.cfg.Mihomo.ConfigDir) == "" {
+		return nil
+	}
+	config, err := mihomoNativeConfigFileFromSettings(view)
+	if err != nil {
+		return err
+	}
+	return saveMihomoNativeConfig(r, config)
+}
+
+func (r *Runtime) importMihomoNativeProjection(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+	config, exists, err := loadMihomoNativeProjection(r)
+	if err != nil || !exists {
+		return nil, err
+	}
+	view := mihomoNativeSettingsFromConfig(config)
+	if mihomoNativeSettingsEmpty(view) {
+		return nil, nil
+	}
+	if err := r.settings.saveMihomoNative(ctx, view); err != nil {
+		return nil, err
+	}
+	return view, nil
+}
+
+func loadMihomoNativeProjection(runtime *Runtime) (mihomoNativeConfigFile, bool, error) {
 	path, err := mihomoNativeConfigPath(runtime)
 	if err != nil {
-		return mihomoNativeConfigFile{}, err
+		return mihomoNativeConfigFile{}, false, nil
 	}
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
-		return mihomoNativeConfigFile{ProxyProviders: map[string]mihomoNativeProvider{}}, nil
+		return mihomoNativeConfigFile{}, false, nil
 	}
 	if err != nil {
-		return mihomoNativeConfigFile{}, fmt.Errorf("read mihomo native config: %w", err)
+		return mihomoNativeConfigFile{}, false, fmt.Errorf("read mihomo native config projection: %w", err)
 	}
 	if len(data) == 0 {
-		return mihomoNativeConfigFile{ProxyProviders: map[string]mihomoNativeProvider{}}, nil
+		return mihomoNativeConfigFile{}, false, nil
 	}
 	var config mihomoNativeConfigFile
 	if err := json.Unmarshal(data, &config); err != nil {
-		return mihomoNativeConfigFile{}, fmt.Errorf("parse mihomo native config: %w", err)
+		return mihomoNativeConfigFile{}, false, fmt.Errorf("parse mihomo native config projection: %w", err)
 	}
 	if config.ProxyProviders == nil {
 		config.ProxyProviders = map[string]mihomoNativeProvider{}
 	}
-	return config, nil
+	return config, true, nil
+}
+
+func mihomoNativeSettingsEmpty(view *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) bool {
+	return view == nil || len(view.GetFixedProxies()) == 0 && len(view.GetSubscriptions()) == 0
 }
 
 func saveMihomoNativeConfig(runtime *Runtime, config mihomoNativeConfigFile) error {
@@ -161,11 +206,14 @@ func saveMihomoNativeConfig(runtime *Runtime, config mihomoNativeConfigFile) err
 	return nil
 }
 
-func mihomoNativeSettings(runtime *Runtime) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
-	config, err := loadMihomoNativeConfig(runtime)
-	if err != nil {
-		return nil, err
+func mihomoNativeSettings(ctx context.Context, runtime *Runtime) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+	if runtime == nil || runtime.settings == nil {
+		return normalizeMihomoNativeSettings(nil), nil
 	}
+	return runtime.settings.loadMihomoNative(ctx)
+}
+
+func mihomoNativeSettingsFromConfig(config mihomoNativeConfigFile) *proxyruntimev1.ProxyRuntimeMihomoNativeConfig {
 	view := &proxyruntimev1.ProxyRuntimeMihomoNativeConfig{}
 	if len(config.FixedProxies) > 0 {
 		for _, proxy := range config.FixedProxies {
@@ -183,6 +231,9 @@ func mihomoNativeSettings(runtime *Runtime) (*proxyruntimev1.ProxyRuntimeMihomoN
 				continue
 			}
 			uri := mihomoNativeProxyURI(proxy)
+			if uri == "" {
+				continue
+			}
 			view.FixedProxies = append(view.FixedProxies, protoMihomoNativeFixedProxy(mihomoNativeFixedProxy{ID: nativeStableID("fixed", uri), Name: name, Type: proxyType, URI: uri}))
 		}
 	}
@@ -202,7 +253,36 @@ func mihomoNativeSettings(runtime *Runtime) (*proxyruntimev1.ProxyRuntimeMihomoN
 			view.Subscriptions = append(view.Subscriptions, protoMihomoNativeSubscription(mihomoNativeSubscription{ID: nativeStableID("sub", provider.URL), Name: name, URL: provider.URL}))
 		}
 	}
-	return view, nil
+	return normalizeMihomoNativeSettings(view)
+}
+
+func mihomoNativeConfigFileFromSettings(view *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (mihomoNativeConfigFile, error) {
+	view = normalizeMihomoNativeSettings(view)
+	config := mihomoNativeConfigFile{
+		FixedProxies:   make([]mihomoNativeFixedProxy, 0, len(view.GetFixedProxies())),
+		Proxies:        make([]map[string]any, 0, len(view.GetFixedProxies())),
+		Subscriptions:  make([]mihomoNativeSubscription, 0, len(view.GetSubscriptions())),
+		ProxyProviders: map[string]mihomoNativeProvider{},
+	}
+	for _, item := range view.GetFixedProxies() {
+		proxy := nativeFixedProxyFromProto(item)
+		rendered, err := mihomoNativeProxyFromURI(proxy.Name, proxy.URI)
+		if err != nil {
+			return mihomoNativeConfigFile{}, err
+		}
+		proxy.Type = jsonStringValue(rendered["type"])
+		config.FixedProxies = append(config.FixedProxies, proxy)
+		config.Proxies = append(config.Proxies, rendered)
+	}
+	for _, item := range view.GetSubscriptions() {
+		provider, subscription, err := mihomoNativeSubscriptionProvider(nativeSubscriptionFromProto(item))
+		if err != nil {
+			return mihomoNativeConfigFile{}, err
+		}
+		config.Subscriptions = append(config.Subscriptions, subscription)
+		config.ProxyProviders[subscription.Name] = provider
+	}
+	return config, nil
 }
 
 func protoMihomoNativeFixedProxy(item mihomoNativeFixedProxy) *proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy {
@@ -211,6 +291,43 @@ func protoMihomoNativeFixedProxy(item mihomoNativeFixedProxy) *proxyruntimev1.Pr
 
 func protoMihomoNativeSubscription(item mihomoNativeSubscription) *proxyruntimev1.ProxyRuntimeMihomoNativeSubscription {
 	return &proxyruntimev1.ProxyRuntimeMihomoNativeSubscription{Id: item.ID, Name: item.Name, Url: item.URL}
+}
+
+func normalizeMihomoNativeSettings(view *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) *proxyruntimev1.ProxyRuntimeMihomoNativeConfig {
+	if view == nil {
+		view = &proxyruntimev1.ProxyRuntimeMihomoNativeConfig{}
+	}
+	out := &proxyruntimev1.ProxyRuntimeMihomoNativeConfig{
+		FixedProxies:  make([]*proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy, 0, len(view.GetFixedProxies())),
+		Subscriptions: make([]*proxyruntimev1.ProxyRuntimeMihomoNativeSubscription, 0, len(view.GetSubscriptions())),
+	}
+	seenFixed := map[string]struct{}{}
+	for _, item := range view.GetFixedProxies() {
+		normalized := normalizeMihomoNativeFixedProxy(nativeFixedProxyFromProto(item), nil)
+		key := firstNonEmpty(normalized.ID, normalized.Name)
+		if key == "" {
+			continue
+		}
+		if _, exists := seenFixed[key]; exists {
+			continue
+		}
+		seenFixed[key] = struct{}{}
+		out.FixedProxies = append(out.FixedProxies, protoMihomoNativeFixedProxy(normalized))
+	}
+	seenSubscriptions := map[string]struct{}{}
+	for _, item := range view.GetSubscriptions() {
+		normalized := normalizeMihomoNativeSubscription(nativeSubscriptionFromProto(item), nil)
+		key := firstNonEmpty(normalized.ID, normalized.Name)
+		if key == "" {
+			continue
+		}
+		if _, exists := seenSubscriptions[key]; exists {
+			continue
+		}
+		seenSubscriptions[key] = struct{}{}
+		out.Subscriptions = append(out.Subscriptions, protoMihomoNativeSubscription(normalized))
+	}
+	return out
 }
 
 func nativeFixedProxyFromProto(item *proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy) mihomoNativeFixedProxy {
@@ -237,28 +354,33 @@ func updateMihomoNativeSettings(ctx context.Context, runtime *Runtime, view *pro
 	if view == nil {
 		view = &proxyruntimev1.ProxyRuntimeMihomoNativeConfig{}
 	}
-	current, err := loadMihomoNativeConfig(runtime)
+	currentView, err := runtime.settings.loadMihomoNative(ctx)
 	if err != nil {
-		return nil, internalError("load mihomo native config", err)
+		return nil, internalError("load mihomo native settings", err)
+	}
+	current, err := mihomoNativeConfigFileFromSettings(currentView)
+	if err != nil {
+		return nil, internalError("load mihomo native settings", err)
 	}
 	currentSettings, err := runtime.settings.load(ctx)
 	if err != nil {
 		return nil, err
 	}
 	rollback := mihomoNativeUpdateRollback{
-		runtime:       runtime,
-		config:        current,
-		providerFiles: newNativeProviderFileSnapshots(),
-		settings:      cloneRuntimeSettingsFile(currentSettings),
+		runtime:        runtime,
+		config:         current,
+		nativeSettings: currentView,
+		settings:       cloneRuntimeSettingsFile(currentSettings),
 	}
 	configChanged := false
+	nativeSettingsChanged := false
 	settingsChanged := false
 	fail := func(err error) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
 		if err == nil {
 			return nil, nil
 		}
-		if rollback.needsRestore(configChanged, settingsChanged) {
-			if rollbackErr := rollback.restore(settingsChanged, configChanged, configChanged || settingsChanged); rollbackErr != nil {
+		if rollback.needsRestore(configChanged, nativeSettingsChanged, settingsChanged) {
+			if rollbackErr := rollback.restore(settingsChanged, configChanged, nativeSettingsChanged, configChanged || nativeSettingsChanged || settingsChanged); rollbackErr != nil {
 				return nil, internalError("mihomo native config rollback failed", fmt.Errorf("%w; rollback failed: %v", err, rollbackErr))
 			}
 		}
@@ -297,21 +419,7 @@ func updateMihomoNativeSettings(ctx context.Context, runtime *Runtime, view *pro
 		next.FixedProxies = append(next.FixedProxies, normalized)
 		next.Proxies = append(next.Proxies, proxy)
 	}
-	providerPaths := map[string]string{}
-	subscriptionURLs := map[string]string{}
-	for name, provider := range current.ProxyProviders {
-		providerPaths[name] = provider.Path
-		if strings.TrimSpace(provider.URL) != "" {
-			subscriptionURLs[name] = provider.URL
-		}
-	}
-	for _, item := range current.Subscriptions {
-		if strings.TrimSpace(item.Name) != "" {
-			subscriptionURLs[item.Name] = item.URL
-		}
-	}
 	currentSubscriptionsByID, currentSubscriptionsByName := currentSubscriptionIndexes(current)
-	usedProviderPaths := map[string]struct{}{}
 	seenSubscriptionIDs := map[string]struct{}{}
 	seenSubscriptionNames := map[string]struct{}{}
 	for _, item := range view.GetSubscriptions() {
@@ -328,16 +436,17 @@ func updateMihomoNativeSettings(ctx context.Context, runtime *Runtime, view *pro
 		}
 		seenSubscriptionIDs[normalized.ID] = struct{}{}
 		seenSubscriptionNames[normalized.Name] = struct{}{}
-		provider, subscription, err := mihomoNativeSubscriptionProvider(ctx, runtime, normalized, providerPaths[normalized.Name], subscriptionURLs[normalized.Name], rollback.providerFiles)
+		provider, subscription, err := mihomoNativeSubscriptionProvider(normalized)
 		if err != nil {
 			return fail(err)
 		}
 		next.Subscriptions = append(next.Subscriptions, subscription)
 		next.ProxyProviders[subscription.Name] = provider
-		if strings.TrimSpace(provider.Path) != "" {
-			usedProviderPaths[provider.Path] = struct{}{}
-		}
 	}
+	if err := runtime.settings.saveMihomoNative(ctx, mihomoNativeSettingsFromConfig(next)); err != nil {
+		return fail(internalError("save mihomo native settings", err))
+	}
+	nativeSettingsChanged = true
 	if err := saveMihomoNativeConfig(runtime, next); err != nil {
 		return fail(internalError("save mihomo native config", err))
 	}
@@ -350,31 +459,32 @@ func updateMihomoNativeSettings(ctx context.Context, runtime *Runtime, view *pro
 	if err := runtime.runReconcile(ctx); err != nil {
 		return fail(unavailable("mihomo native config apply failed", err))
 	}
-	removeUnusedNativeProviderFiles(runtime, providerPaths, usedProviderPaths)
-	return mihomoNativeSettings(runtime)
+	return mihomoNativeSettings(ctx, runtime)
 }
 
 type mihomoNativeUpdateRollback struct {
-	runtime       *Runtime
-	config        mihomoNativeConfigFile
-	providerFiles *nativeProviderFileSnapshots
-	settings      *runtimeSettingsFile
+	runtime        *Runtime
+	config         mihomoNativeConfigFile
+	nativeSettings *proxyruntimev1.ProxyRuntimeMihomoNativeConfig
+	settings       *runtimeSettingsFile
 }
 
-func (r mihomoNativeUpdateRollback) needsRestore(configChanged bool, settingsChanged bool) bool {
-	return configChanged || settingsChanged || r.providerFiles.hasSnapshots()
+func (r mihomoNativeUpdateRollback) needsRestore(configChanged bool, nativeSettingsChanged bool, settingsChanged bool) bool {
+	return configChanged || nativeSettingsChanged || settingsChanged
 }
 
-func (r mihomoNativeUpdateRollback) restore(settingsChanged bool, configChanged bool, reconcile bool) error {
+func (r mihomoNativeUpdateRollback) restore(settingsChanged bool, configChanged bool, nativeSettingsChanged bool, reconcile bool) error {
 	restoreErrors := make([]error, 0)
+	if nativeSettingsChanged && r.runtime != nil && r.runtime.settings != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), mihomoNativeRollbackTimeout)
+		if err := r.runtime.settings.saveMihomoNative(ctx, r.nativeSettings); err != nil {
+			restoreErrors = append(restoreErrors, fmt.Errorf("restore mihomo native settings: %w", err))
+		}
+		cancel()
+	}
 	if configChanged && r.runtime != nil {
 		if err := saveMihomoNativeConfig(r.runtime, r.config); err != nil {
 			restoreErrors = append(restoreErrors, fmt.Errorf("restore mihomo native config: %w", err))
-		}
-	}
-	if r.providerFiles != nil {
-		if err := r.providerFiles.restore(); err != nil {
-			restoreErrors = append(restoreErrors, err)
 		}
 	}
 	if settingsChanged && r.runtime != nil && r.runtime.settings != nil && r.settings != nil {
@@ -393,13 +503,6 @@ func (r mihomoNativeUpdateRollback) restore(settingsChanged bool, configChanged 
 		cancel()
 	}
 	return errors.Join(restoreErrors...)
-}
-
-func cloneRuntimeSettingsFile(settings *runtimeSettingsFile) *runtimeSettingsFile {
-	if settings == nil {
-		return nil
-	}
-	return proto.Clone(settings).(*runtimeSettingsFile)
 }
 
 func preserveNativeGroups(groups []mihomoNativeGroup) []mihomoNativeGroup {
@@ -506,16 +609,7 @@ func nativeStableID(prefix string, source string) string {
 	return runtimeSafeID(prefix + "-" + hex.EncodeToString(sum[:])[:12])
 }
 
-func stableProviderPath(path string, id string) bool {
-	path = strings.TrimSpace(path)
-	id = runtimeSafeID(id)
-	if path == "" || id == "" {
-		return false
-	}
-	return filepath.Base(path) == id+".yaml"
-}
-
-func mihomoNativeSubscriptionProvider(ctx context.Context, runtime *Runtime, item mihomoNativeSubscription, existingPath string, existingURL string, snapshots *nativeProviderFileSnapshots) (mihomoNativeProvider, mihomoNativeSubscription, error) {
+func mihomoNativeSubscriptionProvider(item mihomoNativeSubscription) (mihomoNativeProvider, mihomoNativeSubscription, error) {
 	id := runtimeSafeID(item.ID)
 	name := strings.TrimSpace(item.Name)
 	rawURL := strings.TrimSpace(item.URL)
@@ -532,31 +626,15 @@ func mihomoNativeSubscriptionProvider(ctx context.Context, runtime *Runtime, ite
 	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
 		return mihomoNativeProvider{}, mihomoNativeSubscription{}, invalidArgument(fmt.Sprintf("subscription %q url is invalid", name), nil)
 	}
-	path := ""
-	if stableProviderPath(existingPath, id) {
-		path = strings.TrimSpace(existingPath)
-	}
-	if path == "" {
-		path = filepath.Join("providers", id+".yaml")
-	}
-	if runtime != nil && strings.TrimSpace(runtime.cfg.Mihomo.ConfigDir) != "" && !filepath.IsAbs(path) {
-		path = filepath.Join(runtime.cfg.Mihomo.ConfigDir, path)
-	}
-	if rawURL != strings.TrimSpace(existingURL) || !regularFileExists(path) {
-		content, err := fetchSubscriptionContent(ctx, runtimeProviderHTTPClient(runtime), rawURL)
-		if err != nil {
-			return mihomoNativeProvider{}, mihomoNativeSubscription{}, unavailable(fmt.Sprintf("subscription %q fetch failed", name), err)
-		}
-		if err := snapshots.snapshot(path); err != nil {
-			return mihomoNativeProvider{}, mihomoNativeSubscription{}, internalError(fmt.Sprintf("subscription %q provider file snapshot failed", name), err)
-		}
-		if err := writeSubscriptionProviderFile(path, content); err != nil {
-			return mihomoNativeProvider{}, mihomoNativeSubscription{}, internalError(fmt.Sprintf("subscription %q provider file save failed", name), err)
-		}
+	if !strings.EqualFold(parsed.Scheme, "http") && !strings.EqualFold(parsed.Scheme, "https") {
+		return mihomoNativeProvider{}, mihomoNativeSubscription{}, invalidArgument(fmt.Sprintf("subscription %q url must use http or https", name), nil)
 	}
 	return mihomoNativeProvider{
-		Type: "file",
-		Path: path,
+		Type:     "http",
+		URL:      rawURL,
+		Path:     filepath.Join("providers", id+".yaml"),
+		Interval: defaultProviderHealthPeriod,
+		Header:   map[string][]string{"User-Agent": {defaultProviderUserAgent}},
 		HealthCheck: &mihomoNativeHealthCheck{
 			Enable:         true,
 			URL:            defaultProviderHealthURL,
@@ -566,209 +644,6 @@ func mihomoNativeSubscriptionProvider(ctx context.Context, runtime *Runtime, ite
 			ExpectedStatus: 204,
 		},
 	}, mihomoNativeSubscription{ID: id, Name: name, URL: rawURL}, nil
-}
-
-func runtimeProviderHTTPClient(runtime *Runtime) *http.Client {
-	if runtime == nil {
-		return nil
-	}
-	return runtime.providerHTTPClient
-}
-
-func fetchSubscriptionContent(ctx context.Context, client *http.Client, rawURL string) ([]byte, error) {
-	if client == nil {
-		client = defaultSubscriptionHTTPClient()
-	}
-	var lastErr error
-	for attempt := 0; attempt < 2; attempt++ {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, rawURL, nil)
-		if err != nil {
-			return nil, err
-		}
-		req.Header.Set("User-Agent", defaultProviderUserAgent)
-		resp, err := client.Do(req)
-		if err == nil {
-			content, readErr := readSubscriptionResponse(resp)
-			if readErr == nil {
-				return content, nil
-			}
-			err = readErr
-		}
-		lastErr = err
-		if ctx.Err() != nil {
-			return nil, ctx.Err()
-		}
-		timer := time.NewTimer(time.Duration(attempt+1) * 300 * time.Millisecond)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return nil, ctx.Err()
-		case <-timer.C:
-		}
-	}
-	return nil, lastErr
-}
-
-func defaultSubscriptionHTTPClient() *http.Client {
-	return &http.Client{
-		Timeout: 30 * time.Second,
-		Transport: &http.Transport{
-			Proxy:               http.ProxyFromEnvironment,
-			DisableKeepAlives:   true,
-			ForceAttemptHTTP2:   false,
-			TLSHandshakeTimeout: 10 * time.Second,
-		},
-	}
-}
-
-func readSubscriptionResponse(resp *http.Response) ([]byte, error) {
-	defer resp.Body.Close()
-	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
-		return nil, fmt.Errorf("upstream returned HTTP %d", resp.StatusCode)
-	}
-	data, err := io.ReadAll(io.LimitReader(resp.Body, maxSubscriptionContentBytes+1))
-	if err != nil {
-		return nil, err
-	}
-	if len(data) > maxSubscriptionContentBytes {
-		return nil, fmt.Errorf("content exceeds %d bytes", maxSubscriptionContentBytes)
-	}
-	if len(strings.TrimSpace(string(data))) == 0 {
-		return nil, errors.New("content is empty")
-	}
-	return data, nil
-}
-
-func writeSubscriptionProviderFile(path string, content []byte) error {
-	return writeFileAtomic(path, content, 0o600, ".provider-*.tmp")
-}
-
-func writeFileAtomic(path string, content []byte, mode os.FileMode, tempPattern string) error {
-	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return err
-	}
-	tmp, err := os.CreateTemp(filepath.Dir(path), tempPattern)
-	if err != nil {
-		return err
-	}
-	tmpPath := tmp.Name()
-	defer func() { _ = os.Remove(tmpPath) }()
-	if _, err := tmp.Write(content); err != nil {
-		_ = tmp.Close()
-		return err
-	}
-	if err := tmp.Close(); err != nil {
-		return err
-	}
-	if mode == 0 {
-		mode = 0o600
-	}
-	if err := os.Chmod(tmpPath, mode); err != nil {
-		return err
-	}
-	return os.Rename(tmpPath, path)
-}
-
-type nativeProviderFileSnapshot struct {
-	path   string
-	exists bool
-	data   []byte
-	mode   os.FileMode
-}
-
-type nativeProviderFileSnapshots struct {
-	files map[string]nativeProviderFileSnapshot
-}
-
-func newNativeProviderFileSnapshots() *nativeProviderFileSnapshots {
-	return &nativeProviderFileSnapshots{files: map[string]nativeProviderFileSnapshot{}}
-}
-
-func (s *nativeProviderFileSnapshots) hasSnapshots() bool {
-	return s != nil && len(s.files) > 0
-}
-
-func (s *nativeProviderFileSnapshots) snapshot(path string) error {
-	if s == nil {
-		return nil
-	}
-	path = strings.TrimSpace(path)
-	if path == "" {
-		return nil
-	}
-	path = filepath.Clean(path)
-	if _, exists := s.files[path]; exists {
-		return nil
-	}
-	info, err := os.Stat(path)
-	if errors.Is(err, os.ErrNotExist) {
-		s.files[path] = nativeProviderFileSnapshot{path: path}
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-	if !info.Mode().IsRegular() {
-		return fmt.Errorf("native provider path %q is not a regular file", filepath.Base(path))
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	s.files[path] = nativeProviderFileSnapshot{path: path, exists: true, data: data, mode: info.Mode().Perm()}
-	return nil
-}
-
-func (s *nativeProviderFileSnapshots) restore() error {
-	if s == nil {
-		return nil
-	}
-	restoreErrors := make([]error, 0)
-	for _, snapshot := range s.files {
-		if snapshot.exists {
-			if err := writeFileAtomic(snapshot.path, snapshot.data, snapshot.mode, ".provider-rollback-*.tmp"); err != nil {
-				restoreErrors = append(restoreErrors, fmt.Errorf("restore native provider file %q: %w", filepath.Base(snapshot.path), err))
-			}
-			continue
-		}
-		if err := os.Remove(snapshot.path); err != nil && !errors.Is(err, os.ErrNotExist) {
-			restoreErrors = append(restoreErrors, fmt.Errorf("remove staged native provider file %q: %w", filepath.Base(snapshot.path), err))
-		}
-	}
-	return errors.Join(restoreErrors...)
-}
-
-func regularFileExists(path string) bool {
-	info, err := os.Stat(path)
-	return err == nil && info.Mode().IsRegular()
-}
-
-func removeUnusedNativeProviderFiles(runtime *Runtime, existing map[string]string, used map[string]struct{}) {
-	providerDir := ""
-	if runtime != nil && strings.TrimSpace(runtime.cfg.Mihomo.ConfigDir) != "" {
-		providerDir = filepath.Join(runtime.cfg.Mihomo.ConfigDir, "providers")
-	}
-	for _, path := range existing {
-		path = strings.TrimSpace(path)
-		if path == "" {
-			continue
-		}
-		if _, ok := used[path]; ok {
-			continue
-		}
-		if providerDir == "" || !isPathWithin(path, providerDir) {
-			continue
-		}
-		_ = os.Remove(path)
-	}
-}
-
-func isPathWithin(path string, dir string) bool {
-	rel, err := filepath.Rel(dir, path)
-	if err != nil {
-		return false
-	}
-	return rel != "." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)) && rel != ".."
 }
 
 func mihomoNativeProxyFromURI(name string, rawURI string) (map[string]any, error) {
@@ -931,29 +806,6 @@ func addGRPCQuery(query url.Values, value any) {
 	if serviceName := jsonStringValue(opts["grpc-service-name"]); serviceName != "" {
 		query.Set("serviceName", serviceName)
 	}
-}
-
-func nativeConfigID(value string) string {
-	value = strings.ToLower(strings.TrimSpace(value))
-	var out strings.Builder
-	lastDash := false
-	for _, r := range value {
-		ok := r >= 'a' && r <= 'z' || r >= '0' && r <= '9'
-		if ok {
-			out.WriteRune(r)
-			lastDash = false
-			continue
-		}
-		if !lastDash {
-			out.WriteByte('-')
-			lastDash = true
-		}
-	}
-	id := strings.Trim(out.String(), "-")
-	if id == "" {
-		return "provider"
-	}
-	return id
 }
 
 func jsonStringValue(value any) string {

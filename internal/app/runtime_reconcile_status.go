@@ -40,6 +40,9 @@ func statusString(status dataplane.Status) string {
 	if !status.Running {
 		return firstNonEmpty(status.LastError, "stopped")
 	}
+	if status.DesiredConfigHash != "" && status.DesiredConfigHash != status.AppliedConfigHash {
+		return "running; config projection stale"
+	}
 	return "running"
 }
 

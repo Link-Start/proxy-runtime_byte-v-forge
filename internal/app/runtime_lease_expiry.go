@@ -23,6 +23,9 @@ func (r *Runtime) leaseExpiryLoop(ctx context.Context) {
 			if err := r.leaseCoordinator.expireDueLeaseFacts(ctx); err != nil {
 				r.logger.Warn("expire proxy leases failed", "error", err)
 			}
+			if err := r.leaseCoordinator.cleanupPendingLeaseFacts(ctx); err != nil {
+				r.logger.Warn("cleanup pending proxy leases failed", "error", err)
+			}
 		}
 	}
 }

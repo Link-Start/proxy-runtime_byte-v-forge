@@ -78,6 +78,9 @@ func leaseCleanupLabel(lease *proxyruntimev1.ProxyDynamicLease, key string) stri
 
 func (c leaseCoordinator) cleanupPendingLeaseFacts(ctx context.Context) error {
 	r := c.runtime
+	if r.store == nil {
+		return nil
+	}
 	leases, err := r.store.CleanupPendingLeaseFacts(ctx)
 	if err != nil {
 		r.logger.Warn("list proxy lease cleanup facts failed", "error", err)

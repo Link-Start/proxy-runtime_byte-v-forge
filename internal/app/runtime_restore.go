@@ -82,7 +82,7 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	if err != nil {
 		return err
 	}
-	dialerProxy, lineLabels, err := r.dynamicLeaseDialerProxy(settings, lease.GetAccountId())
+	dialerProxy, lineLabels, err := r.dynamicLeaseDialerProxy(ctx, settings, lease.GetAccountId())
 	if err != nil {
 		return err
 	}

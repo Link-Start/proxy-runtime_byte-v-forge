@@ -39,6 +39,7 @@ type Driver struct {
 	apiClient    *http.Client
 	configDir    string
 	configPath   string
+	desiredSig   string
 	signature    string
 	baseSig      string
 	baseCfg      dataplane.Config
@@ -149,6 +150,7 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 		return nil, err
 	}
 	finalSig := signature(finalData)
+	d.desiredSig = finalSig
 	if baseReloaded || finalSig != d.signature {
 		if err := d.reloadConfigDataLocked(ctx, configPath, finalData, endpoint); err != nil {
 			d.lastError = err.Error()

@@ -26,7 +26,13 @@ func (d *Driver) Stop() {
 func (d *Driver) Status() dataplane.Status {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	return dataplane.Status{Running: d.running, ConfigPath: d.configPath, LastError: d.lastError}
+	return dataplane.Status{
+		Running:           d.running,
+		ConfigPath:        d.configPath,
+		DesiredConfigHash: d.desiredSig,
+		AppliedConfigHash: d.signature,
+		LastError:         d.lastError,
+	}
 }
 
 func (d *Driver) ensureConfigDir() (string, error) {

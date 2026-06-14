@@ -1,6 +1,7 @@
 package app
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 
@@ -47,6 +48,22 @@ func dynamicIPSelectionAttempt(req *proxyruntimev1.AcquireProxyLeaseRequest) int
 		return 1
 	}
 	return attempt
+}
+
+func dynamicIPSelectionMaxAttempts(policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) int {
+	attempts := int(policy.GetMaxAttempts())
+	if attempts < 1 {
+		return 1
+	}
+	return attempts
+}
+
+func retryLeaseAcquireAttempt(err error) bool {
+	var appErr *appError
+	if !errors.As(err, &appErr) {
+		return false
+	}
+	return appErr.code == errCodeUnavailable || appErr.code == errCodeFailedPrecondition
 }
 
 func dynamicIPSelectionKey(req *proxyruntimev1.AcquireProxyLeaseRequest) string {

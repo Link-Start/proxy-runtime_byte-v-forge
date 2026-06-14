@@ -167,6 +167,9 @@ func (r *Runtime) runReconcile(ctx context.Context) error {
 func (r *Runtime) refresh(ctx context.Context) error {
 	r.refreshMu.Lock()
 	defer r.refreshMu.Unlock()
+	if err := r.projectMihomoNativeSettings(ctx); err != nil {
+		return err
+	}
 	nodes, err := r.provider.Fetch(ctx)
 	if err != nil && r.cfg.Provider != config.ProviderNone {
 		r.logger.Warn("base provider fetch failed", "error", err)

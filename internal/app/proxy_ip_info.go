@@ -47,7 +47,7 @@ func parseIPInfo(body []byte) proxyExitGeo {
 		}
 		return proxyExitGeo{
 			IP:          ip,
-			CountryCode: jsonString(payload, "country_code", "country", "loc"),
+			CountryCode: jsonString(payload, "country_code", "countryCode", "country", "loc"),
 			Region:      jsonString(payload, "region", "region_code", "region_name", "state"),
 			City:        jsonString(payload, "city"),
 		}

@@ -12,24 +12,43 @@ import (
 func (d *Driver) ReconcileBase(ctx context.Context, cfg dataplane.Config) ([]provider.Node, error) {
 	d.mu.Lock()
 	defer d.mu.Unlock()
+	previous := cloneDataPlaneConfig(d.baseCfg)
 	d.baseCfg = cloneDataPlaneConfig(cfg)
-	return d.reconcileLocked(ctx, sourceConfigFromDataPlane(d.baseCfg))
+	nodes, err := d.reconcileLocked(ctx, sourceConfigFromDataPlane(d.baseCfg))
+	if err != nil {
+		d.baseCfg = previous
+		return nil, err
+	}
+	return nodes, nil
 }
 
 func (d *Driver) UpsertSessionRoute(ctx context.Context, route dataplane.SessionRoute) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	key := sessionRouteKey(route)
+	previous, existed := d.sessions[key]
 	d.sessions[key] = cloneSessionRoute(route)
 	_, err := d.reconcileLocked(ctx, sourceConfigFromDataPlane(d.baseCfg))
+	if err != nil {
+		if existed {
+			d.sessions[key] = previous
+		} else {
+			delete(d.sessions, key)
+		}
+	}
 	return err
 }
 
 func (d *Driver) DeleteSessionRoute(ctx context.Context, route dataplane.SessionRoute) error {
 	d.mu.Lock()
 	defer d.mu.Unlock()
-	delete(d.sessions, sessionRouteKey(route))
+	key := sessionRouteKey(route)
+	previous, existed := d.sessions[key]
+	delete(d.sessions, key)
 	_, err := d.reconcileLocked(ctx, sourceConfigFromDataPlane(d.baseCfg))
+	if err != nil && existed {
+		d.sessions[key] = previous
+	}
 	return err
 }
 

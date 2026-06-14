@@ -8,50 +8,38 @@ import (
 )
 
 func renderMihomoNativeProfileTarget(opts renderOptions, profileID string, layer sourceplane.EgressProfileLayer) (renderedProfileLayer, error) {
-	resourceID := strings.TrimSpace(layer.ResourceID)
-	if resourceID == "" {
-		return renderedProfileLayer{}, fmt.Errorf("resource_id is required")
+	target, err := resolveMihomoNativeLayerTarget(opts.NativeConfig, layer)
+	if err != nil {
+		return renderedProfileLayer{}, err
 	}
-	resolved := resolveMihomoNativeResource(opts.NativeConfig, resourceID, layer.NodeID)
-	resourceName := firstNonEmpty(resolved.ResourceName, resourceID)
-	nodeName := firstNonEmpty(resolved.NodeName, mihomoNativeNodeName(resourceName, layer.NodeID), mihomoNativeNodeName(resourceID, layer.NodeID))
-	if nodeName == "" {
-		return renderedProfileLayer{}, fmt.Errorf("node_id is required")
+	if mihomoProxyAvailable(opts.AvailableProxies, target.NodeName) {
+		return renderedProfileLayer{target: target.NodeName}, nil
 	}
-	if mihomoProxyAvailable(opts.AvailableProxies, nodeName) {
-		return renderedProfileLayer{target: nodeName}, nil
-	}
-	if mihomoProviderAvailable(opts.AvailableProviders, resourceName) {
+	if mihomoProviderAvailable(opts.AvailableProviders, target.ResourceName) {
 		group := profileLayerGroup(profileLineGroupName(profileID), layer, "select")
-		group.Use = []string{resourceName}
-		group.Filter = exactNodeFilter(nodeName)
+		group.Use = []string{target.ResourceName}
+		group.Filter = exactNodeFilter(target.NodeName)
 		return renderedProfileLayer{group: group, target: group.Name}, nil
 	}
 	return renderedProfileLayer{target: "REJECT"}, nil
 }
 
 func renderMihomoNativeProfileLayer(opts renderOptions, groupName string, layer sourceplane.EgressProfileLayer, dialerProxy string) (renderedProfileLayer, error) {
-	resourceID := strings.TrimSpace(layer.ResourceID)
-	if resourceID == "" {
-		return renderedProfileLayer{}, fmt.Errorf("resource_id is required")
-	}
-	resolved := resolveMihomoNativeResource(opts.NativeConfig, resourceID, layer.NodeID)
-	resourceName := firstNonEmpty(resolved.ResourceName, resourceID)
-	nodeName := firstNonEmpty(resolved.NodeName, mihomoNativeNodeName(resourceName, layer.NodeID), mihomoNativeNodeName(resourceID, layer.NodeID))
-	if nodeName == "" {
-		return renderedProfileLayer{}, fmt.Errorf("node_id is required")
+	target, err := resolveMihomoNativeLayerTarget(opts.NativeConfig, layer)
+	if err != nil {
+		return renderedProfileLayer{}, err
 	}
 	if strings.TrimSpace(dialerProxy) != "" {
-		return renderedProfileLayer{}, fmt.Errorf("mihomo-native node %q cannot be cloned with dialer-proxy by proxy-runtime", nodeName)
+		return renderedProfileLayer{}, fmt.Errorf("mihomo-native node %q cannot be cloned with dialer-proxy by proxy-runtime", target.NodeName)
 	}
 	group := profileLayerGroup(groupName, layer, "select")
-	if mihomoProxyAvailable(opts.AvailableProxies, nodeName) {
-		group.Proxies = []string{nodeName}
+	if mihomoProxyAvailable(opts.AvailableProxies, target.NodeName) {
+		group.Proxies = []string{target.NodeName}
 		return renderedProfileLayer{group: group}, nil
 	}
-	if mihomoProviderAvailable(opts.AvailableProviders, resourceName) {
-		group.Use = []string{resourceName}
-		group.Filter = exactNodeFilter(nodeName)
+	if mihomoProviderAvailable(opts.AvailableProviders, target.ResourceName) {
+		group.Use = []string{target.ResourceName}
+		group.Filter = exactNodeFilter(target.NodeName)
 		return renderedProfileLayer{group: group}, nil
 	}
 	group.Proxies = []string{"REJECT"}

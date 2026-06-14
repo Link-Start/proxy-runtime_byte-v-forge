@@ -37,6 +37,15 @@ func (NoopProviderAccountConcurrencySlot) Release(context.Context) error {
 	return nil
 }
 
+func ReleaseProviderAccountConcurrencySlot(ctx context.Context, limiter ProviderAccountConcurrencyLimiter, accountID string, policy *proxyruntimev1.ProxySessionPolicy, holder string) error {
+	accountID = strings.TrimSpace(accountID)
+	holder = strings.TrimSpace(holder)
+	if accountID == "" || holder == "" || limiter == nil {
+		return nil
+	}
+	return limiter.Release(ctx, accountID, policy, holder)
+}
+
 func ReleaseConcurrencySlotUnlessKept(ctx context.Context, slot ProviderAccountConcurrencySlot, keep bool) error {
 	if keep || slot == nil {
 		return nil

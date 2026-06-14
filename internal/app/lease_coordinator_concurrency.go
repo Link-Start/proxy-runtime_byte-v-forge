@@ -12,12 +12,7 @@ func (c leaseCoordinator) releaseLeaseConcurrencySlot(ctx context.Context, lease
 	if lease == nil {
 		return nil
 	}
-	accountID := strings.TrimSpace(lease.GetProviderAccountId())
-	holder := strings.TrimSpace(leaseapp.ConcurrencyHolder(lease))
-	if accountID == "" || holder == "" || c.deps.providerConcurrency == nil {
-		return nil
-	}
-	return c.deps.providerConcurrency.Release(ctx, accountID, leaseapp.ConcurrencyPolicy(lease), holder)
+	return leaseapp.ReleaseProviderAccountConcurrencySlot(ctx, c.deps.providerConcurrency, lease.GetProviderAccountId(), leaseapp.ConcurrencyPolicy(lease), leaseapp.ConcurrencyHolder(lease))
 }
 
 func (c leaseCoordinator) refreshLeaseConcurrencySlot(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {

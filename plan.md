@@ -817,6 +817,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease advertised-host resolution now lives in `internal/app/lease`; runtime only passes configured/request host values.
 - Listener projection and playground replacement checks now reuse lease-owned proxy username/password and dynamic-listener mode constants instead of raw label strings.
 - Provider-account concurrency slot acquisition now uses a lease-owned helper directly; the app-level acquire wrapper was removed.
+- Provider-account concurrency slot release now uses a lease-owned helper, centralizing empty-holder and missing-limiter handling.
 
 Still open:
 

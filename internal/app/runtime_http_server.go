@@ -88,7 +88,6 @@ func (api *runtimeHTTPAPI) registerPublicHTTPRoutes(router *gin.Engine) {
 	router.GET("/readyz", api.handleReady)
 	router.GET("/login", api.handleAuthLoginPage)
 	router.GET("/api/auth/session", api.handleAuthSession)
-	router.GET("/api/auth/ws-token", api.handleAuthWebSocketToken)
 	router.POST("/api/auth/login", api.handleAuthLogin)
 	router.POST("/api/auth/logout", api.handleAuthLogout)
 	router.GET("/", api.handleDashboardEntry)

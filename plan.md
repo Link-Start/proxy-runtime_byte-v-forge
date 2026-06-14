@@ -884,6 +884,7 @@ Completed user-visible/runtime batches:
 - Failed-acquire route/provider cleanup-pending labeling now lives in `internal/app/lease`; the app failure helper only logs provider cleanup failures and persists the failed fact.
 - Provider session create-versus-fetch failure classification now lives in `internal/app/lease`; app-level acquire maps classified outcomes to transport errors and compensation.
 - Dynamic selection provider-account and dynamic-provider identifiers are now read through lease-owned helpers instead of app-level selected-endpoint field traversal.
+- Failed-acquire compensation and failed fact persistence are now owned by a lease `FailedAcquireRecorder`; app wiring only constructs the recorder and passes route/application context.
 
 Still open:
 

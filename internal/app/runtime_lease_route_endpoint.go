@@ -20,20 +20,20 @@ type acquiredLeaseEndpointInput struct {
 	lineLabels        map[string]string
 }
 
-func (c leaseCoordinator) acquiredLeaseEndpoint(ctx context.Context, input acquiredLeaseEndpointInput, failure *leaseAcquireFailure) (leaseapp.Listener, *proxyruntimev1.EgressListener, *proxyruntimev1.ProxyEndpoint, error) {
+func (c leaseCoordinator) acquiredLeaseEndpoint(ctx context.Context, input acquiredLeaseEndpointInput, failure *leaseapp.FailedAcquireRecorder) (leaseapp.Listener, *proxyruntimev1.EgressListener, *proxyruntimev1.ProxyEndpoint, error) {
 	listener, err := c.deps.leaseListener(ctx, input.settings, input.req.GetAccountId(), input.leaseID)
 	if err != nil {
-		failure.beforeRoute("lease listener allocation failed")
+		failure.BeforeRoute(ctx, "lease listener allocation failed")
 		return leaseapp.Listener{}, nil, nil, err
 	}
 	listenerProto := leaseapp.EgressListenerProto(listener, true, "http")
-	failure.listener = listenerProto
+	failure.SetListener(listenerProto)
 	egress, err := c.deps.localListenerEndpoint(listener, c.deps.sessionAdvertisedHost(input.advertisedHost, listener))
 	if err != nil {
-		failure.beforeRoute("lease endpoint build failed")
+		failure.BeforeRoute(ctx, "lease endpoint build failed")
 		return leaseapp.Listener{}, nil, nil, err
 	}
-	failure.egress = egress
+	failure.SetEgress(egress)
 	applyAcquiredLeaseEndpointMetadata(egress, input)
 	return listener, listenerProto, egress, nil
 }

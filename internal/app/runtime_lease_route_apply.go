@@ -8,7 +8,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
-func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile, selection dynamicIPSelection, providerAccountID string, leaseID string, concurrencyHolder string, providerClient leaseapp.SessionProvider, session *proxyruntimev1.ProxySession, nodes []provider.Node, dialerProxy string, lineLabels map[string]string, failure *leaseAcquireFailure) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile, selection dynamicIPSelection, providerAccountID string, leaseID string, concurrencyHolder string, providerClient leaseapp.SessionProvider, session *proxyruntimev1.ProxySession, nodes []provider.Node, dialerProxy string, lineLabels map[string]string, failure *leaseapp.FailedAcquireRecorder) (*proxyruntimev1.ProxyDynamicLease, error) {
 	input := acquiredLeaseEndpointInput{
 		advertisedHost:    advertisedHost,
 		req:               req,
@@ -41,7 +41,7 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertise
 		AcquiredAt:        c.now(),
 	})
 	if err != nil {
-		failure.afterRoute(route, "lease fact save failed")
+		failure.AfterRoute(ctx, route, "lease fact save failed")
 		return nil, internalError("lease fact save failed", err)
 	}
 	c.clearExitCheckCache()

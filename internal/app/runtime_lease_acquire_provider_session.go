@@ -21,14 +21,14 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 	case leaseapp.ProviderSessionCreateError:
 		return nil, unavailable("provider session create failed", err)
 	case leaseapp.ProviderSessionFetchError:
-		failure := newLeaseAcquireFailure(c, ctx, req, providerAccountID, providerClient, session, selection.plan)
-		failure.beforeRoute("provider session fetch failed")
+		failure := c.newFailedAcquireRecorder(req, providerAccountID, providerClient, session, selection.plan)
+		failure.BeforeRoute(ctx, "provider session fetch failed")
 		return nil, unavailable("provider session fetch failed", err)
 	}
-	failure := newLeaseAcquireFailure(c, ctx, req, providerAccountID, providerClient, session, selection.plan)
+	failure := c.newFailedAcquireRecorder(req, providerAccountID, providerClient, session, selection.plan)
 	dialerProxy, lineLabels, err := c.deps.dynamicLeaseDialerProxy(ctx, settings, req.GetAccountId())
 	if err != nil {
-		failure.beforeRoute("lease line resolution failed")
+		failure.BeforeRoute(ctx, "lease line resolution failed")
 		return nil, err
 	}
 	nodes = leaseapp.ApplyNodeLabels(nodes, lineLabels)

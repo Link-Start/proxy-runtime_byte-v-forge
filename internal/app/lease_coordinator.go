@@ -43,6 +43,12 @@ type leaseDataPlaneApplier interface {
 	DeleteSessionRoute(context.Context, dataplane.SessionRoute) error
 }
 
+type leaseLockManager interface {
+	WithAccountLock(context.Context, string, leaseRuntimeLockFunc) error
+	WithProviderAccountLock(context.Context, string, leaseRuntimeLockFunc) error
+	WithSessionListenerAllocationLock(context.Context, leaseRuntimeLockFunc) error
+}
+
 type leaseRegistrySessionProviderFactory struct {
 	registry *providerregistry.Registry
 	client   *http.Client
@@ -66,7 +72,7 @@ type leaseCoordinatorDependencies struct {
 	store                   leaseCoordinatorStore
 	settings                leaseCoordinatorSettings
 	clock                   leaseapp.Clock
-	locks                   leaseRuntimeLocks
+	locks                   leaseLockManager
 	dataPlane               leaseDataPlaneApplier
 	dynamicIPSelector       *dynamicIPSelector
 	sessionProviders        leaseSessionProviderFactory

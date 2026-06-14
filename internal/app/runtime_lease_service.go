@@ -30,7 +30,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 		return nil, leaseProfilePolicyError(err)
 	}
 	requestedSessionID := leaseapp.RequestedSessionID(req)
-	existing, err := c.activeLeaseByRequest(ctx, req, requestedSessionID)
+	existing, err := leaseapp.ActiveLeaseByRequest(ctx, c.deps.store, req, requestedSessionID)
 	if err == nil {
 		switch leaseapp.DecideExistingActiveLease(req, existing, c.now().UTC(), playgroundProfileID, playgroundUsername) {
 		case leaseapp.ExistingActiveLeaseReuse:

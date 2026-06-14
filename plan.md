@@ -873,6 +873,7 @@ Completed user-visible/runtime batches:
 - Dynamic IP selection policy normalization, attempt parsing, max-attempt resolution, and selection keys now live in `internal/app/lease`; app-level lease acquire retains only retry error classification.
 - Existing active-lease reuse/replace branching is now a single lease-owned decision enum; acquire orchestration only executes refresh or retire side effects.
 - Acquire request session-policy normalization, request label application, profile dynamic-IP policy merge, and selection policy derivation are now one lease-owned preparation helper.
+- Acquire active-lease lookup by requested session or account now lives in `internal/app/lease`; the coordinator passes the store port instead of owning lookup branching.
 
 Still open:
 

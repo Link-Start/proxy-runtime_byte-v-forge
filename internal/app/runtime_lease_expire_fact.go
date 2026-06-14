@@ -9,17 +9,16 @@ import (
 
 func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
 	return leaseapp.ExpireLease(ctx, leaseapp.ExpireLeaseInput{
-		Store:         c.deps.store,
-		Limiter:       c.deps.providerConcurrency,
-		Locks:         c.deps.locks,
-		DataPlane:     c.deps.dataPlane,
-		LocalProtocol: c.deps.cfg.LocalProtocol,
-		Lease:         lease,
-		IsNotFound:    isStoreNotFound,
-		Now:           c.now().UTC(),
-		ReleaseProvider: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-			return c.releaseLeaseProviderSession(ctx, lease)
-		},
+		Store:                             c.deps.store,
+		Limiter:                           c.deps.providerConcurrency,
+		Locks:                             c.deps.locks,
+		DataPlane:                         c.deps.dataPlane,
+		Factory:                           c.deps.sessionProviders,
+		LocalProtocol:                     c.deps.cfg.LocalProtocol,
+		Lease:                             lease,
+		IsNotFound:                        isStoreNotFound,
+		Now:                               c.now().UTC(),
+		ResolveGateways:                   c.providerSessionGatewaysResolver(lease),
 		ObserveFinalConcurrencyReleaseErr: c.warnFinalConcurrencyReleaseFailed,
 	})
 }

@@ -13,11 +13,12 @@ type ExpireLeaseInput struct {
 	Limiter                           ProviderAccountConcurrencyLimiter
 	Locks                             LockManager
 	DataPlane                         DataPlaneApplier
+	Factory                           SessionProviderFactory
 	LocalProtocol                     string
 	Lease                             *proxyruntimev1.ProxyDynamicLease
 	IsNotFound                        StoreNotFoundFunc
 	Now                               time.Time
-	ReleaseProvider                   ProviderSessionReleaseAction
+	ResolveGateways                   ProviderSessionGatewaysResolver
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
 }
 
@@ -58,17 +59,17 @@ func expireLeaseRoute(ctx context.Context, input ExpireLeaseInput, lease *proxyr
 }
 
 func expireLeaseProviderSession(ctx context.Context, input ExpireLeaseInput, lease *proxyruntimev1.ProxyDynamicLease) error {
-	releaseProvider := func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-		if input.ReleaseProvider == nil {
-			return nil
-		}
-		if releaseErr := input.ReleaseProvider(ctx, lease); releaseErr != nil {
-			_ = SaveExpiredCleanupFailure(ctx, input.Store, lease, false, true, "expired provider session cleanup failed")
-			return releaseErr
-		}
-		return nil
-	}
-	if err := ReleaseLeaseProviderSessionWithLock(ctx, input.Locks, lease, releaseProvider); err != nil {
+	err := ReleaseLeaseProviderSessionWithLock(ctx, input.Locks, ProviderSessionReleaseInput{
+		Store:           input.Store,
+		Factory:         input.Factory,
+		Lease:           lease,
+		ResolveGateways: input.ResolveGateways,
+		RecordFailure: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, err error) error {
+			_ = err
+			return SaveExpiredCleanupFailure(ctx, input.Store, lease, false, true, "expired provider session cleanup failed")
+		},
+	})
+	if err != nil {
 		_ = SaveExpiredCleanupFailure(ctx, input.Store, lease, false, true, "expired provider session cleanup lock failed")
 		return err
 	}

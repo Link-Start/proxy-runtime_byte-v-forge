@@ -15,7 +15,10 @@ type ProviderSessionReleaseInput struct {
 	Factory         SessionProviderFactory
 	Lease           *proxyruntimev1.ProxyDynamicLease
 	ResolveGateways ProviderSessionGatewaysResolver
+	RecordFailure   ProviderSessionReleaseFailureRecorder
 }
+
+type ProviderSessionReleaseFailureRecorder func(context.Context, *proxyruntimev1.ProxyDynamicLease, error) error
 
 func ReleaseLeaseProviderSession(ctx context.Context, input ProviderSessionReleaseInput) error {
 	if !NeedsProviderSessionRelease(input.Lease) {
@@ -46,13 +49,12 @@ func NeedsProviderSessionRelease(lease *proxyruntimev1.ProxyDynamicLease) bool {
 	return !StatelessProviderSession(lease.GetSession())
 }
 
-type ProviderSessionReleaseAction func(context.Context, *proxyruntimev1.ProxyDynamicLease) error
-
-func ReleaseLeaseProviderSessionWithLock(ctx context.Context, locks LockManager, lease *proxyruntimev1.ProxyDynamicLease, release ProviderSessionReleaseAction) error {
-	if release == nil {
-		return nil
-	}
-	return WithProviderAccountLock(ctx, locks, lease.GetProviderAccountId(), func(ctx context.Context) error {
-		return release(ctx, lease)
+func ReleaseLeaseProviderSessionWithLock(ctx context.Context, locks LockManager, input ProviderSessionReleaseInput) error {
+	return WithProviderAccountLock(ctx, locks, input.Lease.GetProviderAccountId(), func(ctx context.Context) error {
+		err := ReleaseLeaseProviderSession(ctx, input)
+		if err != nil && input.RecordFailure != nil {
+			_ = input.RecordFailure(ctx, input.Lease, err)
+		}
+		return err
 	})
 }

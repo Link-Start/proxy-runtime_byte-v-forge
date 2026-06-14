@@ -14,9 +14,10 @@ type RetireLeaseRouteInput struct {
 	Limiter                           ProviderAccountConcurrencyLimiter
 	Locks                             LockManager
 	DataPlane                         DataPlaneApplier
+	Factory                           SessionProviderFactory
 	LocalProtocol                     string
 	Lease                             *proxyruntimev1.ProxyDynamicLease
-	ReleaseProvider                   ProviderSessionReleaseAction
+	ResolveGateways                   ProviderSessionGatewaysResolver
 	AfterRouteCleanup                 LeaseObserver
 	ObserveProviderReleaseFailure     LeaseObserver
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
@@ -37,7 +38,12 @@ func RetireLeaseRoute(ctx context.Context, input RetireLeaseRouteInput) error {
 		return err
 	}
 	observeLease(ctx, input.AfterRouteCleanup, input.Lease)
-	releaseErr := ReleaseLeaseProviderSessionWithLock(ctx, input.Locks, input.Lease, input.ReleaseProvider)
+	releaseErr := ReleaseLeaseProviderSessionWithLock(ctx, input.Locks, ProviderSessionReleaseInput{
+		Store:           input.Store,
+		Factory:         input.Factory,
+		Lease:           input.Lease,
+		ResolveGateways: input.ResolveGateways,
+	})
 	if releaseErr != nil {
 		observeLease(ctx, input.ObserveProviderReleaseFailure, input.Lease)
 		if err := SaveReleaseCleanupFailure(ctx, input.Store, input.Lease, false, true, "provider session release failed"); err != nil {

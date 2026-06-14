@@ -12,10 +12,11 @@ type CleanupPendingLeaseInput struct {
 	Limiter                           ProviderAccountConcurrencyLimiter
 	Locks                             LockManager
 	DataPlane                         DataPlaneApplier
+	Factory                           SessionProviderFactory
 	LocalProtocol                     string
 	Lease                             *proxyruntimev1.ProxyDynamicLease
 	IsNotFound                        StoreNotFoundFunc
-	ReleaseProvider                   ProviderSessionReleaseAction
+	ResolveGateways                   ProviderSessionGatewaysResolver
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
 }
 
@@ -62,17 +63,20 @@ func cleanupPendingLeaseRoute(ctx context.Context, input CleanupPendingLeaseInpu
 }
 
 func cleanupPendingProviderSession(ctx context.Context, input CleanupPendingLeaseInput, lease *proxyruntimev1.ProxyDynamicLease) error {
-	releaseProvider := func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-		if input.ReleaseProvider == nil {
-			return nil
-		}
-		if releaseErr := input.ReleaseProvider(ctx, lease); releaseErr != nil {
-			_ = SaveCleanupRetry(ctx, input.Store, lease, "provider session cleanup failed")
-			return releaseErr
-		}
-		return nil
+	err := ReleaseLeaseProviderSessionWithLock(ctx, input.Locks, ProviderSessionReleaseInput{
+		Store:           input.Store,
+		Factory:         input.Factory,
+		Lease:           lease,
+		ResolveGateways: input.ResolveGateways,
+		RecordFailure: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, err error) error {
+			_ = err
+			return SaveCleanupRetry(ctx, input.Store, lease, "provider session cleanup failed")
+		},
+	})
+	if err != nil {
+		return err
 	}
-	return ReleaseLeaseProviderSessionWithLock(ctx, input.Locks, lease, releaseProvider)
+	return nil
 }
 
 func saveCleanupProgressState(ctx context.Context, input CleanupPendingLeaseInput, lease *proxyruntimev1.ProxyDynamicLease) error {

@@ -869,6 +869,7 @@ Completed user-visible/runtime batches:
 - Active lease fact construction and persistence now live in `internal/app/lease`; route apply orchestration keeps only endpoint/dataplane apply and failure compensation.
 - Provider session create+fetch sequencing now lives in `internal/app/lease`; acquire orchestration only maps create/fetch errors and performs failure compensation.
 - Failed-acquire cleanup-pending session label mutation now lives in `internal/app/lease`; failure compensation no longer constructs temporary lease facts in app code.
+- Dynamic lease Mihomo line dialer helpers now separate profile label/error construction, native fixed/subscription lookup, and Mihomo node naming helpers.
 
 Still open:
 

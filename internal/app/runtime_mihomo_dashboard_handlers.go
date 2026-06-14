@@ -65,13 +65,14 @@ let endpoints = [];
 try {
   const parsed = JSON.parse(window.localStorage.getItem('endpointList') || '[]');
   if (Array.isArray(parsed)) {
-    const existing = parsed.find((item) => item && item.id === endpoint.id);
+    const existing = parsed.find((item) => item && (item.id === endpoint.id || item.url === endpoint.url));
     if (existing && typeof existing.secret === 'string') {
       endpoint.secret = existing.secret;
     }
     endpoints = parsed.filter((item) => item && item.id !== endpoint.id && item.url !== endpoint.url);
   }
 } catch (_) {}
+window.localStorage.setItem('proxyRuntimeControlAuthRequired', config.authRequired ? 'true' : 'false');
 window.localStorage.setItem('endpointList', JSON.stringify([endpoint, ...endpoints]));
 if (endpoint.secret || !config.authRequired) {
   window.localStorage.setItem('selectedEndpoint', endpoint.id);
@@ -102,6 +103,7 @@ func (api *runtimeHTTPAPI) mihomoReverseProxy(mountPrefix string, upstreamPrefix
 			out.Host = target.Host
 			out.Header.Set("X-Forwarded-Host", ctx.Request.Host)
 			out.Header.Set("X-Forwarded-Proto", forwardedProto(ctx.Request))
+			api.forwardMihomoControllerAuthorization(out, ctx.Request)
 		}
 		proxy.ErrorHandler = func(w http.ResponseWriter, _ *http.Request, err error) {
 			writeHTTPError(w, err, http.StatusBadGateway)

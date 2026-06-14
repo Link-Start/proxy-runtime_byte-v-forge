@@ -2,6 +2,11 @@ import type {
   GetProxyRuntimeMihomoNativeConfigResponse,
   ProxyRuntimeMihomoNativeConfig,
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import {
+  isUnauthorizedStatus,
+  proxyRuntimeAuthHeaders,
+  redirectToProxyRuntimeSetup,
+} from '~/composables/proxyRuntimeEndpointAuth'
 
 const mihomoControllerBase = '/mihomo/controller'
 const proxyRuntimeBase = '/api'
@@ -75,8 +80,13 @@ async function getMihomoNativeConfig(): Promise<ProxyRuntimeMihomoNativeConfig> 
 }
 
 async function mihomoControllerRequest<T>(path: string): Promise<T> {
-  const response = await fetch(`${mihomoControllerBase}${path}`)
+  const response = await fetch(`${mihomoControllerBase}${path}`, {
+    headers: proxyRuntimeAuthHeaders(),
+  })
   if (!response.ok) {
+    if (isUnauthorizedStatus(response.status)) {
+      redirectToProxyRuntimeSetup()
+    }
     let message = `${response.status} ${response.statusText}`
     try {
       const body = await response.json()
@@ -91,8 +101,13 @@ async function mihomoControllerRequest<T>(path: string): Promise<T> {
 }
 
 async function proxyRuntimeRequest<T>(path: string): Promise<T> {
-  const response = await fetch(`${proxyRuntimeBase}${path}`)
+  const response = await fetch(`${proxyRuntimeBase}${path}`, {
+    headers: proxyRuntimeAuthHeaders(),
+  })
   if (!response.ok) {
+    if (isUnauthorizedStatus(response.status)) {
+      redirectToProxyRuntimeSetup()
+    }
     let message = `${response.status} ${response.statusText}`
     try {
       const body = await response.json()

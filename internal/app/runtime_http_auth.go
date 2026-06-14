@@ -19,8 +19,7 @@ func (api *runtimeHTTPAPI) authorize(ctx *gin.Context) bool {
 	if expected == "" {
 		return true
 	}
-	actual := bearerToken(ctx.Request)
-	if subtle.ConstantTimeCompare([]byte(actual), []byte(expected)) == 1 {
+	if authenticatedRequest(ctx.Request, expected) {
 		return true
 	}
 	ctx.Header("WWW-Authenticate", "Bearer")
@@ -45,6 +44,49 @@ func bearerToken(req *http.Request) string {
 		return ""
 	}
 	return strings.TrimSpace(value[len(bearerPrefix):])
+}
+
+func authenticatedRequest(req *http.Request, expected string) bool {
+	if authTokenMatches(bearerToken(req), expected) {
+		return true
+	}
+	if req == nil || req.URL == nil || !pathInPrefix(req.URL.Path, "/mihomo/controller") {
+		return false
+	}
+	return authTokenMatches(mihomoControllerQueryToken(req), expected)
+}
+
+func authTokenMatches(actual string, expected string) bool {
+	actual = strings.TrimSpace(actual)
+	expected = strings.TrimSpace(expected)
+	if actual == "" || expected == "" {
+		return false
+	}
+	return subtle.ConstantTimeCompare([]byte(actual), []byte(expected)) == 1
+}
+
+func mihomoControllerQueryToken(req *http.Request) string {
+	if req == nil || req.URL == nil {
+		return ""
+	}
+	return strings.TrimSpace(req.URL.Query().Get("token"))
+}
+
+func (api *runtimeHTTPAPI) forwardMihomoControllerAuthorization(out *http.Request, in *http.Request) {
+	if out == nil || in == nil || out.Header.Get("Authorization") != "" {
+		return
+	}
+	if in.URL == nil {
+		return
+	}
+	if !pathInPrefix(in.URL.Path, "/mihomo/controller") {
+		return
+	}
+	token := mihomoControllerQueryToken(in)
+	if !authTokenMatches(token, api.authToken) {
+		return
+	}
+	out.Header.Set("Authorization", "Bearer "+strings.TrimSpace(token))
 }
 
 func pathInPrefix(requestPath string, prefix string) bool {

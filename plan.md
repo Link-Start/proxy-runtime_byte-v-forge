@@ -804,6 +804,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease route application now uses a lease-owned session-route port, with runtime-only dataplane conversion isolated in a wiring adapter and acquired-lease endpoint/dataplane helpers split from persistence orchestration.
 - Active lease restore now separates input loading, concurrency-slot reservation, provider session refetch, and dataplane route replay into focused helpers.
 - Dynamic lease listener and endpoint flow now uses a lease-owned listener model; runtime-specific config listener conversion is confined to adapter/projection helpers.
+- Dynamic lease endpoint metadata and label writing are centralized in `internal/app/lease`, keeping acquired-route helpers from editing raw label keys directly.
 
 Still open:
 

@@ -921,6 +921,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease listener username/password resolution now lives in `internal/app/lease`; Runtime only supplies listener constants, ingress rules, and playground identifiers.
 - Acquired lease route apply now runs through `internal/app/lease`, combining dataplane upsert, failure compensation, and active fact persistence behind a stage-aware result.
 - Release lock-window refresh and route-retire invocation now live in `internal/app/lease`; the coordinator supplies only the concrete retire side effect.
+- Lease final released/expired state persistence now uses a lease-owned staged helper that also releases provider-account concurrency slots.
 
 Still open:
 

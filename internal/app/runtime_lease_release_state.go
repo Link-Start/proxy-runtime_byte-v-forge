@@ -20,21 +20,21 @@ func (c leaseCoordinator) saveLeaseExpiredCleanupFailure(ctx context.Context, le
 }
 
 func (c leaseCoordinator) saveLeaseExpired(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	if err := leaseapp.SaveExpired(ctx, c.deps.store, lease); err != nil {
-		return err
-	}
-	if err := leaseapp.ReleaseLeaseConcurrencySlot(ctx, c.deps.providerConcurrency, lease); err != nil {
-		c.warn("release provider account concurrency slot failed", "lease_id", lease.GetLeaseId(), "provider_account_id", lease.GetProviderAccountId())
-	}
-	return nil
+	return c.saveFinalLeaseState(ctx, lease, leaseapp.FinalLeaseStateExpired)
 }
 
 func (c leaseCoordinator) saveLeaseReleased(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	if err := leaseapp.SaveReleased(ctx, c.deps.store, lease); err != nil {
-		return err
+	return c.saveFinalLeaseState(ctx, lease, leaseapp.FinalLeaseStateReleased)
+}
+
+func (c leaseCoordinator) saveFinalLeaseState(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, state leaseapp.FinalLeaseState) error {
+	stage, err := leaseapp.SaveFinalLeaseState(ctx, c.deps.store, c.deps.providerConcurrency, lease, state)
+	if err == nil {
+		return nil
 	}
-	if err := leaseapp.ReleaseLeaseConcurrencySlot(ctx, c.deps.providerConcurrency, lease); err != nil {
+	if stage == leaseapp.FinalLeaseSaveConcurrencyRelease {
 		c.warn("release provider account concurrency slot failed", "lease_id", lease.GetLeaseId(), "provider_account_id", lease.GetProviderAccountId())
+		return nil
 	}
-	return nil
+	return err
 }

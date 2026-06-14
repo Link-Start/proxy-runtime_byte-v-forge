@@ -916,6 +916,7 @@ Completed user-visible/runtime batches:
 - Lease worker entrypoints now emit structured operation, duration, and lease identity logs for restore, expiry, cleanup-pending, and single-lease cleanup paths.
 - Dynamic lease acquire attempt retry loops now live in `internal/app/lease`; the coordinator supplies only the concrete attempt action, retry classifier, and warning observer.
 - Existing-active lease lookup, reuse, and replacement decisions now run through `internal/app/lease`; the coordinator only supplies route/slot side-effect callbacks.
+- Dynamic lease route line binding now lives in `internal/app/lease`, so acquire and restore share dialer-proxy plus node-label preparation.
 
 Still open:
 

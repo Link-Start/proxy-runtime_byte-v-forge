@@ -26,12 +26,13 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 		return nil, unavailable("provider session fetch failed", err)
 	}
 	failure := c.newFailedAcquireRecorder(req, providerAccountID, providerClient, session, selection.plan)
-	dialerProxy, lineLabels, err := c.deps.dynamicLeaseDialerProxy(ctx, settings, req.GetAccountId())
+	lineBinding, err := leaseapp.PrepareRouteLineBinding(ctx, nodes, req.GetAccountId(), func(ctx context.Context, accountID string) (string, map[string]string, error) {
+		return c.deps.dynamicLeaseDialerProxy(ctx, settings, accountID)
+	})
 	if err != nil {
 		failure.BeforeRoute(ctx, "lease line resolution failed")
 		return nil, err
 	}
-	nodes = leaseapp.ApplyNodeLabels(nodes, lineLabels)
 	var lease *proxyruntimev1.ProxyDynamicLease
 	err = leaseapp.WithSessionListenerAllocationLock(ctx, c.deps.locks, func(ctx context.Context) error {
 		var err error
@@ -45,9 +46,9 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 			concurrencyHolder: concurrencyHolder,
 			providerClient:    providerClient,
 			session:           session,
-			nodes:             nodes,
-			dialerProxy:       dialerProxy,
-			lineLabels:        lineLabels,
+			nodes:             lineBinding.Nodes,
+			dialerProxy:       lineBinding.DialerProxy,
+			lineLabels:        lineBinding.Labels,
 			failure:           failure,
 		})
 		return err

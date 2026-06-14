@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -43,7 +42,7 @@ func applyDynamicIPEndpointHealthScores(candidates []scoredDynamicIPEndpointCand
 func dynamicIPEndpointHealthScoresFromLeases(leases []*proxyruntimev1.ProxyDynamicLease) map[string]int {
 	stats := map[string]dynamicIPEndpointHealth{}
 	for _, lease := range leases {
-		endpointID := leaseEndpointID(lease)
+		endpointID := leaseapp.EndpointID(lease)
 		if endpointID == "" {
 			continue
 		}
@@ -61,15 +60,4 @@ func dynamicIPEndpointHealthScoresFromLeases(leases []*proxyruntimev1.ProxyDynam
 		out[endpointID] = min(stat.success*20, 120) - min(stat.failure*150, 450)
 	}
 	return out
-}
-
-func leaseEndpointID(lease *proxyruntimev1.ProxyDynamicLease) string {
-	if lease == nil {
-		return ""
-	}
-	return strings.TrimSpace(firstNonEmpty(
-		lease.GetSelectionPlan().GetSelectedEndpoint().GetEndpointId(),
-		lease.GetEgress().GetLabels()["dynamic_ip_endpoint_id"],
-		lease.GetSession().GetPolicy().GetLabels()["dynamic_ip_endpoint_id"],
-	))
 }

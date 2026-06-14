@@ -726,6 +726,7 @@ Completed user-visible/runtime batches:
 - Lease orchestration store, provider-session factory, data-plane applier, and lock-manager ports are now defined in `internal/app/lease`; the app layer only adapts runtime registry and lock implementations to those ports.
 - Provider-session release and stateless-session detection are centralized in `internal/app/lease`, keeping provider session cleanup semantics out of app-level acquire/release failure handling.
 - Lease concurrency mode/text and slot TTL calculation are centralized in `internal/app/lease`; provider-account concurrency adapters now use lease policy interpretation from the lease package.
+- Dynamic lease endpoint-id extraction is centralized in `internal/app/lease`; dynamic IP endpoint health scoring no longer reads selection/egress/session labels directly.
 
 Still open:
 

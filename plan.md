@@ -854,6 +854,7 @@ Completed user-visible/runtime batches:
 - Postgres dynamic lease persistence is split into save, list/blocking/cleanup, lookup, and scan helpers so store responsibilities are no longer concentrated in one large file.
 - SQLite dynamic lease persistence is split into save, list/blocking/cleanup, lookup, and scan helpers to mirror the Postgres store boundary.
 - SQLite blocking and cleanup-pending lease list methods now return SQL-filtered rows directly, removing duplicated Go-layer cleanup/active predicates from the adapter.
+- Obsolete dynamic lease Go-layer filter/sort helpers were removed after both stores moved blocking and cleanup predicates into SQL.
 
 Still open:
 

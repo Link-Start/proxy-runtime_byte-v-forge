@@ -24,29 +24,24 @@ func newLeaseAcquireFailure(coordinator leaseCoordinator, ctx context.Context, r
 }
 
 func (f *leaseAcquireFailure) beforeRoute(message string) {
-	if f.cleanupProviderSession() {
-		f.markCleanupPending(false, true)
-	}
+	f.warnProviderCleanup(leaseapp.MarkFailedAcquireBeforeRouteCleanup(f.ctx, f.providerClient, f.session))
 	f.save(message)
 }
 
 func (f *leaseAcquireFailure) afterRoute(route leaseapp.SessionRoute, message string) {
-	routeCleanupPending := leaseapp.DeleteSessionRoute(f.ctx, f.coordinator.deps.dataPlane, route) != nil
-	providerCleanupPending := f.cleanupProviderSession()
-	f.markCleanupPending(routeCleanupPending, providerCleanupPending)
+	f.warnProviderCleanup(leaseapp.MarkFailedAcquireAfterRouteCleanup(f.ctx, f.coordinator.deps.dataPlane, route, f.providerClient, f.session))
 	f.save(message)
 }
 
-func (f *leaseAcquireFailure) cleanupProviderSession() bool {
-	if err := leaseapp.ReleaseProviderSession(f.ctx, f.providerClient, f.session); err != nil {
-		f.coordinator.warn("provider session cleanup failed", "provider_id", f.providerClient.Name(), "account_id", f.req.GetAccountId())
-		return true
+func (f *leaseAcquireFailure) warnProviderCleanup(err error) {
+	if err == nil {
+		return
 	}
-	return false
-}
-
-func (f *leaseAcquireFailure) markCleanupPending(routePending bool, providerPending bool) {
-	leaseapp.MarkFailedAcquireCleanupPending(f.session, routePending, providerPending)
+	providerID := ""
+	if f.providerClient != nil {
+		providerID = f.providerClient.Name()
+	}
+	f.coordinator.warn("provider session cleanup failed", "provider_id", providerID, "account_id", f.req.GetAccountId())
 }
 
 func (f *leaseAcquireFailure) save(message string) {

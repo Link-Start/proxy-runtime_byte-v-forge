@@ -881,6 +881,7 @@ Completed user-visible/runtime batches:
 - Acquire success active-fact persistence now uses a lease-owned acquired-fact input helper, so route apply no longer assembles account/purpose/session fact fields directly.
 - Acquire-attempt concurrency slot acquisition now uses a lease-owned input helper for holder generation and TTL construction; app code only supplies provider limit policy inputs.
 - Provider config lookup for an acquired dynamic endpoint now goes through a lease-owned gateway binding helper instead of mutating provider gateways in the coordinator.
+- Failed-acquire route/provider cleanup-pending labeling now lives in `internal/app/lease`; the app failure helper only logs provider cleanup failures and persists the failed fact.
 
 Still open:
 

@@ -774,6 +774,7 @@ Completed user-visible/runtime batches:
 - Postgres runtime and Mihomo-native settings persistence now share a single private JSON key/value load/save helper.
 - SQLite runtime and Mihomo-native settings persistence now share a single private JSON key/value load/save helper.
 - Runtime settings and Mihomo-native settings decode helpers are storage-adapter agnostic instead of being owned by the Postgres adapter files.
+- Runtime settings store mutation primitives are split from concrete store update methods.
 
 Still open:
 

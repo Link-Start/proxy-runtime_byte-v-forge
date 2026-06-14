@@ -11,6 +11,11 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 )
 
+type renderedMihomoConfig struct {
+	data      []byte
+	signature string
+}
+
 func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([]provider.Node, error) {
 	endpoint, err := normalizeEndpoint(cfg.Endpoint)
 	if err != nil {
@@ -22,12 +27,50 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 		d.lastError = err.Error()
 		return nil, err
 	}
-	nativeConfig, err := loadNativeConfig(dir)
+	baseOptions, baseConfig, err := d.renderConfigProjectionLocked(cfg, endpoint, dir)
 	if err != nil {
 		d.lastError = err.Error()
 		return nil, err
 	}
-	baseOptions := renderOptions{
+	if err := os.MkdirAll(filepath.Join(dir, "providers"), 0o700); err != nil {
+		d.lastError = err.Error()
+		return nil, err
+	}
+	configPath := filepath.Join(dir, "config.json")
+
+	baseReloaded, err := d.applyBaseConfigProjectionLocked(ctx, configPath, baseConfig, endpoint)
+	if err != nil {
+		d.lastError = err.Error()
+		return nil, err
+	}
+
+	finalOptions := baseOptions
+	finalConfig, err := renderConfigProjection(finalOptions)
+	if err != nil {
+		d.lastError = err.Error()
+		return nil, err
+	}
+	d.desiredSig = finalConfig.signature
+	if baseReloaded || finalConfig.signature != d.signature {
+		if err := d.reloadConfigDataLocked(ctx, configPath, finalConfig.data, endpoint); err != nil {
+			d.lastError = err.Error()
+			return nil, err
+		}
+	}
+	d.signature = finalConfig.signature
+	d.baseSig = baseConfig.signature
+	d.configPath = configPath
+	d.lastEndpoint = endpoint
+	d.lastError = ""
+	return nil, nil
+}
+
+func (d *Driver) renderConfigProjectionLocked(cfg sourceplane.Config, endpoint sourceplane.Endpoint, dir string) (renderOptions, renderedMihomoConfig, error) {
+	nativeConfig, err := loadNativeConfig(dir)
+	if err != nil {
+		return renderOptions{}, renderedMihomoConfig{}, err
+	}
+	options := renderOptions{
 		EgressProfiles:      cfg.EgressProfiles,
 		Endpoint:            endpoint,
 		ConfigDir:           dir,
@@ -43,72 +86,46 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 		ProxyUsers:          d.baseCfg.ProxyUsers,
 		SessionRoutes:       d.sessionRoutesLocked(),
 	}
-	configFile, err := renderConfig(baseOptions)
+	config, err := renderConfigProjection(options)
 	if err != nil {
-		d.lastError = err.Error()
-		return nil, err
+		return renderOptions{}, renderedMihomoConfig{}, err
+	}
+	return options, config, nil
+}
+
+func renderConfigProjection(options renderOptions) (renderedMihomoConfig, error) {
+	configFile, err := renderConfig(options)
+	if err != nil {
+		return renderedMihomoConfig{}, err
 	}
 	data, err := json.MarshalIndent(configFile, "", "  ")
 	if err != nil {
-		d.lastError = err.Error()
-		return nil, err
+		return renderedMihomoConfig{}, err
 	}
-	baseSig := signature(data)
-	if err := os.MkdirAll(filepath.Join(dir, "providers"), 0o700); err != nil {
-		d.lastError = err.Error()
-		return nil, err
-	}
-	configPath := filepath.Join(dir, "config.json")
+	return renderedMihomoConfig{data: data, signature: signature(data)}, nil
+}
 
+func (d *Driver) applyBaseConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint) (bool, error) {
 	restartRequired := !d.running || d.lastEndpoint != endpoint
-	baseChanged := d.baseSig != baseSig
-	baseReloaded := false
+	baseChanged := d.baseSig != config.signature
 	if restartRequired {
-		if err := writeConfigData(configPath, data); err != nil {
-			d.lastError = err.Error()
-			return nil, err
+		if err := writeConfigData(configPath, config.data); err != nil {
+			return false, err
 		}
 		d.stopLocked()
-		if err := d.startLocked(ctx, dir, configPath); err != nil {
-			d.lastError = err.Error()
-			return nil, err
+		if err := d.startLocked(ctx, filepath.Dir(configPath), configPath); err != nil {
+			return false, err
 		}
 		if err := waitForEndpoint(ctx, endpoint.Addr, 3*time.Second); err != nil {
-			d.lastError = err.Error()
-			return nil, err
+			return false, err
 		}
-		baseReloaded = true
-	} else if baseChanged {
-		if err := d.reloadConfigDataLocked(ctx, configPath, data, endpoint); err != nil {
-			d.lastError = err.Error()
-			return nil, err
+		return true, nil
+	}
+	if baseChanged {
+		if err := d.reloadConfigDataLocked(ctx, configPath, config.data, endpoint); err != nil {
+			return false, err
 		}
-		baseReloaded = true
+		return true, nil
 	}
-
-	finalOptions := baseOptions
-	finalConfig, err := renderConfig(finalOptions)
-	if err != nil {
-		d.lastError = err.Error()
-		return nil, err
-	}
-	finalData, err := json.MarshalIndent(finalConfig, "", "  ")
-	if err != nil {
-		d.lastError = err.Error()
-		return nil, err
-	}
-	finalSig := signature(finalData)
-	d.desiredSig = finalSig
-	if baseReloaded || finalSig != d.signature {
-		if err := d.reloadConfigDataLocked(ctx, configPath, finalData, endpoint); err != nil {
-			d.lastError = err.Error()
-			return nil, err
-		}
-	}
-	d.signature = finalSig
-	d.baseSig = baseSig
-	d.configPath = configPath
-	d.lastEndpoint = endpoint
-	d.lastError = ""
-	return nil, nil
+	return false, nil
 }

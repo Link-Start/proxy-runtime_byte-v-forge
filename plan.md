@@ -670,6 +670,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native config model, projection persistence, settings mapping, and URI rendering helpers are split into focused files.
 - Mihomo sourceplane egress-profile rendering is split into line, exit, native-resource, dynamic-exit, and naming helpers.
 - Mihomo driver model, reconcile flow, and hot-reload candidate apply logic are separated into focused files.
+- Mihomo reconcile now uses explicit rendered-config projection and base-config apply helpers.
 
 Still open:
 

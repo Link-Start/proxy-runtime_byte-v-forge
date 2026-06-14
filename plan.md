@@ -962,6 +962,7 @@ Completed user-visible/runtime batches:
 - Lease provider-account acquire orchestration now lives in `internal/app/lease`, including provider-session create/fetch cleanup recording, line binding, and listener-allocation locking; the coordinator only adapts line resolution, route apply, and transport error mapping.
 - Acquired endpoint route construction plus dataplane/fact apply now lives in `internal/app/lease`; the coordinator only resolves endpoint material and runs local success side effects.
 - Acquired endpoint materialization now lives in `internal/app/lease`, including listener resolution, local egress endpoint resolution, metadata injection, and failed-acquire endpoint recording; the coordinator only supplies listener and endpoint resolver adapters.
+- Acquired route flow now combines endpoint materialization with dataplane/fact apply inside `internal/app/lease`, deleting the app-level acquired-endpoint wrapper; the coordinator only injects endpoint resolvers and post-success local side effects.
 
 Still open:
 

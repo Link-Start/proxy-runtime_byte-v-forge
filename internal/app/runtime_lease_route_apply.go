@@ -8,38 +8,31 @@ import (
 )
 
 func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, flow acquiredLeaseFlow) (*proxyruntimev1.ProxyDynamicLease, error) {
-	input := acquiredLeaseEndpointInput{
-		advertisedHost:    flow.advertisedHost,
-		req:               flow.request,
-		settings:          flow.settings,
-		selection:         flow.selection,
-		providerAccountID: flow.providerAccountID,
-		leaseID:           flow.leaseID,
-		concurrencyHolder: flow.concurrencyHolder,
-		providerClient:    flow.providerClient,
-		session:           flow.session,
-		lineLabels:        flow.lineLabels,
-	}
-	listener, listenerProto, egress, err := c.acquiredLeaseEndpoint(ctx, input, flow.failure)
-	if err != nil {
-		return nil, err
-	}
-	lease, err := leaseapp.ApplyAcquiredEndpointRoute(ctx, leaseapp.AcquiredEndpointRouteApplyInput{
+	lease, err := leaseapp.ApplyAcquiredRouteFlow(ctx, leaseapp.AcquiredRouteFlowInput{
 		Store:             c.deps.store,
 		DataPlane:         c.deps.dataPlane,
 		Failure:           flow.failure,
 		LeaseID:           flow.leaseID,
 		Request:           flow.request,
+		ProviderClient:    flow.providerClient,
 		ProviderAccountID: flow.providerAccountID,
+		ConcurrencyHolder: flow.concurrencyHolder,
 		Session:           flow.session,
-		Egress:            egress,
-		Listener:          listener,
-		ListenerProto:     listenerProto,
 		Nodes:             flow.nodes,
 		DialerProxy:       flow.dialerProxy,
+		LineLabels:        flow.lineLabels,
 		LocalProtocol:     c.deps.cfg.LocalProtocol,
 		SelectionPlan:     flow.selection.plan,
 		AcquiredAt:        c.now(),
+		Managed:           true,
+		FallbackProtocol:  "http",
+		ResolveListener: func(ctx context.Context, accountID string, leaseID string) (leaseapp.Listener, error) {
+			return c.deps.leaseListener(ctx, flow.settings, accountID, leaseID)
+		},
+		ResolveEgress: func(ctx context.Context, listener leaseapp.Listener) (*proxyruntimev1.ProxyEndpoint, error) {
+			_ = ctx
+			return c.deps.localListenerEndpoint(listener, c.deps.sessionAdvertisedHost(flow.advertisedHost, listener))
+		},
 	})
 	if err != nil {
 		return nil, acquiredRouteApplyError(err)

@@ -755,6 +755,7 @@ Completed user-visible/runtime batches:
 - Top-level settings request assembly now delegates IP fraud, IP geo, and dynamic IP provider list construction to focused request helpers.
 - Runtime secret reference resolution and shared default provider weighting are split from IP-fraud-specific settings helpers.
 - IP fraud and IP geo provider request conversion plus raw-secret persistence are split from provider runtime config/auth helpers.
+- IP fraud and IP geo provider validation and supported-provider filtering are split from provider runtime config/auth helpers.
 
 Still open:
 

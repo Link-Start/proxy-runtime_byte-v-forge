@@ -1,11 +1,14 @@
 package app
 
-import "net/http"
+import (
+	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
+	"net/http"
+)
 
-func (api *runtimeHTTPAPI) leaseHTTPRoutes() []runtimeHTTPRoute {
-	return []runtimeHTTPRoute{
-		{methods: []string{http.MethodGet}, path: "/leases", handler: api.handleLeases},
-		{methods: []string{http.MethodPost}, path: "/leases/acquire", handler: api.handleAcquireLease},
-		{methods: []string{http.MethodPost}, path: "/leases/release", handler: api.handleReleaseLease},
+func (api *runtimeHTTPAPI) leaseHTTPRoutes() []httpapi.Route {
+	return []httpapi.Route{
+		{Methods: []string{http.MethodGet}, Path: "/leases", Handler: api.handleLeases},
+		{Methods: []string{http.MethodPost}, Path: "/leases/acquire", Handler: api.handleAcquireLease},
+		{Methods: []string{http.MethodPost}, Path: "/leases/release", Handler: api.handleReleaseLease},
 	}
 }

@@ -1,9 +1,12 @@
 package app
 
-import "net/http"
+import (
+	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
+	"net/http"
+)
 
-func (api *runtimeHTTPAPI) authHTTPRoutes() []runtimeHTTPRoute {
-	return []runtimeHTTPRoute{
-		{methods: []string{http.MethodGet}, path: "/auth/ws-token", handler: api.handleAuthWebSocketToken},
+func (api *runtimeHTTPAPI) authHTTPRoutes() []httpapi.Route {
+	return []httpapi.Route{
+		{Methods: []string{http.MethodGet}, Path: "/auth/ws-token", Handler: api.handleAuthWebSocketToken},
 	}
 }

@@ -1,9 +1,12 @@
 package app
 
-import "net/http"
+import (
+	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
+	"net/http"
+)
 
-func (api *runtimeHTTPAPI) runtimeStatusHTTPRoutes() []runtimeHTTPRoute {
-	return []runtimeHTTPRoute{
-		{methods: []string{http.MethodGet}, path: "/runtime/status", handler: api.handleRuntimeStatus},
+func (api *runtimeHTTPAPI) runtimeStatusHTTPRoutes() []httpapi.Route {
+	return []httpapi.Route{
+		{Methods: []string{http.MethodGet}, Path: "/runtime/status", Handler: api.handleRuntimeStatus},
 	}
 }

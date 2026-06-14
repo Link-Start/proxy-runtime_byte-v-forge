@@ -1,14 +1,17 @@
 package app
 
-import "net/http"
+import (
+	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
+	"net/http"
+)
 
-func (api *runtimeHTTPAPI) settingsHTTPRoutes() []runtimeHTTPRoute {
-	return []runtimeHTTPRoute{
-		{methods: []string{http.MethodGet, http.MethodPost, http.MethodPut}, path: "/settings/dynamic-ip-providers", handler: api.handleDynamicIPProviders},
-		{methods: []string{http.MethodGet, http.MethodPost, http.MethodPut}, path: "/settings/in-user-rules", handler: api.handleInUserRules},
-		{methods: []string{http.MethodGet, http.MethodPost, http.MethodPut}, path: "/settings/mihomo-native", handler: api.handleMihomoNativeConfig},
-		{methods: []string{http.MethodGet}, path: "/settings/ip-fraud-providers", handler: api.handleIPFraudProviders},
-		{methods: []string{http.MethodGet}, path: "/settings/ip-geo-providers", handler: api.handleIPGeoProviders},
-		{methods: []string{http.MethodGet, http.MethodPost, http.MethodPut}, path: "/settings", handler: api.handleRuntimeSettings},
+func (api *runtimeHTTPAPI) settingsHTTPRoutes() []httpapi.Route {
+	return []httpapi.Route{
+		{Methods: []string{http.MethodGet, http.MethodPost, http.MethodPut}, Path: "/settings/dynamic-ip-providers", Handler: api.handleDynamicIPProviders},
+		{Methods: []string{http.MethodGet, http.MethodPost, http.MethodPut}, Path: "/settings/in-user-rules", Handler: api.handleInUserRules},
+		{Methods: []string{http.MethodGet, http.MethodPost, http.MethodPut}, Path: "/settings/mihomo-native", Handler: api.handleMihomoNativeConfig},
+		{Methods: []string{http.MethodGet}, Path: "/settings/ip-fraud-providers", Handler: api.handleIPFraudProviders},
+		{Methods: []string{http.MethodGet}, Path: "/settings/ip-geo-providers", Handler: api.handleIPGeoProviders},
+		{Methods: []string{http.MethodGet, http.MethodPost, http.MethodPut}, Path: "/settings", Handler: api.handleRuntimeSettings},
 	}
 }

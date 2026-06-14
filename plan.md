@@ -681,6 +681,7 @@ Completed user-visible/runtime batches:
 - Runtime auth session signing, verification, token matching, and safe redirects are extracted into `internal/app/auth`.
 - Mihomo dashboard/controller URL, query sanitization, cache header, and error redaction helpers are extracted into `internal/app/dashboard`.
 - HTTP request helpers for path-prefix matching, forwarded protocol, and request IDs are extracted into `internal/app/httpapi`.
+- HTTP route declarations now use the shared `httpapi.Route` model instead of an app-local route shape.
 
 Still open:
 

@@ -11,7 +11,7 @@ import (
 
 func (c leaseCoordinator) restoreLeaseSessionNodes(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, settings *runtimeSettingsFile, providerCfg accountproxy.Config) ([]provider.Node, error) {
 	providerCfg.Gateways = endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerCfg.ProviderID)
-	providerClient, err := c.newSessionProvider(providerCfg)
+	providerClient, err := leaseapp.NewSessionProvider(c.deps.sessionProviders, providerCfg)
 	if err != nil {
 		return nil, err
 	}

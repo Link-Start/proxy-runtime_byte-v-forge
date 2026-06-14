@@ -15,6 +15,7 @@ type ProviderSessionErrorKind int
 
 const (
 	ProviderSessionNoError ProviderSessionErrorKind = iota
+	ProviderSessionFactoryError
 	ProviderSessionCreateError
 	ProviderSessionFetchError
 )

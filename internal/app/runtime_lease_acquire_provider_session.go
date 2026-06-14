@@ -8,25 +8,30 @@ import (
 )
 
 func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, settings *runtimeSettingsFile, selection dynamicIPSelection, providerAccountID string, leaseID string, concurrencyHolder string) (*proxyruntimev1.ProxyDynamicLease, error) {
-	providerCfg, providerAccountID, err := leaseapp.ProviderConfigForGateway(ctx, c.deps.store, providerAccountID, selection.endpoint)
-	if err != nil {
-		return nil, err
-	}
-	providerClient, err := c.newSessionProvider(providerCfg)
-	if err != nil {
+	providerSession, err := leaseapp.AcquireProviderSession(ctx, leaseapp.ProviderSessionAcquireInput{
+		Store:             c.deps.store,
+		Factory:           c.deps.sessionProviders,
+		ProviderAccountID: providerAccountID,
+		Gateway:           selection.endpoint,
+		Request:           req,
+		SelectionPlan:     selection.plan,
+		ConcurrencyHolder: concurrencyHolder,
+	})
+	switch providerSession.ErrorKind {
+	case leaseapp.ProviderSessionFactoryError:
 		return nil, invalidArgument("provider account configuration is invalid", err)
-	}
-	session, nodes, err := leaseapp.CreateAndFetchProviderSession(ctx, providerClient, req, selection.plan, concurrencyHolder)
-	switch leaseapp.ClassifyProviderSessionError(session, err) {
 	case leaseapp.ProviderSessionCreateError:
 		return nil, unavailable("provider session create failed", err)
 	case leaseapp.ProviderSessionFetchError:
-		failure := c.newFailedAcquireRecorder(req, providerAccountID, providerClient, session, selection.plan)
+		failure := c.newFailedAcquireRecorder(req, providerSession.ProviderAccountID, providerSession.ProviderClient, providerSession.Session, selection.plan)
 		failure.BeforeRoute(ctx, "provider session fetch failed")
 		return nil, unavailable("provider session fetch failed", err)
 	}
-	failure := c.newFailedAcquireRecorder(req, providerAccountID, providerClient, session, selection.plan)
-	lineBinding, err := leaseapp.PrepareRouteLineBinding(ctx, nodes, req.GetAccountId(), func(ctx context.Context, accountID string) (string, map[string]string, error) {
+	if err != nil {
+		return nil, err
+	}
+	failure := c.newFailedAcquireRecorder(req, providerSession.ProviderAccountID, providerSession.ProviderClient, providerSession.Session, selection.plan)
+	lineBinding, err := leaseapp.PrepareRouteLineBinding(ctx, providerSession.Nodes, req.GetAccountId(), func(ctx context.Context, accountID string) (string, map[string]string, error) {
 		return c.deps.dynamicLeaseDialerProxy(ctx, settings, accountID)
 	})
 	if err != nil {
@@ -41,11 +46,11 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 			request:           req,
 			settings:          settings,
 			selection:         selection,
-			providerAccountID: providerAccountID,
+			providerAccountID: providerSession.ProviderAccountID,
 			leaseID:           leaseID,
 			concurrencyHolder: concurrencyHolder,
-			providerClient:    providerClient,
-			session:           session,
+			providerClient:    providerSession.ProviderClient,
+			session:           providerSession.Session,
 			nodes:             lineBinding.Nodes,
 			dialerProxy:       lineBinding.DialerProxy,
 			lineLabels:        lineBinding.Labels,

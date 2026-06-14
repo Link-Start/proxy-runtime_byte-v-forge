@@ -26,7 +26,7 @@ func (c leaseCoordinator) acquiredLeaseEndpoint(ctx context.Context, input acqui
 		failure.beforeRoute("lease listener allocation failed")
 		return leaseapp.Listener{}, nil, nil, err
 	}
-	listenerProto := protoLeaseListener(listener, true)
+	listenerProto := leaseapp.EgressListenerProto(listener, true, "http")
 	failure.listener = listenerProto
 	egress, err := c.deps.localListenerEndpoint(listener, c.deps.sessionAdvertisedHost(input.advertisedHost, listener))
 	if err != nil {

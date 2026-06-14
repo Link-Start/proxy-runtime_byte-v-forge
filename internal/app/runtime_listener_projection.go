@@ -75,11 +75,3 @@ func listenerRoute(listener config.EgressListener) string {
 		return config.ListenerRouteProvider
 	}
 }
-
-func protoLeaseListener(listener leaseapp.Listener, managed bool) *proxyruntimev1.EgressListener {
-	return protoListener(configListenerFromLease(listener), managed)
-}
-
-func configListenerFromLease(listener leaseapp.Listener) config.EgressListener {
-	return config.EgressListener{ID: listener.ID, Addr: listener.Addr, Protocol: listener.Protocol, Route: listener.Route, Username: listener.Username, Password: listener.Password, Labels: listener.Labels}
-}

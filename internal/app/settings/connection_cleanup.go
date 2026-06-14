@@ -1,4 +1,4 @@
-package app
+package settings
 
 import (
 	"sort"
@@ -8,7 +8,7 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func changedInUserConnectionUsernames(before *runtimeSettingsFile, after *runtimeSettingsFile) []string {
+func ChangedInUserConnectionUsernames(before *proxyruntimev1.ProxyRuntimePersistentSettings, after *proxyruntimev1.ProxyRuntimePersistentSettings) []string {
 	beforeRules := ingressRulesByID(before.GetIngressRules())
 	afterRules := ingressRulesByID(after.GetIngressRules())
 	beforeProfiles := egressProfilesByID(before.GetEgressProfiles())

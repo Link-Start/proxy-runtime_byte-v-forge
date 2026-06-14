@@ -4,6 +4,7 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings"
 )
 
 type runtimeSettingsUpdateOperation func(runtimeSettingsRepository) (*proxyruntimev1.ProxyRuntimeSettings, error)
@@ -35,5 +36,5 @@ func (a runtimeSettingsApplication) changedInUserConnectionUsernamesAfterUpdate(
 		a.warn(errorMessage, "error", err)
 		return nil
 	}
-	return changedInUserConnectionUsernames(before, after)
+	return settingsapp.ChangedInUserConnectionUsernames(before, after)
 }

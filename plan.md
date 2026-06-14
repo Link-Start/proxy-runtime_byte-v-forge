@@ -824,6 +824,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease listener-to-proto projection now lives in `internal/app/lease`, removing the app-level lease listener conversion helper.
 - Mihomo native config load, path/header normalization, and clone helpers are split into focused sourceplane files with no behavior change.
 - Mihomo render config now separates duration/default helpers, proxy/provider name indexes, and unique group merging from the top-level render flow.
+- Mihomo gateway rendering now separates listener assembly from user authentication, IN-USER rule generation, and hidden session group naming.
 
 Still open:
 

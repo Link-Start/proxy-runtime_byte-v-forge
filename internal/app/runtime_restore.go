@@ -52,28 +52,27 @@ func (c leaseCoordinator) restoreLeaseRoute(ctx context.Context, lease *proxyrun
 	if lease.GetSession() == nil || lease.GetListener() == nil {
 		return errors.New("lease session or listener is missing")
 	}
-	inputs, err := c.loadRestoreLeaseInputs(ctx, lease)
+	settings, err := c.deps.settings.load(ctx)
 	if err != nil {
 		return err
 	}
 	policy := leaseapp.ConcurrencyPolicy(lease)
 	return leaseapp.RestoreLease(ctx, leaseapp.RestoreLeaseInput{
 		Limiter:            c.deps.providerConcurrency,
+		Store:              c.deps.store,
 		DataPlane:          c.deps.dataPlane,
 		Factory:            c.deps.sessionProviders,
 		Lease:              lease,
-		ProviderConfig:     inputs.providerConfig,
-		ProviderAccountID:  inputs.providerAccount.GetAccountId(),
-		Limit:              dynamicProviderConcurrencyLimit(inputs.settings, leaseapp.DynamicProviderID(lease), policy),
+		Limit:              dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy),
 		DefaultTTL:         leaseapp.DefaultDynamicIPStickyTTL,
 		TTLBuffer:          providerAccountConcurrencyTTLBuffer,
 		SlotReleaseTimeout: leaseRestoreSlotReleaseTimeout,
 		LocalProtocol:      c.deps.cfg.LocalProtocol,
 		ResolveGateways: func(ctx context.Context, providerID string) ([]accountproxy.Gateway, error) {
-			return endpointsForDynamicIPSelection(inputs.settings, lease.GetSelectionPlan(), providerID), nil
+			return endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerID), nil
 		},
 		ResolveLineBinding: func(ctx context.Context, accountID string) (string, map[string]string, error) {
-			return c.deps.dynamicLeaseDialerProxy(ctx, inputs.settings, accountID)
+			return c.deps.dynamicLeaseDialerProxy(ctx, settings, accountID)
 		},
 	})
 }

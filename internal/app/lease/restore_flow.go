@@ -10,11 +10,10 @@ import (
 
 type RestoreLeaseInput struct {
 	Limiter            ProviderAccountConcurrencyLimiter
+	Store              OrchestrationStore
 	DataPlane          DataPlaneApplier
 	Factory            SessionProviderFactory
 	Lease              *proxyruntimev1.ProxyDynamicLease
-	ProviderConfig     accountproxy.Config
-	ProviderAccountID  string
 	Limit              uint32
 	DefaultTTL         time.Duration
 	TTLBuffer          time.Duration
@@ -25,7 +24,11 @@ type RestoreLeaseInput struct {
 }
 
 func RestoreLease(ctx context.Context, input RestoreLeaseInput) error {
-	slot, err := acquireRestoreLeaseSlot(ctx, input)
+	providerCfg, providerAccountID, err := ProviderConfigForLease(ctx, input.Store, input.Lease)
+	if err != nil {
+		return err
+	}
+	slot, err := acquireRestoreLeaseSlot(ctx, input, providerAccountID)
 	if err != nil {
 		return err
 	}
@@ -36,7 +39,7 @@ func RestoreLease(ctx context.Context, input RestoreLeaseInput) error {
 			nodes, err := FetchLeaseProviderSession(ctx, ProviderSessionFetchInput{
 				Factory:         input.Factory,
 				Lease:           input.Lease,
-				ProviderConfig:  input.ProviderConfig,
+				ProviderConfig:  providerCfg,
 				ResolveGateways: input.ResolveGateways,
 			})
 			if err != nil {
@@ -53,12 +56,12 @@ func RestoreLease(ctx context.Context, input RestoreLeaseInput) error {
 	})
 }
 
-func acquireRestoreLeaseSlot(ctx context.Context, input RestoreLeaseInput) (ProviderAccountConcurrencySlot, error) {
+func acquireRestoreLeaseSlot(ctx context.Context, input RestoreLeaseInput, providerAccountID string) (ProviderAccountConcurrencySlot, error) {
 	policy := ConcurrencyPolicy(input.Lease)
 	return AcquireProviderAccountConcurrencySlot(
 		ctx,
 		input.Limiter,
-		input.ProviderAccountID,
+		providerAccountID,
 		input.Limit,
 		policy,
 		ConcurrencyHolder(input.Lease),

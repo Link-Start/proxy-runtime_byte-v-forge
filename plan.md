@@ -731,6 +731,7 @@ Completed user-visible/runtime batches:
 - Dynamic lease account, purpose, session, provider-account, selection, endpoint, dynamic-provider, and concurrency-holder label keys are centralized in `internal/app/lease`, removing duplicated lease label strings from runtime orchestration.
 - Lease coordinator runtime adapters for provider-session factory, lock manager, and ID generation are split from coordinator dependency wiring.
 - Source-plane proxy-user configured-route merge and dedup helpers are split from the top-level source-plane dataplane config builder.
+- Dynamic lease acquire/release request validation, account/purpose normalization, release lookup parsing, and release lease/account/purpose match validation are centralized in `internal/app/lease`.
 
 Still open:
 

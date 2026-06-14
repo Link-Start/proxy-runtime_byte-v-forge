@@ -13,12 +13,8 @@ import (
 )
 
 func (c leaseCoordinator) acquireLease(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
-	if req == nil {
-		return nil, invalidArgument("acquire request is required", nil)
-	}
-	req.AccountId = strings.TrimSpace(req.GetAccountId())
-	if req.AccountId == "" {
-		return nil, invalidArgument("account_id is required", nil)
+	if err := leaseapp.PrepareAcquireRequest(req); err != nil {
+		return nil, invalidArgument(err.Error(), err)
 	}
 	var lease *proxyruntimev1.ProxyDynamicLease
 	err := c.deps.locks.WithAccountLock(ctx, req.GetAccountId(), func(ctx context.Context) error {
@@ -30,7 +26,6 @@ func (c leaseCoordinator) acquireLease(ctx context.Context, advertisedHost strin
 }
 
 func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
-	req.Purpose = firstNonEmpty(req.GetPurpose(), "general")
 	settings, err := c.deps.settings.load(ctx)
 	if err != nil {
 		return nil, err
@@ -304,39 +299,31 @@ func (c leaseCoordinator) releaseLease(ctx context.Context, req *proxyruntimev1.
 }
 
 func (c leaseCoordinator) leaseByReleaseRequest(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
-	if req == nil {
-		return nil, invalidArgument("release request is required", nil)
+	lookup, err := leaseapp.ParseReleaseRequest(req)
+	if err != nil {
+		return nil, invalidArgument(err.Error(), err)
 	}
-	leaseID := strings.TrimSpace(req.GetLeaseId())
-	accountID := strings.TrimSpace(req.GetAccountId())
-	purpose := strings.TrimSpace(req.GetPurpose())
-	if leaseID != "" {
-		lease, err := c.deps.store.LeaseFactByID(ctx, leaseID)
+	if lookup.LeaseID != "" {
+		lease, err := c.deps.store.LeaseFactByID(ctx, lookup.LeaseID)
 		if err != nil {
 			if isStoreNotFound(err) {
 				return nil, invalidArgument("lease_id not found", nil)
 			}
 			return nil, err
 		}
-		if accountID != "" && accountID != lease.GetAccountId() {
-			return nil, invalidArgument("lease account_id mismatch", nil)
-		}
-		if purpose != "" && purpose != lease.GetPurpose() {
-			return nil, invalidArgument("lease purpose mismatch", nil)
+		if err := leaseapp.ValidateReleaseLeaseMatch(lookup, lease); err != nil {
+			return nil, invalidArgument(err.Error(), err)
 		}
 		return lease, nil
 	}
-	if accountID == "" {
-		return nil, invalidArgument("lease_id or account_id is required", nil)
-	}
-	lease, err := c.deps.store.ActiveLeaseFactByAccount(ctx, accountID, purpose)
+	lease, err := c.deps.store.ActiveLeaseFactByAccount(ctx, lookup.AccountID, lookup.Purpose)
 	if err == nil {
 		return lease, nil
 	}
 	if !isStoreNotFound(err) {
 		return nil, err
 	}
-	lease, err = c.deps.store.LatestLeaseFactByAccount(ctx, accountID, purpose)
+	lease, err = c.deps.store.LatestLeaseFactByAccount(ctx, lookup.AccountID, lookup.Purpose)
 	if err != nil {
 		if isStoreNotFound(err) {
 			return nil, invalidArgument("active lease not found", nil)

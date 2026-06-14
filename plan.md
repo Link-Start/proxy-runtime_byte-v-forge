@@ -895,6 +895,7 @@ Completed user-visible/runtime batches:
 - Runtime settings read usecase now has an explicit `internal/app/settings` application and repository port; app-level settings read is reduced to an adapter call.
 - Dynamic IP provider settings update now runs through the explicit `internal/app/settings` application with a repository adapter and apply scheduler instead of app-local update flow.
 - In-user connection cleanup username diffing now lives in `internal/app/settings`, so settings update flow no longer depends on an app-local diff helper.
+- Settings update-with-connection-cleanup orchestration now lives in `internal/app/settings`; app update handlers provide only validation and concrete repository operations.
 
 Still open:
 

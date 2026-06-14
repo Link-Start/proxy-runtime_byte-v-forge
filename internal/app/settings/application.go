@@ -9,15 +9,17 @@ type ApplyScheduler func([]string)
 type Dependencies struct {
 	Repository    Repository
 	ScheduleApply ApplyScheduler
+	Logger        Logger
 }
 
 type Application struct {
 	repository    Repository
 	scheduleApply ApplyScheduler
+	logger        Logger
 }
 
 func NewApplication(deps Dependencies) Application {
-	return Application{repository: deps.Repository, scheduleApply: deps.ScheduleApply}
+	return Application{repository: deps.Repository, scheduleApply: deps.ScheduleApply, logger: deps.Logger}
 }
 
 func (a Application) repositoryOrError() (Repository, error) {

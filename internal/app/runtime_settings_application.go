@@ -48,5 +48,6 @@ func (a runtimeSettingsApplication) settingsUsecase() settingsapp.Application {
 	return settingsapp.NewApplication(settingsapp.Dependencies{
 		Repository:    runtimeSettingsRepositoryAdapter{repository: a.settings},
 		ScheduleApply: a.scheduleRuntimeSettingsApply,
+		Logger:        a.logger,
 	})
 }

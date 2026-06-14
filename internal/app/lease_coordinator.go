@@ -34,6 +34,22 @@ type leaseCoordinatorStore interface {
 	ProviderConfig(context.Context, string) (accountproxy.Config, string, error)
 }
 
+type leaseSessionProviderFactory interface {
+	NewSessionProvider(accountproxy.Config) (provider.SessionProvider, error)
+}
+
+type leaseRegistrySessionProviderFactory struct {
+	registry *providerregistry.Registry
+	client   *http.Client
+}
+
+func (f leaseRegistrySessionProviderFactory) NewSessionProvider(providerCfg accountproxy.Config) (provider.SessionProvider, error) {
+	if f.registry == nil {
+		return nil, fmt.Errorf("provider session factory is required")
+	}
+	return f.registry.NewSessionProvider(providerCfg, f.client)
+}
+
 type leaseListenerFunc func(context.Context, *runtimeSettingsFile, string, string) (config.EgressListener, error)
 type leaseEndpointFunc func(config.EgressListener, string) (*proxyruntimev1.ProxyEndpoint, error)
 type leaseAdvertisedHostFunc func(string, config.EgressListener) string
@@ -48,8 +64,7 @@ type leaseCoordinatorDependencies struct {
 	locks                   leaseRuntimeLocks
 	dataPlane               dataplane.Driver
 	dynamicIPSelector       *dynamicIPSelector
-	accountProviders        *providerregistry.Registry
-	providerHTTPClient      *http.Client
+	sessionProviders        leaseSessionProviderFactory
 	providerConcurrency     providerAccountConcurrencyLimiter
 	logger                  *slog.Logger
 	exitCheckCache          *proxyExitCheckCache
@@ -77,8 +92,7 @@ func newLeaseCoordinator(runtime *Runtime) leaseCoordinator {
 		locks:                   runtime.leaseLocks,
 		dataPlane:               runtime.dataPlane,
 		dynamicIPSelector:       runtime.dynamicIPSelector,
-		accountProviders:        runtime.accountProviders,
-		providerHTTPClient:      runtime.providerHTTPClient,
+		sessionProviders:        leaseRegistrySessionProviderFactory{registry: runtime.accountProviders, client: runtime.providerHTTPClient},
 		providerConcurrency:     runtime.providerConcurrency,
 		logger:                  runtime.logger,
 		exitCheckCache:          &runtime.exitCheckCache,
@@ -164,5 +178,8 @@ func (c leaseCoordinator) refreshLeaseConcurrencySlot(ctx context.Context, lease
 }
 
 func (c leaseCoordinator) newSessionProvider(providerCfg accountproxy.Config) (provider.SessionProvider, error) {
-	return c.deps.accountProviders.NewSessionProvider(providerCfg, c.deps.providerHTTPClient)
+	if c.deps.sessionProviders == nil {
+		return nil, fmt.Errorf("provider session factory is required")
+	}
+	return c.deps.sessionProviders.NewSessionProvider(providerCfg)
 }

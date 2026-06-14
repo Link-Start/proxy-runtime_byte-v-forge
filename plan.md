@@ -927,6 +927,7 @@ Completed user-visible/runtime batches:
 - Restored lease provider-session node fetch now runs through `internal/app/lease`, sharing gateway binding and session-provider factory use with the release/acquire paths.
 - Cleanup-pending progress persistence now runs through `internal/app/lease`, including cleanup-final status handling and final concurrency-slot release.
 - Lease route cleanup now uses a lease-owned helper with failure recording callbacks across normal release, expiry cleanup, and cleanup-pending retry paths.
+- Acquire-attempt provider-account locking and temporary concurrency-slot release/keep behavior now live in `internal/app/lease`; the coordinator supplies only the concrete locked attempt action.
 
 Still open:
 

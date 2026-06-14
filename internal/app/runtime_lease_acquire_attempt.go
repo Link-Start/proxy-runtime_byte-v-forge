@@ -36,20 +36,13 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 	if err != nil {
 		return nil, failedPrecondition("provider account concurrency limit reached", err)
 	}
-	keepConcurrencySlot := false
-	defer func() {
-		releaseCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), leaseAcquireSlotReleaseTimeout)
-		defer cancel()
-		_ = leaseapp.ReleaseConcurrencySlotUnlessKept(releaseCtx, concurrencySlot, keepConcurrencySlot)
-	}()
-	var lease *proxyruntimev1.ProxyDynamicLease
-	err = leaseapp.WithProviderAccountLock(ctx, c.deps.locks, providerAccountID, func(ctx context.Context) error {
-		var err error
-		lease, err = c.acquireLeaseWithProviderAccountLock(ctx, advertisedHost, req, settings, selection, providerAccountID, leaseID, concurrencyHolder)
-		if err == nil {
-			keepConcurrencySlot = true
-		}
-		return err
+	return leaseapp.RunLockedAcquireAttempt(ctx, leaseapp.LockedAcquireAttemptInput{
+		Locks:             c.deps.locks,
+		ProviderAccountID: providerAccountID,
+		ConcurrencySlot:   concurrencySlot,
+		ReleaseTimeout:    leaseAcquireSlotReleaseTimeout,
+		Action: func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
+			return c.acquireLeaseWithProviderAccountLock(ctx, advertisedHost, req, settings, selection, providerAccountID, leaseID, concurrencyHolder)
+		},
 	})
-	return lease, err
 }

@@ -8,12 +8,17 @@ import (
 )
 
 func (c leaseCoordinator) acquireLease(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
-	if err := leaseapp.PrepareAcquireRequest(req); err != nil {
+	lease, err := leaseapp.RunPreparedAcquire(ctx, leaseapp.PreparedAcquireInput{
+		Locks:   c.deps.locks,
+		Request: req,
+		Action: func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
+			return c.acquireLeaseWithAccountLock(ctx, advertisedHost, req)
+		},
+	})
+	if err != nil && leaseapp.IsAcquireRequestError(err) {
 		return nil, invalidArgument(err.Error(), err)
 	}
-	return leaseapp.RunAccountLeaseAction(ctx, c.deps.locks, req.GetAccountId(), func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
-		return c.acquireLeaseWithAccountLock(ctx, advertisedHost, req)
-	})
+	return lease, err
 }
 
 func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {

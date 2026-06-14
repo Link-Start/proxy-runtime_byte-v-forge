@@ -955,6 +955,7 @@ Completed user-visible/runtime batches:
 - Runtime settings adapter now constructs the settings usecase once during application wiring instead of rebuilding usecase dependencies on every settings request.
 - Lease worker restorable-active, expired-active, and cleanup-pending list-plus-batch orchestration now lives in `internal/app/lease`; the coordinator supplies only concrete cleanup actions and logging observers.
 - Lease release top-level lookup-plus-retire orchestration now lives in `internal/app/lease`; the coordinator only maps request/lookup errors and injects store, locks, and route-retire side effects.
+- Lease acquire request preparation and account-lock entry orchestration now lives in `internal/app/lease`; the coordinator only maps request validation errors and provides the locked acquire action.
 
 Still open:
 

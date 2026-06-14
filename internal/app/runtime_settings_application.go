@@ -46,12 +46,11 @@ func newRuntimeSettingsApplication(deps runtimeSettingsApplicationDependencies) 
 
 func (a runtimeSettingsApplication) settingsUsecase() settingsapp.Application {
 	return settingsapp.NewApplication(settingsapp.Dependencies{
-		Repository:    runtimeSettingsRepositoryAdapter{repository: a.settings},
-		ScheduleApply: a.scheduleRuntimeSettingsApply,
-		Logger:        a.logger,
-		ValidateProfiles: func(profiles []*proxyruntimev1.EgressProfileSettings) error {
-			return rejectMissingProxyUserProfiles(a.proxyUsers, profiles)
-		},
+		Repository:                  runtimeSettingsRepositoryAdapter{repository: a.settings},
+		ScheduleApply:               a.scheduleRuntimeSettingsApply,
+		Logger:                      a.logger,
+		ProxyUsers:                  a.proxyUsers,
+		ProfileValidationError:      func(message string) error { return failedPrecondition(message, nil) },
 		IPFraudProviderViews:        a.ipFraudProviderViews,
 		IPGeoProviderViews:          a.ipGeoProviderViews,
 		LoadMihomoNativeSettings:    a.loadMihomoNativeSettings,

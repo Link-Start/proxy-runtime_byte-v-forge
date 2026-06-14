@@ -905,6 +905,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native settings get/update now run through `internal/app/settings`, with app code only adapting error mapping and injected loader/updater/default functions.
 - Mihomo final config base-field assembly is split from top-level render orchestration, leaving renderConfig to compose projected sections and final rules only.
 - Auth login request reading now lives in `internal/app/auth` with the HTTP layer injecting the shared bounded body reader for existing error mapping.
+- Proxy-user referenced egress-profile validation now lives in `internal/app/settings`; app wiring only provides the failed-precondition error factory.
 
 Still open:
 

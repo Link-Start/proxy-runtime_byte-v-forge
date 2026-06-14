@@ -1,6 +1,10 @@
 package settings
 
-import "errors"
+import (
+	"errors"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/config"
+)
 
 var ErrRepositoryRequired = errors.New("runtime settings repository is not configured")
 
@@ -10,7 +14,8 @@ type Dependencies struct {
 	Repository                  Repository
 	ScheduleApply               ApplyScheduler
 	Logger                      Logger
-	ValidateProfiles            ProfileValidator
+	ProxyUsers                  []config.ProxyUserRoute
+	ProfileValidationError      ProfileValidationErrorFunc
 	IPFraudProviderViews        IPFraudProviderViews
 	IPGeoProviderViews          IPGeoProviderViews
 	LoadMihomoNativeSettings    MihomoNativeLoader
@@ -22,7 +27,8 @@ type Application struct {
 	repository                  Repository
 	scheduleApply               ApplyScheduler
 	logger                      Logger
-	validateProfilesFunc        ProfileValidator
+	proxyUsers                  []config.ProxyUserRoute
+	profileValidationErrorFunc  ProfileValidationErrorFunc
 	ipFraudProviderViews        IPFraudProviderViews
 	ipGeoProviderViews          IPGeoProviderViews
 	loadMihomoNativeSettings    MihomoNativeLoader
@@ -31,7 +37,18 @@ type Application struct {
 }
 
 func NewApplication(deps Dependencies) Application {
-	return Application{repository: deps.Repository, scheduleApply: deps.ScheduleApply, logger: deps.Logger, validateProfilesFunc: deps.ValidateProfiles, ipFraudProviderViews: deps.IPFraudProviderViews, ipGeoProviderViews: deps.IPGeoProviderViews, loadMihomoNativeSettings: deps.LoadMihomoNativeSettings, updateMihomoNativeSettings: deps.UpdateMihomoNativeSettings, defaultMihomoNativeSettings: deps.DefaultMihomoNativeSettings}
+	return Application{
+		repository:                  deps.Repository,
+		scheduleApply:               deps.ScheduleApply,
+		logger:                      deps.Logger,
+		proxyUsers:                  append([]config.ProxyUserRoute(nil), deps.ProxyUsers...),
+		profileValidationErrorFunc:  deps.ProfileValidationError,
+		ipFraudProviderViews:        deps.IPFraudProviderViews,
+		ipGeoProviderViews:          deps.IPGeoProviderViews,
+		loadMihomoNativeSettings:    deps.LoadMihomoNativeSettings,
+		updateMihomoNativeSettings:  deps.UpdateMihomoNativeSettings,
+		defaultMihomoNativeSettings: deps.DefaultMihomoNativeSettings,
+	}
 }
 
 func (a Application) repositoryOrError() (Repository, error) {

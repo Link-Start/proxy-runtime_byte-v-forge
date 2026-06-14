@@ -13,6 +13,41 @@ type renderedGatewayProjection struct {
 	rules    []string
 }
 
+type renderedConfigSections struct {
+	listener  mihomoListener
+	proxies   []map[string]any
+	providers map[string]mihomoProvider
+	groups    []mihomoGroup
+	rules     []string
+}
+
+func renderConfigSections(opts renderOptions) (renderedConfigSections, error) {
+	proxyProjection, err := renderProxyProjection(opts)
+	if err != nil {
+		return renderedConfigSections{}, err
+	}
+	gatewayProjection, err := renderGatewayProjection(opts, proxyProjection.profileGroupsBy)
+	if err != nil {
+		return renderedConfigSections{}, err
+	}
+	return renderedConfigSections{
+		listener:  gatewayProjection.listener,
+		proxies:   proxyProjection.proxies,
+		providers: proxyProjection.providers,
+		groups:    appendUniqueGroups(baseMihomoGroups(), opts.NativeConfig.ProxyGroups, proxyProjection.profileGroups, gatewayProjection.groups),
+		rules:     renderConfigRules(gatewayProjection.rules, opts.NativeConfig.Rules),
+	}, nil
+}
+
+func assembleRenderedConfig(opts renderOptions, sections renderedConfigSections) mihomoConfig {
+	config := newBaseRenderedConfig(opts, sections.listener)
+	config.Proxies = sections.proxies
+	config.ProxyProviders = sections.providers
+	config.ProxyGroups = sections.groups
+	config.Rules = sections.rules
+	return config
+}
+
 func renderProxyProjection(opts renderOptions) (renderedProxyProjection, error) {
 	providerMap := cloneNativeProviders(opts.NativeConfig.ProxyProviders)
 	fixedConfigs, err := renderBaseProxyConfigs(opts)

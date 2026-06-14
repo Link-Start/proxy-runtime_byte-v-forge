@@ -75,30 +75,7 @@ func (r *Runtime) inUserCheckListener(ctx context.Context, username string) (con
 }
 
 func (r *Runtime) localListenerEndpoint(listener leaseapp.Listener, advertisedHost string) (*proxyruntimev1.ProxyEndpoint, error) {
-	hostPort, err := localListenHostPort(listener.Addr)
-	if err != nil {
-		return nil, err
-	}
-	host, portValue, err := net.SplitHostPort(hostPort)
-	if err != nil {
-		return nil, err
-	}
-	port, err := parsePort(portValue)
-	if err != nil {
-		return nil, err
-	}
-	if advertisedHost != "" && (host == "127.0.0.1" || host == "localhost" || host == "0.0.0.0" || host == "::1") {
-		host = advertisedHost
-	}
-	labels := cloneLabels(listener.Labels)
-	if listener.Username != "" || listener.Password != "" {
-		if labels == nil {
-			labels = map[string]string{}
-		}
-		labels["proxy_username"] = listener.Username
-		labels["proxy_password"] = listener.Password
-	}
-	return &proxyruntimev1.ProxyEndpoint{Id: listener.ID, Protocol: protocolFromName(listenerProtocol(listener, r.cfg.LocalProtocol)), Host: host, Port: port, Labels: labels}, nil
+	return leaseapp.NewListenerEndpoint(listener, advertisedHost, r.cfg.LocalProtocol)
 }
 
 func (r *Runtime) sessionAdvertisedHost(advertisedHost string, listener leaseapp.Listener) string {

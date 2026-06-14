@@ -813,10 +813,11 @@ Completed user-visible/runtime batches:
 - Dynamic profile pool session fetch now reuses lease provider-session and concurrency-slot release helpers, with bounded cleanup timeout instead of background-context release.
 - Dynamic profile pool selection, node materialization/labeling, and session identity helpers are split into focused files instead of one mixed pool file.
 - Dynamic lease listener construction, listener labels, and password-required validation are centralized in `internal/app/lease`; runtime keeps only username/password input resolution and app-error mapping.
+- Dynamic lease listener endpoint projection now lives in `internal/app/lease`, including host/port parsing, protocol mapping, and proxy credential labels.
 
 Still open:
 
-- Fully extract lease application into `internal/app/lease`; remaining work is to move provider-session orchestration, listener input resolution, locks, concurrency-slot behavior, and route orchestration out of the current app-level coordinator. Data-plane route apply/delete, lease listener construction, and provider session access now cross lease-owned models/ports, but the coordinator still drives the workflow.
+- Fully extract lease application into `internal/app/lease`; remaining work is to move provider-session orchestration, advertised-host/listener input resolution, locks, concurrency-slot behavior, and route orchestration out of the current app-level coordinator. Data-plane route apply/delete, lease listener construction/endpoint projection, and provider session access now cross lease-owned models/ports, but the coordinator still drives the workflow.
 - Continue splitting Mihomo sourceplane projection, validation, render, and apply stages so no single file owns the whole config pipeline.
 - Move settings orchestration into an explicit settings application package.
 - Separate `httpapi`, `auth`, and `dashboard` packages and keep handlers as thin transport adapters.

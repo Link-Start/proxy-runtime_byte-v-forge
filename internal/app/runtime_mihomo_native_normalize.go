@@ -10,37 +10,10 @@ func normalizeMihomoNativeSettings(view *proxyruntimev1.ProxyRuntimeMihomoNative
 	if view == nil {
 		view = &proxyruntimev1.ProxyRuntimeMihomoNativeConfig{}
 	}
-	out := &proxyruntimev1.ProxyRuntimeMihomoNativeConfig{
-		FixedProxies:  make([]*proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy, 0, len(view.GetFixedProxies())),
-		Subscriptions: make([]*proxyruntimev1.ProxyRuntimeMihomoNativeSubscription, 0, len(view.GetSubscriptions())),
+	return &proxyruntimev1.ProxyRuntimeMihomoNativeConfig{
+		FixedProxies:  normalizeMihomoNativeFixedProxySettings(view.GetFixedProxies()),
+		Subscriptions: normalizeMihomoNativeSubscriptionSettings(view.GetSubscriptions()),
 	}
-	seenFixed := map[string]struct{}{}
-	for _, item := range view.GetFixedProxies() {
-		normalized := normalizeMihomoNativeFixedProxy(nativeFixedProxyFromProto(item), nil)
-		key := firstNonEmpty(normalized.ID, normalized.Name)
-		if key == "" {
-			continue
-		}
-		if _, exists := seenFixed[key]; exists {
-			continue
-		}
-		seenFixed[key] = struct{}{}
-		out.FixedProxies = append(out.FixedProxies, protoMihomoNativeFixedProxy(normalized))
-	}
-	seenSubscriptions := map[string]struct{}{}
-	for _, item := range view.GetSubscriptions() {
-		normalized := normalizeMihomoNativeSubscription(nativeSubscriptionFromProto(item), nil)
-		key := firstNonEmpty(normalized.ID, normalized.Name)
-		if key == "" {
-			continue
-		}
-		if _, exists := seenSubscriptions[key]; exists {
-			continue
-		}
-		seenSubscriptions[key] = struct{}{}
-		out.Subscriptions = append(out.Subscriptions, protoMihomoNativeSubscription(normalized))
-	}
-	return out
 }
 
 func normalizeMihomoNativeFixedProxy(item mihomoNativeFixedProxy, currentByName map[string]mihomoNativeFixedProxy) mihomoNativeFixedProxy {

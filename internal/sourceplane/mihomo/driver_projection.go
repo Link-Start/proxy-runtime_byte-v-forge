@@ -12,6 +12,9 @@ func renderConfigProjection(options renderOptions) (renderedMihomoConfig, error)
 	if err != nil {
 		return renderedMihomoConfig{}, err
 	}
+	if err := validateRenderedMihomoConfig(configFile); err != nil {
+		return renderedMihomoConfig{}, err
+	}
 	return encodeRenderedMihomoConfig(configFile)
 }
 

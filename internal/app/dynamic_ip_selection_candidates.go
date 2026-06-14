@@ -10,6 +10,9 @@ import (
 )
 
 func (p *dynamicIPSelector) dynamicIPEndpointCandidates(ctx context.Context, settings *runtimeSettingsFile, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxyruntimev1.ProxySessionPolicy) ([]scoredDynamicIPEndpointCandidate, error) {
+	if p == nil || p.store == nil {
+		return nil, internalError("dynamic IP selection store is not configured", nil)
+	}
 	accounts, err := p.store.ListProviderAccounts(ctx)
 	if err != nil {
 		return nil, err
@@ -21,7 +24,7 @@ func (p *dynamicIPSelector) dynamicIPEndpointCandidates(ctx context.Context, set
 		if account.GetStatus() != proxyruntimev1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED || !account.GetCredentialConfigured() {
 			continue
 		}
-		if !p.accountProviders.IsSupported(account.GetProviderId()) {
+		if !p.providerSupported(account.GetProviderId()) {
 			continue
 		}
 		out = append(out, p.dynamicIPEndpointCandidatesForAccount(ctx, account, accountIndex, providerInstances, policy, sessionPolicy, filter)...)
@@ -95,9 +98,11 @@ func (p *dynamicIPSelector) dynamicIPEndpointCandidatesForAccount(ctx context.Co
 }
 
 func (p *dynamicIPSelector) endpointProtocolForProvider(providerID string, endpoint accountproxy.Gateway) string {
-	protocol, ok := p.accountProviders.GatewayProtocolForProvider(providerID, endpoint)
-	if ok {
-		return protocol
+	if p != nil && p.accountProviders != nil {
+		protocol, ok := p.accountProviders.GatewayProtocolForProvider(providerID, endpoint)
+		if ok {
+			return protocol
+		}
 	}
 	return accountproxy.GatewayProtocol(endpoint, "socks5")
 }

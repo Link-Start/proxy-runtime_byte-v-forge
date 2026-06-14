@@ -742,6 +742,7 @@ Completed user-visible/runtime batches:
 - Runtime settings application construction now uses an explicit dependency object, and settings usecases guard missing repositories/loggers instead of dereferencing app fields directly.
 - Runtime status application now depends on an injected status snapshot function instead of holding `*Runtime`.
 - Lease coordinator construction now accepts explicit orchestration dependencies; `Runtime` is only adapted in a dedicated wiring file.
+- Dynamic IP selector construction now uses explicit store, settings, provider-registry, concurrency, logger, and geo-lookup dependencies behind a dedicated Runtime wiring adapter.
 
 Still open:
 

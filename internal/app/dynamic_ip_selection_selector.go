@@ -4,12 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
-	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -26,11 +24,20 @@ type scoredDynamicIPEndpointCandidate struct {
 
 type dynamicIPSelector struct {
 	store            dynamicIPSelectionStore
-	settings         *runtimeSettingsStore
-	accountProviders *providerregistry.Registry
+	settings         dynamicIPSelectionSettings
+	accountProviders dynamicIPSelectionProviderRegistry
 	concurrency      providerAccountConcurrencyLimiter
-	logger           *slog.Logger
+	logger           dynamicIPSelectionLogger
 	lookupIPGeo      func(context.Context, string) (proxyExitGeo, error)
+}
+
+type dynamicIPSelectorDependencies struct {
+	Store            dynamicIPSelectionStore
+	Settings         dynamicIPSelectionSettings
+	AccountProviders dynamicIPSelectionProviderRegistry
+	Concurrency      providerAccountConcurrencyLimiter
+	Logger           dynamicIPSelectionLogger
+	LookupIPGeo      func(context.Context, string) (proxyExitGeo, error)
 }
 
 type dynamicIPSelectionStore interface {
@@ -38,19 +45,32 @@ type dynamicIPSelectionStore interface {
 	RecentLeaseFacts(context.Context, time.Time, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 }
 
-func newDynamicIPSelector(runtime *Runtime) *dynamicIPSelector {
+type dynamicIPSelectionSettings interface {
+	load(context.Context) (*runtimeSettingsFile, error)
+}
+
+type dynamicIPSelectionProviderRegistry interface {
+	IsSupported(string) bool
+	GatewayProtocolForProvider(string, accountproxy.Gateway) (string, bool)
+}
+
+type dynamicIPSelectionLogger interface {
+	Warn(string, ...any)
+}
+
+func newDynamicIPSelector(deps dynamicIPSelectorDependencies) *dynamicIPSelector {
 	return &dynamicIPSelector{
-		store:            runtime.store,
-		settings:         runtime.settings,
-		accountProviders: runtime.accountProviders,
-		concurrency:      runtime.providerConcurrency,
-		logger:           runtime.logger,
-		lookupIPGeo:      runtime.lookupIPGeo,
+		store:            deps.Store,
+		settings:         deps.Settings,
+		accountProviders: deps.AccountProviders,
+		concurrency:      deps.Concurrency,
+		logger:           deps.Logger,
+		lookupIPGeo:      deps.LookupIPGeo,
 	}
 }
 
 func (p *dynamicIPSelector) selectDynamicIPEndpoint(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (dynamicIPSelection, error) {
-	settings, err := p.settings.load(ctx)
+	settings, err := p.loadSettings(ctx)
 	if err != nil {
 		return dynamicIPSelection{}, err
 	}
@@ -76,6 +96,23 @@ func (p *dynamicIPSelector) selectDynamicIPEndpoint(ctx context.Context, req *pr
 		SelectedAt:       timestamppb.New(time.Now().UTC()),
 	}
 	return dynamicIPSelection{plan: plan, endpoint: selectedEndpoint.endpoint}, nil
+}
+
+func (p *dynamicIPSelector) loadSettings(ctx context.Context) (*runtimeSettingsFile, error) {
+	if p == nil || p.settings == nil {
+		return nil, internalError("dynamic IP selection settings repository is not configured", nil)
+	}
+	return p.settings.load(ctx)
+}
+
+func (p *dynamicIPSelector) providerSupported(providerID string) bool {
+	return p != nil && p.accountProviders != nil && p.accountProviders.IsSupported(providerID)
+}
+
+func (p *dynamicIPSelector) warn(message string, args ...any) {
+	if p != nil && p.logger != nil {
+		p.logger.Warn(message, args...)
+	}
 }
 
 func dynamicIPSelectionPlanPolicy(policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) *proxyruntimev1.ProxyDynamicIPSelectionPolicy {

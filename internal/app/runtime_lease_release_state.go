@@ -27,8 +27,17 @@ func (c leaseCoordinator) saveLeaseReleased(ctx context.Context, lease *proxyrun
 	return c.saveFinalLeaseState(ctx, lease, leaseapp.FinalLeaseStateReleased)
 }
 
+func (c leaseCoordinator) saveLeaseCleanupProgress(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+	stage, err := leaseapp.SaveCleanupProgress(ctx, c.deps.store, c.deps.providerConcurrency, lease)
+	return c.finalLeaseSaveError(lease, stage, err)
+}
+
 func (c leaseCoordinator) saveFinalLeaseState(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, state leaseapp.FinalLeaseState) error {
 	stage, err := leaseapp.SaveFinalLeaseState(ctx, c.deps.store, c.deps.providerConcurrency, lease, state)
+	return c.finalLeaseSaveError(lease, stage, err)
+}
+
+func (c leaseCoordinator) finalLeaseSaveError(lease *proxyruntimev1.ProxyDynamicLease, stage leaseapp.FinalLeaseSaveStage, err error) error {
 	if err == nil {
 		return nil
 	}

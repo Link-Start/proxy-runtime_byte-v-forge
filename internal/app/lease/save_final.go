@@ -44,3 +44,23 @@ func saveFinalLeaseState(ctx context.Context, store OrchestrationStore, lease *p
 		return ErrFinalLeaseStateUnsupported
 	}
 }
+
+func SaveCleanupProgress(ctx context.Context, store OrchestrationStore, limiter ProviderAccountConcurrencyLimiter, lease *proxyruntimev1.ProxyDynamicLease) (FinalLeaseSaveStage, error) {
+	if CleanupPending(lease) {
+		if err := store.SaveLeaseFact(ctx, lease); err != nil {
+			return FinalLeaseSaveState, err
+		}
+		return FinalLeaseSaveNoError, nil
+	}
+	switch CleanupFinalStatus(lease) {
+	case CleanupFinalExpired:
+		return SaveFinalLeaseState(ctx, store, limiter, lease, FinalLeaseStateExpired)
+	case CleanupFinalReleased:
+		return SaveFinalLeaseState(ctx, store, limiter, lease, FinalLeaseStateReleased)
+	default:
+		if err := store.SaveLeaseFact(ctx, lease); err != nil {
+			return FinalLeaseSaveState, err
+		}
+		return FinalLeaseSaveNoError, nil
+	}
+}

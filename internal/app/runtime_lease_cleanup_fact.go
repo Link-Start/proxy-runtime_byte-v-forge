@@ -42,15 +42,6 @@ func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *pr
 			}
 			leaseapp.ClearCleanupPending(current, false, true)
 		}
-		if !leaseapp.CleanupPending(current) {
-			switch leaseapp.CleanupFinalStatus(current) {
-			case leaseapp.CleanupFinalExpired:
-				return c.saveLeaseExpired(ctx, current)
-			case leaseapp.CleanupFinalReleased:
-				return c.saveLeaseReleased(ctx, current)
-			}
-			return c.deps.store.SaveLeaseFact(ctx, current)
-		}
-		return c.deps.store.SaveLeaseFact(ctx, current)
+		return c.saveLeaseCleanupProgress(ctx, current)
 	})
 }

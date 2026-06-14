@@ -925,6 +925,7 @@ Completed user-visible/runtime batches:
 - Provider session release now runs through `internal/app/lease`, including stateless-session skipping, provider config loading, gateway binding, factory use, and provider release invocation.
 - Provider session release locking is now centralized in `internal/app/lease` and reused by normal release, expiry cleanup, and cleanup-pending retry paths.
 - Restored lease provider-session node fetch now runs through `internal/app/lease`, sharing gateway binding and session-provider factory use with the release/acquire paths.
+- Cleanup-pending progress persistence now runs through `internal/app/lease`, including cleanup-final status handling and final concurrency-slot release.
 
 Still open:
 

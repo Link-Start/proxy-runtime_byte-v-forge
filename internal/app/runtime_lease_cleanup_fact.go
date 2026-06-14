@@ -30,14 +30,14 @@ func (c leaseCoordinator) cleanupPendingLeaseFact(ctx context.Context, lease *pr
 			leaseapp.ClearCleanupPending(current, true, false)
 		}
 		if leaseapp.ProviderCleanupPending(current) {
-			releaseProvider := func(ctx context.Context) error {
-				if releaseErr := c.releaseLeaseProviderSession(ctx, current); releaseErr != nil {
-					_ = c.saveLeaseCleanupRetry(ctx, current, "provider session cleanup failed")
+			releaseProvider := func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+				if releaseErr := c.releaseLeaseProviderSession(ctx, lease); releaseErr != nil {
+					_ = c.saveLeaseCleanupRetry(ctx, lease, "provider session cleanup failed")
 					return releaseErr
 				}
 				return nil
 			}
-			if err := leaseapp.WithProviderAccountLock(ctx, c.deps.locks, current.GetProviderAccountId(), releaseProvider); err != nil {
+			if err := leaseapp.ReleaseLeaseProviderSessionWithLock(ctx, c.deps.locks, current, releaseProvider); err != nil {
 				return err
 			}
 			leaseapp.ClearCleanupPending(current, false, true)

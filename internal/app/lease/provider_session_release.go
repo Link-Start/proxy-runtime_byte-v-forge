@@ -45,3 +45,14 @@ func NeedsProviderSessionRelease(lease *proxyruntimev1.ProxyDynamicLease) bool {
 	}
 	return !StatelessProviderSession(lease.GetSession())
 }
+
+type ProviderSessionReleaseAction func(context.Context, *proxyruntimev1.ProxyDynamicLease) error
+
+func ReleaseLeaseProviderSessionWithLock(ctx context.Context, locks LockManager, lease *proxyruntimev1.ProxyDynamicLease, release ProviderSessionReleaseAction) error {
+	if release == nil {
+		return nil
+	}
+	return WithProviderAccountLock(ctx, locks, lease.GetProviderAccountId(), func(ctx context.Context) error {
+		return release(ctx, lease)
+	})
+}

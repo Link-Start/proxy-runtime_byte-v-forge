@@ -19,7 +19,7 @@ func (c leaseCoordinator) retireLeaseRoute(ctx context.Context, lease *proxyrunt
 	if lease.GetAccountId() == playgroundProfileID {
 		c.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
 	}
-	releaseErr := c.releaseLeaseProviderSessionWithLock(ctx, lease)
+	releaseErr := leaseapp.ReleaseLeaseProviderSessionWithLock(ctx, c.deps.locks, lease, c.releaseLeaseProviderSession)
 	if releaseErr != nil {
 		c.warn("provider session release failed", leaseapp.LabelAccountID, lease.GetAccountId(), leaseapp.LabelProviderAccountID, lease.GetProviderAccountId())
 		if err := c.saveLeaseReleaseCleanupFailure(ctx, lease, false, true, "provider session release failed"); err != nil {
@@ -28,10 +28,4 @@ func (c leaseCoordinator) retireLeaseRoute(ctx context.Context, lease *proxyrunt
 		return releaseErr
 	}
 	return c.saveLeaseReleased(ctx, lease)
-}
-
-func (c leaseCoordinator) releaseLeaseProviderSessionWithLock(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	return leaseapp.WithProviderAccountLock(ctx, c.deps.locks, lease.GetProviderAccountId(), func(ctx context.Context) error {
-		return c.releaseLeaseProviderSession(ctx, lease)
-	})
 }

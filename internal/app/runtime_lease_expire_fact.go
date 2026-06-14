@@ -26,14 +26,14 @@ func (c leaseCoordinator) expireLeaseFact(ctx context.Context, lease *proxyrunti
 			_ = c.saveLeaseExpiredCleanupFailure(ctx, current, true, false, "expired lease route cleanup failed")
 			return err
 		}
-		releaseProvider := func(ctx context.Context) error {
-			if releaseErr := c.releaseLeaseProviderSession(ctx, current); releaseErr != nil {
-				_ = c.saveLeaseExpiredCleanupFailure(ctx, current, false, true, "expired provider session cleanup failed")
+		releaseProvider := func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+			if releaseErr := c.releaseLeaseProviderSession(ctx, lease); releaseErr != nil {
+				_ = c.saveLeaseExpiredCleanupFailure(ctx, lease, false, true, "expired provider session cleanup failed")
 				return releaseErr
 			}
 			return nil
 		}
-		if err := leaseapp.WithProviderAccountLock(ctx, c.deps.locks, current.GetProviderAccountId(), releaseProvider); err != nil {
+		if err := leaseapp.ReleaseLeaseProviderSessionWithLock(ctx, c.deps.locks, current, releaseProvider); err != nil {
 			_ = c.saveLeaseExpiredCleanupFailure(ctx, current, false, true, "expired provider session cleanup lock failed")
 			return err
 		}

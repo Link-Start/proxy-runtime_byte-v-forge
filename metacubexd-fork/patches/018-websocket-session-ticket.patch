@@ -1,0 +1,143 @@
+diff --git a/composables/useWebSocket.ts b/composables/useWebSocket.ts
+index 3264c28..528db28 100644
+--- a/composables/useWebSocket.ts
++++ b/composables/useWebSocket.ts
+@@ -2,6 +2,9 @@ import type { Log, MemoryData, TrafficData, WsMsg } from '~/types'
+ import { getCurrentScope, onScopeDispose } from 'vue'
+ import { useMockMode } from './useApi'
+ import { useMockData } from './useMockData'
++import {
++  proxyRuntimeWebSocketSessionParam,
++} from '~/composables/proxyRuntimeEndpointAuth'
+ // Delay before retrying after an unexpected socket close (e.g. "Restart Core").
+ const RECONNECT_DELAY = 3000
+
+@@ -49,11 +52,13 @@ export function useBackendWebSocket() {
+   const createWebSocket = (
+     path: string,
+     onMessage: (data: unknown) => void,
++    sessionParam: string,
+   ) => {
+     const endpoint = endpointStore.currentEndpoint
+     if (!endpoint) return null
+     const wsUrl = endpointStore.wsEndpointURL
+-    const ws = new WebSocket(`${wsUrl}/${path}`)
++    const query = sessionParam ? `?${sessionParam}` : ''
++    const ws = new WebSocket(`${wsUrl}/${path}${query}`)
+
+     ws.onmessage = (event) => {
+       try {
+@@ -159,39 +164,57 @@ export function useBackendWebSocket() {
+       return
+     }
+
++    void connectRuntimeWebSockets()
++  }
++
++  const connectRuntimeWebSockets = async () => {
++    const sessionParam = await proxyRuntimeWebSocketSessionParam()
++
+     // Connections WebSocket
+-    connectionsWs = createWebSocket('connections', (data: unknown) => {
+-      const wsMsg = data as WsMsg
+-      connectionsStore.updateFromWsMsg(wsMsg)
+-      // Add data point for connection count history
+-      if (wsMsg) {
+-        const connectionCount = wsMsg.connections?.length ?? 0
+-        globalStore.addConnectionCountDataPoint(Date.now(), connectionCount)
+-      }
+-    })
++    connectionsWs = createWebSocket(
++      'connections',
++      (data: unknown) => {
++        const wsMsg = data as WsMsg
++        connectionsStore.updateFromWsMsg(wsMsg)
++        // Add data point for connection count history
++        if (wsMsg) {
++          const connectionCount = wsMsg.connections?.length ?? 0
++          globalStore.addConnectionCountDataPoint(Date.now(), connectionCount)
++        }
++      },
++      sessionParam,
++    )
+
+     // Traffic WebSocket
+-    trafficWs = createWebSocket('traffic', (data: unknown) => {
+-      const trafficData = data as TrafficData
+-      globalStore.setLatestTraffic(trafficData)
+-      // Add data point for chart history
+-      globalStore.addTrafficDataPoint(
+-        Date.now(),
+-        trafficData.down,
+-        trafficData.up,
+-      )
+-    })
++    trafficWs = createWebSocket(
++      'traffic',
++      (data: unknown) => {
++        const trafficData = data as TrafficData
++        globalStore.setLatestTraffic(trafficData)
++        // Add data point for chart history
++        globalStore.addTrafficDataPoint(
++          Date.now(),
++          trafficData.down,
++          trafficData.up,
++        )
++      },
++      sessionParam,
++    )
+
+     // Memory WebSocket
+-    memoryWs = createWebSocket('memory', (data: unknown) => {
+-      const memoryData = data as MemoryData
+-      globalStore.setLatestMemory(memoryData)
+-      // Add data point for chart history
+-      globalStore.addMemoryDataPoint(Date.now(), memoryData.inuse)
+-    })
++    memoryWs = createWebSocket(
++      'memory',
++      (data: unknown) => {
++        const memoryData = data as MemoryData
++        globalStore.setLatestMemory(memoryData)
++        // Add data point for chart history
++        globalStore.addMemoryDataPoint(Date.now(), memoryData.inuse)
++      },
++      sessionParam,
++    )
+
+     // Logs WebSocket
+-    logsWs = createLogsWebSocket()
++    logsWs = createLogsWebSocket(sessionParam)
+   }
+
+   // Disconnect all WebSockets
+@@ -220,11 +243,12 @@ export function useBackendWebSocket() {
+   }
+
+   // Helper: create logs WebSocket
+-  const createLogsWebSocket = (): WebSocket | null => {
++  const createLogsWebSocket = (sessionParam: string): WebSocket | null => {
+     const endpoint = endpointStore.currentEndpoint
+     if (!endpoint) return null
+     const wsUrl = endpointStore.wsEndpointURL
+-    const params = new URLSearchParams({ level: configStore.logLevel })
++    const params = new URLSearchParams(sessionParam)
++    params.set('level', configStore.logLevel)
+
+     const ws = new WebSocket(`${wsUrl}/logs?${params.toString()}`)
+     ws.onmessage = (event) => {
+@@ -246,7 +270,13 @@ export function useBackendWebSocket() {
+   // Reconnect (e.g., when log level changes)
+   const reconnectLogs = () => {
+     closeWs(logsWs)
+-    logsWs = useMockMode() ? null : createLogsWebSocket()
++    if (useMockMode()) {
++      logsWs = null
++      return
++    }
++    void proxyRuntimeWebSocketSessionParam().then((sessionParam) => {
++      logsWs = createLogsWebSocket(sessionParam)
++    })
+   }
+
+   if (getCurrentScope()) {

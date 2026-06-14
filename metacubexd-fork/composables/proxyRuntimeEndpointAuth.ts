@@ -40,3 +40,21 @@ export function redirectToProxyRuntimeLogin() {
 function proxyRuntimeCurrentPath() {
   return `${window.location.pathname}${window.location.search}${window.location.hash}`
 }
+
+interface ProxyRuntimeWebSocketTokenResponse {
+  token?: string
+}
+
+export async function proxyRuntimeWebSocketSessionParam() {
+  if (!proxyRuntimeAuthRequired()) return ''
+  const response = await fetch('/api/auth/ws-token', {
+    credentials: 'same-origin',
+    headers: { Accept: 'application/json' },
+  })
+  if (!response.ok) {
+    if (isUnauthorizedStatus(response.status)) redirectToProxyRuntimeLogin()
+    return ''
+  }
+  const body = (await response.json()) as ProxyRuntimeWebSocketTokenResponse
+  return body.token ? `session=${encodeURIComponent(body.token)}` : ''
+}

@@ -22,6 +22,7 @@ const (
 	runtimeSessionCookieName = "proxy_runtime_session"
 	runtimeSessionVersion    = "v1"
 	runtimeSessionTTL        = 12 * time.Hour
+	runtimeWebSocketTokenTTL = 2 * time.Minute
 )
 
 type runtimeAuthSessionResponse struct {
@@ -33,9 +34,24 @@ type runtimeAuthLoginRequest struct {
 	Token string `json:"token"`
 }
 
+type runtimeAuthWebSocketTokenResponse struct {
+	Token string `json:"token"`
+}
+
 func (api *runtimeHTTPAPI) handleAuthSession(ctx *gin.Context) {
 	ctx.Header("Cache-Control", "no-store")
 	api.writeAuthSession(ctx, api.sessionAuthenticated(ctx.Request))
+}
+
+func (api *runtimeHTTPAPI) handleAuthWebSocketToken(ctx *gin.Context) {
+	token, err := signRuntimeSession(api.authToken, time.Now().Add(runtimeWebSocketTokenTTL))
+	if err != nil {
+		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
+		return
+	}
+	ctx.Header("Cache-Control", "no-store")
+	ctx.Header("Content-Type", "application/json")
+	_ = json.NewEncoder(ctx.Writer).Encode(runtimeAuthWebSocketTokenResponse{Token: token})
 }
 
 func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
@@ -143,6 +159,16 @@ func (api *runtimeHTTPAPI) sessionAuthenticated(req *http.Request) bool {
 		return false
 	}
 	return verifyRuntimeSession(cookie.Value, api.authToken, time.Now())
+}
+
+func (api *runtimeHTTPAPI) requestAuthenticated(req *http.Request) bool {
+	if api.sessionAuthenticated(req) {
+		return true
+	}
+	if req == nil || req.URL == nil || !pathInPrefix(req.URL.Path, "/mihomo/controller") {
+		return false
+	}
+	return verifyRuntimeSession(req.URL.Query().Get("session"), api.authToken, time.Now())
 }
 
 func (api *runtimeHTTPAPI) setSessionCookie(ctx *gin.Context) error {
@@ -261,6 +287,7 @@ func mihomoControllerUpstreamRawQuery(rawQuery string) string {
 		return rawQuery
 	}
 	values.Del("token")
+	values.Del("session")
 	return values.Encode()
 }
 

@@ -17,7 +17,7 @@ func (api *runtimeHTTPAPI) authorize(ctx *gin.Context) bool {
 	if expected == "" {
 		return true
 	}
-	if api.sessionAuthenticated(ctx.Request) {
+	if api.requestAuthenticated(ctx.Request) {
 		return true
 	}
 	if api.redirectLoginPreferred(ctx.Request) {
@@ -38,7 +38,7 @@ func (api *runtimeHTTPAPI) authRequired(requestPath string) bool {
 	case "", "/", "/healthz", "/readyz", "/login":
 		return false
 	}
-	if pathInPrefix(requestPath, "/api/auth") {
+	if publicRuntimeAuthPath(requestPath) {
 		return false
 	}
 	return true
@@ -69,6 +69,15 @@ func (api *runtimeHTTPAPI) forwardMihomoControllerAuthorization(out *http.Reques
 	}
 	out.Header.Set("Authorization", "Bearer "+strings.TrimSpace(token))
 	out.URL.RawQuery = mihomoControllerUpstreamRawQuery(out.URL.RawQuery)
+}
+
+func publicRuntimeAuthPath(requestPath string) bool {
+	switch strings.TrimRight(strings.TrimSpace(requestPath), "/") {
+	case "/api/auth/session", "/api/auth/login", "/api/auth/logout":
+		return true
+	default:
+		return false
+	}
 }
 
 func pathInPrefix(requestPath string, prefix string) bool {

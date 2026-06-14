@@ -728,6 +728,7 @@ Completed user-visible/runtime batches:
 - Lease concurrency mode/text and slot TTL calculation are centralized in `internal/app/lease`; provider-account concurrency adapters now use lease policy interpretation from the lease package.
 - Dynamic lease endpoint-id extraction is centralized in `internal/app/lease`; dynamic IP endpoint health scoring no longer reads selection/egress/session labels directly.
 - Dynamic lease ID generation now goes through an injected lease ID generator port; acquire and failed-acquire persistence no longer call the random package directly.
+- Dynamic lease account, purpose, session, provider-account, selection, endpoint, dynamic-provider, and concurrency-holder label keys are centralized in `internal/app/lease`, removing duplicated lease label strings from runtime orchestration.
 
 Still open:
 

@@ -12,7 +12,7 @@ func EndpointID(lease *proxyruntimev1.ProxyDynamicLease) string {
 	}
 	return strings.TrimSpace(firstNonEmpty(
 		lease.GetSelectionPlan().GetSelectedEndpoint().GetEndpointId(),
-		lease.GetEgress().GetLabels()["dynamic_ip_endpoint_id"],
-		lease.GetSession().GetPolicy().GetLabels()["dynamic_ip_endpoint_id"],
+		lease.GetEgress().GetLabels()[LabelDynamicIPEndpointID],
+		lease.GetSession().GetPolicy().GetLabels()[LabelDynamicIPEndpointID],
 	))
 }

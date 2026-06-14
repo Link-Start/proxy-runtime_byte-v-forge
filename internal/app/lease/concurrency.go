@@ -7,6 +7,17 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
+const (
+	LabelAccountID                        = "account_id"
+	LabelPurpose                          = "purpose"
+	LabelSessionID                        = "session_id"
+	LabelProviderAccountID                = "provider_account_id"
+	LabelProviderAccountConcurrencyHolder = "provider_account_concurrency_holder"
+	LabelDynamicProviderID                = "dynamic_provider_id"
+	LabelDynamicIPEndpointID              = "dynamic_ip_endpoint_id"
+	LabelSelectionID                      = "selection_id"
+)
+
 func ConcurrencyMode(policy *proxyruntimev1.ProxySessionPolicy) proxyruntimev1.ProxySessionMode {
 	if policy == nil {
 		return proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY
@@ -46,13 +57,17 @@ func ConcurrencyHolder(lease *proxyruntimev1.ProxyDynamicLease) string {
 	if lease == nil {
 		return ""
 	}
-	if holder := strings.TrimSpace(lease.GetEgress().GetLabels()["provider_account_concurrency_holder"]); holder != "" {
+	if holder := strings.TrimSpace(lease.GetEgress().GetLabels()[LabelProviderAccountConcurrencyHolder]); holder != "" {
 		return holder
 	}
-	if holder := strings.TrimSpace(lease.GetSession().GetLabels()["provider_account_concurrency_holder"]); holder != "" {
+	if holder := strings.TrimSpace(lease.GetSession().GetLabels()[LabelProviderAccountConcurrencyHolder]); holder != "" {
 		return holder
 	}
-	if leaseID := strings.TrimSpace(lease.GetLeaseId()); leaseID != "" {
+	return HolderForLeaseID(lease.GetLeaseId())
+}
+
+func HolderForLeaseID(leaseID string) string {
+	if leaseID = strings.TrimSpace(leaseID); leaseID != "" {
 		return "lease:" + leaseID
 	}
 	return ""
@@ -62,10 +77,10 @@ func DynamicProviderID(lease *proxyruntimev1.ProxyDynamicLease) string {
 	if lease == nil {
 		return ""
 	}
-	if dynamicProviderID := strings.TrimSpace(lease.GetEgress().GetLabels()["dynamic_provider_id"]); dynamicProviderID != "" {
+	if dynamicProviderID := strings.TrimSpace(lease.GetEgress().GetLabels()[LabelDynamicProviderID]); dynamicProviderID != "" {
 		return dynamicProviderID
 	}
-	if dynamicProviderID := strings.TrimSpace(lease.GetSession().GetLabels()["dynamic_provider_id"]); dynamicProviderID != "" {
+	if dynamicProviderID := strings.TrimSpace(lease.GetSession().GetLabels()[LabelDynamicProviderID]); dynamicProviderID != "" {
 		return dynamicProviderID
 	}
 	if endpoint := lease.GetSelectionPlan().GetSelectedEndpoint(); endpoint != nil {

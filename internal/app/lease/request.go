@@ -27,8 +27,8 @@ func ApplyRequestLabels(req *proxyruntimev1.AcquireProxyLeaseRequest) {
 	if req.Policy.Labels == nil {
 		req.Policy.Labels = map[string]string{}
 	}
-	req.Policy.Labels["account_id"] = req.GetAccountId()
-	req.Policy.Labels["purpose"] = req.GetPurpose()
+	req.Policy.Labels[LabelAccountID] = req.GetAccountId()
+	req.Policy.Labels[LabelPurpose] = req.GetPurpose()
 }
 
 func firstNonEmpty(values ...string) string {

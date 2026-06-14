@@ -65,7 +65,7 @@ func (c leaseCoordinator) acquireLeaseWithAccountLock(ctx context.Context, adver
 		if !retryLeaseAcquireAttempt(err) {
 			return nil, err
 		}
-		c.warn("dynamic IP lease attempt failed", "account_id", req.GetAccountId(), "purpose", req.GetPurpose(), "attempt", attempt, "error_type", errorLogType(err))
+		c.warn("dynamic IP lease attempt failed", leaseapp.LabelAccountID, req.GetAccountId(), leaseapp.LabelPurpose, req.GetPurpose(), "attempt", attempt, "error_type", errorLogType(err))
 	}
 	return nil, lastErr
 }
@@ -84,7 +84,7 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 	if err != nil {
 		return nil, internalError("generate lease id", err)
 	}
-	concurrencyHolder := "lease:" + leaseID
+	concurrencyHolder := leaseapp.HolderForLeaseID(leaseID)
 	concurrencySlot, err := c.acquireProviderAccountConcurrencySlot(ctx, providerAccount, dynamicProviderConcurrencyLimit(settings, selection.plan.GetSelectedEndpoint().GetDynamicProviderId(), req.GetPolicy()), req.GetPolicy(), concurrencyHolder, leaseapp.ConcurrencySlotTTL(req.GetPolicy(), defaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
 	if err != nil {
 		return nil, failedPrecondition("provider account concurrency limit reached", err)
@@ -119,11 +119,11 @@ func (c leaseCoordinator) acquireLeaseWithProviderAccountLock(ctx context.Contex
 	}
 	requestedSessionID := leaseapp.RequestedSessionID(req)
 	if requestedSessionID != "" {
-		req.Policy.Labels["session_id"] = requestedSessionID
+		req.Policy.Labels[leaseapp.LabelSessionID] = requestedSessionID
 	}
-	req.Policy.Labels["selection_id"] = selection.plan.GetSelectionId()
-	req.Policy.Labels["dynamic_ip_endpoint_id"] = selection.plan.GetSelectedEndpoint().GetEndpointId()
-	req.Policy.Labels["provider_account_concurrency_holder"] = concurrencyHolder
+	req.Policy.Labels[leaseapp.LabelSelectionID] = selection.plan.GetSelectionId()
+	req.Policy.Labels[leaseapp.LabelDynamicIPEndpointID] = selection.plan.GetSelectedEndpoint().GetEndpointId()
+	req.Policy.Labels[leaseapp.LabelProviderAccountConcurrencyHolder] = concurrencyHolder
 	session, err := providerClient.CreateSession(ctx, req)
 	if err != nil {
 		return nil, unavailable("provider session create failed", err)
@@ -167,13 +167,13 @@ func (c leaseCoordinator) applyAcquiredLeaseRoute(ctx context.Context, advertise
 	egress.UpstreamKind = proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP
 	egress.RotationMode = req.GetPolicy().GetRotationMode()
 	egress.SessionId = session.GetSessionId()
-	egress.Labels["account_id"] = req.GetAccountId()
-	egress.Labels["purpose"] = req.GetPurpose()
-	egress.Labels["provider_account_id"] = providerAccountID
-	egress.Labels["selection_id"] = selection.plan.GetSelectionId()
-	egress.Labels["dynamic_provider_id"] = selection.plan.GetSelectedEndpoint().GetDynamicProviderId()
-	egress.Labels["dynamic_ip_endpoint_id"] = selection.plan.GetSelectedEndpoint().GetEndpointId()
-	egress.Labels["provider_account_concurrency_holder"] = concurrencyHolder
+	egress.Labels[leaseapp.LabelAccountID] = req.GetAccountId()
+	egress.Labels[leaseapp.LabelPurpose] = req.GetPurpose()
+	egress.Labels[leaseapp.LabelProviderAccountID] = providerAccountID
+	egress.Labels[leaseapp.LabelSelectionID] = selection.plan.GetSelectionId()
+	egress.Labels[leaseapp.LabelDynamicProviderID] = selection.plan.GetSelectedEndpoint().GetDynamicProviderId()
+	egress.Labels[leaseapp.LabelDynamicIPEndpointID] = selection.plan.GetSelectedEndpoint().GetEndpointId()
+	egress.Labels[leaseapp.LabelProviderAccountConcurrencyHolder] = concurrencyHolder
 	if countryCode := strings.TrimSpace(selection.plan.GetPolicy().GetCountryCode()); countryCode != "" {
 		egress.Labels["country_code"] = countryCode
 	}
@@ -360,7 +360,7 @@ func (c leaseCoordinator) retireLeaseRoute(ctx context.Context, lease *proxyrunt
 	}
 	releaseErr := c.releaseLeaseProviderSessionWithLock(ctx, lease)
 	if releaseErr != nil {
-		c.warn("provider session release failed", "account_id", lease.GetAccountId(), "provider_account_id", lease.GetProviderAccountId())
+		c.warn("provider session release failed", leaseapp.LabelAccountID, lease.GetAccountId(), leaseapp.LabelProviderAccountID, lease.GetProviderAccountId())
 		if err := c.saveLeaseReleaseCleanupFailure(ctx, lease, false, true, "provider session release failed"); err != nil {
 			return err
 		}

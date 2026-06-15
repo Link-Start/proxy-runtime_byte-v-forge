@@ -7,7 +7,7 @@ func (c leaseCoordinator) leaseRouteRetirer() leaseapp.LeaseRouteRetirer {
 		deps:             c.deps,
 		settings:         c.settingsAdapter(),
 		sideEffects:      c.routeSideEffects(),
-		observeFinalSlot: c.warnFinalConcurrencyReleaseFailed,
+		observeFinalSlot: warnFinalLeaseConcurrencyReleaseFailed(c.deps.logger),
 	}.New()
 }
 

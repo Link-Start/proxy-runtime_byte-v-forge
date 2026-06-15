@@ -98,13 +98,17 @@ export function useProxyRuntimeApi() {
         method: 'PUT',
         body: proxyRuntimeJsonBody(req),
       }),
-    listIPFraudProviders: () =>
+    listIPFraudProviders: (options: ProxyRuntimeRequestOptions = {}) =>
       proxyRuntimeRequest<ListProxyIPFraudProvidersResponse>(
         '/settings/ip-fraud-providers',
+        {},
+        options,
       ),
-    listIPGeoProviders: () =>
+    listIPGeoProviders: (options: ProxyRuntimeRequestOptions = {}) =>
       proxyRuntimeRequest<ListProxyIPGeoProvidersResponse>(
         '/settings/ip-geo-providers',
+        {},
+        options,
       ),
     checkProxyIPFraud: (req: CheckProxyIPFraudRequest) =>
       proxyRuntimeRequest<CheckProxyIPFraudResponse>('/ip_fraud_check', {

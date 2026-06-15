@@ -1,4 +1,7 @@
-import { proxyRuntimeUserMessage } from '~/composables/proxyRuntimeFetch'
+import {
+  isProxyRuntimeCancellation,
+  proxyRuntimeUserMessage,
+} from '~/composables/proxyRuntimeFetch'
 import type {
   ProxyEdgeAccessCheck,
   ProxyExitGeo,
@@ -47,18 +50,25 @@ export function useProxyRuntimePlugins() {
   const saving = ref(false)
   const checking = ref(false)
   const error = ref('')
+  let loadController: AbortController | undefined
+  let loadSequence = 0
   const availableFraudProviderOptions = computed(() => descriptors.value)
   const availableGeoProviderOptions = computed(() => geoDescriptors.value)
 
   async function load() {
+    const sequence = nextLoadSequence()
+    const controller = new AbortController()
+    loadController = controller
     loading.value = true
     error.value = ''
     try {
+      const requestOptions = { signal: controller.signal }
       const [settingsRes, fraudRes, geoRes] = await Promise.all([
-        api.getSettings(),
-        api.listIPFraudProviders(),
-        api.listIPGeoProviders(),
+        api.getSettings(requestOptions),
+        api.listIPFraudProviders(requestOptions),
+        api.listIPGeoProviders(requestOptions),
       ])
+      if (!currentLoad(sequence)) return
       settings.value = settingsRes.settings
       descriptors.value = fraudRes.providers || []
       geoDescriptors.value = geoRes.providers || []
@@ -69,11 +79,32 @@ export function useProxyRuntimePlugins() {
       edgeForm.token_value = ''
       edgeForm.clear_token = false
     } catch (err) {
+      if (!currentLoad(sequence) || isProxyRuntimeCancellation(err)) return
       error.value = proxyRuntimeUserMessage(err)
     } finally {
-      loading.value = false
+      if (currentLoad(sequence)) {
+        loading.value = false
+        loadController = undefined
+      }
     }
   }
+
+  function abortLoad() {
+    loadController?.abort()
+    loadController = undefined
+  }
+
+  function nextLoadSequence() {
+    abortLoad()
+    loadSequence += 1
+    return loadSequence
+  }
+
+  function currentLoad(sequence: number) {
+    return sequence === loadSequence
+  }
+
+  onBeforeUnmount(abortLoad)
 
   async function save() {
     if (!settings.value) return false

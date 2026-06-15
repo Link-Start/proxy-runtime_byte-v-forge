@@ -1034,6 +1034,7 @@ Completed user-visible/runtime batches:
 - Dynamic IP provider UI loads now abort stale provider/settings/account requests and suppress cancellation noise before applying results.
 - In-user rules UI loads now abort stale settings and Mihomo owner requests, and Mihomo controller helpers accept shared request cancellation options.
 - Mihomo-native settings UI loads now abort stale config requests and suppress cancellation noise before applying fixed proxy/subscription state.
+- Plugin settings UI loads now abort stale settings/fraud-provider/geo-provider requests and suppress cancellation noise before applying form state.
 
 Still open:
 

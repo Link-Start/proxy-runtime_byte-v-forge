@@ -6,14 +6,16 @@ import (
 )
 
 func (c leaseCoordinator) workerProcessor() leaseapp.WorkerProcessor {
+	expirer := c.expireLeaseRunner()
+	cleaner := c.cleanupPendingLeaseRunner()
 	return leaseapp.WorkerProcessor{
 		Store:             c.deps.store,
 		Clock:             c.deps.clock,
 		RestoreTimeout:    leaseRestoreRouteTimeout,
 		CleanupTimeout:    leaseCleanupAttemptTimeout,
 		Restore:           c.restoreLeaseRoute,
-		Expire:            c.expireLeaseFact,
-		CleanupPendingOne: c.cleanupPendingLeaseFact,
+		Expire:            expirer.Expire,
+		CleanupPendingOne: cleaner.Cleanup,
 		ObserveRestore: func(lease *proxyruntimev1.ProxyDynamicLease, err error) {
 			c.warn("restore proxy lease route failed", "account_id", lease.GetAccountId(), "error", err)
 		},
@@ -29,5 +31,34 @@ func (c leaseCoordinator) workerProcessor() leaseapp.WorkerProcessor {
 		ObserveCleanupList: func(err error) {
 			c.warn("list proxy lease cleanup facts failed", "error", err)
 		},
+	}
+}
+
+func (c leaseCoordinator) expireLeaseRunner() leaseapp.ExpireLeaseRunner {
+	return leaseapp.ExpireLeaseRunner{
+		Store:                             c.deps.store,
+		Limiter:                           c.deps.providerConcurrency,
+		Locks:                             c.deps.locks,
+		DataPlane:                         c.deps.dataPlane,
+		Factory:                           c.deps.sessionProviders,
+		Clock:                             c.deps.clock,
+		LocalProtocol:                     c.deps.cfg.LocalProtocol,
+		IsNotFound:                        isStoreNotFound,
+		ResolveGatewaysForLease:           c.providerSessionGatewaysResolver,
+		ObserveFinalConcurrencyReleaseErr: c.warnFinalConcurrencyReleaseFailed,
+	}
+}
+
+func (c leaseCoordinator) cleanupPendingLeaseRunner() leaseapp.CleanupPendingLeaseRunner {
+	return leaseapp.CleanupPendingLeaseRunner{
+		Store:                             c.deps.store,
+		Limiter:                           c.deps.providerConcurrency,
+		Locks:                             c.deps.locks,
+		DataPlane:                         c.deps.dataPlane,
+		Factory:                           c.deps.sessionProviders,
+		LocalProtocol:                     c.deps.cfg.LocalProtocol,
+		IsNotFound:                        isStoreNotFound,
+		ResolveGatewaysForLease:           c.providerSessionGatewaysResolver,
+		ObserveFinalConcurrencyReleaseErr: c.warnFinalConcurrencyReleaseFailed,
 	}
 }

@@ -988,10 +988,11 @@ Completed user-visible/runtime batches:
 - Dynamic IP selection result is now a lease-owned model, so acquire attempt runners consume a lease boundary type instead of an app-private selection struct.
 - Dynamic acquire attempt selection, selected-attempt execution, and app-specific error mapping are now grouped inside the lease coordinator adapter factory; the app-level acquire-attempt wrapper file was removed.
 - Lease worker batch entrypoints now use a lease-owned `WorkerProcessor`, so restore/expiry/cleanup batch listing, per-lease timeout, and observers are no longer exposed as coordinator operations.
+- Expiry and cleanup-pending single-lease worker actions now use lease-owned runner structs, removing the app-level expire/cleanup fact wrappers.
 
 Still open:
 
-- Fully extract lease application into `internal/app/lease`; remaining work is to move the top-level acquire/release and single-lease restore/cleanup action adapters plus app-specific settings/selection adapters out of the current app-level coordinator. Provider-session acquisition/release/fetch, listener auth resolution, data-plane route apply/delete helpers, listener endpoint projection, lock-window refresh, batch loops, current-fact reload, and concurrency-slot acquire/release semantics now cross lease-owned models/ports, but the coordinator still sequences several workflows.
+- Fully extract lease application into `internal/app/lease`; remaining work is to move the top-level acquire/release and single-lease restore action adapter plus app-specific settings/selection adapters out of the current app-level coordinator. Provider-session acquisition/release/fetch, listener auth resolution, data-plane route apply/delete helpers, listener endpoint projection, lock-window refresh, batch loops, current-fact reload, and concurrency-slot acquire/release semantics now cross lease-owned models/ports, but the coordinator still sequences several workflows.
 - Continue splitting Mihomo sourceplane projection, validation, render, and apply stages so no single file owns the whole config pipeline.
 - Move settings orchestration into an explicit settings application package.
 - Separate `httpapi`, `auth`, and `dashboard` packages and keep handlers as thin transport adapters.

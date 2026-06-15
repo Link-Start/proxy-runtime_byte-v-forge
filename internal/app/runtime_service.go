@@ -5,6 +5,7 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings"
 )
 
 type RuntimeService struct {
@@ -12,7 +13,7 @@ type RuntimeService struct {
 	providers runtimeProviderApplication
 	leases    runtimeLeaseApplication
 	checks    runtimeCheckApplication
-	settings  runtimeSettingsApplication
+	settings  settingsapp.Application
 	status    runtimeStatusApplication
 }
 

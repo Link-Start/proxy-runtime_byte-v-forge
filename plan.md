@@ -1007,6 +1007,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native settings apply scheduling now uses an explicit adapter for exit-check cache invalidation and reconcile dispatch instead of inline Runtime closures.
 - Settings provider descriptor views now use a dedicated adapter instead of inline runtime dependency closures.
 - Mihomo-native settings load/update are now behind a dedicated settings adapter instead of inline runtime dependency closures.
+- RuntimeService now holds the settings application directly; the old runtimeSettingsApplication forwarding wrapper files were removed.
 
 Still open:
 

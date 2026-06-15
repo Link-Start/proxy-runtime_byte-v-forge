@@ -9,10 +9,6 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
-type runtimeSettingsApplication struct {
-	usecase settingsapp.Application
-}
-
 type runtimeSettingsApplicationDependencies struct {
 	Logger                     *slog.Logger
 	Settings                   runtimeSettingsRepository
@@ -24,19 +20,17 @@ type runtimeSettingsApplicationDependencies struct {
 	ScheduleApply              func([]string)
 }
 
-func newRuntimeSettingsApplication(deps runtimeSettingsApplicationDependencies) runtimeSettingsApplication {
-	return runtimeSettingsApplication{
-		usecase: settingsapp.NewApplication(settingsapp.Dependencies{
-			Repository:                  runtimeSettingsRepositoryAdapter{repository: deps.Settings},
-			ScheduleApply:               deps.ScheduleApply,
-			Logger:                      deps.Logger,
-			ProxyUsers:                  append([]config.ProxyUserRoute(nil), deps.ProxyUsers...),
-			ProfileValidationError:      func(message string) error { return failedPrecondition(message, nil) },
-			IPFraudProviderViews:        deps.IPFraudProviderViews,
-			IPGeoProviderViews:          deps.IPGeoProviderViews,
-			LoadMihomoNativeSettings:    deps.LoadMihomoNativeSettings,
-			UpdateMihomoNativeSettings:  deps.UpdateMihomoNativeSettings,
-			DefaultMihomoNativeSettings: func() *proxyruntimev1.ProxyRuntimeMihomoNativeConfig { return normalizeMihomoNativeSettings(nil) },
-		}),
-	}
+func newRuntimeSettingsApplication(deps runtimeSettingsApplicationDependencies) settingsapp.Application {
+	return settingsapp.NewApplication(settingsapp.Dependencies{
+		Repository:                  runtimeSettingsRepositoryAdapter{repository: deps.Settings},
+		ScheduleApply:               deps.ScheduleApply,
+		Logger:                      deps.Logger,
+		ProxyUsers:                  append([]config.ProxyUserRoute(nil), deps.ProxyUsers...),
+		ProfileValidationError:      func(message string) error { return failedPrecondition(message, nil) },
+		IPFraudProviderViews:        deps.IPFraudProviderViews,
+		IPGeoProviderViews:          deps.IPGeoProviderViews,
+		LoadMihomoNativeSettings:    deps.LoadMihomoNativeSettings,
+		UpdateMihomoNativeSettings:  deps.UpdateMihomoNativeSettings,
+		DefaultMihomoNativeSettings: func() *proxyruntimev1.ProxyRuntimeMihomoNativeConfig { return normalizeMihomoNativeSettings(nil) },
+	})
 }

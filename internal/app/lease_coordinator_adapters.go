@@ -57,6 +57,16 @@ func (c leaseCoordinator) leaseRouteRetirer() leaseapp.LeaseRouteRetirer {
 	}
 }
 
+func (c leaseCoordinator) releaseRunner() leaseapp.ReleaseRunner {
+	retirer := c.leaseRouteRetirer()
+	return leaseapp.ReleaseRunner{
+		Store:      c.deps.store,
+		Locks:      c.deps.locks,
+		IsNotFound: isStoreNotFound,
+		Retire:     retirer.Retire,
+	}
+}
+
 func (c leaseCoordinator) leaseRouteRestorer(settings *runtimeSettingsFile) leaseapp.LeaseRouteRestorer {
 	return leaseapp.LeaseRouteRestorer{
 		Limiter:            c.deps.providerConcurrency,

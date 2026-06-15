@@ -47,6 +47,6 @@ func (r *Runtime) runLeaseWorkerTask(ctx context.Context, name string, timeout t
 	if err == nil || errors.Is(err, context.Canceled) {
 		return nil
 	}
-	r.logger.Warn(name+" failed", "error", err, "duration_ms", time.Since(startedAt).Milliseconds())
+	r.logger.Warn(name+" failed", "error_type", errorLogType(err), "duration_ms", time.Since(startedAt).Milliseconds())
 	return err
 }

@@ -25,7 +25,7 @@ func (f leaseRouteRetirerFactory) New() leaseapp.LeaseRouteRetirer {
 		ResolveGatewaysForLease:           f.settings.ProviderGatewaysResolver,
 		AfterRouteCleanup:                 f.afterRouteCleanup,
 		ObserveProviderReleaseFailure:     f.observeProviderReleaseFailure,
-		ObserveFinalConcurrencyReleaseErr: f.observeFinalSlot,
+		ObserveFinalConcurrencyReleaseErr: f.observeFinalConcurrencyReleaseFailure(),
 	}
 }
 
@@ -36,6 +36,13 @@ func (f leaseRouteRetirerFactory) afterRouteCleanup(ctx context.Context, lease *
 func (f leaseRouteRetirerFactory) observeProviderReleaseFailure(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
 	_ = ctx
 	warnLeaseProviderSessionReleaseFailed(f.deps.logger, lease)
+}
+
+func (f leaseRouteRetirerFactory) observeFinalConcurrencyReleaseFailure() leaseapp.LeaseObserver {
+	if f.observeFinalSlot != nil {
+		return f.observeFinalSlot
+	}
+	return warnFinalLeaseConcurrencyReleaseFailed(f.deps.logger)
 }
 
 type leaseReleaseRunnerFactory struct {

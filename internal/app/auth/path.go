@@ -8,7 +8,7 @@ func Required(authToken string, requestPath string) bool {
 	}
 	requestPath = strings.TrimSpace(requestPath)
 	switch strings.TrimRight(requestPath, "/") {
-	case "", "/", "/healthz", "/readyz", "/login":
+	case "", "/", "/healthz", "/readyz", "/metrics", "/login":
 		return false
 	}
 	return !PublicRuntimePath(requestPath)

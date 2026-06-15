@@ -60,7 +60,3 @@ func (d baseConfigProjectionDecision) changed() bool {
 func (d baseConfigProjectionDecision) result() baseConfigProjectionApplyResult {
 	return baseConfigProjectionApplyResult{changed: d.changed()}
 }
-
-func (d finalConfigProjectionDecision) reloadRequired() bool {
-	return d.mode == configProjectionApplyReload
-}

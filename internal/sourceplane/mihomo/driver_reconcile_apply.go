@@ -2,71 +2,54 @@ package mihomo
 
 import (
 	"context"
-	"path/filepath"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
 )
 
-func (d *Driver) applyBaseConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint) (baseConfigProjectionApplyResult, error) {
+type configProjectionApplyInput struct {
+	configPath string
+	config     renderedMihomoConfig
+	endpoint   sourceplane.Endpoint
+}
+
+type finalConfigProjectionApplyInput struct {
+	projection configProjectionApplyInput
+	baseApply  baseConfigProjectionApplyResult
+}
+
+func (d *Driver) applyBaseConfigProjectionLocked(ctx context.Context, input configProjectionApplyInput) (baseConfigProjectionApplyResult, error) {
 	decision := decideBaseConfigProjectionApply(baseConfigProjectionDecisionInput{
 		running:          d.running,
 		currentEndpoint:  d.lastEndpoint,
-		nextEndpoint:     endpoint,
+		nextEndpoint:     input.endpoint,
 		currentSignature: d.baseSig,
-		nextSignature:    config.signature,
+		nextSignature:    input.config.signature,
 	})
-	switch decision.mode {
-	case configProjectionApplyRestart:
-		if err := d.restartConfigProjectionLocked(ctx, configPath, config, endpoint); err != nil {
-			return baseConfigProjectionApplyResult{}, err
-		}
-	case configProjectionApplyReload:
-		if err := d.reloadConfigDataLocked(ctx, configPath, config.data, endpoint); err != nil {
-			return baseConfigProjectionApplyResult{}, err
-		}
+	if err := d.applyConfigProjectionModeLocked(ctx, decision.mode, input); err != nil {
+		return baseConfigProjectionApplyResult{}, err
 	}
 	return decision.result(), nil
 }
 
-func (d *Driver) applyFinalConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint, baseApply baseConfigProjectionApplyResult) error {
-	d.desiredSig = config.signature
+func (d *Driver) applyFinalConfigProjectionLocked(ctx context.Context, input finalConfigProjectionApplyInput) error {
+	d.desiredSig = input.projection.config.signature
 	decision := decideFinalConfigProjectionApply(finalConfigProjectionDecisionInput{
-		baseChanged:      baseApply.changed,
+		baseChanged:      input.baseApply.changed,
 		currentSignature: d.signature,
-		nextSignature:    config.signature,
+		nextSignature:    input.projection.config.signature,
 	})
-	if !decision.reloadRequired() {
+	return d.applyConfigProjectionModeLocked(ctx, decision.mode, input.projection)
+}
+
+func (d *Driver) applyConfigProjectionModeLocked(ctx context.Context, mode configProjectionApplyMode, input configProjectionApplyInput) error {
+	switch mode {
+	case configProjectionApplyNoop:
+		return nil
+	case configProjectionApplyRestart:
+		return d.restartConfigProjectionLocked(ctx, input)
+	case configProjectionApplyReload:
+		return d.reloadConfigDataLocked(ctx, input.configPath, input.config.data, input.endpoint)
+	default:
 		return nil
 	}
-	return d.reloadConfigDataLocked(ctx, configPath, config.data, endpoint)
-}
-
-func (d *Driver) restartConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint) error {
-	if err := writeConfigData(configPath, config.data); err != nil {
-		return configProjectionStageError("write restart config", err)
-	}
-	d.stopLocked()
-	if err := d.startLocked(ctx, filepath.Dir(configPath), configPath); err != nil {
-		return configProjectionStageError("start process", err)
-	}
-	if err := waitForReloadEndpoint(ctx, endpoint); err != nil {
-		return configProjectionStageError("wait listener", err)
-	}
-	return nil
-}
-
-func (d *Driver) recordAppliedConfigProjection(configPath string, endpoint sourceplane.Endpoint, baseConfig renderedMihomoConfig, finalConfig renderedMihomoConfig) {
-	d.signature = finalConfig.signature
-	d.baseSig = baseConfig.signature
-	d.configPath = configPath
-	d.lastEndpoint = endpoint
-	d.lastError = ""
-}
-
-func (d *Driver) recordConfigProjectionError(err error) error {
-	if err == nil {
-		return nil
-	}
-	d.lastError = err.Error()
-	return err
 }

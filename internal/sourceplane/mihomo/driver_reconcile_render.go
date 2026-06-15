@@ -46,3 +46,11 @@ func buildFinalConfigProjection(options renderOptions) (renderedMihomoConfig, er
 	}
 	return config, nil
 }
+
+func (p baseConfigProjection) applyInput(config renderedMihomoConfig) configProjectionApplyInput {
+	return configProjectionApplyInput{
+		configPath: p.configPath,
+		config:     config,
+		endpoint:   p.endpoint,
+	}
+}

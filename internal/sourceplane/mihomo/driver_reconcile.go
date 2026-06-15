@@ -16,7 +16,7 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 		return nil, d.recordConfigProjectionError(err)
 	}
 
-	baseApply, err := d.applyBaseConfigProjectionLocked(ctx, baseProjection.configPath, baseProjection.config, baseProjection.endpoint)
+	baseApply, err := d.applyBaseConfigProjectionLocked(ctx, baseProjection.applyInput(baseProjection.config))
 	if err != nil {
 		return nil, d.recordConfigProjectionError(configProjectionStageError("apply base config", err))
 	}
@@ -25,7 +25,10 @@ func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([
 	if err != nil {
 		return nil, d.recordConfigProjectionError(err)
 	}
-	if err := d.applyFinalConfigProjectionLocked(ctx, baseProjection.configPath, finalConfig, baseProjection.endpoint, baseApply); err != nil {
+	if err := d.applyFinalConfigProjectionLocked(ctx, finalConfigProjectionApplyInput{
+		projection: baseProjection.applyInput(finalConfig),
+		baseApply:  baseApply,
+	}); err != nil {
 		return nil, d.recordConfigProjectionError(configProjectionStageError("apply final config", err))
 	}
 	d.recordAppliedConfigProjection(baseProjection.configPath, baseProjection.endpoint, baseProjection.config, finalConfig)

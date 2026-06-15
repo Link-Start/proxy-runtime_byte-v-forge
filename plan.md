@@ -1040,6 +1040,7 @@ Completed user-visible/runtime batches:
 - Settings HTTP handlers now share load/update dispatch and settings-specific error mapping, and provider descriptor handlers were moved out of proxy check handlers.
 - Mihomo reconcile base/final render preparation now lives in focused stage helpers, leaving the locked reconcile flow as projection stage orchestration.
 - Mihomo config projection now has explicit project, validate, and encode stage helpers instead of hiding the whole render pipeline in one function body.
+- Mihomo projection apply now uses explicit apply inputs, with restart execution and projection state recording split out of the apply decision file.
 
 Still open:
 

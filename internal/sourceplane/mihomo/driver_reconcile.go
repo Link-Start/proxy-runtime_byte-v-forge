@@ -8,36 +8,26 @@ import (
 )
 
 func (d *Driver) reconcileLocked(ctx context.Context, cfg sourceplane.Config) ([]provider.Node, error) {
-	endpoint, err := normalizeEndpoint(cfg.Endpoint)
+	baseProjection, err := d.buildBaseConfigProjectionLocked(cfg)
 	if err != nil {
-		return nil, d.recordConfigProjectionError(configProjectionStageError("normalize endpoint", err))
+		return nil, d.recordConfigProjectionError(err)
 	}
-	dir, err := d.ensureConfigDir()
-	if err != nil {
-		return nil, d.recordConfigProjectionError(configProjectionStageError("prepare config directory", err))
+	if err := prepareProviderConfigProjectionDir(baseProjection.configDir); err != nil {
+		return nil, d.recordConfigProjectionError(err)
 	}
-	baseOptions, baseConfig, err := d.renderConfigProjectionLocked(cfg, endpoint, dir)
-	if err != nil {
-		return nil, d.recordConfigProjectionError(configProjectionStageError("render base config", err))
-	}
-	if err := ensureProviderConfigDir(dir); err != nil {
-		return nil, d.recordConfigProjectionError(configProjectionStageError("prepare provider config directory", err))
-	}
-	configPath := runtimeConfigPath(dir)
 
-	baseApply, err := d.applyBaseConfigProjectionLocked(ctx, configPath, baseConfig, endpoint)
+	baseApply, err := d.applyBaseConfigProjectionLocked(ctx, baseProjection.configPath, baseProjection.config, baseProjection.endpoint)
 	if err != nil {
 		return nil, d.recordConfigProjectionError(configProjectionStageError("apply base config", err))
 	}
 
-	finalOptions := baseOptions
-	finalConfig, err := renderConfigProjection(finalOptions)
+	finalConfig, err := buildFinalConfigProjection(baseProjection.renderOptions)
 	if err != nil {
-		return nil, d.recordConfigProjectionError(configProjectionStageError("render final config", err))
+		return nil, d.recordConfigProjectionError(err)
 	}
-	if err := d.applyFinalConfigProjectionLocked(ctx, configPath, finalConfig, endpoint, baseApply); err != nil {
+	if err := d.applyFinalConfigProjectionLocked(ctx, baseProjection.configPath, finalConfig, baseProjection.endpoint, baseApply); err != nil {
 		return nil, d.recordConfigProjectionError(configProjectionStageError("apply final config", err))
 	}
-	d.recordAppliedConfigProjection(configPath, endpoint, baseConfig, finalConfig)
+	d.recordAppliedConfigProjection(baseProjection.configPath, baseProjection.endpoint, baseProjection.config, finalConfig)
 	return nil, nil
 }

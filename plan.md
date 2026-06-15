@@ -1002,6 +1002,7 @@ Completed user-visible/runtime batches:
 - Lease coordinator route and acquire adapter factories are split into focused files instead of one mixed adapter factory file.
 - Mihomo hot-reload HTTP failure errors now report only status code and do not echo upstream response bodies, reducing secret/session leakage risk.
 - Dashboard controller error-body sanitization now also redacts bearer tokens and token/secret/password/session fields, not only full URLs.
+- Redis URL parse failures now return a sanitized configuration error instead of wrapping parser errors that may include credentials.
 
 Still open:
 

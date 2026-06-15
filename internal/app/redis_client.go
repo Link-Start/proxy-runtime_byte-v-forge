@@ -2,6 +2,7 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -15,7 +16,7 @@ func newRedisClient(ctx context.Context, rawURL string) (*redis.Client, error) {
 	}
 	opts, err := redis.ParseURL(rawURL)
 	if err != nil {
-		return nil, fmt.Errorf("parse redis url: %w", err)
+		return nil, errors.New("parse redis url: invalid redis url")
 	}
 	client := redis.NewClient(opts)
 	if err := client.Ping(ctx).Err(); err != nil {

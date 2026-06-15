@@ -1,6 +1,9 @@
 package auth
 
-import "net/http"
+import (
+	"net/http"
+	"time"
+)
 
 type UnauthorizedWriter func(http.ResponseWriter)
 
@@ -25,4 +28,13 @@ func writeAuthorizationUnauthorized(w http.ResponseWriter, writeUnauthorized Una
 		return
 	}
 	http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+}
+
+func (a Application) WriteLoginRedirectIfRequired(w http.ResponseWriter, req *http.Request, protectedPath string, now time.Time) bool {
+	redirectURL, required := a.LoginRedirectIfRequired(req, protectedPath, now)
+	if !required {
+		return false
+	}
+	http.Redirect(w, req, redirectURL, http.StatusSeeOther)
+	return true
 }

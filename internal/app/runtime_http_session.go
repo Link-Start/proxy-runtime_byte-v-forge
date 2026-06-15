@@ -46,12 +46,7 @@ func (api *runtimeHTTPAPI) handleAuthLoginPage(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) redirectToLoginIfRequired(ctx *gin.Context) bool {
-	redirectURL, required := api.auth.LoginRedirectIfRequired(ctx.Request, "/ui", time.Now())
-	if !required {
-		return false
-	}
-	ctx.Redirect(http.StatusSeeOther, redirectURL)
-	return true
+	return api.auth.WriteLoginRedirectIfRequired(ctx.Writer, ctx.Request, "/ui", time.Now())
 }
 
 func (api *runtimeHTTPAPI) sessionAuthenticated(req *http.Request) bool {

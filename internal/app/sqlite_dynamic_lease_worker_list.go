@@ -20,7 +20,7 @@ func (s *SQLiteStore) ListRestorableLeaseFacts(ctx context.Context) ([]*proxyrun
 	return s.leaseFactsByQuery(ctx, `
 SELECT lease_json
 FROM proxy_runtime_dynamic_leases
-WHERE status=? AND (expires_at='' OR expires_at>?)
+WHERE status=? AND `+sqliteLeaseActiveUntilPredicate+`
 ORDER BY acquired_at DESC, updated_at DESC, lease_id
 `, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()))
 }
@@ -29,7 +29,7 @@ func (s *SQLiteStore) ExpiredActiveLeaseFacts(ctx context.Context) ([]*proxyrunt
 	return s.leaseFactsByQuery(ctx, `
 SELECT lease_json
 FROM proxy_runtime_dynamic_leases
-WHERE status=? AND expires_at!='' AND expires_at<=?
+WHERE status=? AND `+sqliteLeaseExpiredByPredicate+`
 ORDER BY expires_at ASC, acquired_at ASC, updated_at ASC, lease_id
 `, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()))
 }

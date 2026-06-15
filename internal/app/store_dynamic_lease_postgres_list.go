@@ -13,7 +13,7 @@ func (s *PostgresStore) ListActiveLeaseFacts(ctx context.Context, limit int) ([]
 SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
 WHERE status=$1
-	AND (expires_at IS NULL OR expires_at > now())
+	AND `+postgresLeaseActiveUntilNowPredicate+`
 ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
 LIMIT $2
 `, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), leaseapp.NormalizeListLimit(limit))
@@ -43,7 +43,7 @@ func (s *PostgresStore) ListHistoryLeaseFacts(ctx context.Context, limit int) ([
 SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
 WHERE status<>$1
-	OR (expires_at IS NOT NULL AND expires_at<=now())
+	OR `+postgresLeaseExpiredByNowPredicate+`
 ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
 LIMIT $2
 `, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), leaseapp.NormalizeListLimit(limit))

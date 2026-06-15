@@ -8,11 +8,6 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
-const sqliteCleanupPendingLeasePredicate = `(
-  json_extract(lease_json, '$.session.labels.route_cleanup_pending')='true'
-  OR json_extract(lease_json, '$.session.labels.provider_cleanup_pending')='true'
-)`
-
 func (s *SQLiteStore) ProviderAccountHasBlockingLease(ctx context.Context, providerAccountID string) (bool, error) {
 	providerAccountID = strings.TrimSpace(providerAccountID)
 	if providerAccountID == "" {
@@ -25,7 +20,7 @@ SELECT EXISTS (
   FROM proxy_runtime_dynamic_leases
   WHERE provider_account_id=?
     AND (
-      (status=? AND (expires_at='' OR expires_at>?))
+      (status=? AND `+sqliteLeaseActiveUntilPredicate+`)
       OR (status=? AND `+sqliteCleanupPendingLeasePredicate+`)
     )
 )
@@ -43,7 +38,7 @@ SELECT lease_json
 FROM proxy_runtime_dynamic_leases
 WHERE provider_account_id=?
   AND (
-    (status=? AND (expires_at='' OR expires_at>?))
+    (status=? AND `+sqliteLeaseActiveUntilPredicate+`)
     OR (status=? AND `+sqliteCleanupPendingLeasePredicate+`)
   )
 ORDER BY acquired_at DESC, updated_at DESC, lease_id

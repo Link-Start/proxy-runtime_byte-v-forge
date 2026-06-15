@@ -19,14 +19,8 @@ SELECT EXISTS (
 	FROM proxy_runtime_dynamic_leases
 	WHERE provider_account_id=$1
 		AND (
-			(status=$2 AND (expires_at IS NULL OR expires_at > now()))
-			OR (
-				status=$3
-				AND (
-					lease_json #>> '{session,labels,route_cleanup_pending}' = 'true'
-					OR lease_json #>> '{session,labels,provider_cleanup_pending}' = 'true'
-				)
-			)
+			(status=$2 AND `+postgresLeaseActiveUntilNowPredicate+`)
+			OR (status=$3 AND `+postgresLeaseCleanupPendingPredicate+`)
 		)
 )
 `, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String()).Scan(&exists)
@@ -43,14 +37,8 @@ SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
 WHERE provider_account_id=$1
 	AND (
-		(status=$2 AND (expires_at IS NULL OR expires_at > now()))
-		OR (
-			status=$3
-			AND (
-				lease_json #>> '{session,labels,route_cleanup_pending}' = 'true'
-				OR lease_json #>> '{session,labels,provider_cleanup_pending}' = 'true'
-			)
-		)
+		(status=$2 AND `+postgresLeaseActiveUntilNowPredicate+`)
+		OR (status=$3 AND `+postgresLeaseCleanupPendingPredicate+`)
 	)
 ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
 LIMIT $4

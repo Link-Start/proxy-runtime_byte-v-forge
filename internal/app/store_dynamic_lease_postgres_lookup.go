@@ -20,7 +20,7 @@ SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
 WHERE account_id=$1
 	AND status=$2
-	AND (expires_at IS NULL OR expires_at > now())
+	AND `+postgresLeaseActiveUntilNowPredicate+`
 ORDER BY acquired_at DESC NULLS LAST, updated_at DESC
 LIMIT 1
 `, strings.TrimSpace(accountID), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String())
@@ -33,7 +33,7 @@ func (s *PostgresStore) ActiveLeaseFactBySession(ctx context.Context, accountID 
 		return nil, pgx.ErrNoRows
 	}
 	args := []any{strings.TrimSpace(accountID), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sessionID}
-	conditions := []string{`account_id=$1`, `status=$2`, `(expires_at IS NULL OR expires_at > now())`, `lease_json #>> '{session,sessionId}' = $3`}
+	conditions := []string{`account_id=$1`, `status=$2`, postgresLeaseActiveUntilNowPredicate, `lease_json #>> '{session,sessionId}' = $3`}
 	if trimmed := strings.TrimSpace(purpose); trimmed != "" {
 		args = append(args, trimmed)
 		conditions = append(conditions, fmt.Sprintf("purpose=$%d", len(args)))
@@ -65,7 +65,7 @@ func (s *PostgresStore) leaseFactByAccount(ctx context.Context, accountID string
 	}
 	if activeOnly {
 		args = append(args, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String())
-		conditions = append(conditions, fmt.Sprintf("status=$%d", len(args)), `(expires_at IS NULL OR expires_at > now())`)
+		conditions = append(conditions, fmt.Sprintf("status=$%d", len(args)), postgresLeaseActiveUntilNowPredicate)
 	}
 	row := s.pool.QueryRow(ctx, `
 SELECT lease_json::text

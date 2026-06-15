@@ -1043,6 +1043,7 @@ Completed user-visible/runtime batches:
 - Mihomo projection apply now uses explicit apply inputs, with restart execution and projection state recording split out of the apply decision file.
 - SQLite is confirmed as a supported standalone product runtime path; follow-up store cleanup must consolidate duplicated business predicates instead of removing the adapter.
 - Mihomo render section projection now separates proxy/gateway projection parts from section assembly and group merging.
+- SQLite and PostgreSQL dynamic-lease queries now use named dialect predicates for active, expired, and cleanup-pending lease semantics instead of repeating raw business predicates in every query.
 
 Still open:
 

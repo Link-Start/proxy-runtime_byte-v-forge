@@ -26,7 +26,7 @@ func (s *SQLiteStore) ActiveLeaseFactBySession(ctx context.Context, accountID st
 	query := `
 SELECT lease_json
 FROM proxy_runtime_dynamic_leases
-WHERE account_id=? AND status=? AND (expires_at='' OR expires_at>?) AND json_extract(lease_json, '$.session.sessionId')=?`
+WHERE account_id=? AND status=? AND ` + sqliteLeaseActiveUntilPredicate + ` AND json_extract(lease_json, '$.session.sessionId')=?`
 	args := []any{strings.TrimSpace(accountID), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), sessionID}
 	if purpose = strings.TrimSpace(purpose); purpose != "" {
 		query += ` AND purpose=?`
@@ -58,7 +58,7 @@ WHERE account_id=?`
 		args = append(args, purpose)
 	}
 	if activeOnly {
-		query += ` AND status=? AND (expires_at='' OR expires_at>?)`
+		query += ` AND status=? AND ` + sqliteLeaseActiveUntilPredicate
 		args = append(args, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()))
 	}
 	query += ` ORDER BY acquired_at DESC, updated_at DESC, lease_id LIMIT 1`

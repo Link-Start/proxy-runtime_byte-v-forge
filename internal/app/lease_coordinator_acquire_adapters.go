@@ -61,20 +61,14 @@ func (c leaseCoordinator) selectedAcquireAttemptRunner(settings *runtimeSettings
 func (c leaseCoordinator) accountLockedAcquireRunner(ctx context.Context, settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.AccountLockedAcquireRunner {
 	retirer := c.leaseRouteRetirer()
 	refresher := c.concurrencySlotRefreshRunner()
+	selector := leaseDynamicIPSelectionAdapter{selector: c.deps.dynamicIPSelector}
 	attemptRunner := leaseapp.DynamicAcquireAttemptRunner{
-		Select: func(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (leaseapp.DynamicIPSelection, error) {
-			if c.deps.dynamicIPSelector == nil {
-				return leaseapp.DynamicIPSelection{}, internalError("dynamic IP selector is not configured", nil)
-			}
-			return c.deps.dynamicIPSelector.selectDynamicIPEndpoint(ctx, req)
-		},
+		Select: selector.Select,
 		NewSelectedRunner: func(selection leaseapp.DynamicIPSelection) leaseapp.SelectedAcquireAttemptRunner {
 			return c.selectedAcquireAttemptRunner(settings, advertisedHost, req, selection)
 		},
-		MapSelectionError: func(err error) error {
-			return failedPrecondition("no dynamic IP endpoint candidate", err)
-		},
-		MapAttemptError: acquireAttemptSlotError,
+		MapSelectionError: mapDynamicIPSelectionError,
+		MapAttemptError:   acquireAttemptSlotError,
 	}
 	return leaseapp.AccountLockedAcquireRunner{
 		Store:               c.deps.store,

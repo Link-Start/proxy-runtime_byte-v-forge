@@ -7,21 +7,18 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
-func (c leaseCoordinator) refreshLeaseConcurrencySlot(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	if !leaseapp.NeedsConcurrencySlotRefresh(lease, c.deps.providerConcurrency) {
-		return nil
-	}
-	settings, err := c.deps.settings.load(ctx)
-	if err != nil {
-		return err
-	}
-	policy := leaseapp.ConcurrencyPolicy(lease)
-	return leaseapp.RefreshConcurrencySlot(ctx, leaseapp.RefreshConcurrencySlotInput{
+func (c leaseCoordinator) concurrencySlotRefreshRunner() leaseapp.RefreshConcurrencySlotRunner {
+	return leaseapp.RefreshConcurrencySlotRunner{
 		Store:      c.deps.store,
 		Limiter:    c.deps.providerConcurrency,
-		Lease:      lease,
-		Limit:      dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy),
 		DefaultTTL: leaseapp.DefaultDynamicIPStickyTTL,
 		TTLBuffer:  providerAccountConcurrencyTTLBuffer,
-	})
+		Limit: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, policy *proxyruntimev1.ProxySessionPolicy) (uint32, error) {
+			settings, err := c.deps.settings.load(ctx)
+			if err != nil {
+				return 0, err
+			}
+			return dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), policy), nil
+		},
+	}
 }

@@ -17,6 +17,42 @@ type RefreshConcurrencySlotInput struct {
 	TTLBuffer  time.Duration
 }
 
+type RefreshConcurrencySlotLimitFunc func(context.Context, *proxyruntimev1.ProxyDynamicLease, *proxyruntimev1.ProxySessionPolicy) (uint32, error)
+
+type RefreshConcurrencySlotRunner struct {
+	Store      OrchestrationStore
+	Limiter    ProviderAccountConcurrencyLimiter
+	DefaultTTL time.Duration
+	TTLBuffer  time.Duration
+	Limit      RefreshConcurrencySlotLimitFunc
+}
+
+func (r RefreshConcurrencySlotRunner) Refresh(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+	if !NeedsConcurrencySlotRefresh(lease, r.Limiter) {
+		return nil
+	}
+	policy := ConcurrencyPolicy(lease)
+	limit, err := r.limit(ctx, lease, policy)
+	if err != nil {
+		return err
+	}
+	return RefreshConcurrencySlot(ctx, RefreshConcurrencySlotInput{
+		Store:      r.Store,
+		Limiter:    r.Limiter,
+		Lease:      lease,
+		Limit:      limit,
+		DefaultTTL: r.DefaultTTL,
+		TTLBuffer:  r.TTLBuffer,
+	})
+}
+
+func (r RefreshConcurrencySlotRunner) limit(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, policy *proxyruntimev1.ProxySessionPolicy) (uint32, error) {
+	if r.Limit == nil {
+		return 0, nil
+	}
+	return r.Limit(ctx, lease, policy)
+}
+
 func RefreshConcurrencySlot(ctx context.Context, input RefreshConcurrencySlotInput) error {
 	if !NeedsConcurrencySlotRefresh(input.Lease, input.Limiter) {
 		return nil

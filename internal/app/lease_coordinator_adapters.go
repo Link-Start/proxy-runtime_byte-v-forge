@@ -154,6 +154,7 @@ func (c leaseCoordinator) selectedAcquireAttemptRunner(settings *runtimeSettings
 
 func (c leaseCoordinator) accountLockedAcquireRunner(ctx context.Context, settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.AccountLockedAcquireRunner {
 	retirer := c.leaseRouteRetirer()
+	refresher := c.concurrencySlotRefreshRunner()
 	attemptRunner := leaseapp.DynamicAcquireAttemptRunner{
 		Select: func(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (leaseapp.DynamicIPSelection, error) {
 			if c.deps.dynamicIPSelector == nil {
@@ -174,7 +175,7 @@ func (c leaseCoordinator) accountLockedAcquireRunner(ctx context.Context, settin
 		Clock:               c.deps.clock,
 		PlaygroundAccountID: playgroundProfileID,
 		PlaygroundUsername:  playgroundUsername,
-		Reuse:               c.refreshLeaseConcurrencySlot,
+		Reuse:               refresher.Refresh,
 		Replace:             retirer.Retire,
 		RunAttempt: func(int) (*proxyruntimev1.ProxyDynamicLease, error) {
 			return attemptRunner.Run(ctx, req, req.GetPolicy())

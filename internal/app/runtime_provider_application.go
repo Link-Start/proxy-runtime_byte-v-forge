@@ -307,12 +307,13 @@ func (a runtimeProviderApplication) info(message string, args ...any) {
 
 func (a runtimeProviderApplication) deleteProviderAccountInBackground(providerAccountID string) {
 	go func() {
+		startedAt := time.Now()
 		ctx, cancel := context.WithTimeout(context.Background(), providerAccountDeleteTimeout)
 		defer cancel()
 		if err := a.deleteProviderAccount(ctx, providerAccountID); err != nil {
-			a.warn("delete provider account failed", "provider_account_id", providerAccountID, "error", err)
+			a.warn("delete provider account failed", "provider_account_id", providerAccountID, "duration_ms", time.Since(startedAt).Milliseconds(), "error", err)
 			return
 		}
-		a.info("delete provider account finished", "provider_account_id", providerAccountID)
+		a.info("delete provider account finished", "provider_account_id", providerAccountID, "duration_ms", time.Since(startedAt).Milliseconds())
 	}()
 }

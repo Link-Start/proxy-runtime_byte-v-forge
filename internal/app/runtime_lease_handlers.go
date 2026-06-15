@@ -1,7 +1,6 @@
 package app
 
 import (
-	"errors"
 	"net/http"
 	"strings"
 
@@ -28,15 +27,7 @@ func (api *runtimeHTTPAPI) handleLease(ctx *gin.Context) {
 	leaseID := strings.TrimSpace(ctx.Param("lease_id"))
 	lease, err := api.service.getProxyDynamicLease(ctx.Request.Context(), leaseID)
 	if err != nil {
-		if errors.Is(err, leaseapp.ErrLeaseIDRequired) {
-			writeHTTPError(ctx.Writer, invalidArgument(err.Error(), err), http.StatusBadRequest)
-			return
-		}
-		if isStoreNotFound(err) {
-			writeHTTPError(ctx.Writer, errors.New("lease not found"), http.StatusNotFound)
-			return
-		}
-		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
+		writeLeaseHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
 	}
 	api.writeProto(ctx, lease)
@@ -49,7 +40,7 @@ func (api *runtimeHTTPAPI) handleAcquireLease(ctx *gin.Context) {
 	}
 	response, err := api.service.acquireProxyLease(ctx.Request.Context(), ctx.Request, &body)
 	if err != nil {
-		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
+		writeLeaseHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
 	}
 	api.writeProto(ctx, response)
@@ -70,7 +61,7 @@ func (api *runtimeHTTPAPI) handleReleaseLease(ctx *gin.Context) {
 	}
 	response, err := api.service.ReleaseProxyLease(ctx.Request.Context(), &body)
 	if err != nil {
-		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
+		writeLeaseHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
 	}
 	api.writeProto(ctx, response)

@@ -1019,6 +1019,7 @@ Completed user-visible/runtime batches:
 - Lease `history` listing now has a dedicated inactive-or-expired repository query for PostgreSQL and SQLite, plus a `(status, expires_at)` index for active/history predicates.
 - Protected dashboard login redirect response emission now lives in the auth application instead of the Gin session handler.
 - Provider-account delete now processes blocking leases in bounded repository batches instead of loading every blocking lease fact in one background loop iteration.
+- Lease HTTP handlers now use a centralized lease error writer for required ID, not-found, application errors, and upstream fallback mapping.
 
 Still open:
 

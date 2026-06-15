@@ -1044,6 +1044,7 @@ Completed user-visible/runtime batches:
 - SQLite is confirmed as a supported standalone product runtime path; follow-up store cleanup must consolidate duplicated business predicates instead of removing the adapter.
 - Mihomo render section projection now separates proxy/gateway projection parts from section assembly and group merging.
 - SQLite and PostgreSQL dynamic-lease queries now use named dialect predicates for active, expired, and cleanup-pending lease semantics instead of repeating raw business predicates in every query.
+- Lease selected-attempt provider-account runner construction now lives in a focused acquire-runner factory adapter instead of a coordinator method and inline closure.
 
 Still open:
 

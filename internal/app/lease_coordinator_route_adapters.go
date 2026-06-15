@@ -59,27 +59,3 @@ func (c leaseCoordinator) leaseRouteRestorer(settings *runtimeSettingsFile) leas
 		ResolveLineBinding: settingsAdapter.RouteLineBindingResolver(settings),
 	}
 }
-
-func (c leaseCoordinator) acquiredRouteApplier(settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.AcquiredRouteApplier {
-	sideEffects := c.routeSideEffects()
-	endpoint := leaseAcquiredEndpointAdapter{
-		settings:              settings,
-		advertisedHost:        advertisedHost,
-		leaseListener:         c.deps.leaseListener,
-		localListenerEndpoint: c.deps.localListenerEndpoint,
-		sessionAdvertisedHost: c.deps.sessionAdvertisedHost,
-	}
-	return leaseapp.AcquiredRouteApplier{
-		Store:            c.deps.store,
-		DataPlane:        c.deps.dataPlane,
-		Clock:            c.deps.clock,
-		LocalProtocol:    c.deps.cfg.LocalProtocol,
-		Managed:          true,
-		FallbackProtocol: "http",
-		ResolveListener:  endpoint.ResolveListener,
-		ResolveEgress:    endpoint.ResolveEgress,
-		AfterApply: func(ctx context.Context, _ *proxyruntimev1.ProxyDynamicLease) {
-			sideEffects.afterRouteChange(ctx, req.GetAccountId())
-		},
-	}
-}

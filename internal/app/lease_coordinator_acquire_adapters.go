@@ -10,38 +10,19 @@ import (
 
 const leaseAcquireSlotReleaseTimeout = 5 * time.Second
 
-func (c leaseCoordinator) providerAccountAcquireRunner(settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, leaseID string, concurrencyHolder string) leaseapp.ProviderAccountAcquireRunner {
-	applier := c.acquiredRouteApplier(settings, advertisedHost, req)
-	apply := leaseapp.ProviderAccountAcquiredRouteApplier{
-		Applier:           applier,
-		LeaseID:           leaseID,
-		Request:           req,
-		SelectionPlan:     selectionPlan,
-		ConcurrencyHolder: concurrencyHolder,
-		MapError:          acquiredRouteApplyError,
-	}
-	settingsAdapter := c.settingsAdapter()
-	return leaseapp.ProviderAccountAcquireRunner{
-		Store:              c.deps.store,
-		IDs:                c.deps.ids,
-		Clock:              c.deps.clock,
-		DataPlane:          c.deps.dataPlane,
-		Logger:             c.deps.logger,
-		Factory:            c.deps.sessionProviders,
-		Locks:              c.deps.locks,
-		ResolveLineBinding: settingsAdapter.RouteLineBindingResolver(settings),
-		Apply:              apply.Apply,
-	}
-}
-
 func (c leaseCoordinator) selectedAcquireAttemptRunner(settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, selection leaseapp.DynamicIPSelection) leaseapp.SelectedAcquireAttemptRunner {
+	providerRunnerFactory := leaseProviderAccountAcquireRunnerFactory{
+		deps:           c.deps,
+		settings:       settings,
+		advertisedHost: advertisedHost,
+		request:        req,
+		selectionPlan:  selection.Plan,
+	}
 	action := leaseapp.SelectedAttemptProviderAccountAction{
 		Selection: selection,
 		Request:   req,
-		NewRunner: func(attempt leaseapp.SelectedAcquireAttempt) leaseapp.ProviderAccountAcquireRunner {
-			return c.providerAccountAcquireRunner(settings, advertisedHost, req, selection.Plan, attempt.LeaseID, attempt.ConcurrencyHolder)
-		},
-		MapError: providerSessionAcquireError,
+		NewRunner: providerRunnerFactory.New,
+		MapError:  providerSessionAcquireError,
 	}
 	return leaseapp.SelectedAcquireAttemptRunner{
 		Store:          c.deps.store,

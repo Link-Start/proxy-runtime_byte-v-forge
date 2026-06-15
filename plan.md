@@ -1003,6 +1003,7 @@ Completed user-visible/runtime batches:
 - Mihomo hot-reload HTTP failure errors now report only status code and do not echo upstream response bodies, reducing secret/session leakage risk.
 - Dashboard controller error-body sanitization now also redacts bearer tokens and token/secret/password/session fields, not only full URLs.
 - Redis URL parse failures now return a sanitized configuration error instead of wrapping parser errors that may include credentials.
+- Runtime settings apply scheduling is now behind an explicit adapter that owns derived-cache clearing, reconcile request dispatch, and bounded in-user connection cleanup.
 
 Still open:
 

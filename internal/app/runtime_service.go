@@ -83,6 +83,7 @@ func runtimeSettingsDependencies(runtime *Runtime) runtimeSettingsApplicationDep
 	if runtime == nil {
 		return runtimeSettingsApplicationDependencies{}
 	}
+	settingsApply := newRuntimeSettingsApplyScheduler(runtime)
 	return runtimeSettingsApplicationDependencies{
 		Logger:     runtime.logger,
 		Settings:   runtime.settings,
@@ -115,7 +116,7 @@ func runtimeSettingsDependencies(runtime *Runtime) runtimeSettingsApplicationDep
 				},
 			}, config)
 		},
-		ScheduleApply: runtime.scheduleRuntimeSettingsApply,
+		ScheduleApply: settingsApply.Schedule,
 	}
 }
 

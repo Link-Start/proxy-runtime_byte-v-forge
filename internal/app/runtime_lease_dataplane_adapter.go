@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"time"
 
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
@@ -15,20 +16,33 @@ type leaseRouteDataPlane interface {
 
 type leaseRuntimeDataPlaneApplier struct {
 	dataPlane leaseRouteDataPlane
+	metrics   *runtimeMetrics
 }
 
 func (a leaseRuntimeDataPlaneApplier) UpsertSessionRoute(ctx context.Context, route leaseapp.SessionRoute) error {
 	if a.dataPlane == nil {
 		return errors.New("dataplane route applier is required")
 	}
-	return a.dataPlane.UpsertSessionRoute(ctx, dataPlaneSessionRoute(route))
+	startedAt := time.Now()
+	err := a.dataPlane.UpsertSessionRoute(ctx, dataPlaneSessionRoute(route))
+	a.observe(runtimeMetricDataPlaneUpsertSessionRoute, startedAt, err)
+	return err
 }
 
 func (a leaseRuntimeDataPlaneApplier) DeleteSessionRoute(ctx context.Context, route leaseapp.SessionRoute) error {
 	if a.dataPlane == nil {
 		return errors.New("dataplane route applier is required")
 	}
-	return a.dataPlane.DeleteSessionRoute(ctx, dataPlaneSessionRoute(route))
+	startedAt := time.Now()
+	err := a.dataPlane.DeleteSessionRoute(ctx, dataPlaneSessionRoute(route))
+	a.observe(runtimeMetricDataPlaneDeleteSessionRoute, startedAt, err)
+	return err
+}
+
+func (a leaseRuntimeDataPlaneApplier) observe(operation string, startedAt time.Time, err error) {
+	if a.metrics != nil {
+		a.metrics.Observe(operation, startedAt, err)
+	}
 }
 
 func dataPlaneSessionRoute(route leaseapp.SessionRoute) dataplane.SessionRoute {

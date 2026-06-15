@@ -30,6 +30,7 @@ type Runtime struct {
 	leaseCoordinator    leaseCoordinator
 	dynamicIPSelector   *dynamicIPSelector
 	settings            *runtimeSettingsStore
+	metrics             *runtimeMetrics
 	appService          *RuntimeService
 	logger              *slog.Logger
 	providerHTTPClient  *http.Client
@@ -91,6 +92,7 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 		providerConcurrency: deps.ProviderConcurrency,
 		providerHTTPClient:  deps.ProviderHTTPClient,
 		settings:            newRuntimeSettingsStore(deps.Store, deps.AccountProviders, deps.IPFraudProviders, deps.IPGeoProviders, logger),
+		metrics:             newRuntimeMetrics(),
 		logger:              logger,
 		reconcileCh:         make(chan struct{}, 1),
 	}
@@ -163,9 +165,11 @@ func (r *Runtime) reconcile(ctx context.Context) {
 func (r *Runtime) runReconcile(ctx context.Context) error {
 	r.markReconcileStarted()
 	settingsApplyStarted := r.markSettingsApplyStartedIfPending()
+	settingsApplyStartedAt := time.Now()
 	err := r.refresh(ctx)
 	r.markReconcileFinished(err)
 	if settingsApplyStarted {
+		r.observeRuntimeOperation(runtimeMetricSettingsApply, settingsApplyStartedAt, err)
 		r.markSettingsApplyFinished(err)
 	}
 	return err
@@ -177,7 +181,9 @@ func (r *Runtime) refresh(ctx context.Context) error {
 	if err := r.projectMihomoNativeSettings(ctx); err != nil {
 		return err
 	}
+	providerStartedAt := time.Now()
 	nodes, err := r.provider.Fetch(ctx)
+	r.observeRuntimeOperation(runtimeMetricProviderFetchBase, providerStartedAt, err)
 	if err != nil && r.cfg.Provider != config.ProviderNone {
 		r.logger.Warn("base provider fetch failed", "error_type", errorLogType(err))
 		nodes = nil
@@ -188,11 +194,19 @@ func (r *Runtime) refresh(ctx context.Context) error {
 	}
 	dynamicProfileNodes := len(sourceCfg.Pool)
 	sourceCfg.Pool = append(sourceCfg.Pool, nodes...)
+	applyStartedAt := time.Now()
 	sourceNodes, err := r.dataPlane.ApplyDesiredConfig(ctx, sourceCfg)
+	r.observeRuntimeOperation(runtimeMetricDataPlaneApplyDesiredConfig, applyStartedAt, err)
 	if err != nil {
 		return err
 	}
 	r.refreshDynamicProfileSelectionMetadata(ctx)
 	r.logger.Info("proxy runtime base refreshed", "provider_nodes", len(nodes), "dynamic_profile_nodes", dynamicProfileNodes, "mihomo_nodes", len(sourceNodes), "data_plane", r.dataPlane.Name())
 	return nil
+}
+
+func (r *Runtime) observeRuntimeOperation(operation string, startedAt time.Time, err error) {
+	if r != nil && r.metrics != nil {
+		r.metrics.Observe(operation, startedAt, err)
+	}
 }

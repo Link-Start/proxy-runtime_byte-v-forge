@@ -18,6 +18,7 @@ func (r *Runtime) restoreActiveLeasesInBackground(ctx context.Context) {
 	restoreCtx, cancel := context.WithTimeout(ctx, startupLeaseRestoreTimeout)
 	defer cancel()
 	err := r.service().leases.RestoreActiveLeases(restoreCtx)
+	r.observeRuntimeOperation(runtimeMetricLeaseWorkerRestoreActive, startedAt, err)
 	r.markLeaseRestoreFinished(err)
 	if err != nil {
 		if errors.Is(err, context.Canceled) {

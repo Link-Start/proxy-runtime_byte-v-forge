@@ -30,13 +30,13 @@ func (r *Runtime) leaseExpiryLoop(ctx context.Context) {
 func (r *Runtime) runLeaseExpirySweep(ctx context.Context) {
 	r.markLeaseWorkerStarted()
 	err := errors.Join(
-		r.runLeaseWorkerTask(ctx, "expire proxy leases", leaseCleanupAttemptTimeout, r.service().leases.ExpireDueLeaseFacts),
-		r.runLeaseWorkerTask(ctx, "cleanup pending proxy leases", leaseCleanupAttemptTimeout, r.service().leases.CleanupPendingLeaseFacts),
+		r.runLeaseWorkerTask(ctx, runtimeMetricLeaseWorkerExpireDue, "expire proxy leases", leaseCleanupAttemptTimeout, r.service().leases.ExpireDueLeaseFacts),
+		r.runLeaseWorkerTask(ctx, runtimeMetricLeaseWorkerCleanupPending, "cleanup pending proxy leases", leaseCleanupAttemptTimeout, r.service().leases.CleanupPendingLeaseFacts),
 	)
 	r.markLeaseWorkerFinished(err)
 }
 
-func (r *Runtime) runLeaseWorkerTask(ctx context.Context, name string, timeout time.Duration, task leaseWorkerTask) error {
+func (r *Runtime) runLeaseWorkerTask(ctx context.Context, operation string, name string, timeout time.Duration, task leaseWorkerTask) error {
 	if task == nil {
 		return nil
 	}
@@ -44,6 +44,7 @@ func (r *Runtime) runLeaseWorkerTask(ctx context.Context, name string, timeout t
 	taskCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 	err := task(taskCtx)
+	r.observeRuntimeOperation(operation, startedAt, err)
 	if err == nil || errors.Is(err, context.Canceled) {
 		return nil
 	}

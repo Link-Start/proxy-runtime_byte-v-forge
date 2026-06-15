@@ -13,6 +13,7 @@ type RuntimeService struct {
 	checks    runtimeCheckApplication
 	settings  settingsapp.Application
 	status    runtimeStatusApplication
+	metrics   *runtimeMetrics
 }
 
 var _ proxyruntimev1.ProxyRuntimeServiceServer = (*RuntimeService)(nil)
@@ -24,7 +25,15 @@ func NewRuntimeService(runtime *Runtime) *RuntimeService {
 		checks:    newRuntimeCheckApplication(runtimeCheckDependencies(runtime)),
 		settings:  newRuntimeSettingsApplication(runtimeSettingsDependencies(runtime)),
 		status:    newRuntimeStatusApplication(runtimeStatusDependencies(runtime)),
+		metrics:   runtimeMetricsFromRuntime(runtime),
 	}
+}
+
+func runtimeMetricsFromRuntime(runtime *Runtime) *runtimeMetrics {
+	if runtime == nil {
+		return nil
+	}
+	return runtime.metrics
 }
 
 func runtimeProviderDependencies(runtime *Runtime) runtimeProviderApplicationDependencies {

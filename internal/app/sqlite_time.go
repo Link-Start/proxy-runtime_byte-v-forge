@@ -1,12 +1,23 @@
 package app
 
-import "time"
+import (
+	"time"
+
+	"google.golang.org/protobuf/types/known/timestamppb"
+)
 
 func sqliteTime(value time.Time) string {
 	if value.IsZero() {
 		return ""
 	}
 	return value.UTC().Format(time.RFC3339Nano)
+}
+
+func sqliteTimestamp(value *timestamppb.Timestamp) string {
+	if value == nil {
+		return ""
+	}
+	return sqliteTime(value.AsTime())
 }
 
 func parseSQLiteTime(value string) time.Time {

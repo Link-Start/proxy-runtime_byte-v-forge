@@ -37,7 +37,7 @@ func (r *Runtime) serveHTTP(ctx context.Context, errCh chan<- error) {
 }
 
 func (r *Runtime) httpHandler() http.Handler {
-	return newRuntimeHTTPAPI(r.service(), r.cfg.Mihomo.APIAddr, r.cfg.ControlAuthToken, func() (bool, string) {
+	return newRuntimeHTTPAPI(r.service(), r.cfg.Mihomo.APIAddr, r.cfg.ControlAuthToken, r.cfg.ServiceAuthToken, func() (bool, string) {
 		reconcile := r.currentReconcileState()
 		if reconcile.running {
 			return false, "data plane reconcile running"
@@ -69,14 +69,14 @@ type runtimeHTTPAPI struct {
 	dashboardProxies dashboardProxyHandlers
 }
 
-func newRuntimeHTTPAPI(service *RuntimeService, mihomoAPIAddr string, authToken string, ready runtimeReadyFunc, logger *slog.Logger) *runtimeHTTPAPI {
+func newRuntimeHTTPAPI(service *RuntimeService, mihomoAPIAddr string, authToken string, serviceAuthToken string, ready runtimeReadyFunc, logger *slog.Logger) *runtimeHTTPAPI {
 	if logger == nil {
 		logger = slog.Default()
 	}
 	trimmedAuthToken := strings.TrimSpace(authToken)
 	api := &runtimeHTTPAPI{
 		service: service,
-		auth:    authapp.NewApplication(trimmedAuthToken),
+		auth:    authapp.NewApplication(trimmedAuthToken, serviceAuthToken),
 		ready:   ready,
 		logger:  logger,
 	}

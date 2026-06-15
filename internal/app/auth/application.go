@@ -9,27 +9,38 @@ import (
 )
 
 type Application struct {
-	secret string
+	controlSecret string
+	serviceSecret string
 }
 
-func NewApplication(secret string) Application {
-	return Application{secret: strings.TrimSpace(secret)}
+func NewApplication(controlSecret string, serviceSecret string) Application {
+	return Application{
+		controlSecret: strings.TrimSpace(controlSecret),
+		serviceSecret: strings.TrimSpace(serviceSecret),
+	}
 }
 
 func (a Application) Enabled() bool {
-	return a.secret != ""
+	return a.controlSecret != ""
 }
 
 func (a Application) Required(requestPath string) bool {
-	return Required(a.secret, requestPath)
+	return Required(a.controlSecret, requestPath)
+}
+
+func (a Application) RequestRequired(method string, requestPath string) bool {
+	if a.serviceSecret != "" && ServiceRuntimePath(method, requestPath) {
+		return true
+	}
+	return a.Required(requestPath)
 }
 
 func (a Application) TokenMatches(token string) bool {
-	return TokenMatches(token, a.secret)
+	return TokenMatches(token, a.controlSecret)
 }
 
 func (a Application) NewSessionCookie(now time.Time, secure bool) (*http.Cookie, error) {
-	return NewSessionCookie(a.secret, now, secure)
+	return NewSessionCookie(a.controlSecret, now, secure)
 }
 
 func (a Application) NewClearSessionCookie(secure bool) *http.Cookie {
@@ -97,12 +108,19 @@ func (a Application) WriteWebSocketTokenResponse(w http.ResponseWriter, now time
 }
 
 func (a Application) NewWebSocketToken(now time.Time) (string, error) {
-	return NewWebSocketToken(a.secret, now)
+	return NewWebSocketToken(a.controlSecret, now)
 }
 
 func (a Application) SessionAuthenticated(req *http.Request, now time.Time) bool {
 	if !a.Enabled() {
 		return true
+	}
+	return a.controlSessionAuthenticated(req, now)
+}
+
+func (a Application) controlSessionAuthenticated(req *http.Request, now time.Time) bool {
+	if !a.Enabled() {
+		return false
 	}
 	if req == nil {
 		return false
@@ -111,17 +129,17 @@ func (a Application) SessionAuthenticated(req *http.Request, now time.Time) bool
 	if err != nil {
 		return false
 	}
-	return VerifySession(cookie.Value, a.secret, now)
+	return VerifySession(cookie.Value, a.controlSecret, now)
 }
 
 func (a Application) RequestAuthenticated(req *http.Request, now time.Time) bool {
-	if a.SessionAuthenticated(req, now) {
+	if a.controlSessionAuthenticated(req, now) || a.serviceRequestAuthenticated(req) {
 		return true
 	}
 	if req == nil || req.URL == nil || !httpapi.PathInPrefix(req.URL.Path, "/mihomo/controller") {
 		return false
 	}
-	return VerifySession(req.URL.Query().Get("session"), a.secret, now)
+	return VerifySession(req.URL.Query().Get("session"), a.controlSecret, now)
 }
 
 func (a Application) LoginRedirectPreferred(req *http.Request, controlPlanePrefix string) bool {

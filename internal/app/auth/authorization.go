@@ -5,7 +5,10 @@ import (
 	"time"
 )
 
-const cookieAuthChallenge = "Cookie"
+const (
+	bearerAuthChallenge = "Bearer"
+	cookieAuthChallenge = "Cookie"
+)
 
 type AuthorizationDecision struct {
 	Authorized  bool
@@ -18,11 +21,15 @@ func (a Application) Authorize(req *http.Request, now time.Time, controlPlanePre
 	if req != nil && req.URL != nil {
 		requestPath = req.URL.Path
 	}
-	if !a.Required(requestPath) || !a.Enabled() || a.RequestAuthenticated(req, now) {
+	requestMethod := method(req)
+	if !a.RequestRequired(requestMethod, requestPath) || a.RequestAuthenticated(req, now) {
 		return AuthorizationDecision{Authorized: true}
 	}
 	if a.LoginRedirectPreferred(req, controlPlanePrefix) {
 		return AuthorizationDecision{RedirectURL: LoginRedirect(requestURI(req))}
+	}
+	if ServiceRuntimePath(requestMethod, requestPath) {
+		return AuthorizationDecision{Challenge: bearerAuthChallenge}
 	}
 	return AuthorizationDecision{Challenge: cookieAuthChallenge}
 }
@@ -32,6 +39,13 @@ func (a Application) LoginRedirectIfRequired(req *http.Request, protectedPath st
 		return "", false
 	}
 	return LoginRedirect(requestURI(req)), true
+}
+
+func method(req *http.Request) string {
+	if req == nil {
+		return ""
+	}
+	return req.Method
 }
 
 func requestURI(req *http.Request) string {

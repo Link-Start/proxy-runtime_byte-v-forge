@@ -76,6 +76,7 @@ type Config struct {
 	ProxyUsers        []ProxyUserRoute
 	ProviderHTTPProxy string
 	ControlAuthToken  string
+	ServiceAuthToken  string
 	Provider          string
 	RefreshInterval   time.Duration
 	RequestTimeout    time.Duration

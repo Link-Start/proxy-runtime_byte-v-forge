@@ -1,7 +1,6 @@
 package app
 
 import (
-	"log/slog"
 	"sync"
 	"time"
 
@@ -22,19 +21,15 @@ type runtimeSettingsStore struct {
 	accountProviders *providerregistry.Registry
 	ipFraudProviders *ipfraud.Registry
 	ipGeoProviders   *ipgeo.Registry
-	logger           *slog.Logger
 	mu               sync.Mutex
 }
 
-func newRuntimeSettingsStore(stores *RuntimeStores, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry, logger *slog.Logger) *runtimeSettingsStore {
-	if logger == nil {
-		logger = slog.Default()
-	}
+func newRuntimeSettingsStore(stores *RuntimeStores, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry) *runtimeSettingsStore {
 	var store runtimeSettingsPersistence
 	var secretWriter secretref.Writer
 	if stores != nil {
 		store = stores.runtimeSettingsPersistence
 		secretWriter = stores.secretStore
 	}
-	return &runtimeSettingsStore{store: store, secretWriter: secretWriter, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, ipGeoProviders: ipGeoProviders, logger: logger}
+	return &runtimeSettingsStore{store: store, secretWriter: secretWriter, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, ipGeoProviders: ipGeoProviders}
 }

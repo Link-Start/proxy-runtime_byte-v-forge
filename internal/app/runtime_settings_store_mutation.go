@@ -2,17 +2,38 @@ package app
 
 import (
 	"context"
+	"sync"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
 type runtimeSettingsMutation func(*runtimeSettingsFile) (*runtimeSettingsFile, error)
 type runtimeSettingsChangeMutation func(*runtimeSettingsFile) (bool, error)
+type runtimeSettingsLoadFunc func(context.Context) (*runtimeSettingsFile, error)
+type runtimeSettingsSaveFunc func(context.Context, *runtimeSettingsFile) error
+
+type runtimeSettingsMutationExecutor struct {
+	mu   *sync.Mutex
+	load runtimeSettingsLoadFunc
+	save runtimeSettingsSaveFunc
+}
 
 func (s *runtimeSettingsStore) mutateRuntimeSettings(ctx context.Context, mutation runtimeSettingsMutation) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	settings, err := s.loadLocked(ctx)
+	return s.mutationExecutor().mutate(ctx, mutation)
+}
+
+func (s *runtimeSettingsStore) mutateRuntimeSettingsIfChanged(ctx context.Context, mutation runtimeSettingsChangeMutation) (bool, error) {
+	return s.mutationExecutor().mutateIfChanged(ctx, mutation)
+}
+
+func (s *runtimeSettingsStore) mutationExecutor() runtimeSettingsMutationExecutor {
+	return runtimeSettingsMutationExecutor{mu: &s.mu, load: s.loadLocked, save: s.saveLocked}
+}
+
+func (e runtimeSettingsMutationExecutor) mutate(ctx context.Context, mutation runtimeSettingsMutation) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	settings, err := e.load(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -20,16 +41,16 @@ func (s *runtimeSettingsStore) mutateRuntimeSettings(ctx context.Context, mutati
 	if err != nil {
 		return nil, err
 	}
-	if err := s.saveLocked(ctx, next); err != nil {
+	if err := e.save(ctx, next); err != nil {
 		return nil, err
 	}
 	return runtimeSettingsView(next), nil
 }
 
-func (s *runtimeSettingsStore) mutateRuntimeSettingsIfChanged(ctx context.Context, mutation runtimeSettingsChangeMutation) (bool, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	settings, err := s.loadLocked(ctx)
+func (e runtimeSettingsMutationExecutor) mutateIfChanged(ctx context.Context, mutation runtimeSettingsChangeMutation) (bool, error) {
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	settings, err := e.load(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -40,7 +61,7 @@ func (s *runtimeSettingsStore) mutateRuntimeSettingsIfChanged(ctx context.Contex
 	if !changed {
 		return false, nil
 	}
-	if err := s.saveLocked(ctx, settings); err != nil {
+	if err := e.save(ctx, settings); err != nil {
 		return false, err
 	}
 	return true, nil

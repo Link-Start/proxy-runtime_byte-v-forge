@@ -91,7 +91,7 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 		leaseLocks:          deps.LeaseLocks,
 		providerConcurrency: deps.ProviderConcurrency,
 		providerHTTPClient:  deps.ProviderHTTPClient,
-		settings:            newRuntimeSettingsStore(deps.Store, deps.AccountProviders, deps.IPFraudProviders, deps.IPGeoProviders, logger),
+		settings:            newRuntimeSettingsStore(deps.Store, deps.AccountProviders, deps.IPFraudProviders, deps.IPGeoProviders),
 		metrics:             newRuntimeMetrics(),
 		logger:              logger,
 		reconcileCh:         make(chan struct{}, 1),

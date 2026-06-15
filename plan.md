@@ -1037,6 +1037,7 @@ Completed user-visible/runtime batches:
 - Plugin settings UI loads now abort stale settings/fraud-provider/geo-provider requests and suppress cancellation noise before applying form state.
 - Playground check requests now abort stale snapshot, exit-IP, geo, and fraud checks, and skip snapshot refresh while an active check is running.
 - Provider-account background delete logs now include operation duration for success and failure paths.
+- Settings HTTP handlers now share load/update dispatch and settings-specific error mapping, and provider descriptor handlers were moved out of proxy check handlers.
 
 Still open:
 

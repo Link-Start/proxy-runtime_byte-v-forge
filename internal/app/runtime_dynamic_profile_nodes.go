@@ -65,7 +65,6 @@ func dynamicProfileLabelNode(node provider.Node, index int, profile *proxyruntim
 	node.Labels["dynamic_provider_id"] = selected.proto.GetDynamicProviderId()
 	node.Labels["dynamic_provider_ids"] = selected.proto.GetDynamicProviderId()
 	node.Labels["dynamic_ip_endpoint_id"] = selected.proto.GetEndpointId()
-	node.Labels["dynamic_ip_endpoint_url"] = selected.proto.GetEndpointUrl()
 	node.Labels["session_mode"] = policy.GetMode().String()
 	node.Labels["rotation_mode"] = policy.GetRotationMode().String()
 	node.Labels["region"] = strings.TrimSpace(policy.GetRegion())

@@ -59,7 +59,7 @@ func runtimeLeaseDependencies(runtime *Runtime) leaseapp.Dependencies {
 	return leaseapp.Dependencies{
 		Repository:  runtime.store,
 		Coordinator: runtime.leaseCoordinator,
-		Worker:      runtime.leaseCoordinator,
+		Worker:      runtime.leaseCoordinator.workerProcessor(),
 		Logger:      runtime.logger,
 	}
 }

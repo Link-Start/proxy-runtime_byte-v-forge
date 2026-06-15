@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-func validateRenderedMihomoConfig(config mihomoConfig) error {
+func validateMihomoConfigProjection(config mihomoConfig) error {
 	if config.MixedPort <= 0 || config.MixedPort > 65535 {
 		return fmt.Errorf("invalid rendered mihomo mixed port %d", config.MixedPort)
 	}

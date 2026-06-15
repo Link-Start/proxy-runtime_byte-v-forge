@@ -1,27 +1,17 @@
 package mihomo
 
-import "encoding/json"
-
 type renderedMihomoConfig struct {
 	data      []byte
 	signature string
 }
 
 func renderConfigProjection(options renderOptions) (renderedMihomoConfig, error) {
-	configFile, err := renderConfig(options)
+	configFile, err := projectMihomoConfigProjection(options)
 	if err != nil {
 		return renderedMihomoConfig{}, err
 	}
-	if err := validateRenderedMihomoConfig(configFile); err != nil {
+	if err := validateMihomoConfigProjection(configFile); err != nil {
 		return renderedMihomoConfig{}, err
 	}
-	return encodeRenderedMihomoConfig(configFile)
-}
-
-func encodeRenderedMihomoConfig(configFile mihomoConfig) (renderedMihomoConfig, error) {
-	data, err := json.MarshalIndent(configFile, "", "  ")
-	if err != nil {
-		return renderedMihomoConfig{}, err
-	}
-	return renderedMihomoConfig{data: data, signature: signature(data)}, nil
+	return encodeMihomoConfigProjection(configFile)
 }

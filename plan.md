@@ -1039,6 +1039,7 @@ Completed user-visible/runtime batches:
 - Provider-account background delete logs now include operation duration for success and failure paths.
 - Settings HTTP handlers now share load/update dispatch and settings-specific error mapping, and provider descriptor handlers were moved out of proxy check handlers.
 - Mihomo reconcile base/final render preparation now lives in focused stage helpers, leaving the locked reconcile flow as projection stage orchestration.
+- Mihomo config projection now has explicit project, validate, and encode stage helpers instead of hiding the whole render pipeline in one function body.
 
 Still open:
 

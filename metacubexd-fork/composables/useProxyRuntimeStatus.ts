@@ -1,3 +1,4 @@
+import { proxyRuntimeUserMessage } from '~/composables/proxyRuntimeFetch'
 import type { ProxyRuntimeStatus } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 
 const runtimeStatusRefreshIntervalMs = 5000
@@ -16,7 +17,7 @@ export function useProxyRuntimeStatus() {
       status.value = (await api.getStatus()).status
       error.value = ''
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      error.value = proxyRuntimeUserMessage(err)
     } finally {
       loading.value = false
     }

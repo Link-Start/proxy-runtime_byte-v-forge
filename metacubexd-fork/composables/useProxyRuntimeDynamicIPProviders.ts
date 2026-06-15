@@ -1,3 +1,4 @@
+import { proxyRuntimeUserMessage } from '~/composables/proxyRuntimeFetch'
 import type { ProxyDynamicIPProviderSettings } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 import {
   cloneDynamicIPProvider,
@@ -33,7 +34,7 @@ export function useProxyRuntimeDynamicIPProviders() {
       state.accounts.value = accountRes.accounts || []
       state.resetEmptyProviders()
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      error.value = proxyRuntimeUserMessage(err)
     } finally {
       loading.value = false
     }
@@ -179,7 +180,7 @@ export function useProxyRuntimeDynamicIPProviders() {
     try {
       await action()
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      error.value = proxyRuntimeUserMessage(err)
     } finally {
       saving.value = false
     }

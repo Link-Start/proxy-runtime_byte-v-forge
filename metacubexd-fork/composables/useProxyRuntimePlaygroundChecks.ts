@@ -1,3 +1,4 @@
+import { proxyRuntimeUserMessage } from '~/composables/proxyRuntimeFetch'
 import type { ProxyRuntimeInUserRulesState } from '~/composables/useProxyRuntimeInUserRules'
 import type { Ref } from 'vue'
 import type {
@@ -67,7 +68,7 @@ export function useProxyRuntimePlaygroundChecks(
       }
       await enrichIP(ip)
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      error.value = proxyRuntimeUserMessage(err)
     } finally {
       busy.value = false
     }

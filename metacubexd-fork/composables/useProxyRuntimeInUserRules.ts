@@ -1,3 +1,4 @@
+import { proxyRuntimeUserMessage } from '~/composables/proxyRuntimeFetch'
 import type {
   EgressProfileSettings,
   ProxyDynamicIPProviderSettings,
@@ -55,7 +56,7 @@ export function useProxyRuntimeInUserRules() {
       dynamicProviders.value = settings.settings?.dynamic_ip_providers || []
       owners.value = mihomoOwnersFromController(mihomoOwners)
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      error.value = proxyRuntimeUserMessage(err)
     } finally {
       loading.value = false
     }
@@ -128,7 +129,7 @@ export function useProxyRuntimeInUserRules() {
       const response = await api.listMihomoConfigNodes(key)
       mihomoNodes[key] = response.nodes || []
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      error.value = proxyRuntimeUserMessage(err)
     } finally {
       mihomoNodeLoading[key] = false
     }
@@ -163,7 +164,7 @@ export function useProxyRuntimeInUserRules() {
     try {
       await action()
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      error.value = proxyRuntimeUserMessage(err)
     } finally {
       saving.value = false
     }

@@ -1,3 +1,4 @@
+import { proxyRuntimeUserMessage } from '~/composables/proxyRuntimeFetch'
 import type {
   ProxyRuntimeMihomoNativeFixedProxy,
   ProxyRuntimeMihomoNativeSubscription,
@@ -33,7 +34,7 @@ export function useProxyRuntimeMihomoNativeConfig() {
       fixedProxies.value = config.fixed_proxies || []
       subscriptions.value = config.subscriptions || []
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      error.value = proxyRuntimeUserMessage(err)
     } finally {
       loading.value = false
     }
@@ -110,7 +111,7 @@ export function useProxyRuntimeMihomoNativeConfig() {
       fixedProxies.value = config.fixed_proxies || []
       subscriptions.value = config.subscriptions || []
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      error.value = proxyRuntimeUserMessage(err)
     } finally {
       saving.value = false
     }

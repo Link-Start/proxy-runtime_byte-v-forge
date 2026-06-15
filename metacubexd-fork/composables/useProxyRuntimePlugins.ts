@@ -1,3 +1,4 @@
+import { proxyRuntimeUserMessage } from '~/composables/proxyRuntimeFetch'
 import type {
   ProxyEdgeAccessCheck,
   ProxyExitGeo,
@@ -68,7 +69,7 @@ export function useProxyRuntimePlugins() {
       edgeForm.token_value = ''
       edgeForm.clear_token = false
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      error.value = proxyRuntimeUserMessage(err)
     } finally {
       loading.value = false
     }
@@ -176,14 +177,14 @@ export function useProxyRuntimePlugins() {
   async function withSave(action: () => Promise<void>) {
     saving.value = true
     error.value = ''
-    try { await action(); return true } catch (err) { error.value = err instanceof Error ? err.message : String(err); return false }
+    try { await action(); return true } catch (err) { error.value = proxyRuntimeUserMessage(err); return false }
     finally { saving.value = false }
   }
 
   async function withCheck(action: () => Promise<void>) {
     checking.value = true
     error.value = ''
-    try { await action() } catch (err) { error.value = err instanceof Error ? err.message : String(err) }
+    try { await action() } catch (err) { error.value = proxyRuntimeUserMessage(err) }
     finally { checking.value = false }
   }
 }

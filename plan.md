@@ -996,6 +996,7 @@ Completed user-visible/runtime batches:
 - Existing-lease concurrency-slot refresh now uses a lease-owned refresh runner, leaving the coordinator to provide only settings-derived limit calculation.
 - Route-change cache invalidation and playground connection cleanup are grouped behind a route side-effect adapter instead of repeated coordinator callbacks.
 - Provider-account acquired-route apply input mapping now lives in a lease-owned applier adapter instead of an inline coordinator closure.
+- Selected-attempt to provider-account acquire execution now uses a lease-owned action adapter, leaving the coordinator to provide only the provider runner factory and error mapping.
 
 Still open:
 

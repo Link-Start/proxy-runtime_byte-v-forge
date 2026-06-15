@@ -1,11 +1,14 @@
 package app
 
 import (
+	"context"
+
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
 func (c leaseCoordinator) workerProcessor() leaseapp.WorkerProcessor {
+	restorer := c.restoreLeaseRunner()
 	expirer := c.expireLeaseRunner()
 	cleaner := c.cleanupPendingLeaseRunner()
 	return leaseapp.WorkerProcessor{
@@ -13,7 +16,7 @@ func (c leaseCoordinator) workerProcessor() leaseapp.WorkerProcessor {
 		Clock:             c.deps.clock,
 		RestoreTimeout:    leaseRestoreRouteTimeout,
 		CleanupTimeout:    leaseCleanupAttemptTimeout,
-		Restore:           c.restoreLeaseRoute,
+		Restore:           restorer.Restore,
 		Expire:            expirer.Expire,
 		CleanupPendingOne: cleaner.Cleanup,
 		ObserveRestore: func(lease *proxyruntimev1.ProxyDynamicLease, err error) {
@@ -30,6 +33,18 @@ func (c leaseCoordinator) workerProcessor() leaseapp.WorkerProcessor {
 		},
 		ObserveCleanupList: func(err error) {
 			c.warn("list proxy lease cleanup facts failed", "error", err)
+		},
+	}
+}
+
+func (c leaseCoordinator) restoreLeaseRunner() leaseapp.RestoreLeaseRouteRunner {
+	return leaseapp.RestoreLeaseRouteRunner{
+		ResolveRestorer: func(ctx context.Context, _ *proxyruntimev1.ProxyDynamicLease) (leaseapp.LeaseRouteRestorer, error) {
+			settings, err := c.deps.settings.load(ctx)
+			if err != nil {
+				return leaseapp.LeaseRouteRestorer{}, err
+			}
+			return c.leaseRouteRestorer(settings), nil
 		},
 	}
 }

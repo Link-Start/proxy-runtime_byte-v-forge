@@ -87,8 +87,12 @@ export function useProxyRuntimeApi() {
           body: proxyRuntimeJsonBody(req),
         },
       ),
-    getSettings: () =>
-      proxyRuntimeRequest<GetProxyRuntimeSettingsResponse>('/settings'),
+    getSettings: (options: ProxyRuntimeRequestOptions = {}) =>
+      proxyRuntimeRequest<GetProxyRuntimeSettingsResponse>(
+        '/settings',
+        {},
+        options,
+      ),
     updateRuntimeSettings: (req: UpdateProxyRuntimeSettingsRequest) =>
       proxyRuntimeRequest<UpdateProxyRuntimeSettingsResponse>('/settings', {
         method: 'PUT',

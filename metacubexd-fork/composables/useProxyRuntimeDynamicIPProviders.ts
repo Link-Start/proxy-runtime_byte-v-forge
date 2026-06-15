@@ -1,4 +1,7 @@
-import { proxyRuntimeUserMessage } from '~/composables/proxyRuntimeFetch'
+import {
+  isProxyRuntimeCancellation,
+  proxyRuntimeUserMessage,
+} from '~/composables/proxyRuntimeFetch'
 import type { ProxyDynamicIPProviderSettings } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 import {
   cloneDynamicIPProvider,
@@ -17,16 +20,23 @@ export function useProxyRuntimeDynamicIPProviders() {
   const loading = ref(false)
   const saving = ref(false)
   const error = ref('')
+  let loadController: AbortController | undefined
+  let loadSequence = 0
 
   async function load() {
+    const sequence = nextLoadSequence()
+    const controller = new AbortController()
+    loadController = controller
     loading.value = true
     error.value = ''
     try {
+      const requestOptions = { signal: controller.signal }
       const [providerRes, settingsRes, accountRes] = await Promise.all([
-        api.listProviders(),
-        api.getSettings(),
-        api.listProviderAccounts(),
+        api.listProviders(requestOptions),
+        api.getSettings(requestOptions),
+        api.listProviderAccounts(requestOptions),
       ])
+      if (!currentLoad(sequence)) return
       state.providers.value = providerRes.providers || []
       state.dynamicIpProviders.value =
         settingsRes.settings?.dynamic_ip_providers?.map(cloneDynamicIPProvider) ||
@@ -34,9 +44,13 @@ export function useProxyRuntimeDynamicIPProviders() {
       state.accounts.value = accountRes.accounts || []
       state.resetEmptyProviders()
     } catch (err) {
+      if (!currentLoad(sequence) || isProxyRuntimeCancellation(err)) return
       error.value = proxyRuntimeUserMessage(err)
     } finally {
-      loading.value = false
+      if (currentLoad(sequence)) {
+        loading.value = false
+        loadController = undefined
+      }
     }
   }
 
@@ -151,6 +165,23 @@ export function useProxyRuntimeDynamicIPProviders() {
       removeAccounts([accountID])
     })
   }
+
+  function abortLoad() {
+    loadController?.abort()
+    loadController = undefined
+  }
+
+  function nextLoadSequence() {
+    abortLoad()
+    loadSequence += 1
+    return loadSequence
+  }
+
+  function currentLoad(sequence: number) {
+    return sequence === loadSequence
+  }
+
+  onBeforeUnmount(abortLoad)
 
   function removeAccounts(accountIDs: string[]) {
     const deleted = new Set(accountIDs.map((accountID) => accountID.trim()))

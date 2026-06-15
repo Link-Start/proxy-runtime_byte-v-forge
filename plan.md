@@ -1031,6 +1031,7 @@ Completed user-visible/runtime batches:
 - Settings and Mihomo-native apply scheduling now mark explicit settings-apply pending/running/failed state in runtime status labels without expanding the public proto contract.
 - Mihomo reconcile now wraps normalize, directory preparation, render, restart, and apply failures with explicit projection stage labels so status/logs identify the failed pipeline stage.
 - Dynamic IP endpoint selection for lease acquire now uses an explicit app adapter instead of an inline coordinator closure.
+- Dynamic IP provider UI loads now abort stale provider/settings/account requests and suppress cancellation noise before applying results.
 
 Still open:
 

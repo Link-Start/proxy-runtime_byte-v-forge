@@ -669,6 +669,20 @@ message ProxyRuntimeStatus {
   bool lease_restore_failed = 9;
 }
 message GetProxyRuntimeStatusResponse { ProxyRuntimeStatus status = 1; }
+message GetProxyRuntimeMetricsSummaryRequest {}
+message ProxyRuntimeOperationMetric {
+  string operation = 1;
+  string status = 2;
+  uint64 count = 3;
+  uint64 slow_count = 4;
+  double duration_seconds = 5;
+}
+message ProxyRuntimeMetricsSummary {
+  repeated ProxyRuntimeOperationMetric operations = 1;
+  double slow_threshold_seconds = 2;
+  google.protobuf.Timestamp updated_at = 3;
+}
+message GetProxyRuntimeMetricsSummaryResponse { ProxyRuntimeMetricsSummary summary = 1; }
 message ListProxyIPFraudProvidersRequest {}
 message ListProxyIPFraudProvidersResponse { repeated ProxyIPFraudProviderDescriptor providers = 1; }
 message ListProxyIPGeoProvidersRequest {}
@@ -709,6 +723,7 @@ service ProxyRuntimeService {
   rpc ListProxyIPFraudProviders(ListProxyIPFraudProvidersRequest) returns (ListProxyIPFraudProvidersResponse);
   rpc ListProxyIPGeoProviders(ListProxyIPGeoProvidersRequest) returns (ListProxyIPGeoProvidersResponse);
   rpc GetProxyRuntimeStatus(GetProxyRuntimeStatusRequest) returns (GetProxyRuntimeStatusResponse);
+  rpc GetProxyRuntimeMetricsSummary(GetProxyRuntimeMetricsSummaryRequest) returns (GetProxyRuntimeMetricsSummaryResponse);
   rpc GetProxyRuntimeSettings(GetProxyRuntimeSettingsRequest) returns (GetProxyRuntimeSettingsResponse);
   rpc UpdateProxyRuntimeSettings(UpdateProxyRuntimeSettingsRequest) returns (UpdateProxyRuntimeSettingsResponse);
   rpc UpdateProxyEgressProfiles(UpdateProxyEgressProfilesRequest) returns (UpdateProxyEgressProfilesResponse);

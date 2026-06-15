@@ -701,6 +701,27 @@ export interface GetProxyRuntimeStatusResponse {
   status: ProxyRuntimeStatus | undefined;
 }
 
+export interface GetProxyRuntimeMetricsSummaryRequest {
+}
+
+export interface ProxyRuntimeOperationMetric {
+  operation: string;
+  status: string;
+  count: number;
+  slow_count: number;
+  duration_seconds: number;
+}
+
+export interface ProxyRuntimeMetricsSummary {
+  operations: ProxyRuntimeOperationMetric[];
+  slow_threshold_seconds: number;
+  updated_at: string | undefined;
+}
+
+export interface GetProxyRuntimeMetricsSummaryResponse {
+  summary: ProxyRuntimeMetricsSummary | undefined;
+}
+
 export interface ListProxyIPFraudProvidersRequest {
 }
 

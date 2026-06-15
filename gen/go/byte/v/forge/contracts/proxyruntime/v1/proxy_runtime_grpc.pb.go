@@ -35,6 +35,7 @@ const (
 	ProxyRuntimeService_ListProxyIPFraudProviders_FullMethodName            = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ListProxyIPFraudProviders"
 	ProxyRuntimeService_ListProxyIPGeoProviders_FullMethodName              = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/ListProxyIPGeoProviders"
 	ProxyRuntimeService_GetProxyRuntimeStatus_FullMethodName                = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/GetProxyRuntimeStatus"
+	ProxyRuntimeService_GetProxyRuntimeMetricsSummary_FullMethodName        = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/GetProxyRuntimeMetricsSummary"
 	ProxyRuntimeService_GetProxyRuntimeSettings_FullMethodName              = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/GetProxyRuntimeSettings"
 	ProxyRuntimeService_UpdateProxyRuntimeSettings_FullMethodName           = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/UpdateProxyRuntimeSettings"
 	ProxyRuntimeService_UpdateProxyEgressProfiles_FullMethodName            = "/byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService/UpdateProxyEgressProfiles"
@@ -63,6 +64,7 @@ type ProxyRuntimeServiceClient interface {
 	ListProxyIPFraudProviders(ctx context.Context, in *ListProxyIPFraudProvidersRequest, opts ...grpc.CallOption) (*ListProxyIPFraudProvidersResponse, error)
 	ListProxyIPGeoProviders(ctx context.Context, in *ListProxyIPGeoProvidersRequest, opts ...grpc.CallOption) (*ListProxyIPGeoProvidersResponse, error)
 	GetProxyRuntimeStatus(ctx context.Context, in *GetProxyRuntimeStatusRequest, opts ...grpc.CallOption) (*GetProxyRuntimeStatusResponse, error)
+	GetProxyRuntimeMetricsSummary(ctx context.Context, in *GetProxyRuntimeMetricsSummaryRequest, opts ...grpc.CallOption) (*GetProxyRuntimeMetricsSummaryResponse, error)
 	GetProxyRuntimeSettings(ctx context.Context, in *GetProxyRuntimeSettingsRequest, opts ...grpc.CallOption) (*GetProxyRuntimeSettingsResponse, error)
 	UpdateProxyRuntimeSettings(ctx context.Context, in *UpdateProxyRuntimeSettingsRequest, opts ...grpc.CallOption) (*UpdateProxyRuntimeSettingsResponse, error)
 	UpdateProxyEgressProfiles(ctx context.Context, in *UpdateProxyEgressProfilesRequest, opts ...grpc.CallOption) (*UpdateProxyEgressProfilesResponse, error)
@@ -239,6 +241,16 @@ func (c *proxyRuntimeServiceClient) GetProxyRuntimeStatus(ctx context.Context, i
 	return out, nil
 }
 
+func (c *proxyRuntimeServiceClient) GetProxyRuntimeMetricsSummary(ctx context.Context, in *GetProxyRuntimeMetricsSummaryRequest, opts ...grpc.CallOption) (*GetProxyRuntimeMetricsSummaryResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProxyRuntimeMetricsSummaryResponse)
+	err := c.cc.Invoke(ctx, ProxyRuntimeService_GetProxyRuntimeMetricsSummary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *proxyRuntimeServiceClient) GetProxyRuntimeSettings(ctx context.Context, in *GetProxyRuntimeSettingsRequest, opts ...grpc.CallOption) (*GetProxyRuntimeSettingsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetProxyRuntimeSettingsResponse)
@@ -319,6 +331,7 @@ type ProxyRuntimeServiceServer interface {
 	ListProxyIPFraudProviders(context.Context, *ListProxyIPFraudProvidersRequest) (*ListProxyIPFraudProvidersResponse, error)
 	ListProxyIPGeoProviders(context.Context, *ListProxyIPGeoProvidersRequest) (*ListProxyIPGeoProvidersResponse, error)
 	GetProxyRuntimeStatus(context.Context, *GetProxyRuntimeStatusRequest) (*GetProxyRuntimeStatusResponse, error)
+	GetProxyRuntimeMetricsSummary(context.Context, *GetProxyRuntimeMetricsSummaryRequest) (*GetProxyRuntimeMetricsSummaryResponse, error)
 	GetProxyRuntimeSettings(context.Context, *GetProxyRuntimeSettingsRequest) (*GetProxyRuntimeSettingsResponse, error)
 	UpdateProxyRuntimeSettings(context.Context, *UpdateProxyRuntimeSettingsRequest) (*UpdateProxyRuntimeSettingsResponse, error)
 	UpdateProxyEgressProfiles(context.Context, *UpdateProxyEgressProfilesRequest) (*UpdateProxyEgressProfilesResponse, error)
@@ -382,6 +395,9 @@ func (UnimplementedProxyRuntimeServiceServer) ListProxyIPGeoProviders(context.Co
 }
 func (UnimplementedProxyRuntimeServiceServer) GetProxyRuntimeStatus(context.Context, *GetProxyRuntimeStatusRequest) (*GetProxyRuntimeStatusResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetProxyRuntimeStatus not implemented")
+}
+func (UnimplementedProxyRuntimeServiceServer) GetProxyRuntimeMetricsSummary(context.Context, *GetProxyRuntimeMetricsSummaryRequest) (*GetProxyRuntimeMetricsSummaryResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetProxyRuntimeMetricsSummary not implemented")
 }
 func (UnimplementedProxyRuntimeServiceServer) GetProxyRuntimeSettings(context.Context, *GetProxyRuntimeSettingsRequest) (*GetProxyRuntimeSettingsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetProxyRuntimeSettings not implemented")
@@ -710,6 +726,24 @@ func _ProxyRuntimeService_GetProxyRuntimeStatus_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ProxyRuntimeService_GetProxyRuntimeMetricsSummary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProxyRuntimeMetricsSummaryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ProxyRuntimeServiceServer).GetProxyRuntimeMetricsSummary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ProxyRuntimeService_GetProxyRuntimeMetricsSummary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ProxyRuntimeServiceServer).GetProxyRuntimeMetricsSummary(ctx, req.(*GetProxyRuntimeMetricsSummaryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _ProxyRuntimeService_GetProxyRuntimeSettings_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetProxyRuntimeSettingsRequest)
 	if err := dec(in); err != nil {
@@ -888,6 +922,10 @@ var ProxyRuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetProxyRuntimeStatus",
 			Handler:    _ProxyRuntimeService_GetProxyRuntimeStatus_Handler,
+		},
+		{
+			MethodName: "GetProxyRuntimeMetricsSummary",
+			Handler:    _ProxyRuntimeService_GetProxyRuntimeMetricsSummary_Handler,
 		},
 		{
 			MethodName: "GetProxyRuntimeSettings",

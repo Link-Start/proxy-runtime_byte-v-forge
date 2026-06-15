@@ -9,6 +9,7 @@ Only project-owned additions live here:
 - `patches/003-disable-google-fonts.patch`
 - `components/proxy-runtime/ProxyRuntimeDynamicIPProviders.vue`
 - `components/proxy-runtime/ProxyRuntimeInUserRules.vue`
+- `components/proxy-runtime/ProxyRuntimeMetrics.vue`
 - `components/proxy-runtime/DynamicIPProvider*.vue`
 - `composables/useProxyRuntime*.ts`
 - generated proto contracts from `metacubexd-fork/types/`
@@ -20,5 +21,6 @@ The project overlay adds:
 - `入口用户` inside MetaCubeXD `proxies` for proxy username/password, line, and exit bindings.
 - `动态IP提供商` inside MetaCubeXD `proxies` for proxy-runtime-only dynamic provider instances, endpoints, and provider accounts.
 - `动态租约` inside MetaCubeXD `connections` for active dynamic lease runtime state.
+- `观测` page for proxy-runtime operation metrics.
 
 Both use `/api/*`. They do not hand-edit the generated Mihomo runtime projection.

@@ -5825,6 +5825,222 @@ func (x *GetProxyRuntimeStatusResponse) GetStatus() *ProxyRuntimeStatus {
 	return nil
 }
 
+type GetProxyRuntimeMetricsSummaryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetProxyRuntimeMetricsSummaryRequest) Reset() {
+	*x = GetProxyRuntimeMetricsSummaryRequest{}
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[68]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetProxyRuntimeMetricsSummaryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetProxyRuntimeMetricsSummaryRequest) ProtoMessage() {}
+
+func (x *GetProxyRuntimeMetricsSummaryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[68]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetProxyRuntimeMetricsSummaryRequest.ProtoReflect.Descriptor instead.
+func (*GetProxyRuntimeMetricsSummaryRequest) Descriptor() ([]byte, []int) {
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{68}
+}
+
+type ProxyRuntimeOperationMetric struct {
+	state           protoimpl.MessageState `protogen:"open.v1"`
+	Operation       string                 `protobuf:"bytes,1,opt,name=operation,proto3" json:"operation,omitempty"`
+	Status          string                 `protobuf:"bytes,2,opt,name=status,proto3" json:"status,omitempty"`
+	Count           uint64                 `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
+	SlowCount       uint64                 `protobuf:"varint,4,opt,name=slow_count,json=slowCount,proto3" json:"slow_count,omitempty"`
+	DurationSeconds float64                `protobuf:"fixed64,5,opt,name=duration_seconds,json=durationSeconds,proto3" json:"duration_seconds,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ProxyRuntimeOperationMetric) Reset() {
+	*x = ProxyRuntimeOperationMetric{}
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[69]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProxyRuntimeOperationMetric) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProxyRuntimeOperationMetric) ProtoMessage() {}
+
+func (x *ProxyRuntimeOperationMetric) ProtoReflect() protoreflect.Message {
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[69]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProxyRuntimeOperationMetric.ProtoReflect.Descriptor instead.
+func (*ProxyRuntimeOperationMetric) Descriptor() ([]byte, []int) {
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{69}
+}
+
+func (x *ProxyRuntimeOperationMetric) GetOperation() string {
+	if x != nil {
+		return x.Operation
+	}
+	return ""
+}
+
+func (x *ProxyRuntimeOperationMetric) GetStatus() string {
+	if x != nil {
+		return x.Status
+	}
+	return ""
+}
+
+func (x *ProxyRuntimeOperationMetric) GetCount() uint64 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+func (x *ProxyRuntimeOperationMetric) GetSlowCount() uint64 {
+	if x != nil {
+		return x.SlowCount
+	}
+	return 0
+}
+
+func (x *ProxyRuntimeOperationMetric) GetDurationSeconds() float64 {
+	if x != nil {
+		return x.DurationSeconds
+	}
+	return 0
+}
+
+type ProxyRuntimeMetricsSummary struct {
+	state                protoimpl.MessageState         `protogen:"open.v1"`
+	Operations           []*ProxyRuntimeOperationMetric `protobuf:"bytes,1,rep,name=operations,proto3" json:"operations,omitempty"`
+	SlowThresholdSeconds float64                        `protobuf:"fixed64,2,opt,name=slow_threshold_seconds,json=slowThresholdSeconds,proto3" json:"slow_threshold_seconds,omitempty"`
+	UpdatedAt            *timestamppb.Timestamp         `protobuf:"bytes,3,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *ProxyRuntimeMetricsSummary) Reset() {
+	*x = ProxyRuntimeMetricsSummary{}
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[70]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProxyRuntimeMetricsSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProxyRuntimeMetricsSummary) ProtoMessage() {}
+
+func (x *ProxyRuntimeMetricsSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[70]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProxyRuntimeMetricsSummary.ProtoReflect.Descriptor instead.
+func (*ProxyRuntimeMetricsSummary) Descriptor() ([]byte, []int) {
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{70}
+}
+
+func (x *ProxyRuntimeMetricsSummary) GetOperations() []*ProxyRuntimeOperationMetric {
+	if x != nil {
+		return x.Operations
+	}
+	return nil
+}
+
+func (x *ProxyRuntimeMetricsSummary) GetSlowThresholdSeconds() float64 {
+	if x != nil {
+		return x.SlowThresholdSeconds
+	}
+	return 0
+}
+
+func (x *ProxyRuntimeMetricsSummary) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
+type GetProxyRuntimeMetricsSummaryResponse struct {
+	state         protoimpl.MessageState      `protogen:"open.v1"`
+	Summary       *ProxyRuntimeMetricsSummary `protobuf:"bytes,1,opt,name=summary,proto3" json:"summary,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetProxyRuntimeMetricsSummaryResponse) Reset() {
+	*x = GetProxyRuntimeMetricsSummaryResponse{}
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[71]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetProxyRuntimeMetricsSummaryResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetProxyRuntimeMetricsSummaryResponse) ProtoMessage() {}
+
+func (x *GetProxyRuntimeMetricsSummaryResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[71]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetProxyRuntimeMetricsSummaryResponse.ProtoReflect.Descriptor instead.
+func (*GetProxyRuntimeMetricsSummaryResponse) Descriptor() ([]byte, []int) {
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{71}
+}
+
+func (x *GetProxyRuntimeMetricsSummaryResponse) GetSummary() *ProxyRuntimeMetricsSummary {
+	if x != nil {
+		return x.Summary
+	}
+	return nil
+}
+
 type ListProxyIPFraudProvidersRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -5833,7 +6049,7 @@ type ListProxyIPFraudProvidersRequest struct {
 
 func (x *ListProxyIPFraudProvidersRequest) Reset() {
 	*x = ListProxyIPFraudProvidersRequest{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[68]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[72]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5845,7 +6061,7 @@ func (x *ListProxyIPFraudProvidersRequest) String() string {
 func (*ListProxyIPFraudProvidersRequest) ProtoMessage() {}
 
 func (x *ListProxyIPFraudProvidersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[68]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[72]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5858,7 +6074,7 @@ func (x *ListProxyIPFraudProvidersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProxyIPFraudProvidersRequest.ProtoReflect.Descriptor instead.
 func (*ListProxyIPFraudProvidersRequest) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{68}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{72}
 }
 
 type ListProxyIPFraudProvidersResponse struct {
@@ -5870,7 +6086,7 @@ type ListProxyIPFraudProvidersResponse struct {
 
 func (x *ListProxyIPFraudProvidersResponse) Reset() {
 	*x = ListProxyIPFraudProvidersResponse{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[69]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[73]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5882,7 +6098,7 @@ func (x *ListProxyIPFraudProvidersResponse) String() string {
 func (*ListProxyIPFraudProvidersResponse) ProtoMessage() {}
 
 func (x *ListProxyIPFraudProvidersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[69]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[73]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5895,7 +6111,7 @@ func (x *ListProxyIPFraudProvidersResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use ListProxyIPFraudProvidersResponse.ProtoReflect.Descriptor instead.
 func (*ListProxyIPFraudProvidersResponse) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{69}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{73}
 }
 
 func (x *ListProxyIPFraudProvidersResponse) GetProviders() []*ProxyIPFraudProviderDescriptor {
@@ -5913,7 +6129,7 @@ type ListProxyIPGeoProvidersRequest struct {
 
 func (x *ListProxyIPGeoProvidersRequest) Reset() {
 	*x = ListProxyIPGeoProvidersRequest{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[70]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[74]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5925,7 +6141,7 @@ func (x *ListProxyIPGeoProvidersRequest) String() string {
 func (*ListProxyIPGeoProvidersRequest) ProtoMessage() {}
 
 func (x *ListProxyIPGeoProvidersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[70]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[74]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5938,7 +6154,7 @@ func (x *ListProxyIPGeoProvidersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProxyIPGeoProvidersRequest.ProtoReflect.Descriptor instead.
 func (*ListProxyIPGeoProvidersRequest) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{70}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{74}
 }
 
 type ListProxyIPGeoProvidersResponse struct {
@@ -5950,7 +6166,7 @@ type ListProxyIPGeoProvidersResponse struct {
 
 func (x *ListProxyIPGeoProvidersResponse) Reset() {
 	*x = ListProxyIPGeoProvidersResponse{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[71]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[75]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5962,7 +6178,7 @@ func (x *ListProxyIPGeoProvidersResponse) String() string {
 func (*ListProxyIPGeoProvidersResponse) ProtoMessage() {}
 
 func (x *ListProxyIPGeoProvidersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[71]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[75]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5975,7 +6191,7 @@ func (x *ListProxyIPGeoProvidersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListProxyIPGeoProvidersResponse.ProtoReflect.Descriptor instead.
 func (*ListProxyIPGeoProvidersResponse) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{71}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{75}
 }
 
 func (x *ListProxyIPGeoProvidersResponse) GetProviders() []*ProxyIPGeoProviderDescriptor {
@@ -6000,7 +6216,7 @@ type UpdateProxyRuntimeSettingsRequest struct {
 
 func (x *UpdateProxyRuntimeSettingsRequest) Reset() {
 	*x = UpdateProxyRuntimeSettingsRequest{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[72]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[76]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6012,7 +6228,7 @@ func (x *UpdateProxyRuntimeSettingsRequest) String() string {
 func (*UpdateProxyRuntimeSettingsRequest) ProtoMessage() {}
 
 func (x *UpdateProxyRuntimeSettingsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[72]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[76]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6025,7 +6241,7 @@ func (x *UpdateProxyRuntimeSettingsRequest) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use UpdateProxyRuntimeSettingsRequest.ProtoReflect.Descriptor instead.
 func (*UpdateProxyRuntimeSettingsRequest) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{72}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{76}
 }
 
 func (x *UpdateProxyRuntimeSettingsRequest) GetEdgeCanary() *ProxyEdgeCanarySettings {
@@ -6086,7 +6302,7 @@ type UpdateProxyRuntimeSettingsResponse struct {
 
 func (x *UpdateProxyRuntimeSettingsResponse) Reset() {
 	*x = UpdateProxyRuntimeSettingsResponse{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[73]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[77]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6098,7 +6314,7 @@ func (x *UpdateProxyRuntimeSettingsResponse) String() string {
 func (*UpdateProxyRuntimeSettingsResponse) ProtoMessage() {}
 
 func (x *UpdateProxyRuntimeSettingsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[73]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[77]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6111,7 +6327,7 @@ func (x *UpdateProxyRuntimeSettingsResponse) ProtoReflect() protoreflect.Message
 
 // Deprecated: Use UpdateProxyRuntimeSettingsResponse.ProtoReflect.Descriptor instead.
 func (*UpdateProxyRuntimeSettingsResponse) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{73}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{77}
 }
 
 func (x *UpdateProxyRuntimeSettingsResponse) GetSettings() *ProxyRuntimeSettings {
@@ -6130,7 +6346,7 @@ type UpdateProxyEgressProfilesRequest struct {
 
 func (x *UpdateProxyEgressProfilesRequest) Reset() {
 	*x = UpdateProxyEgressProfilesRequest{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[74]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[78]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6142,7 +6358,7 @@ func (x *UpdateProxyEgressProfilesRequest) String() string {
 func (*UpdateProxyEgressProfilesRequest) ProtoMessage() {}
 
 func (x *UpdateProxyEgressProfilesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[74]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[78]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6155,7 +6371,7 @@ func (x *UpdateProxyEgressProfilesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateProxyEgressProfilesRequest.ProtoReflect.Descriptor instead.
 func (*UpdateProxyEgressProfilesRequest) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{74}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{78}
 }
 
 func (x *UpdateProxyEgressProfilesRequest) GetEgressProfiles() []*EgressProfileSettings {
@@ -6174,7 +6390,7 @@ type UpdateProxyEgressProfilesResponse struct {
 
 func (x *UpdateProxyEgressProfilesResponse) Reset() {
 	*x = UpdateProxyEgressProfilesResponse{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[75]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[79]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6186,7 +6402,7 @@ func (x *UpdateProxyEgressProfilesResponse) String() string {
 func (*UpdateProxyEgressProfilesResponse) ProtoMessage() {}
 
 func (x *UpdateProxyEgressProfilesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[75]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[79]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6199,7 +6415,7 @@ func (x *UpdateProxyEgressProfilesResponse) ProtoReflect() protoreflect.Message 
 
 // Deprecated: Use UpdateProxyEgressProfilesResponse.ProtoReflect.Descriptor instead.
 func (*UpdateProxyEgressProfilesResponse) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{75}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{79}
 }
 
 func (x *UpdateProxyEgressProfilesResponse) GetSettings() *ProxyRuntimeSettings {
@@ -6218,7 +6434,7 @@ type UpdateProxyIngressRulesRequest struct {
 
 func (x *UpdateProxyIngressRulesRequest) Reset() {
 	*x = UpdateProxyIngressRulesRequest{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[76]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[80]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6230,7 +6446,7 @@ func (x *UpdateProxyIngressRulesRequest) String() string {
 func (*UpdateProxyIngressRulesRequest) ProtoMessage() {}
 
 func (x *UpdateProxyIngressRulesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[76]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[80]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6243,7 +6459,7 @@ func (x *UpdateProxyIngressRulesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateProxyIngressRulesRequest.ProtoReflect.Descriptor instead.
 func (*UpdateProxyIngressRulesRequest) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{76}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{80}
 }
 
 func (x *UpdateProxyIngressRulesRequest) GetIngressRules() []*ProxyIngressRuleSettings {
@@ -6262,7 +6478,7 @@ type UpdateProxyIngressRulesResponse struct {
 
 func (x *UpdateProxyIngressRulesResponse) Reset() {
 	*x = UpdateProxyIngressRulesResponse{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[77]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[81]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6274,7 +6490,7 @@ func (x *UpdateProxyIngressRulesResponse) String() string {
 func (*UpdateProxyIngressRulesResponse) ProtoMessage() {}
 
 func (x *UpdateProxyIngressRulesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[77]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[81]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6287,7 +6503,7 @@ func (x *UpdateProxyIngressRulesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateProxyIngressRulesResponse.ProtoReflect.Descriptor instead.
 func (*UpdateProxyIngressRulesResponse) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{77}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{81}
 }
 
 func (x *UpdateProxyIngressRulesResponse) GetSettings() *ProxyRuntimeSettings {
@@ -6305,7 +6521,7 @@ type GetProxyRuntimeMihomoNativeConfigRequest struct {
 
 func (x *GetProxyRuntimeMihomoNativeConfigRequest) Reset() {
 	*x = GetProxyRuntimeMihomoNativeConfigRequest{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[78]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[82]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6317,7 +6533,7 @@ func (x *GetProxyRuntimeMihomoNativeConfigRequest) String() string {
 func (*GetProxyRuntimeMihomoNativeConfigRequest) ProtoMessage() {}
 
 func (x *GetProxyRuntimeMihomoNativeConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[78]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[82]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6330,7 +6546,7 @@ func (x *GetProxyRuntimeMihomoNativeConfigRequest) ProtoReflect() protoreflect.M
 
 // Deprecated: Use GetProxyRuntimeMihomoNativeConfigRequest.ProtoReflect.Descriptor instead.
 func (*GetProxyRuntimeMihomoNativeConfigRequest) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{78}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{82}
 }
 
 type GetProxyRuntimeMihomoNativeConfigResponse struct {
@@ -6342,7 +6558,7 @@ type GetProxyRuntimeMihomoNativeConfigResponse struct {
 
 func (x *GetProxyRuntimeMihomoNativeConfigResponse) Reset() {
 	*x = GetProxyRuntimeMihomoNativeConfigResponse{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[79]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[83]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6354,7 +6570,7 @@ func (x *GetProxyRuntimeMihomoNativeConfigResponse) String() string {
 func (*GetProxyRuntimeMihomoNativeConfigResponse) ProtoMessage() {}
 
 func (x *GetProxyRuntimeMihomoNativeConfigResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[79]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[83]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6367,7 +6583,7 @@ func (x *GetProxyRuntimeMihomoNativeConfigResponse) ProtoReflect() protoreflect.
 
 // Deprecated: Use GetProxyRuntimeMihomoNativeConfigResponse.ProtoReflect.Descriptor instead.
 func (*GetProxyRuntimeMihomoNativeConfigResponse) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{79}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{83}
 }
 
 func (x *GetProxyRuntimeMihomoNativeConfigResponse) GetConfig() *ProxyRuntimeMihomoNativeConfig {
@@ -6386,7 +6602,7 @@ type UpdateProxyRuntimeMihomoNativeConfigRequest struct {
 
 func (x *UpdateProxyRuntimeMihomoNativeConfigRequest) Reset() {
 	*x = UpdateProxyRuntimeMihomoNativeConfigRequest{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[80]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[84]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6398,7 +6614,7 @@ func (x *UpdateProxyRuntimeMihomoNativeConfigRequest) String() string {
 func (*UpdateProxyRuntimeMihomoNativeConfigRequest) ProtoMessage() {}
 
 func (x *UpdateProxyRuntimeMihomoNativeConfigRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[80]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[84]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6411,7 +6627,7 @@ func (x *UpdateProxyRuntimeMihomoNativeConfigRequest) ProtoReflect() protoreflec
 
 // Deprecated: Use UpdateProxyRuntimeMihomoNativeConfigRequest.ProtoReflect.Descriptor instead.
 func (*UpdateProxyRuntimeMihomoNativeConfigRequest) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{80}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{84}
 }
 
 func (x *UpdateProxyRuntimeMihomoNativeConfigRequest) GetConfig() *ProxyRuntimeMihomoNativeConfig {
@@ -6430,7 +6646,7 @@ type UpdateProxyRuntimeMihomoNativeConfigResponse struct {
 
 func (x *UpdateProxyRuntimeMihomoNativeConfigResponse) Reset() {
 	*x = UpdateProxyRuntimeMihomoNativeConfigResponse{}
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[81]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[85]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -6442,7 +6658,7 @@ func (x *UpdateProxyRuntimeMihomoNativeConfigResponse) String() string {
 func (*UpdateProxyRuntimeMihomoNativeConfigResponse) ProtoMessage() {}
 
 func (x *UpdateProxyRuntimeMihomoNativeConfigResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[81]
+	mi := &file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes[85]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -6455,7 +6671,7 @@ func (x *UpdateProxyRuntimeMihomoNativeConfigResponse) ProtoReflect() protorefle
 
 // Deprecated: Use UpdateProxyRuntimeMihomoNativeConfigResponse.ProtoReflect.Descriptor instead.
 func (*UpdateProxyRuntimeMihomoNativeConfigResponse) Descriptor() ([]byte, []int) {
-	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{81}
+	return file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP(), []int{85}
 }
 
 func (x *UpdateProxyRuntimeMihomoNativeConfigResponse) GetConfig() *ProxyRuntimeMihomoNativeConfig {
@@ -6910,7 +7126,24 @@ const file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDesc = 
 	"\x15lease_restore_running\x18\b \x01(\bR\x13leaseRestoreRunning\x120\n" +
 	"\x14lease_restore_failed\x18\t \x01(\bR\x12leaseRestoreFailed\"s\n" +
 	"\x1dGetProxyRuntimeStatusResponse\x12R\n" +
-	"\x06status\x18\x01 \x01(\v2:.byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeStatusR\x06status\"\"\n" +
+	"\x06status\x18\x01 \x01(\v2:.byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeStatusR\x06status\"&\n" +
+	"$GetProxyRuntimeMetricsSummaryRequest\"\xb3\x01\n" +
+	"\x1bProxyRuntimeOperationMetric\x12\x1c\n" +
+	"\toperation\x18\x01 \x01(\tR\toperation\x12\x16\n" +
+	"\x06status\x18\x02 \x01(\tR\x06status\x12\x14\n" +
+	"\x05count\x18\x03 \x01(\x04R\x05count\x12\x1d\n" +
+	"\n" +
+	"slow_count\x18\x04 \x01(\x04R\tslowCount\x12)\n" +
+	"\x10duration_seconds\x18\x05 \x01(\x01R\x0fdurationSeconds\"\xf2\x01\n" +
+	"\x1aProxyRuntimeMetricsSummary\x12c\n" +
+	"\n" +
+	"operations\x18\x01 \x03(\v2C.byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeOperationMetricR\n" +
+	"operations\x124\n" +
+	"\x16slow_threshold_seconds\x18\x02 \x01(\x01R\x14slowThresholdSeconds\x129\n" +
+	"\n" +
+	"updated_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"\x85\x01\n" +
+	"%GetProxyRuntimeMetricsSummaryResponse\x12\\\n" +
+	"\asummary\x18\x01 \x01(\v2B.byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMetricsSummaryR\asummary\"\"\n" +
 	" ListProxyIPFraudProvidersRequest\"\x89\x01\n" +
 	"!ListProxyIPFraudProvidersResponse\x12d\n" +
 	"\tproviders\x18\x01 \x03(\v2F.byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderDescriptorR\tproviders\" \n" +
@@ -7069,7 +7302,7 @@ const file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDesc = 
 	" EGRESS_LISTENER_KIND_UNSPECIFIED\x10\x00\x12\x1f\n" +
 	"\x1bEGRESS_LISTENER_KIND_DIRECT\x10\x01\x12'\n" +
 	"#EGRESS_LISTENER_KIND_PROVIDER_ROUTE\x10\x02\x12&\n" +
-	"\"EGRESS_LISTENER_KIND_DYNAMIC_LEASE\x10\x032\xf0\x1d\n" +
+	"\"EGRESS_LISTENER_KIND_DYNAMIC_LEASE\x10\x032\xaf\x1f\n" +
 	"\x13ProxyRuntimeService\x12\x9b\x01\n" +
 	"\x12ListProxyProviders\x12A.byte.v.forge.contracts.proxyruntime.v1.ListProxyProvidersRequest\x1aB.byte.v.forge.contracts.proxyruntime.v1.ListProxyProvidersResponse\x12\xb0\x01\n" +
 	"\x19ListProxyProviderAccounts\x12H.byte.v.forge.contracts.proxyruntime.v1.ListProxyProviderAccountsRequest\x1aI.byte.v.forge.contracts.proxyruntime.v1.ListProxyProviderAccountsResponse\x12\xb3\x01\n" +
@@ -7086,7 +7319,8 @@ const file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDesc = 
 	"\x19GetProxyExitCheckSnapshot\x12H.byte.v.forge.contracts.proxyruntime.v1.GetProxyExitCheckSnapshotRequest\x1aI.byte.v.forge.contracts.proxyruntime.v1.GetProxyExitCheckSnapshotResponse\x12\xb0\x01\n" +
 	"\x19ListProxyIPFraudProviders\x12H.byte.v.forge.contracts.proxyruntime.v1.ListProxyIPFraudProvidersRequest\x1aI.byte.v.forge.contracts.proxyruntime.v1.ListProxyIPFraudProvidersResponse\x12\xaa\x01\n" +
 	"\x17ListProxyIPGeoProviders\x12F.byte.v.forge.contracts.proxyruntime.v1.ListProxyIPGeoProvidersRequest\x1aG.byte.v.forge.contracts.proxyruntime.v1.ListProxyIPGeoProvidersResponse\x12\xa4\x01\n" +
-	"\x15GetProxyRuntimeStatus\x12D.byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeStatusRequest\x1aE.byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeStatusResponse\x12\xaa\x01\n" +
+	"\x15GetProxyRuntimeStatus\x12D.byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeStatusRequest\x1aE.byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeStatusResponse\x12\xbc\x01\n" +
+	"\x1dGetProxyRuntimeMetricsSummary\x12L.byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMetricsSummaryRequest\x1aM.byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMetricsSummaryResponse\x12\xaa\x01\n" +
 	"\x17GetProxyRuntimeSettings\x12F.byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeSettingsRequest\x1aG.byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeSettingsResponse\x12\xb3\x01\n" +
 	"\x1aUpdateProxyRuntimeSettings\x12I.byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest\x1aJ.byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsResponse\x12\xb0\x01\n" +
 	"\x19UpdateProxyEgressProfiles\x12H.byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesRequest\x1aI.byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesResponse\x12\xaa\x01\n" +
@@ -7107,7 +7341,7 @@ func file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDescGZIP
 }
 
 var file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_enumTypes = make([]protoimpl.EnumInfo, 18)
-var file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 86)
+var file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_msgTypes = make([]protoimpl.MessageInfo, 90)
 var file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_goTypes = []any{
 	(ProxyProtocol)(0),                                   // 0: byte.v.forge.contracts.proxyruntime.v1.ProxyProtocol
 	(ProxyCapability)(0),                                 // 1: byte.v.forge.contracts.proxyruntime.v1.ProxyCapability
@@ -7195,102 +7429,106 @@ var file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_goTypes = []
 	(*GetProxyRuntimeStatusRequest)(nil),                 // 83: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeStatusRequest
 	(*ProxyRuntimeStatus)(nil),                           // 84: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeStatus
 	(*GetProxyRuntimeStatusResponse)(nil),                // 85: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeStatusResponse
-	(*ListProxyIPFraudProvidersRequest)(nil),             // 86: byte.v.forge.contracts.proxyruntime.v1.ListProxyIPFraudProvidersRequest
-	(*ListProxyIPFraudProvidersResponse)(nil),            // 87: byte.v.forge.contracts.proxyruntime.v1.ListProxyIPFraudProvidersResponse
-	(*ListProxyIPGeoProvidersRequest)(nil),               // 88: byte.v.forge.contracts.proxyruntime.v1.ListProxyIPGeoProvidersRequest
-	(*ListProxyIPGeoProvidersResponse)(nil),              // 89: byte.v.forge.contracts.proxyruntime.v1.ListProxyIPGeoProvidersResponse
-	(*UpdateProxyRuntimeSettingsRequest)(nil),            // 90: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest
-	(*UpdateProxyRuntimeSettingsResponse)(nil),           // 91: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsResponse
-	(*UpdateProxyEgressProfilesRequest)(nil),             // 92: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesRequest
-	(*UpdateProxyEgressProfilesResponse)(nil),            // 93: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesResponse
-	(*UpdateProxyIngressRulesRequest)(nil),               // 94: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyIngressRulesRequest
-	(*UpdateProxyIngressRulesResponse)(nil),              // 95: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyIngressRulesResponse
-	(*GetProxyRuntimeMihomoNativeConfigRequest)(nil),     // 96: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMihomoNativeConfigRequest
-	(*GetProxyRuntimeMihomoNativeConfigResponse)(nil),    // 97: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMihomoNativeConfigResponse
-	(*UpdateProxyRuntimeMihomoNativeConfigRequest)(nil),  // 98: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeMihomoNativeConfigRequest
-	(*UpdateProxyRuntimeMihomoNativeConfigResponse)(nil), // 99: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeMihomoNativeConfigResponse
-	nil,                           // 100: byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy.LabelsEntry
-	nil,                           // 101: byte.v.forge.contracts.proxyruntime.v1.ProxySession.LabelsEntry
-	nil,                           // 102: byte.v.forge.contracts.proxyruntime.v1.ProxyEndpoint.LabelsEntry
-	nil,                           // 103: byte.v.forge.contracts.proxyruntime.v1.EgressListener.LabelsEntry
-	(*durationpb.Duration)(nil),   // 104: google.protobuf.Duration
-	(*timestamppb.Timestamp)(nil), // 105: google.protobuf.Timestamp
-	(*v1.SecretRef)(nil),          // 106: byte.v.forge.contracts.common.v1.SecretRef
+	(*GetProxyRuntimeMetricsSummaryRequest)(nil),         // 86: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMetricsSummaryRequest
+	(*ProxyRuntimeOperationMetric)(nil),                  // 87: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeOperationMetric
+	(*ProxyRuntimeMetricsSummary)(nil),                   // 88: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMetricsSummary
+	(*GetProxyRuntimeMetricsSummaryResponse)(nil),        // 89: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMetricsSummaryResponse
+	(*ListProxyIPFraudProvidersRequest)(nil),             // 90: byte.v.forge.contracts.proxyruntime.v1.ListProxyIPFraudProvidersRequest
+	(*ListProxyIPFraudProvidersResponse)(nil),            // 91: byte.v.forge.contracts.proxyruntime.v1.ListProxyIPFraudProvidersResponse
+	(*ListProxyIPGeoProvidersRequest)(nil),               // 92: byte.v.forge.contracts.proxyruntime.v1.ListProxyIPGeoProvidersRequest
+	(*ListProxyIPGeoProvidersResponse)(nil),              // 93: byte.v.forge.contracts.proxyruntime.v1.ListProxyIPGeoProvidersResponse
+	(*UpdateProxyRuntimeSettingsRequest)(nil),            // 94: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest
+	(*UpdateProxyRuntimeSettingsResponse)(nil),           // 95: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsResponse
+	(*UpdateProxyEgressProfilesRequest)(nil),             // 96: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesRequest
+	(*UpdateProxyEgressProfilesResponse)(nil),            // 97: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesResponse
+	(*UpdateProxyIngressRulesRequest)(nil),               // 98: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyIngressRulesRequest
+	(*UpdateProxyIngressRulesResponse)(nil),              // 99: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyIngressRulesResponse
+	(*GetProxyRuntimeMihomoNativeConfigRequest)(nil),     // 100: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMihomoNativeConfigRequest
+	(*GetProxyRuntimeMihomoNativeConfigResponse)(nil),    // 101: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMihomoNativeConfigResponse
+	(*UpdateProxyRuntimeMihomoNativeConfigRequest)(nil),  // 102: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeMihomoNativeConfigRequest
+	(*UpdateProxyRuntimeMihomoNativeConfigResponse)(nil), // 103: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeMihomoNativeConfigResponse
+	nil,                           // 104: byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy.LabelsEntry
+	nil,                           // 105: byte.v.forge.contracts.proxyruntime.v1.ProxySession.LabelsEntry
+	nil,                           // 106: byte.v.forge.contracts.proxyruntime.v1.ProxyEndpoint.LabelsEntry
+	nil,                           // 107: byte.v.forge.contracts.proxyruntime.v1.EgressListener.LabelsEntry
+	(*durationpb.Duration)(nil),   // 108: google.protobuf.Duration
+	(*timestamppb.Timestamp)(nil), // 109: google.protobuf.Timestamp
+	(*v1.SecretRef)(nil),          // 110: byte.v.forge.contracts.common.v1.SecretRef
 }
 var file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_depIdxs = []int32{
 	1,   // 0: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderDescriptor.capabilities:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyCapability
 	0,   // 1: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderDescriptor.protocols:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyProtocol
-	104, // 2: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderDescriptor.min_sticky_ttl:type_name -> google.protobuf.Duration
-	104, // 3: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderDescriptor.max_sticky_ttl:type_name -> google.protobuf.Duration
+	108, // 2: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderDescriptor.min_sticky_ttl:type_name -> google.protobuf.Duration
+	108, // 3: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderDescriptor.max_sticky_ttl:type_name -> google.protobuf.Duration
 	3,   // 4: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderDescriptor.upstream_kinds:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyUpstreamKind
 	4,   // 5: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderDescriptor.rotation_modes:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRotationMode
 	5,   // 6: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderAccount.status:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyProviderAccountStatus
-	105, // 7: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderAccount.created_at:type_name -> google.protobuf.Timestamp
-	105, // 8: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderAccount.updated_at:type_name -> google.protobuf.Timestamp
+	109, // 7: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderAccount.created_at:type_name -> google.protobuf.Timestamp
+	109, // 8: byte.v.forge.contracts.proxyruntime.v1.ProxyProviderAccount.updated_at:type_name -> google.protobuf.Timestamp
 	0,   // 9: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicIPEndpointCandidate.protocol:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyProtocol
 	21,  // 10: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicIPSelectionPlan.policy:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicIPSelectionPolicy
 	20,  // 11: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicIPSelectionPlan.selected_endpoint:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicIPEndpointCandidate
-	105, // 12: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicIPSelectionPlan.selected_at:type_name -> google.protobuf.Timestamp
+	109, // 12: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicIPSelectionPlan.selected_at:type_name -> google.protobuf.Timestamp
 	2,   // 13: byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy.mode:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxySessionMode
-	104, // 14: byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy.sticky_ttl:type_name -> google.protobuf.Duration
-	100, // 15: byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy.labels:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy.LabelsEntry
+	108, // 14: byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy.sticky_ttl:type_name -> google.protobuf.Duration
+	104, // 15: byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy.labels:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy.LabelsEntry
 	3,   // 16: byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy.upstream_kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyUpstreamKind
 	4,   // 17: byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy.rotation_mode:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRotationMode
 	23,  // 18: byte.v.forge.contracts.proxyruntime.v1.ProxySession.policy:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy
-	105, // 19: byte.v.forge.contracts.proxyruntime.v1.ProxySession.created_at:type_name -> google.protobuf.Timestamp
-	105, // 20: byte.v.forge.contracts.proxyruntime.v1.ProxySession.expires_at:type_name -> google.protobuf.Timestamp
-	101, // 21: byte.v.forge.contracts.proxyruntime.v1.ProxySession.labels:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxySession.LabelsEntry
+	109, // 19: byte.v.forge.contracts.proxyruntime.v1.ProxySession.created_at:type_name -> google.protobuf.Timestamp
+	109, // 20: byte.v.forge.contracts.proxyruntime.v1.ProxySession.expires_at:type_name -> google.protobuf.Timestamp
+	105, // 21: byte.v.forge.contracts.proxyruntime.v1.ProxySession.labels:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxySession.LabelsEntry
 	25,  // 22: byte.v.forge.contracts.proxyruntime.v1.ProxySession.egress:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyEndpoint
 	0,   // 23: byte.v.forge.contracts.proxyruntime.v1.ProxyEndpoint.protocol:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyProtocol
 	3,   // 24: byte.v.forge.contracts.proxyruntime.v1.ProxyEndpoint.upstream_kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyUpstreamKind
 	4,   // 25: byte.v.forge.contracts.proxyruntime.v1.ProxyEndpoint.rotation_mode:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRotationMode
-	102, // 26: byte.v.forge.contracts.proxyruntime.v1.ProxyEndpoint.labels:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyEndpoint.LabelsEntry
+	106, // 26: byte.v.forge.contracts.proxyruntime.v1.ProxyEndpoint.labels:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyEndpoint.LabelsEntry
 	6,   // 27: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLease.status:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLeaseStatus
 	24,  // 28: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLease.session:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxySession
 	25,  // 29: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLease.egress:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyEndpoint
 	54,  // 30: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLease.listener:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressListener
 	30,  // 31: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLease.ip_fraud_check:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudCheck
 	31,  // 32: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLease.edge_access_check:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeAccessCheck
-	105, // 33: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLease.acquired_at:type_name -> google.protobuf.Timestamp
-	105, // 34: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLease.expires_at:type_name -> google.protobuf.Timestamp
+	109, // 33: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLease.acquired_at:type_name -> google.protobuf.Timestamp
+	109, // 34: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLease.expires_at:type_name -> google.protobuf.Timestamp
 	22,  // 35: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLease.selection_plan:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicIPSelectionPlan
-	105, // 36: byte.v.forge.contracts.proxyruntime.v1.ProxyExitGeo.checked_at:type_name -> google.protobuf.Timestamp
-	105, // 37: byte.v.forge.contracts.proxyruntime.v1.ProxyExitIP.checked_at:type_name -> google.protobuf.Timestamp
-	105, // 38: byte.v.forge.contracts.proxyruntime.v1.ProxyTargetConnectivityCheck.checked_at:type_name -> google.protobuf.Timestamp
+	109, // 36: byte.v.forge.contracts.proxyruntime.v1.ProxyExitGeo.checked_at:type_name -> google.protobuf.Timestamp
+	109, // 37: byte.v.forge.contracts.proxyruntime.v1.ProxyExitIP.checked_at:type_name -> google.protobuf.Timestamp
+	109, // 38: byte.v.forge.contracts.proxyruntime.v1.ProxyTargetConnectivityCheck.checked_at:type_name -> google.protobuf.Timestamp
 	7,   // 39: byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudCheck.network_kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPNetworkKind
 	8,   // 40: byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudCheck.anonymizer_kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPAnonymizerKind
 	9,   // 41: byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudCheck.risk_level:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudRiskLevel
 	10,  // 42: byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudCheck.risk_signals:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudSignal
-	105, // 43: byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudCheck.checked_at:type_name -> google.protobuf.Timestamp
+	109, // 43: byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudCheck.checked_at:type_name -> google.protobuf.Timestamp
 	13,  // 44: byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeAccessCheck.risk_level:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeAccessRiskLevel
 	14,  // 45: byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeAccessCheck.risk_signals:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeAccessRiskSignal
 	30,  // 46: byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeAccessCheck.ip_fraud_check:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudCheck
-	105, // 47: byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeAccessCheck.checked_at:type_name -> google.protobuf.Timestamp
+	109, // 47: byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeAccessCheck.checked_at:type_name -> google.protobuf.Timestamp
 	28,  // 48: byte.v.forge.contracts.proxyruntime.v1.ProxyExitCheckSnapshot.proxy_exit_ip:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyExitIP
 	27,  // 49: byte.v.forge.contracts.proxyruntime.v1.ProxyExitCheckSnapshot.proxy_exit_geo:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyExitGeo
 	30,  // 50: byte.v.forge.contracts.proxyruntime.v1.ProxyExitCheckSnapshot.ip_fraud_check:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudCheck
 	31,  // 51: byte.v.forge.contracts.proxyruntime.v1.ProxyExitCheckSnapshot.edge_access_check:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeAccessCheck
-	105, // 52: byte.v.forge.contracts.proxyruntime.v1.ProxyExitCheckSnapshot.updated_at:type_name -> google.protobuf.Timestamp
-	105, // 53: byte.v.forge.contracts.proxyruntime.v1.ProxyExitCheckSnapshot.expires_at:type_name -> google.protobuf.Timestamp
-	106, // 54: byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeCanarySettings.token_secret_ref:type_name -> byte.v.forge.contracts.common.v1.SecretRef
+	109, // 52: byte.v.forge.contracts.proxyruntime.v1.ProxyExitCheckSnapshot.updated_at:type_name -> google.protobuf.Timestamp
+	109, // 53: byte.v.forge.contracts.proxyruntime.v1.ProxyExitCheckSnapshot.expires_at:type_name -> google.protobuf.Timestamp
+	110, // 54: byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeCanarySettings.token_secret_ref:type_name -> byte.v.forge.contracts.common.v1.SecretRef
 	11,  // 55: byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderSettings.kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderKind
-	106, // 56: byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderSettings.api_key_secret_refs:type_name -> byte.v.forge.contracts.common.v1.SecretRef
+	110, // 56: byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderSettings.api_key_secret_refs:type_name -> byte.v.forge.contracts.common.v1.SecretRef
 	11,  // 57: byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderSettingsView.kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderKind
 	11,  // 58: byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderDescriptor.kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderKind
 	12,  // 59: byte.v.forge.contracts.proxyruntime.v1.ProxyIPGeoProviderSettings.kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPGeoProviderKind
-	106, // 60: byte.v.forge.contracts.proxyruntime.v1.ProxyIPGeoProviderSettings.api_key_secret_refs:type_name -> byte.v.forge.contracts.common.v1.SecretRef
+	110, // 60: byte.v.forge.contracts.proxyruntime.v1.ProxyIPGeoProviderSettings.api_key_secret_refs:type_name -> byte.v.forge.contracts.common.v1.SecretRef
 	12,  // 61: byte.v.forge.contracts.proxyruntime.v1.ProxyIPGeoProviderSettingsView.kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPGeoProviderKind
 	12,  // 62: byte.v.forge.contracts.proxyruntime.v1.ProxyIPGeoProviderDescriptor.kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPGeoProviderKind
 	41,  // 63: byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicIPProviderSettings.endpoints:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicIPEndpointSettings
-	104, // 64: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeCheckSettings.proxy_exit_ip_timeout:type_name -> google.protobuf.Duration
+	108, // 64: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeCheckSettings.proxy_exit_ip_timeout:type_name -> google.protobuf.Duration
 	15,  // 65: byte.v.forge.contracts.proxyruntime.v1.EgressProfileLineSettings.kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressProfileLineKind
 	44,  // 66: byte.v.forge.contracts.proxyruntime.v1.EgressProfileLineSettings.mihomo_node:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressProfileMihomoNodeRef
-	104, // 67: byte.v.forge.contracts.proxyruntime.v1.EgressProfileLineSettings.health_interval:type_name -> google.protobuf.Duration
-	104, // 68: byte.v.forge.contracts.proxyruntime.v1.EgressProfileLineSettings.health_timeout:type_name -> google.protobuf.Duration
+	108, // 67: byte.v.forge.contracts.proxyruntime.v1.EgressProfileLineSettings.health_interval:type_name -> google.protobuf.Duration
+	108, // 68: byte.v.forge.contracts.proxyruntime.v1.EgressProfileLineSettings.health_timeout:type_name -> google.protobuf.Duration
 	16,  // 69: byte.v.forge.contracts.proxyruntime.v1.EgressProfileExitSettings.kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressProfileExitKind
 	44,  // 70: byte.v.forge.contracts.proxyruntime.v1.EgressProfileExitSettings.mihomo_node:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressProfileMihomoNodeRef
-	104, // 71: byte.v.forge.contracts.proxyruntime.v1.EgressProfileExitSettings.health_interval:type_name -> google.protobuf.Duration
-	104, // 72: byte.v.forge.contracts.proxyruntime.v1.EgressProfileExitSettings.health_timeout:type_name -> google.protobuf.Duration
+	108, // 71: byte.v.forge.contracts.proxyruntime.v1.EgressProfileExitSettings.health_interval:type_name -> google.protobuf.Duration
+	108, // 72: byte.v.forge.contracts.proxyruntime.v1.EgressProfileExitSettings.health_timeout:type_name -> google.protobuf.Duration
 	23,  // 73: byte.v.forge.contracts.proxyruntime.v1.EgressProfileExitSettings.dynamic_ip_policy:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy
 	45,  // 74: byte.v.forge.contracts.proxyruntime.v1.EgressProfileSettings.line:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressProfileLineSettings
 	46,  // 75: byte.v.forge.contracts.proxyruntime.v1.EgressProfileSettings.exit:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressProfileExitSettings
@@ -7312,10 +7550,10 @@ var file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_depIdxs = []
 	52,  // 91: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMihomoNativeConfig.subscriptions:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMihomoNativeSubscription
 	17,  // 92: byte.v.forge.contracts.proxyruntime.v1.EgressListener.kind:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressListenerKind
 	0,   // 93: byte.v.forge.contracts.proxyruntime.v1.EgressListener.protocol:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyProtocol
-	103, // 94: byte.v.forge.contracts.proxyruntime.v1.EgressListener.labels:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressListener.LabelsEntry
+	107, // 94: byte.v.forge.contracts.proxyruntime.v1.EgressListener.labels:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressListener.LabelsEntry
 	18,  // 95: byte.v.forge.contracts.proxyruntime.v1.ListProxyProvidersResponse.providers:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyProviderDescriptor
 	19,  // 96: byte.v.forge.contracts.proxyruntime.v1.ListProxyProviderAccountsResponse.accounts:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyProviderAccount
-	106, // 97: byte.v.forge.contracts.proxyruntime.v1.UpsertProxyProviderAccountRequest.password_secret_ref:type_name -> byte.v.forge.contracts.common.v1.SecretRef
+	110, // 97: byte.v.forge.contracts.proxyruntime.v1.UpsertProxyProviderAccountRequest.password_secret_ref:type_name -> byte.v.forge.contracts.common.v1.SecretRef
 	19,  // 98: byte.v.forge.contracts.proxyruntime.v1.UpsertProxyProviderAccountResponse.account:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyProviderAccount
 	26,  // 99: byte.v.forge.contracts.proxyruntime.v1.ListProxyDynamicLeasesResponse.leases:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicLease
 	23,  // 100: byte.v.forge.contracts.proxyruntime.v1.AcquireProxyLeaseRequest.policy:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxySessionPolicy
@@ -7332,72 +7570,77 @@ var file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_depIdxs = []
 	32,  // 111: byte.v.forge.contracts.proxyruntime.v1.GetProxyExitCheckSnapshotResponse.snapshot:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyExitCheckSnapshot
 	49,  // 112: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeSettingsResponse.settings:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeSettings
 	84,  // 113: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeStatusResponse.status:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeStatus
-	37,  // 114: byte.v.forge.contracts.proxyruntime.v1.ListProxyIPFraudProvidersResponse.providers:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderDescriptor
-	40,  // 115: byte.v.forge.contracts.proxyruntime.v1.ListProxyIPGeoProvidersResponse.providers:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPGeoProviderDescriptor
-	33,  // 116: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.edge_canary:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeCanarySettings
-	35,  // 117: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.ip_fraud_providers:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderSettings
-	42,  // 118: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.dynamic_ip_providers:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicIPProviderSettings
-	43,  // 119: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.check_settings:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeCheckSettings
-	47,  // 120: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.egress_profiles:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressProfileSettings
-	48,  // 121: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.ingress_rules:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIngressRuleSettings
-	38,  // 122: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.ip_geo_providers:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPGeoProviderSettings
-	49,  // 123: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsResponse.settings:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeSettings
-	47,  // 124: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesRequest.egress_profiles:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressProfileSettings
-	49,  // 125: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesResponse.settings:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeSettings
-	48,  // 126: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyIngressRulesRequest.ingress_rules:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIngressRuleSettings
-	49,  // 127: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyIngressRulesResponse.settings:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeSettings
-	53,  // 128: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMihomoNativeConfigResponse.config:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMihomoNativeConfig
-	53,  // 129: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeMihomoNativeConfigRequest.config:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMihomoNativeConfig
-	53,  // 130: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeMihomoNativeConfigResponse.config:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMihomoNativeConfig
-	55,  // 131: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyProviders:input_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyProvidersRequest
-	57,  // 132: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyProviderAccounts:input_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyProviderAccountsRequest
-	59,  // 133: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpsertProxyProviderAccount:input_type -> byte.v.forge.contracts.proxyruntime.v1.UpsertProxyProviderAccountRequest
-	61,  // 134: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.DeleteProxyProviderAccount:input_type -> byte.v.forge.contracts.proxyruntime.v1.DeleteProxyProviderAccountRequest
-	63,  // 135: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyDynamicLeases:input_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyDynamicLeasesRequest
-	65,  // 136: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.AcquireProxyLease:input_type -> byte.v.forge.contracts.proxyruntime.v1.AcquireProxyLeaseRequest
-	67,  // 137: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ReleaseProxyLease:input_type -> byte.v.forge.contracts.proxyruntime.v1.ReleaseProxyLeaseRequest
-	69,  // 138: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyExitIP:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyExitIPRequest
-	71,  // 139: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyExitGeo:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyExitGeoRequest
-	73,  // 140: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.CheckProxyIPFraud:input_type -> byte.v.forge.contracts.proxyruntime.v1.CheckProxyIPFraudRequest
-	75,  // 141: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.CheckProxyEdgeAccess:input_type -> byte.v.forge.contracts.proxyruntime.v1.CheckProxyEdgeAccessRequest
-	77,  // 142: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.CheckProxyTargetConnectivity:input_type -> byte.v.forge.contracts.proxyruntime.v1.CheckProxyTargetConnectivityRequest
-	79,  // 143: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyExitCheckSnapshot:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyExitCheckSnapshotRequest
-	86,  // 144: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyIPFraudProviders:input_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyIPFraudProvidersRequest
-	88,  // 145: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyIPGeoProviders:input_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyIPGeoProvidersRequest
-	83,  // 146: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeStatus:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeStatusRequest
-	81,  // 147: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeSettings:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeSettingsRequest
-	90,  // 148: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyRuntimeSettings:input_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest
-	92,  // 149: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyEgressProfiles:input_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesRequest
-	94,  // 150: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyIngressRules:input_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyIngressRulesRequest
-	96,  // 151: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeMihomoNativeConfig:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMihomoNativeConfigRequest
-	98,  // 152: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyRuntimeMihomoNativeConfig:input_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeMihomoNativeConfigRequest
-	56,  // 153: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyProviders:output_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyProvidersResponse
-	58,  // 154: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyProviderAccounts:output_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyProviderAccountsResponse
-	60,  // 155: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpsertProxyProviderAccount:output_type -> byte.v.forge.contracts.proxyruntime.v1.UpsertProxyProviderAccountResponse
-	62,  // 156: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.DeleteProxyProviderAccount:output_type -> byte.v.forge.contracts.proxyruntime.v1.DeleteProxyProviderAccountResponse
-	64,  // 157: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyDynamicLeases:output_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyDynamicLeasesResponse
-	66,  // 158: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.AcquireProxyLease:output_type -> byte.v.forge.contracts.proxyruntime.v1.AcquireProxyLeaseResponse
-	68,  // 159: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ReleaseProxyLease:output_type -> byte.v.forge.contracts.proxyruntime.v1.ReleaseProxyLeaseResponse
-	70,  // 160: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyExitIP:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyExitIPResponse
-	72,  // 161: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyExitGeo:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyExitGeoResponse
-	74,  // 162: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.CheckProxyIPFraud:output_type -> byte.v.forge.contracts.proxyruntime.v1.CheckProxyIPFraudResponse
-	76,  // 163: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.CheckProxyEdgeAccess:output_type -> byte.v.forge.contracts.proxyruntime.v1.CheckProxyEdgeAccessResponse
-	78,  // 164: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.CheckProxyTargetConnectivity:output_type -> byte.v.forge.contracts.proxyruntime.v1.CheckProxyTargetConnectivityResponse
-	80,  // 165: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyExitCheckSnapshot:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyExitCheckSnapshotResponse
-	87,  // 166: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyIPFraudProviders:output_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyIPFraudProvidersResponse
-	89,  // 167: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyIPGeoProviders:output_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyIPGeoProvidersResponse
-	85,  // 168: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeStatus:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeStatusResponse
-	82,  // 169: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeSettings:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeSettingsResponse
-	91,  // 170: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyRuntimeSettings:output_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsResponse
-	93,  // 171: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyEgressProfiles:output_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesResponse
-	95,  // 172: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyIngressRules:output_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyIngressRulesResponse
-	97,  // 173: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeMihomoNativeConfig:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMihomoNativeConfigResponse
-	99,  // 174: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyRuntimeMihomoNativeConfig:output_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeMihomoNativeConfigResponse
-	153, // [153:175] is the sub-list for method output_type
-	131, // [131:153] is the sub-list for method input_type
-	131, // [131:131] is the sub-list for extension type_name
-	131, // [131:131] is the sub-list for extension extendee
-	0,   // [0:131] is the sub-list for field type_name
+	87,  // 114: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMetricsSummary.operations:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeOperationMetric
+	109, // 115: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMetricsSummary.updated_at:type_name -> google.protobuf.Timestamp
+	88,  // 116: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMetricsSummaryResponse.summary:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMetricsSummary
+	37,  // 117: byte.v.forge.contracts.proxyruntime.v1.ListProxyIPFraudProvidersResponse.providers:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderDescriptor
+	40,  // 118: byte.v.forge.contracts.proxyruntime.v1.ListProxyIPGeoProvidersResponse.providers:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPGeoProviderDescriptor
+	33,  // 119: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.edge_canary:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyEdgeCanarySettings
+	35,  // 120: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.ip_fraud_providers:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPFraudProviderSettings
+	42,  // 121: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.dynamic_ip_providers:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyDynamicIPProviderSettings
+	43,  // 122: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.check_settings:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeCheckSettings
+	47,  // 123: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.egress_profiles:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressProfileSettings
+	48,  // 124: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.ingress_rules:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIngressRuleSettings
+	38,  // 125: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest.ip_geo_providers:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIPGeoProviderSettings
+	49,  // 126: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsResponse.settings:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeSettings
+	47,  // 127: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesRequest.egress_profiles:type_name -> byte.v.forge.contracts.proxyruntime.v1.EgressProfileSettings
+	49,  // 128: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesResponse.settings:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeSettings
+	48,  // 129: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyIngressRulesRequest.ingress_rules:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyIngressRuleSettings
+	49,  // 130: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyIngressRulesResponse.settings:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeSettings
+	53,  // 131: byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMihomoNativeConfigResponse.config:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMihomoNativeConfig
+	53,  // 132: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeMihomoNativeConfigRequest.config:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMihomoNativeConfig
+	53,  // 133: byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeMihomoNativeConfigResponse.config:type_name -> byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeMihomoNativeConfig
+	55,  // 134: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyProviders:input_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyProvidersRequest
+	57,  // 135: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyProviderAccounts:input_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyProviderAccountsRequest
+	59,  // 136: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpsertProxyProviderAccount:input_type -> byte.v.forge.contracts.proxyruntime.v1.UpsertProxyProviderAccountRequest
+	61,  // 137: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.DeleteProxyProviderAccount:input_type -> byte.v.forge.contracts.proxyruntime.v1.DeleteProxyProviderAccountRequest
+	63,  // 138: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyDynamicLeases:input_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyDynamicLeasesRequest
+	65,  // 139: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.AcquireProxyLease:input_type -> byte.v.forge.contracts.proxyruntime.v1.AcquireProxyLeaseRequest
+	67,  // 140: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ReleaseProxyLease:input_type -> byte.v.forge.contracts.proxyruntime.v1.ReleaseProxyLeaseRequest
+	69,  // 141: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyExitIP:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyExitIPRequest
+	71,  // 142: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyExitGeo:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyExitGeoRequest
+	73,  // 143: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.CheckProxyIPFraud:input_type -> byte.v.forge.contracts.proxyruntime.v1.CheckProxyIPFraudRequest
+	75,  // 144: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.CheckProxyEdgeAccess:input_type -> byte.v.forge.contracts.proxyruntime.v1.CheckProxyEdgeAccessRequest
+	77,  // 145: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.CheckProxyTargetConnectivity:input_type -> byte.v.forge.contracts.proxyruntime.v1.CheckProxyTargetConnectivityRequest
+	79,  // 146: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyExitCheckSnapshot:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyExitCheckSnapshotRequest
+	90,  // 147: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyIPFraudProviders:input_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyIPFraudProvidersRequest
+	92,  // 148: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyIPGeoProviders:input_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyIPGeoProvidersRequest
+	83,  // 149: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeStatus:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeStatusRequest
+	86,  // 150: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeMetricsSummary:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMetricsSummaryRequest
+	81,  // 151: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeSettings:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeSettingsRequest
+	94,  // 152: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyRuntimeSettings:input_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsRequest
+	96,  // 153: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyEgressProfiles:input_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesRequest
+	98,  // 154: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyIngressRules:input_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyIngressRulesRequest
+	100, // 155: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeMihomoNativeConfig:input_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMihomoNativeConfigRequest
+	102, // 156: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyRuntimeMihomoNativeConfig:input_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeMihomoNativeConfigRequest
+	56,  // 157: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyProviders:output_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyProvidersResponse
+	58,  // 158: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyProviderAccounts:output_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyProviderAccountsResponse
+	60,  // 159: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpsertProxyProviderAccount:output_type -> byte.v.forge.contracts.proxyruntime.v1.UpsertProxyProviderAccountResponse
+	62,  // 160: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.DeleteProxyProviderAccount:output_type -> byte.v.forge.contracts.proxyruntime.v1.DeleteProxyProviderAccountResponse
+	64,  // 161: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyDynamicLeases:output_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyDynamicLeasesResponse
+	66,  // 162: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.AcquireProxyLease:output_type -> byte.v.forge.contracts.proxyruntime.v1.AcquireProxyLeaseResponse
+	68,  // 163: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ReleaseProxyLease:output_type -> byte.v.forge.contracts.proxyruntime.v1.ReleaseProxyLeaseResponse
+	70,  // 164: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyExitIP:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyExitIPResponse
+	72,  // 165: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyExitGeo:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyExitGeoResponse
+	74,  // 166: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.CheckProxyIPFraud:output_type -> byte.v.forge.contracts.proxyruntime.v1.CheckProxyIPFraudResponse
+	76,  // 167: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.CheckProxyEdgeAccess:output_type -> byte.v.forge.contracts.proxyruntime.v1.CheckProxyEdgeAccessResponse
+	78,  // 168: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.CheckProxyTargetConnectivity:output_type -> byte.v.forge.contracts.proxyruntime.v1.CheckProxyTargetConnectivityResponse
+	80,  // 169: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyExitCheckSnapshot:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyExitCheckSnapshotResponse
+	91,  // 170: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyIPFraudProviders:output_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyIPFraudProvidersResponse
+	93,  // 171: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.ListProxyIPGeoProviders:output_type -> byte.v.forge.contracts.proxyruntime.v1.ListProxyIPGeoProvidersResponse
+	85,  // 172: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeStatus:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeStatusResponse
+	89,  // 173: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeMetricsSummary:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMetricsSummaryResponse
+	82,  // 174: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeSettings:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeSettingsResponse
+	95,  // 175: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyRuntimeSettings:output_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeSettingsResponse
+	97,  // 176: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyEgressProfiles:output_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyEgressProfilesResponse
+	99,  // 177: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyIngressRules:output_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyIngressRulesResponse
+	101, // 178: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.GetProxyRuntimeMihomoNativeConfig:output_type -> byte.v.forge.contracts.proxyruntime.v1.GetProxyRuntimeMihomoNativeConfigResponse
+	103, // 179: byte.v.forge.contracts.proxyruntime.v1.ProxyRuntimeService.UpdateProxyRuntimeMihomoNativeConfig:output_type -> byte.v.forge.contracts.proxyruntime.v1.UpdateProxyRuntimeMihomoNativeConfigResponse
+	157, // [157:180] is the sub-list for method output_type
+	134, // [134:157] is the sub-list for method input_type
+	134, // [134:134] is the sub-list for extension type_name
+	134, // [134:134] is the sub-list for extension extendee
+	0,   // [0:134] is the sub-list for field type_name
 }
 
 func init() { file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_init() }
@@ -7411,7 +7654,7 @@ func file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDesc), len(file_byte_v_forge_contracts_proxyruntime_v1_proxy_runtime_proto_rawDesc)),
 			NumEnums:      18,
-			NumMessages:   86,
+			NumMessages:   90,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

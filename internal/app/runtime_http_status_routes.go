@@ -8,5 +8,6 @@ import (
 func (api *runtimeHTTPAPI) runtimeStatusHTTPRoutes() []httpapi.Route {
 	return []httpapi.Route{
 		{Methods: []string{http.MethodGet}, Path: "/runtime/status", Handler: api.handleRuntimeStatus},
+		{Methods: []string{http.MethodGet}, Path: "/runtime/metrics/summary", Handler: api.handleRuntimeMetricsSummary},
 	}
 }

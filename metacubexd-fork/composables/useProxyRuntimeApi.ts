@@ -110,36 +110,65 @@ export function useProxyRuntimeApi() {
         {},
         options,
       ),
-    checkProxyIPFraud: (req: CheckProxyIPFraudRequest) =>
-      proxyRuntimeRequest<CheckProxyIPFraudResponse>('/ip_fraud_check', {
-        method: 'POST',
-        body: proxyRuntimeJsonBody(req),
-      }),
-    getProxyExitIP: (req: GetProxyExitIPRequest) =>
-      proxyRuntimeRequest<GetProxyExitIPResponse>('/proxy_exit_ip', {
-        method: 'POST',
-        body: proxyRuntimeJsonBody(req),
-      }),
-    checkProxyExitGeo: (req: GetProxyExitGeoRequest) =>
-      proxyRuntimeRequest<GetProxyExitGeoResponse>('/proxy_exit_geo', {
-        method: 'POST',
-        body: proxyRuntimeJsonBody(req),
-      }),
-    checkProxyEdgeAccess: (req: CheckProxyEdgeAccessRequest) =>
+    checkProxyIPFraud: (
+      req: CheckProxyIPFraudRequest,
+      options: ProxyRuntimeRequestOptions = {},
+    ) =>
+      proxyRuntimeRequest<CheckProxyIPFraudResponse>(
+        '/ip_fraud_check',
+        {
+          method: 'POST',
+          body: proxyRuntimeJsonBody(req),
+        },
+        options,
+      ),
+    getProxyExitIP: (
+      req: GetProxyExitIPRequest,
+      options: ProxyRuntimeRequestOptions = {},
+    ) =>
+      proxyRuntimeRequest<GetProxyExitIPResponse>(
+        '/proxy_exit_ip',
+        {
+          method: 'POST',
+          body: proxyRuntimeJsonBody(req),
+        },
+        options,
+      ),
+    checkProxyExitGeo: (
+      req: GetProxyExitGeoRequest,
+      options: ProxyRuntimeRequestOptions = {},
+    ) =>
+      proxyRuntimeRequest<GetProxyExitGeoResponse>(
+        '/proxy_exit_geo',
+        {
+          method: 'POST',
+          body: proxyRuntimeJsonBody(req),
+        },
+        options,
+      ),
+    checkProxyEdgeAccess: (
+      req: CheckProxyEdgeAccessRequest,
+      options: ProxyRuntimeRequestOptions = {},
+    ) =>
       proxyRuntimeRequest<CheckProxyEdgeAccessResponse>(
         '/check_cf_access_risk',
         {
           method: 'POST',
           body: proxyRuntimeJsonBody(req),
         },
+        options,
       ),
-    getProxyExitCheckSnapshot: (req: GetProxyExitCheckSnapshotRequest) =>
+    getProxyExitCheckSnapshot: (
+      req: GetProxyExitCheckSnapshotRequest,
+      options: ProxyRuntimeRequestOptions = {},
+    ) =>
       proxyRuntimeRequest<GetProxyExitCheckSnapshotResponse>(
         '/proxy_exit_check_snapshot',
         {
           method: 'POST',
           body: proxyRuntimeJsonBody(req),
         },
+        options,
       ),
     getNativeConfig: (options: ProxyRuntimeRequestOptions = {}) =>
       proxyRuntimeRequest<GetProxyRuntimeMihomoNativeConfigResponse>(

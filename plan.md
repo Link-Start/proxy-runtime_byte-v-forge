@@ -1035,6 +1035,7 @@ Completed user-visible/runtime batches:
 - In-user rules UI loads now abort stale settings and Mihomo owner requests, and Mihomo controller helpers accept shared request cancellation options.
 - Mihomo-native settings UI loads now abort stale config requests and suppress cancellation noise before applying fixed proxy/subscription state.
 - Plugin settings UI loads now abort stale settings/fraud-provider/geo-provider requests and suppress cancellation noise before applying form state.
+- Playground check requests now abort stale snapshot, exit-IP, geo, and fraud checks, and skip snapshot refresh while an active check is running.
 
 Still open:
 

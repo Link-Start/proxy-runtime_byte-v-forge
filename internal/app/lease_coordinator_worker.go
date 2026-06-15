@@ -50,6 +50,7 @@ func (c leaseCoordinator) restoreLeaseRunner() leaseapp.RestoreLeaseRouteRunner 
 }
 
 func (c leaseCoordinator) expireLeaseRunner() leaseapp.ExpireLeaseRunner {
+	settings := c.settingsAdapter()
 	return leaseapp.ExpireLeaseRunner{
 		Store:                             c.deps.store,
 		Limiter:                           c.deps.providerConcurrency,
@@ -59,12 +60,13 @@ func (c leaseCoordinator) expireLeaseRunner() leaseapp.ExpireLeaseRunner {
 		Clock:                             c.deps.clock,
 		LocalProtocol:                     c.deps.cfg.LocalProtocol,
 		IsNotFound:                        isStoreNotFound,
-		ResolveGatewaysForLease:           c.providerSessionGatewaysResolver,
+		ResolveGatewaysForLease:           settings.ProviderGatewaysResolver,
 		ObserveFinalConcurrencyReleaseErr: c.warnFinalConcurrencyReleaseFailed,
 	}
 }
 
 func (c leaseCoordinator) cleanupPendingLeaseRunner() leaseapp.CleanupPendingLeaseRunner {
+	settings := c.settingsAdapter()
 	return leaseapp.CleanupPendingLeaseRunner{
 		Store:                             c.deps.store,
 		Limiter:                           c.deps.providerConcurrency,
@@ -73,7 +75,7 @@ func (c leaseCoordinator) cleanupPendingLeaseRunner() leaseapp.CleanupPendingLea
 		Factory:                           c.deps.sessionProviders,
 		LocalProtocol:                     c.deps.cfg.LocalProtocol,
 		IsNotFound:                        isStoreNotFound,
-		ResolveGatewaysForLease:           c.providerSessionGatewaysResolver,
+		ResolveGatewaysForLease:           settings.ProviderGatewaysResolver,
 		ObserveFinalConcurrencyReleaseErr: c.warnFinalConcurrencyReleaseFailed,
 	}
 }

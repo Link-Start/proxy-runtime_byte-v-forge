@@ -991,10 +991,11 @@ Completed user-visible/runtime batches:
 - Expiry and cleanup-pending single-lease worker actions now use lease-owned runner structs, removing the app-level expire/cleanup fact wrappers.
 - Acquire/release coordinator operations now call lease-owned prepared/release runners directly, removing the top-level app wrapper files.
 - Restore single-lease worker action now uses a lease-owned restore runner; the runtime restore file only owns startup background lifecycle.
+- Lease settings-backed gateway and line-binding resolution now uses a lease-owned generic settings adapter, removing the coordinator-specific resolver wrappers.
 
 Still open:
 
-- Fully extract lease application into `internal/app/lease`; remaining work is to move app-specific settings/selection adapters out of the current app-level coordinator. Provider-session acquisition/release/fetch, listener auth resolution, data-plane route apply/delete helpers, listener endpoint projection, lock-window refresh, batch loops, current-fact reload, and concurrency-slot acquire/release semantics now cross lease-owned models/ports, but the coordinator still sequences several workflows.
+- Fully extract lease application into `internal/app/lease`; remaining work is to move the dynamic endpoint selection adapter and remaining app-specific runner factories out of the current app-level coordinator. Provider-session acquisition/release/fetch, listener auth resolution, data-plane route apply/delete helpers, listener endpoint projection, lock-window refresh, batch loops, current-fact reload, and concurrency-slot acquire/release semantics now cross lease-owned models/ports, but the coordinator still sequences several workflows.
 - Continue splitting Mihomo sourceplane projection, validation, render, and apply stages so no single file owns the whole config pipeline.
 - Move settings orchestration into an explicit settings application package.
 - Separate `httpapi`, `auth`, and `dashboard` packages and keep handlers as thin transport adapters.

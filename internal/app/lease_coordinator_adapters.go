@@ -6,35 +6,12 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
 const leaseAcquireSlotReleaseTimeout = 5 * time.Second
 
-func (c leaseCoordinator) providerSessionGatewaysResolver(lease *proxyruntimev1.ProxyDynamicLease) func(context.Context, string) ([]accountproxy.Gateway, error) {
-	return func(ctx context.Context, providerID string) ([]accountproxy.Gateway, error) {
-		settings, err := c.deps.settings.load(ctx)
-		if err != nil {
-			return nil, err
-		}
-		return c.providerSessionGatewaysResolverForSettings(settings, lease)(ctx, providerID)
-	}
-}
-
-func (c leaseCoordinator) providerSessionGatewaysResolverForSettings(settings *runtimeSettingsFile, lease *proxyruntimev1.ProxyDynamicLease) func(context.Context, string) ([]accountproxy.Gateway, error) {
-	return func(ctx context.Context, providerID string) ([]accountproxy.Gateway, error) {
-		_ = ctx
-		return endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerID), nil
-	}
-}
-
-func (c leaseCoordinator) routeLineBindingResolver(settings *runtimeSettingsFile) func(context.Context, string) (string, map[string]string, error) {
-	return func(ctx context.Context, accountID string) (string, map[string]string, error) {
-		return c.deps.dynamicLeaseDialerProxy(ctx, settings, accountID)
-	}
-}
-
 func (c leaseCoordinator) leaseRouteRetirer() leaseapp.LeaseRouteRetirer {
+	settings := c.settingsAdapter()
 	return leaseapp.LeaseRouteRetirer{
 		Store:                   c.deps.store,
 		Limiter:                 c.deps.providerConcurrency,
@@ -42,7 +19,7 @@ func (c leaseCoordinator) leaseRouteRetirer() leaseapp.LeaseRouteRetirer {
 		DataPlane:               c.deps.dataPlane,
 		Factory:                 c.deps.sessionProviders,
 		LocalProtocol:           c.deps.cfg.LocalProtocol,
-		ResolveGatewaysForLease: c.providerSessionGatewaysResolver,
+		ResolveGatewaysForLease: settings.ProviderGatewaysResolver,
 		AfterRouteCleanup: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
 			c.clearExitCheckCache()
 			if lease.GetAccountId() == playgroundProfileID {
@@ -68,6 +45,7 @@ func (c leaseCoordinator) releaseRunner() leaseapp.ReleaseRunner {
 }
 
 func (c leaseCoordinator) leaseRouteRestorer(settings *runtimeSettingsFile) leaseapp.LeaseRouteRestorer {
+	settingsAdapter := c.settingsAdapter()
 	return leaseapp.LeaseRouteRestorer{
 		Limiter:            c.deps.providerConcurrency,
 		Store:              c.deps.store,
@@ -81,9 +59,9 @@ func (c leaseCoordinator) leaseRouteRestorer(settings *runtimeSettingsFile) leas
 			return dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), leaseapp.ConcurrencyPolicy(lease))
 		},
 		ResolveGateways: func(lease *proxyruntimev1.ProxyDynamicLease) leaseapp.ProviderSessionGatewaysResolver {
-			return c.providerSessionGatewaysResolverForSettings(settings, lease)
+			return settingsAdapter.ProviderGatewaysResolverForSettings(settings, lease)
 		},
-		ResolveLineBinding: c.routeLineBindingResolver(settings),
+		ResolveLineBinding: settingsAdapter.RouteLineBindingResolver(settings),
 	}
 }
 
@@ -113,6 +91,7 @@ func (c leaseCoordinator) acquiredRouteApplier(settings *runtimeSettingsFile, ad
 
 func (c leaseCoordinator) providerAccountAcquireRunner(settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, leaseID string, concurrencyHolder string) leaseapp.ProviderAccountAcquireRunner {
 	applier := c.acquiredRouteApplier(settings, advertisedHost, req)
+	settingsAdapter := c.settingsAdapter()
 	return leaseapp.ProviderAccountAcquireRunner{
 		Store:              c.deps.store,
 		IDs:                c.deps.ids,
@@ -121,7 +100,7 @@ func (c leaseCoordinator) providerAccountAcquireRunner(settings *runtimeSettings
 		Logger:             c.deps.logger,
 		Factory:            c.deps.sessionProviders,
 		Locks:              c.deps.locks,
-		ResolveLineBinding: c.routeLineBindingResolver(settings),
+		ResolveLineBinding: settingsAdapter.RouteLineBindingResolver(settings),
 		Apply: func(ctx context.Context, acquired leaseapp.ProviderAccountAcquireApplyInput) (*proxyruntimev1.ProxyDynamicLease, error) {
 			lease, err := applier.Apply(ctx, leaseapp.AcquiredRouteApplierInput{
 				Failure:           acquired.Failure,

@@ -17,7 +17,7 @@ func (c leaseCoordinator) acquireLeaseAttempt(ctx context.Context, advertisedHos
 	}
 	runner := c.selectedAcquireAttemptRunner(settings, advertisedHost, req, selection)
 	lease, err := runner.Run(ctx, leaseapp.SelectedAcquireAttemptRunnerInput{
-		SelectionPlan: selection.plan,
+		SelectionPlan: selection.Plan,
 		Policy:        req.GetPolicy(),
 	})
 	if err != nil {

@@ -12,11 +12,6 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-type dynamicIPSelection struct {
-	plan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
-	endpoint accountproxy.Gateway
-}
-
 type scoredDynamicIPEndpointCandidate struct {
 	proto    *proxyruntimev1.ProxyDynamicIPEndpointCandidate
 	endpoint accountproxy.Gateway
@@ -70,18 +65,18 @@ func newDynamicIPSelector(deps dynamicIPSelectorDependencies) *dynamicIPSelector
 	}
 }
 
-func (p *dynamicIPSelector) selectDynamicIPEndpoint(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (dynamicIPSelection, error) {
+func (p *dynamicIPSelector) selectDynamicIPEndpoint(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (leaseapp.DynamicIPSelection, error) {
 	settings, err := p.loadSettings(ctx)
 	if err != nil {
-		return dynamicIPSelection{}, err
+		return leaseapp.DynamicIPSelection{}, err
 	}
 	policy := leaseapp.NormalizeDynamicIPSelectionPolicy(req)
 	endpoints, err := p.dynamicIPEndpointCandidates(ctx, settings, policy, req.GetPolicy())
 	if err != nil {
-		return dynamicIPSelection{}, err
+		return leaseapp.DynamicIPSelection{}, err
 	}
 	if len(endpoints) == 0 {
-		return dynamicIPSelection{}, errors.New("no dynamic IP endpoint candidate")
+		return leaseapp.DynamicIPSelection{}, errors.New("no dynamic IP endpoint candidate")
 	}
 	attempt := leaseapp.DynamicIPSelectionAttempt(req)
 	selectedEndpoint := chooseDynamicIPEndpointCandidate(endpoints, policy, leaseapp.DynamicIPSelectionKey(req), attempt)
@@ -96,7 +91,7 @@ func (p *dynamicIPSelector) selectDynamicIPEndpoint(ctx context.Context, req *pr
 		SelectionReasons: reasons,
 		SelectedAt:       timestamppb.New(time.Now().UTC()),
 	}
-	return dynamicIPSelection{plan: plan, endpoint: selectedEndpoint.endpoint}, nil
+	return leaseapp.DynamicIPSelection{Plan: plan, Endpoint: selectedEndpoint.endpoint}, nil
 }
 
 func (p *dynamicIPSelector) loadSettings(ctx context.Context) (*runtimeSettingsFile, error) {

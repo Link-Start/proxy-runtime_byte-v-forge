@@ -34,11 +34,12 @@ func (r *Runtime) runtimeStatus() *proxyruntimev1.ProxyRuntimeStatus {
 	dataPlaneStatus := r.dataPlane.Status()
 	reconcile := r.currentReconcileState()
 	leaseRestore := r.currentLeaseRestoreState()
+	leaseWorker := r.currentLeaseWorkerState()
 	configStale := dataPlaneConfigStale(dataPlaneStatus)
 	ready := dataPlaneStatus.Running && dataPlaneStatus.LastError == "" && !configStale
 	return &proxyruntimev1.ProxyRuntimeStatus{
 		Ready:                ready,
-		Status:               runtimeStatusLabel(ready, dataPlaneStatus, configStale, reconcile, leaseRestore),
+		Status:               runtimeStatusLabel(ready, dataPlaneStatus, configStale, reconcile, leaseRestore, leaseWorker),
 		DataPlaneRunning:     dataPlaneStatus.Running,
 		DataPlaneConfigStale: configStale,
 		ReconcilePending:     reconcile.pending,
@@ -61,17 +62,23 @@ func (r *Runtime) currentLeaseRestoreState() runtimeLeaseRestoreState {
 	return r.leaseRestore
 }
 
+func (r *Runtime) currentLeaseWorkerState() runtimeLeaseWorkerState {
+	r.leaseWorkerMu.RLock()
+	defer r.leaseWorkerMu.RUnlock()
+	return r.leaseWorker
+}
+
 func dataPlaneConfigStale(status dataplane.Status) bool {
 	return status.DesiredConfigHash != "" && status.DesiredConfigHash != status.AppliedConfigHash
 }
 
-func runtimeStatusLabel(ready bool, dataPlaneStatus dataplane.Status, configStale bool, reconcile runtimeReconcileState, leaseRestore runtimeLeaseRestoreState) string {
+func runtimeStatusLabel(ready bool, dataPlaneStatus dataplane.Status, configStale bool, reconcile runtimeReconcileState, leaseRestore runtimeLeaseRestoreState, leaseWorker runtimeLeaseWorkerState) string {
 	switch {
-	case reconcile.running || reconcile.pending || leaseRestore.running:
+	case reconcile.running || reconcile.pending || leaseRestore.running || leaseWorker.running:
 		return "applying"
 	case !dataPlaneStatus.Running:
 		return "stopped"
-	case !ready || configStale || reconcile.lastError != "" || leaseRestore.lastError != "":
+	case !ready || configStale || reconcile.lastError != "" || leaseRestore.lastError != "" || leaseWorker.lastError != "":
 		return "degraded"
 	default:
 		return "running"

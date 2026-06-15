@@ -28,18 +28,25 @@ func (r *Runtime) leaseExpiryLoop(ctx context.Context) {
 }
 
 func (r *Runtime) runLeaseExpirySweep(ctx context.Context) {
-	r.runLeaseWorkerTask(ctx, "expire proxy leases", leaseCleanupAttemptTimeout, r.service().leases.ExpireDueLeaseFacts)
-	r.runLeaseWorkerTask(ctx, "cleanup pending proxy leases", leaseCleanupAttemptTimeout, r.service().leases.CleanupPendingLeaseFacts)
+	r.markLeaseWorkerStarted()
+	err := errors.Join(
+		r.runLeaseWorkerTask(ctx, "expire proxy leases", leaseCleanupAttemptTimeout, r.service().leases.ExpireDueLeaseFacts),
+		r.runLeaseWorkerTask(ctx, "cleanup pending proxy leases", leaseCleanupAttemptTimeout, r.service().leases.CleanupPendingLeaseFacts),
+	)
+	r.markLeaseWorkerFinished(err)
 }
 
-func (r *Runtime) runLeaseWorkerTask(ctx context.Context, name string, timeout time.Duration, task leaseWorkerTask) {
+func (r *Runtime) runLeaseWorkerTask(ctx context.Context, name string, timeout time.Duration, task leaseWorkerTask) error {
 	if task == nil {
-		return
+		return nil
 	}
 	startedAt := time.Now()
 	taskCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	if err := task(taskCtx); err != nil && !errors.Is(err, context.Canceled) {
-		r.logger.Warn(name+" failed", "error", err, "duration_ms", time.Since(startedAt).Milliseconds())
+	err := task(taskCtx)
+	if err == nil || errors.Is(err, context.Canceled) {
+		return nil
 	}
+	r.logger.Warn(name+" failed", "error", err, "duration_ms", time.Since(startedAt).Milliseconds())
+	return err
 }

@@ -1024,6 +1024,7 @@ Completed user-visible/runtime batches:
 - Runtime startup now queues the first reconcile in the background before serving HTTP instead of blocking HTTP startup on the initial provider/dataplane refresh; ready/status report pending or running reconcile as applying.
 - Lease expiry and cleanup-pending worker sweeps now run immediately on startup and each operation uses a bounded timeout with duration logging.
 - Mihomo hot reload now reloads the last accepted canonical config when a candidate reload passes but endpoint verification or canonical persistence fails.
+- Runtime status now includes lease worker running/failed state in the existing status label without expanding the public proto contract.
 
 Still open:
 

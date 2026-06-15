@@ -39,6 +39,8 @@ type Runtime struct {
 	reconcileState runtimeReconcileState
 	leaseRestoreMu sync.RWMutex
 	leaseRestore   runtimeLeaseRestoreState
+	leaseWorkerMu  sync.RWMutex
+	leaseWorker    runtimeLeaseWorkerState
 	fraudChecker   ipFraudCheckerCache
 	geoCache       ipGeoCache
 	exitCheckCache proxyExitCheckCache

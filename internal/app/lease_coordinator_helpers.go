@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
@@ -16,13 +15,6 @@ func (c leaseCoordinator) warn(message string, args ...any) {
 func (c leaseCoordinator) warnFinalConcurrencyReleaseFailed(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
 	_ = ctx
 	c.warn("release provider account concurrency slot failed", "lease_id", lease.GetLeaseId(), "provider_account_id", lease.GetProviderAccountId())
-}
-
-func (c leaseCoordinator) now() time.Time {
-	if c.deps.clock != nil {
-		return c.deps.clock.Now()
-	}
-	return time.Now()
 }
 
 func (c leaseCoordinator) clearExitCheckCache() {

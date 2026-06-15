@@ -2,55 +2,200 @@ package app
 
 import (
 	"context"
-	"fmt"
-	"net/http"
 
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
-	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
-	"github.com/byte-v-forge/proxy-runtime/internal/random"
 )
 
-const leaseIDByteLength = 12
-
-type leaseRegistrySessionProviderFactory struct {
-	registry *providerregistry.Registry
-	client   *http.Client
-}
-
-func (f leaseRegistrySessionProviderFactory) NewSessionProvider(providerCfg accountproxy.Config) (leaseapp.SessionProvider, error) {
-	if f.registry == nil {
-		return nil, fmt.Errorf("provider session factory is required")
+func (c leaseCoordinator) providerSessionGatewaysResolver(lease *proxyruntimev1.ProxyDynamicLease) func(context.Context, string) ([]accountproxy.Gateway, error) {
+	return func(ctx context.Context, providerID string) ([]accountproxy.Gateway, error) {
+		settings, err := c.deps.settings.load(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return c.providerSessionGatewaysResolverForSettings(settings, lease)(ctx, providerID)
 	}
-	return f.registry.NewSessionProvider(providerCfg, f.client)
 }
 
-type leaseRuntimeLockManager struct {
-	locks leaseRuntimeLocks
+func (c leaseCoordinator) providerSessionGatewaysResolverForSettings(settings *runtimeSettingsFile, lease *proxyruntimev1.ProxyDynamicLease) func(context.Context, string) ([]accountproxy.Gateway, error) {
+	return func(ctx context.Context, providerID string) ([]accountproxy.Gateway, error) {
+		_ = ctx
+		return endpointsForDynamicIPSelection(settings, lease.GetSelectionPlan(), providerID), nil
+	}
 }
 
-func (m leaseRuntimeLockManager) WithAccountLock(ctx context.Context, accountID string, fn leaseapp.LockFunc) error {
-	return m.locks.WithAccountLock(ctx, accountID, func(ctx context.Context) error {
-		return fn(ctx)
-	})
+func (c leaseCoordinator) routeLineBindingResolver(settings *runtimeSettingsFile) func(context.Context, string) (string, map[string]string, error) {
+	return func(ctx context.Context, accountID string) (string, map[string]string, error) {
+		return c.deps.dynamicLeaseDialerProxy(ctx, settings, accountID)
+	}
 }
 
-func (m leaseRuntimeLockManager) WithProviderAccountLock(ctx context.Context, providerAccountID string, fn leaseapp.LockFunc) error {
-	return m.locks.WithProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
-		return fn(ctx)
-	})
+func (c leaseCoordinator) leaseRouteRetirer() leaseapp.LeaseRouteRetirer {
+	return leaseapp.LeaseRouteRetirer{
+		Store:                   c.deps.store,
+		Limiter:                 c.deps.providerConcurrency,
+		Locks:                   c.deps.locks,
+		DataPlane:               c.deps.dataPlane,
+		Factory:                 c.deps.sessionProviders,
+		LocalProtocol:           c.deps.cfg.LocalProtocol,
+		ResolveGatewaysForLease: c.providerSessionGatewaysResolver,
+		AfterRouteCleanup: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
+			c.clearExitCheckCache()
+			if lease.GetAccountId() == playgroundProfileID {
+				c.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
+			}
+		},
+		ObserveProviderReleaseFailure: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
+			_ = ctx
+			c.warn("provider session release failed", leaseapp.LabelAccountID, lease.GetAccountId(), leaseapp.LabelProviderAccountID, lease.GetProviderAccountId())
+		},
+		ObserveFinalConcurrencyReleaseErr: c.warnFinalConcurrencyReleaseFailed,
+	}
 }
 
-func (m leaseRuntimeLockManager) WithSessionListenerAllocationLock(ctx context.Context, fn leaseapp.LockFunc) error {
-	return m.locks.WithSessionListenerAllocationLock(ctx, func(ctx context.Context) error {
-		return fn(ctx)
-	})
+func (c leaseCoordinator) leaseRouteRestorer(settings *runtimeSettingsFile) leaseapp.LeaseRouteRestorer {
+	return leaseapp.LeaseRouteRestorer{
+		Limiter:            c.deps.providerConcurrency,
+		Store:              c.deps.store,
+		DataPlane:          c.deps.dataPlane,
+		Factory:            c.deps.sessionProviders,
+		DefaultTTL:         leaseapp.DefaultDynamicIPStickyTTL,
+		TTLBuffer:          providerAccountConcurrencyTTLBuffer,
+		SlotReleaseTimeout: leaseRestoreSlotReleaseTimeout,
+		LocalProtocol:      c.deps.cfg.LocalProtocol,
+		Limit: func(lease *proxyruntimev1.ProxyDynamicLease) uint32 {
+			return dynamicProviderConcurrencyLimit(settings, leaseapp.DynamicProviderID(lease), leaseapp.ConcurrencyPolicy(lease))
+		},
+		ResolveGateways: func(lease *proxyruntimev1.ProxyDynamicLease) leaseapp.ProviderSessionGatewaysResolver {
+			return c.providerSessionGatewaysResolverForSettings(settings, lease)
+		},
+		ResolveLineBinding: c.routeLineBindingResolver(settings),
+	}
 }
 
-type randomLeaseIDGenerator struct {
-	byteLength int
+func (c leaseCoordinator) acquiredRouteApplier(settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.AcquiredRouteApplier {
+	return leaseapp.AcquiredRouteApplier{
+		Store:            c.deps.store,
+		DataPlane:        c.deps.dataPlane,
+		Clock:            c.deps.clock,
+		LocalProtocol:    c.deps.cfg.LocalProtocol,
+		Managed:          true,
+		FallbackProtocol: "http",
+		ResolveListener: func(ctx context.Context, accountID string, leaseID string) (leaseapp.Listener, error) {
+			return c.deps.leaseListener(ctx, settings, accountID, leaseID)
+		},
+		ResolveEgress: func(ctx context.Context, listener leaseapp.Listener) (*proxyruntimev1.ProxyEndpoint, error) {
+			_ = ctx
+			return c.deps.localListenerEndpoint(listener, c.deps.sessionAdvertisedHost(advertisedHost, listener))
+		},
+		AfterApply: func(ctx context.Context, _ *proxyruntimev1.ProxyDynamicLease) {
+			c.clearExitCheckCache()
+			if req.GetAccountId() == playgroundProfileID {
+				c.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
+			}
+		},
+	}
 }
 
-func (g randomLeaseIDGenerator) NewLeaseID() (string, error) {
-	return random.Hex(g.byteLength)
+func (c leaseCoordinator) providerAccountAcquireRunner(settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, leaseID string, concurrencyHolder string) leaseapp.ProviderAccountAcquireRunner {
+	applier := c.acquiredRouteApplier(settings, advertisedHost, req)
+	return leaseapp.ProviderAccountAcquireRunner{
+		Store:              c.deps.store,
+		IDs:                c.deps.ids,
+		Clock:              c.deps.clock,
+		DataPlane:          c.deps.dataPlane,
+		Logger:             c.deps.logger,
+		Factory:            c.deps.sessionProviders,
+		Locks:              c.deps.locks,
+		ResolveLineBinding: c.routeLineBindingResolver(settings),
+		Apply: func(ctx context.Context, acquired leaseapp.ProviderAccountAcquireApplyInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+			lease, err := applier.Apply(ctx, leaseapp.AcquiredRouteApplierInput{
+				Failure:           acquired.Failure,
+				LeaseID:           leaseID,
+				Request:           req,
+				ProviderClient:    acquired.ProviderClient,
+				ProviderAccountID: acquired.ProviderAccountID,
+				ConcurrencyHolder: concurrencyHolder,
+				Session:           acquired.Session,
+				Nodes:             acquired.Nodes,
+				DialerProxy:       acquired.DialerProxy,
+				LineLabels:        acquired.LineLabels,
+				SelectionPlan:     selectionPlan,
+			})
+			if err != nil {
+				return nil, acquiredRouteApplyError(err)
+			}
+			return lease, nil
+		},
+	}
+}
+
+func (c leaseCoordinator) selectedAcquireAttemptRunner(settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, selection dynamicIPSelection) leaseapp.SelectedAcquireAttemptRunner {
+	return leaseapp.SelectedAcquireAttemptRunner{
+		Store:          c.deps.store,
+		IDs:            c.deps.ids,
+		Limiter:        c.deps.providerConcurrency,
+		Locks:          c.deps.locks,
+		DefaultTTL:     leaseapp.DefaultDynamicIPStickyTTL,
+		TTLBuffer:      providerAccountConcurrencyTTLBuffer,
+		ReleaseTimeout: leaseAcquireSlotReleaseTimeout,
+		Limit: func(selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
+			return dynamicProviderConcurrencyLimit(settings, leaseapp.SelectedDynamicProviderID(selectionPlan), policy)
+		},
+		Action: func(ctx context.Context, attempt leaseapp.SelectedAcquireAttempt) (*proxyruntimev1.ProxyDynamicLease, error) {
+			runner := c.providerAccountAcquireRunner(settings, advertisedHost, req, selection.plan, attempt.LeaseID, attempt.ConcurrencyHolder)
+			lease, err := runner.Acquire(ctx, leaseapp.ProviderAccountAcquireRunInput{
+				ProviderAccountID: attempt.ProviderAccountID,
+				Gateway:           selection.endpoint,
+				Request:           req,
+				SelectionPlan:     selection.plan,
+				ConcurrencyHolder: attempt.ConcurrencyHolder,
+			})
+			if err != nil {
+				return nil, providerSessionAcquireError(err)
+			}
+			return lease, nil
+		},
+	}
+}
+
+func (c leaseCoordinator) accountLockedAcquireRunner(ctx context.Context, settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.AccountLockedAcquireRunner {
+	retirer := c.leaseRouteRetirer()
+	return leaseapp.AccountLockedAcquireRunner{
+		Store:               c.deps.store,
+		Clock:               c.deps.clock,
+		PlaygroundAccountID: playgroundProfileID,
+		PlaygroundUsername:  playgroundUsername,
+		Reuse:               c.refreshLeaseConcurrencySlot,
+		Replace:             retirer.Retire,
+		RunAttempt: func(int) (*proxyruntimev1.ProxyDynamicLease, error) {
+			return c.acquireLeaseAttempt(ctx, advertisedHost, req, settings)
+		},
+		Retry: retryLeaseAcquireAttempt,
+		Observe: func(attempt int, err error) {
+			c.warn("dynamic IP lease attempt failed", leaseapp.LabelAccountID, req.GetAccountId(), leaseapp.LabelPurpose, req.GetPurpose(), "attempt", attempt, "error_type", errorLogType(err))
+		},
+	}
+}
+
+func (c leaseCoordinator) preparedAcquireRunner(advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.PreparedAcquireRunner {
+	return leaseapp.PreparedAcquireRunner{
+		Locks: c.deps.locks,
+		Action: func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
+			settings, err := c.deps.settings.load(ctx)
+			if err != nil {
+				return nil, err
+			}
+			runner := c.accountLockedAcquireRunner(ctx, settings, advertisedHost, req)
+			lease, err := runner.Run(ctx, leaseapp.AccountLockedAcquireRunnerInput{
+				Request:        req,
+				EgressProfiles: settings.GetEgressProfiles(),
+			})
+			if err != nil && leaseapp.IsAcquirePolicyError(err) {
+				return nil, leaseProfilePolicyError(err)
+			}
+			return lease, err
+		},
+	}
 }

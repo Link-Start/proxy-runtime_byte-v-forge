@@ -633,12 +633,11 @@ Current defect:
 
 - Postgres and SQLite stores duplicate dynamic lease query and persistence behavior.
 
-Decision path:
+Decision:
 
-1. Verify whether deployed runtime uses SQLite.
-2. Verify whether standalone SQLite mode is still a supported product requirement.
-3. If not required, remove SQLite store from the runtime path.
-4. If required, keep SQLite as an adapter but prevent duplicated business predicates.
+- SQLite remains a supported standalone product runtime path.
+- PostgreSQL remains the primary multi-instance deployment store.
+- Both adapters must share repository semantics and avoid duplicated business predicates.
 
 Rules:
 
@@ -649,473 +648,42 @@ Acceptance:
 
 - Fixing lease behavior requires changing one semantic layer, not two drifting store implementations.
 
-### Current Execution Status
+### Remaining Work
 
-Snapshot date: 2026-06-15.
-
-Completed user-visible/runtime batches:
-
-- Lease list hot path is bounded and no longer defaults to inactive history.
-- Playground acquire no longer waits for full lease history before requesting a lease.
-- Frontend proxy-runtime requests have bounded timeout and clearer backend-unreachable handling.
-- HTTP startup is decoupled from active lease restore.
-- Lease restore and cleanup attempts are bounded.
-- Lease list semantics were extracted from ad hoc handler filtering.
-- Settings reads are side-effect free.
-- Runtime settings apply, Mihomo-native config apply, and provider-account delete now persist desired state and continue through asynchronous reconcile/background work.
-- WebSocket token route is treated as authenticated.
-- Dashboard proxy creation was centralized/reused.
-- Runtime status is exposed by backend and surfaced in the Playground UI.
-- First frontend/backend split steps are done for lease API and Mihomo-native update logic.
-- Mihomo-native config model, projection persistence, settings mapping, and URI rendering helpers are split into focused files.
-- Mihomo-native projection orchestration is separated from native JSON file path/load/save IO.
-- Mihomo-native settings mapping is split into focused conversion, normalization, indexing, and subscription-provider rendering files.
-- Mihomo-native update now separates pure update-plan construction and validation from persistence, file save, reference replacement, and reconcile scheduling side effects.
-- Mihomo-native native JSON file IO now depends on an explicit config directory instead of direct `*Runtime` access.
-- Mihomo-native projection orchestration now uses an explicit settings repository port and config directory; `Runtime` only wires dependencies.
-- Mihomo-native update now uses explicit repository/config-dir/after-apply dependencies; runtime cache clearing and reconcile scheduling are wiring callbacks instead of embedded update logic.
-- Mihomo sourceplane egress-profile rendering is split into line, exit, native-resource, dynamic-exit, and naming helpers.
-- Mihomo driver model, reconcile flow, and hot-reload candidate apply logic are separated into focused files.
-- Mihomo reconcile now uses explicit rendered-config projection and base-config apply helpers.
-- Source-plane dataplane config projection is split into a pure explicit-input builder; runtime wiring only loads settings, builds dynamic pool, and stores the snapshot.
-- Source-plane proxy-user route merge/dedup projection moved with the explicit-input projection builder, keeping runtime dataplane config assembly as wiring only.
-- Listener default config and proto/local-service projection helpers are split from Runtime route wiring into explicit-input projection functions.
-- Lease application now owns list/acquire/release response orchestration through repository/coordinator ports, and HTTP request details are reduced to an advertised host before entering lease orchestration.
-- Lease detail lookup is exposed through the lease application repository port and `GET /api/leases/{lease_id}`, so full lease detail can be fetched by ID instead of through list hot paths.
-- Lease application construction now uses an explicit dependency object with repository, coordinator, worker, logger, and clock ports; lease list duration/row logging lives in the lease application.
-- Lease acquire and release application boundaries now log duration and stable lease/account/provider identifiers without emitting provider/session secrets or raw error text.
-- Dynamic lease retry and Mihomo connection cleanup paths no longer log or return raw provider/controller error bodies; logs use safe error types and HTTP status summaries.
-- Lease list query parsing for status, legacy inactive mode, and bounded limits is centralized in the lease package; the Gin handler only adapts query values to application input.
-- Listener resolution and reserved-listener checks no longer use the old unbounded `ListLeaseFacts`; they use bounded active lease queries plus cleanup-pending facts, and the unbounded store port was removed.
-- SQLite provider-account blocking and cleanup-pending lease queries now use SQL/JSON predicates, aligning with the Postgres existence-query behavior instead of loading rows only to filter in Go.
-- Active lease lookup by provider session now uses SQL/JSON session-id predicates in both Postgres and SQLite instead of loading all active account leases and filtering in Go.
-- Lease package is split into application, repository/coordinator ports, list options, operations, and predicates.
-- Lease restore/expire/cleanup worker entrypoints now go through the lease application worker port instead of direct Runtime coordinator calls.
-- Lease cleanup label mutation is centralized in the lease package together with cleanup predicates.
-- Settings application service forwarding, update usecases, apply scheduling, Mihomo-native handlers, and validation are split into focused files.
-- Runtime settings application now carries explicit logger, settings-store, proxy-user, provider-descriptor, Mihomo-native, and apply-scheduler dependencies instead of reaching through `*Runtime` inside usecase methods.
-- Runtime settings application now depends on a narrow settings repository port instead of the concrete `runtimeSettingsStore` type.
-- Runtime settings store load/save and Mihomo-native persistence facades are split from settings update logic.
-- HTTP control-plane route declarations are split by auth, runtime status, provider, lease, check, and settings ownership.
-- Runtime auth session signing, verification, token matching, and safe redirects are extracted into `internal/app/auth`.
-- Mihomo dashboard/controller URL, query sanitization, cache header, and error redaction helpers are extracted into `internal/app/dashboard`.
-- HTTP request helpers for path-prefix matching, forwarded protocol, and request IDs are extracted into `internal/app/httpapi`.
-- HTTP route declarations now use the shared `httpapi.Route` model instead of an app-local route shape.
-- HTTP request-body and proto JSON codec helpers are extracted into `internal/app/httpapi`, while app-level error mapping stays at the adapter boundary.
-- Runtime auth required/public-path rules are centralized in `internal/app/auth`.
-- HTTP JSON error response writing is extracted into `internal/app/httpapi`, with app-specific error-to-status mapping kept at the adapter edge.
-- Public HTTP route registration now uses the shared `httpapi.Route` model and is split from HTTP server setup.
-- Runtime login request parsing is extracted into `internal/app/auth`, leaving the Gin handler as body-read and response adapter.
-- Runtime auth session cookie construction and clearing are centralized in `internal/app/auth`.
-- MetaCubeXD bootstrap HTML, reverse proxy construction, controller auth injection, query sanitization, cache headers, and upstream error redaction are centralized in `internal/app/dashboard`.
-- HTTP request ID, authorization handoff, panic recovery, and request logging middleware are extracted into `internal/app/httpapi`; panic logs no longer include the recovered payload.
-- Runtime auth secret handling, required-path checks, login token matching, session verification, session cookies, and WebSocket token minting are routed through `internal/app/auth.Application`.
-- Runtime login page rendering and login redirect URL construction are owned by `internal/app/auth`, leaving Gin handlers to set headers and write responses.
-- Lease coordinator wiring now uses explicit store, settings, lock, dataplane, provider-session factory, concurrency limiter, logger, and runtime-callback dependencies instead of holding `*Runtime`; acquire/release/restore/expire/cleanup paths no longer dereference the large runtime object directly.
-- Lease coordinator time-dependent lease predicates and timestamps now use an injected clock port instead of direct `time.Now()` calls in lease acquire, failed-acquire recording, restore, and expiry logic.
-- Provider session creation in lease orchestration is now behind a lease-owned factory port; registry and HTTP client details are confined to the runtime wiring adapter.
-- Dynamic lease data-plane operations now depend on a narrow session-route applier port instead of the full dataplane driver surface.
-- Dynamic lease orchestration now depends on a narrow lock-manager port that exposes only account, provider-account, and listener-allocation critical sections.
-- Lease coordinator logging now depends on the lease logger port instead of the concrete slog logger.
-- Dynamic lease failed-acquire, released, expired, cleanup-failure, and cleanup-retry status mutations are centralized in `internal/app/lease` lifecycle helpers; app-level persistence code now saves already-mutated lease facts instead of owning status transitions.
-- Dynamic lease concurrency holder, concurrency policy, and dynamic-provider-id extraction are centralized in `internal/app/lease`, keeping lease fact interpretation out of runtime provider concurrency helpers.
-- Active dynamic lease fact construction and active/released status checks are centralized in `internal/app/lease`, removing direct status-enum writes and checks from lease runtime orchestration.
-- Dynamic IP endpoint health scoring now uses lease status predicates from `internal/app/lease` instead of interpreting active/expired/released/failed enums locally.
-- Acquire request session-id label parsing is centralized in `internal/app/lease`, so lease orchestration no longer owns sticky-session label aliases.
-- Acquire request account/purpose label injection is centralized in `internal/app/lease`; dynamic IP policy normalization remains in the runtime dynamic-IP layer.
-- Lease orchestration store, provider-session factory, data-plane applier, and lock-manager ports are now defined in `internal/app/lease`; the app layer only adapts runtime registry and lock implementations to those ports.
-- Provider-session release and stateless-session detection are centralized in `internal/app/lease`, keeping provider session cleanup semantics out of app-level acquire/release failure handling.
-- Lease concurrency mode/text and slot TTL calculation are centralized in `internal/app/lease`; provider-account concurrency adapters now use lease policy interpretation from the lease package.
-- Dynamic lease endpoint-id extraction is centralized in `internal/app/lease`; dynamic IP endpoint health scoring no longer reads selection/egress/session labels directly.
-- Dynamic lease ID generation now goes through an injected lease ID generator port; acquire and failed-acquire persistence no longer call the random package directly.
-- Dynamic lease account, purpose, session, provider-account, selection, endpoint, dynamic-provider, and concurrency-holder label keys are centralized in `internal/app/lease`, removing duplicated lease label strings from runtime orchestration.
-- Lease coordinator runtime adapters for provider-session factory, lock manager, and ID generation are split from coordinator dependency wiring.
-- Source-plane proxy-user configured-route merge and dedup helpers are split from the top-level source-plane dataplane config builder.
-- Dynamic lease acquire/release request validation, account/purpose normalization, release lookup parsing, and release lease/account/purpose match validation are centralized in `internal/app/lease`.
-- Dynamic lease acquire attempt label writing is centralized in `internal/app/lease`, so runtime acquire retry logic no longer edits raw policy label keys directly.
-- Dynamic lease release lookup, release state transition orchestration, provider-session release locking, and dataplane route deletion are split from the acquire service file into a focused release file.
-- Dynamic lease egress-profile policy resolution and playground replacement checks are split from the acquire service file into a focused profile helper file.
-- Dynamic lease listener allocation, endpoint materialization, dataplane route upsert, active fact persistence, and playground connection cleanup are split from the acquire service file into a focused route-apply file.
-- Provider account application now receives explicit repository, settings, descriptor, lock, lease-operation, and logger dependencies; provider usecase methods no longer dereference `*Runtime` directly.
-- Runtime check application now receives explicit settings, HTTP-client, exit-IP probe, geo lookup, IP-fraud, edge-canary, and cache dependencies instead of reaching through `*Runtime`.
-- Runtime lease application construction now accepts the lease application dependency object directly; `RuntimeService` owns only wiring from `Runtime` to lease ports.
-- Runtime settings application construction now uses an explicit dependency object, and settings usecases guard missing repositories/loggers instead of dereferencing app fields directly.
-- Runtime status application now depends on an injected status snapshot function instead of holding `*Runtime`.
-- Lease coordinator construction now accepts explicit orchestration dependencies; `Runtime` is only adapted in a dedicated wiring file.
-- Dynamic IP selector construction now uses explicit store, settings, provider-registry, concurrency, logger, and geo-lookup dependencies behind a dedicated Runtime wiring adapter.
-- Provider-account concurrency acquire/available/release is now a lease-owned port; app runtime keeps only the cache lifecycle/Redis-local adapter implementation.
-- Source-plane egress-profile projection helpers are split out of settings mutation code into a dedicated source projection file.
-- Egress profile request conversion and validation are split from settings persistence updates into a focused settings request file.
-- Egress profile and ingress rule persistence updates are split from egress profile normalization/resource-ref helpers.
-- Mihomo-native resource reference replacement and enabled-resource lookup are split from egress profile normalization.
-- Settings enabled dynamic-provider and egress-profile ID index helpers are split from egress profile normalization.
-- Mihomo-native update now separates current-projection loading and update-plan persistence/apply helpers from top-level orchestration.
-- Dynamic IP provider request validation is split from dynamic provider endpoint/model normalization.
-- Dynamic IP endpoint map and provider-instance projection helpers are split from settings model normalization.
-- Top-level settings request assembly now delegates IP fraud, IP geo, and dynamic IP provider list construction to focused request helpers.
-- Runtime secret reference resolution and shared default provider weighting are split from IP-fraud-specific settings helpers.
-- IP fraud and IP geo provider request conversion plus raw-secret persistence are split from provider runtime config/auth helpers.
-- IP fraud and IP geo provider validation and supported-provider filtering are split from provider runtime config/auth helpers.
-- IP fraud and IP geo provider runtime auth/config construction is split from provider settings normalization, with shared secret purpose constants instead of repeated literals.
-- IP fraud provider secret-key helper naming now matches IP geo ownership instead of using an ambiguous generic provider helper name.
-- Runtime settings secret-ref cleaning, cloning, configured checks, and resolution are centralized in the secret-ref helper file instead of the broad settings helper bucket.
-- Runtime-wide ID, region, map, duration, and expected-status helpers are moved out of settings helpers; request raw-value cleanup now lives with settings request helpers.
-- The obsolete runtime settings helper bucket was removed after its last clone helper became unused.
-- Runtime settings update usecases now share an explicit update/apply scheduling flow helper for load-before, persist-update, changed-user detection, and apply scheduling.
-- Dynamic provider settings update now uses the same explicit update/apply scheduling flow instead of hand-written repository and scheduler orchestration.
-- Runtime settings application construction, repository port, read usecase, and provider descriptor views are split into focused files instead of one mixed application file.
-- Dynamic provider settings store updates now reuse the shared request conversion and validation helper instead of duplicating provider normalization and duplicate checks.
-- Runtime settings store dependencies and construction are split from store read/update mutation methods.
-- Runtime settings store writes now share a locked mutation helper for load, mutate, save, and view projection instead of repeating the sequence in each update method.
-- Mihomo native resource reference replacement now uses the store's changed-aware mutation helper instead of hand-written lock, load, and save orchestration.
-- Mihomo-native settings load/save facade methods are split from runtime settings persistence facade methods.
-- Postgres runtime settings persistence is split from Postgres Mihomo-native settings persistence.
-- SQLite runtime settings persistence is split from SQLite Mihomo-native settings persistence.
-- Postgres runtime and Mihomo-native settings persistence now share a single private JSON key/value load/save helper.
-- SQLite runtime and Mihomo-native settings persistence now share a single private JSON key/value load/save helper.
-- Runtime settings and Mihomo-native settings decode helpers are storage-adapter agnostic instead of being owned by the Postgres adapter files.
-- Runtime settings store mutation primitives are split from concrete store update methods.
-- Runtime settings store read projection is split from concrete store update methods.
-- Mihomo-native fixed-proxy URI parsing, URI rendering, and JSON value extraction are split into focused helpers.
-- Mihomo connection cleanup now separates runtime orchestration, controller HTTP client calls, response models, and selector matching helpers.
-- Source-plane egress profile kind mapping is split from egress profile projection.
-- Source-plane egress profile list assembly is split from line and exit projection helpers.
-- Source-plane proxy-user route merge now delegates username set and deduplicating append behavior to focused route helpers.
-- Mihomo-native conversion now separates config-to-settings projection, settings-to-config rendering input, and proto/native shape conversion.
-- Mihomo-native config-to-settings projection now separates fixed proxy and subscription extraction from the top-level conversion flow.
-- Mihomo-native settings-to-config conversion now delegates fixed proxy rendering and subscription provider rendering to focused helpers.
-- Mihomo-native update plan construction now separates top-level plan wiring from fixed-proxy and subscription mutation helpers.
-- Mihomo-native stable resource ID generation is split from settings normalization.
-- Mihomo-native top-level settings normalization now delegates fixed-proxy and subscription list normalization to focused helpers.
-- Mihomo-native current-resource indexes are split into fixed-proxy and subscription index helpers.
-- Mihomo-native VLESS URI parsing now delegates security and network option extraction to focused parse helpers.
-- Mihomo-native VLESS URI rendering now delegates core, security, and network query construction to focused render helpers.
-- Mihomo-native update current-state loading and update-plan persistence/apply side effects are split into separate helpers.
-- Mihomo-native update repository port and dependency object are split from the update orchestration function.
-- Mihomo-native update after-apply hook invocation is isolated from the main update orchestration.
-- Mihomo-native projection now separates Runtime wiring, repository port, and pure projection/import flow.
-- Mihomo-native projection import-from-existing-config migration is split from steady-state projection.
-- Dynamic lease line handling now separates Runtime native-settings wiring, egress-profile selection, Mihomo dialer resolution, and provider-node label application.
-- Dynamic lease listener handling now separates listener construction, password/ingress lookup, reserved-lease aggregation, and listener identity helpers.
-- Dynamic lease release now separates top-level release orchestration, release request lookup, and route/provider-session cleanup helpers.
-- Dynamic lease acquire service now separates account-lock orchestration from endpoint selection, concurrency slot acquisition, and provider-account locked session creation attempts.
-- Lease coordinator wiring now separates dependency shape, basic runtime helpers, active-lease lookup, provider-account concurrency handling, and session-provider factory access.
-- Dynamic lease acquire attempts now separate endpoint/concurrency attempt setup from provider-account locked provider session creation and route application.
-- Dynamic lease route application now uses a lease-owned session-route port, with runtime-only dataplane conversion isolated in a wiring adapter and acquired-lease endpoint/dataplane helpers split from persistence orchestration.
-- Active lease restore now separates input loading, concurrency-slot reservation, provider session refetch, and dataplane route replay into focused helpers.
-- Dynamic lease listener and endpoint flow now uses a lease-owned listener model; runtime-specific config listener conversion is confined to adapter/projection helpers.
-- Dynamic lease endpoint metadata and label writing are centralized in `internal/app/lease`, keeping acquired-route helpers from editing raw label keys directly.
-- Provider-session request label mutation for dynamic lease acquire is centralized in `internal/app/lease`, so provider-session creation no longer writes raw lease label keys directly.
-- Provider session creation now crosses a lease-owned `SessionProvider` port instead of exposing `provider.SessionProvider` through lease orchestration dependencies.
-- Dynamic lease node line-label application is centralized in `internal/app/lease`, removing the app-level line-label mutation helper.
-- Provider-account concurrency slot release-unless-kept semantics are centralized in `internal/app/lease`, and failed acquire slot cleanup now uses a bounded timeout.
-- Provider session create/fetch helpers are centralized in `internal/app/lease`; acquire and restore orchestration no longer call provider session methods directly.
-- Dynamic profile pool session fetch now reuses lease provider-session and concurrency-slot release helpers, with bounded cleanup timeout instead of background-context release.
-- Dynamic profile pool selection, node materialization/labeling, and session identity helpers are split into focused files instead of one mixed pool file.
-- Dynamic lease listener construction, listener labels, and password-required validation are centralized in `internal/app/lease`; runtime keeps only username/password input resolution and app-error mapping.
-- Dynamic lease listener endpoint projection now lives in `internal/app/lease`, including host/port parsing, protocol mapping, and proxy credential labels.
-- Dynamic lease advertised-host resolution now lives in `internal/app/lease`; runtime only passes configured/request host values.
-- Listener projection and playground replacement checks now reuse lease-owned proxy username/password and dynamic-listener mode constants instead of raw label strings.
-- Provider-account concurrency slot acquisition now uses a lease-owned helper directly; the app-level acquire wrapper was removed.
-- Provider-account concurrency slot release now uses a lease-owned helper, centralizing empty-holder and missing-limiter handling.
-- Lease account/provider-account/listener-allocation lock invocation now uses lease-owned helpers; coordinator no longer calls the lock manager methods directly.
-- Lease session route upsert/delete now goes through lease-owned helpers, leaving the runtime dataplane adapter as the only direct Mihomo dataplane bridge.
-- Acquired-lease session route and lease-listener local-service construction now live in `internal/app/lease`, removing app-level listener route helpers.
-- Dynamic lease listener-to-proto projection now lives in `internal/app/lease`, removing the app-level lease listener conversion helper.
-- Mihomo native config load, path/header normalization, and clone helpers are split into focused sourceplane files with no behavior change.
-- Mihomo render config now separates duration/default helpers, proxy/provider name indexes, and unique group merging from the top-level render flow.
-- Mihomo gateway rendering now separates listener assembly from user authentication, IN-USER rule generation, and hidden session group naming.
-- Mihomo-native egress rendering now separates resource/node resolution and availability checks from profile layer render flow.
-- Mihomo process management now separates status, config-directory/safe-path handling, process start/wait/stop, and controller hot-reload HTTP helpers.
-- Mihomo driver reconcile now separates top-level orchestration from config projection/rendering and base apply/restart decisions.
-- Mihomo dataplane driver now separates desired-config application, session-route mutation, and dataplane-to-sourceplane clone/projection helpers.
-- Mihomo render models are split into top-level config/group, render options, native config, provider/health-check, and gateway listener/user model files.
-- Mihomo process log handling now separates ring storage, writer buffering, and sensitive-output redaction helpers.
-- Mihomo egress naming helpers now separate profile group construction, profile display-name mapping, and rule target/node filter sanitization into focused files.
-- Mihomo native config normalization now separates provider path/header normalization and fixed native group cleanup from the top-level normalization flow.
-- Mihomo proxy URL rendering now separates provider-node list rendering, URL-to-node config rendering, and port resolution helpers.
-- Mihomo driver projection now separates reconcile orchestration, render-option assembly, and JSON projection/signature rendering into focused files.
-- Mihomo endpoint handling now separates endpoint normalization, address parsing/dial-address resolution, and listener readiness waiting.
-- Mihomo native egress resolution now separates native node-name stripping, resource lookup, and proxy/provider availability checks.
-- Mihomo dynamic egress rendering now separates exit group rendering, dynamic node filtering, provider-id matching, and cloned proxy naming.
-- Mihomo native provider normalization now separates provider file path normalization from HTTP fetch proxy and User-Agent header normalization.
-- Mihomo top-level config rendering now separates base proxy assembly, profile projection, provider merging, and rule/base-group construction from final config assembly.
-- Mihomo dataplane config helpers now separate sourceplane projection, base config clone, profile clone, session-route clone, and provider-node deep clone.
-- Mihomo controller hot-reload HTTP handling now separates reload input validation, request construction/authorization, and response error parsing.
-- Mihomo native egress rendering now resolves resource/node targets once through a shared target resolver before target or group rendering.
-- Dynamic IP lease policy normalization and in-user profile dynamic-IP policy merge now live in `internal/app/lease`; app-level lease acquire keeps only transport error mapping and settings adaptation.
-- Lease listener ingress-rule lookup and password fallback resolution now live in `internal/app/lease`; runtime listener helpers only adapt runtime constants/settings.
-- Postgres and SQLite dynamic lease persistence now share lease save validation, default status normalization, identifier trimming, and proto JSON marshaling.
-- Postgres and SQLite dynamic lease reads now share proto JSON decode behavior instead of duplicating empty JSON and unmarshal handling.
-- Dynamic lease store queries now share lease fact filtering/sorting helpers, and Postgres list methods reuse the common row scan path instead of repeating scan loops.
-- Postgres blocking and cleanup-pending lease queries now push cleanup-pending label predicates into SQL instead of scanning every failed lease in Go.
-- Postgres blocking and cleanup-pending lease list methods now return SQL-filtered rows directly, removing remaining Go-layer business filtering on those hot paths.
-- Playground active-lease replacement predicate now lives in `internal/app/lease`; runtime acquire only supplies playground account and username constants.
-- Postgres dynamic lease persistence is split into save, list/blocking/cleanup, lookup, and scan helpers so store responsibilities are no longer concentrated in one large file.
-- SQLite dynamic lease persistence is split into save, list/blocking/cleanup, lookup, and scan helpers to mirror the Postgres store boundary.
-- SQLite blocking and cleanup-pending lease list methods now return SQL-filtered rows directly, removing duplicated Go-layer cleanup/active predicates from the adapter.
-- Obsolete dynamic lease Go-layer filter/sort helpers were removed after both stores moved blocking and cleanup predicates into SQL.
-- Lease session-route reconstruction from persisted listener/session proto now lives in `internal/app/lease`, so restore and release cleanup no longer rebuild route transport details in the app coordinator.
-- Reserved listener lease merging, active/route-cleanup predicates, and de-duplication now live in `internal/app/lease`; Runtime only loads active and cleanup-pending facts.
-- Lease runtime Redis lock implementation is split into construction, acquisition, lock state, renewal, token generation, and Lua scripts instead of one mixed infrastructure file.
-- Dynamic lease store list adapters now separate normal list queries, provider-account blocking queries, and worker cleanup/restore/expiry queries for both Postgres and SQLite.
-- Existing active-lease reuse versus replacement decisions now live in `internal/app/lease`; the acquire coordinator only refreshes slots or retires routes based on that decision.
-- Failed acquire lease fact ID generation, fact construction, and persistence now live in `internal/app/lease`; the coordinator only logs failed persistence.
-- Lease release/expired cleanup failure and cleanup retry Mark+Save flows now live in `internal/app/lease`, leaving coordinator wrappers as store adapters.
-- Lease final expired/released Mark+Save flows now live in `internal/app/lease`; coordinator finalization only releases concurrency slots and logs cleanup failures.
-- Lease worker code now separates sweep-loop scheduling, expiry batch processing, single-lease expiry, cleanup batch processing, and single-lease cleanup into focused files.
-- Lease ID presence checks are centralized in `internal/app/lease`, removing duplicate string trimming from expiry and cleanup workers.
-- Expired-active lease cleanup eligibility is centralized in `internal/app/lease`, so expiry workers no longer compose active-status and expiry predicates directly.
-- Active lease fact construction and persistence now live in `internal/app/lease`; route apply orchestration keeps only endpoint/dataplane apply and failure compensation.
-- Provider session create+fetch sequencing now lives in `internal/app/lease`; acquire orchestration only maps create/fetch errors and performs failure compensation.
-- Failed-acquire cleanup-pending session label mutation now lives in `internal/app/lease`; failure compensation no longer constructs temporary lease facts in app code.
-- Dynamic lease Mihomo line dialer helpers now separate profile label/error construction, native fixed/subscription lookup, and Mihomo node naming helpers.
-- Dynamic IP selection policy normalization, attempt parsing, max-attempt resolution, and selection keys now live in `internal/app/lease`; app-level lease acquire retains only retry error classification.
-- Existing active-lease reuse/replace branching is now a single lease-owned decision enum; acquire orchestration only executes refresh or retire side effects.
-- Acquire request session-policy normalization, request label application, profile dynamic-IP policy merge, and selection policy derivation are now one lease-owned preparation helper.
-- Acquire active-lease lookup by requested session or account now lives in `internal/app/lease`; the coordinator passes the store port instead of owning lookup branching.
-- Lease finalization now calls a lease-owned concurrency-slot release helper directly; the app-level release wrapper was removed.
-- Release request lease lookup now lives in `internal/app/lease`, including lease-id/account fallback, release match validation, and not-found classification.
-- Release lock-window state refresh and route-retire eligibility now live in `internal/app/lease`; release orchestration only locks and executes route/provider cleanup side effects.
-- Lease route deletion from persisted lease facts now lives in `internal/app/lease`; release, expiry, and cleanup paths share the same session-route reconstruction and dataplane delete helper.
-- Acquire success active-fact persistence now uses a lease-owned acquired-fact input helper, so route apply no longer assembles account/purpose/session fact fields directly.
-- Acquire-attempt concurrency slot acquisition now uses a lease-owned input helper for holder generation and TTL construction; app code only supplies provider limit policy inputs.
-- Provider config lookup for an acquired dynamic endpoint now goes through a lease-owned gateway binding helper instead of mutating provider gateways in the coordinator.
-- Failed-acquire route/provider cleanup-pending labeling now lives in `internal/app/lease`; the app failure helper only logs provider cleanup failures and persists the failed fact.
-- Provider session create-versus-fetch failure classification now lives in `internal/app/lease`; app-level acquire maps classified outcomes to transport errors and compensation.
-- Dynamic selection provider-account and dynamic-provider identifiers are now read through lease-owned helpers instead of app-level selected-endpoint field traversal.
-- Failed-acquire compensation and failed fact persistence are now owned by a lease `FailedAcquireRecorder`; app wiring only constructs the recorder and passes route/application context.
-- Mihomo reconcile final projection apply and applied-state recording are split from top-level reconcile orchestration, keeping base apply, final apply, and status mutation in focused helpers.
-- Mihomo reconcile provider-directory creation and runtime config path construction are split into path helpers, leaving top-level reconcile focused on stage ordering.
-- Acquired lease session-route construction and session egress binding now live in `internal/app/lease`; route apply only invokes dataplane apply and persistence.
-- Acquired lease endpoint metadata input construction now lives in `internal/app/lease`, including provider name and session id extraction for endpoint labels.
-- Mihomo top-level config render now delegates proxy/provider/profile projection and gateway projection to focused section helpers before assembling final config fields.
-- Acquire route application now receives a single acquired-lease flow object instead of a long provider/session/listener parameter list, preparing the remaining route orchestration for package-level extraction.
-- Acquired endpoint projection now lives in `internal/app/lease`, combining listener proto creation, endpoint metadata application, and failed-acquire recorder endpoint state updates.
-- Runtime settings read usecase now has an explicit `internal/app/settings` application and repository port; app-level settings read is reduced to an adapter call.
-- Dynamic IP provider settings update now runs through the explicit `internal/app/settings` application with a repository adapter and apply scheduler instead of app-local update flow.
-- In-user connection cleanup username diffing now lives in `internal/app/settings`, so settings update flow no longer depends on an app-local diff helper.
-- Settings update-with-connection-cleanup orchestration now lives in `internal/app/settings`; app update handlers provide only validation and concrete repository operations.
-- Runtime, egress-profile, ingress-rule, and in-user settings updates now expose explicit methods on `internal/app/settings`; app update handlers only delegate to the settings usecase.
-- IP fraud and IP geo provider descriptor reads now live in `internal/app/settings`; app-level provider view methods only delegate to the settings usecase.
-- Auth session and websocket-token response DTO/write helpers now live in `internal/app/auth`; HTTP session handlers no longer own auth JSON response shapes.
-- Dashboard bootstrap response writing now lives in `internal/app/dashboard`, and trailing-slash redirects use `internal/app/httpapi`, thinning dashboard handlers.
-- Auth login-page response writing and no-store auth JSON headers now live in `internal/app/auth`, further thinning auth HTTP session handlers.
-- Auth session cookie set/clear behavior now lives on the auth application, so HTTP session handlers no longer compute forwarded-proto cookie security flags.
-- Mihomo-native settings get/update now run through `internal/app/settings`, with app code only adapting error mapping and injected loader/updater/default functions.
-- Mihomo final config base-field assembly is split from top-level render orchestration, leaving renderConfig to compose projected sections and final rules only.
-- Auth login request reading now lives in `internal/app/auth` with the HTTP layer injecting the shared bounded body reader for existing error mapping.
-- Proxy-user referenced egress-profile validation now lives in `internal/app/settings`; app wiring only provides the failed-precondition error factory.
-- Auth login outcome decisions now live in the auth application; HTTP login handler only performs body read, cookie write, redirect, and response emission.
-- Mihomo gateway rendering now returns a structured projection instead of positional listener/group/rule tuples, making render sections less order-coupled.
-- Mihomo egress-profile rendering now returns a structured proxy/provider/group projection instead of positional tuple results, keeping profile render stages less order-coupled.
-- Auth logout redirect sanitization now lives in the auth package, leaving the logout handler to clear the cookie and emit redirect/no-content only.
-- Auth login-page query parsing now lives in the auth package, so the login-page handler only redirects authenticated sessions or writes the page.
-- Mihomo hot-reload now separates candidate config path construction and endpoint readiness waiting from the reload-and-commit orchestration.
-- Mihomo reconcile error recording is centralized so stage orchestration no longer repeats dataplane status mutation at every failure branch.
-- Mihomo base-config apply now has explicit restart/reload/noop decision and apply-result models before final projection apply, separating policy from process/reload effects.
-- Mihomo final projection apply now uses the same explicit reload/noop decision model instead of embedding signature comparison inside reload execution.
-- Mihomo render option construction is split from config projection rendering, with a pure render-options input factory separating driver snapshots from render execution.
-- Mihomo config projection JSON encoding and signature calculation are now isolated from config object rendering, preparing a clearer validation insertion point.
-- Mihomo top-level config render now builds a full section projection before assembling the final config object, separating section projection from config object construction.
-- Mihomo config projection now has an explicit validation stage before JSON encoding, checking required rendered config invariants with secret-free errors.
-- Mihomo render section projection, config assembly, and proxy/gateway section rendering now live in separate focused files instead of one mixed render file.
-- Mihomo proxy-section and gateway-section projection renderers are split into separate files, removing the remaining mixed `render_config_sections` file.
-- Auth authorization and dashboard login-redirect decisions now live in the auth application; Gin handlers only translate decisions into redirects, challenges, or JSON errors.
-- Dashboard reverse proxies now build once as a dashboard-owned proxy bundle during HTTP API construction, and routes reuse the prebuilt handlers.
-- Lease worker entrypoints now emit structured operation, duration, and lease identity logs for restore, expiry, cleanup-pending, and single-lease cleanup paths.
-- Dynamic lease acquire attempt retry loops now live in `internal/app/lease`; the coordinator supplies only the concrete attempt action, retry classifier, and warning observer.
-- Existing-active lease lookup, reuse, and replacement decisions now run through `internal/app/lease`; the coordinator only supplies route/slot side-effect callbacks.
-- Dynamic lease route line binding now lives in `internal/app/lease`, so acquire and restore share dialer-proxy plus node-label preparation.
-- Provider session acquisition now lives in `internal/app/lease`, including provider config gateway binding, session-provider factory use, create/fetch sequencing, and failure-stage classification.
-- Dynamic lease listener username/password resolution now lives in `internal/app/lease`; Runtime only supplies listener constants, ingress rules, and playground identifiers.
-- Acquired lease route apply now runs through `internal/app/lease`, combining dataplane upsert, failure compensation, and active fact persistence behind a stage-aware result.
-- Release lock-window refresh and route-retire invocation now live in `internal/app/lease`; the coordinator supplies only the concrete retire side effect.
-- Lease final released/expired state persistence now uses a lease-owned staged helper that also releases provider-account concurrency slots.
-- Provider session release now runs through `internal/app/lease`, including stateless-session skipping, provider config loading, gateway binding, factory use, and provider release invocation.
-- Provider session release locking is now centralized in `internal/app/lease` and reused by normal release, expiry cleanup, and cleanup-pending retry paths.
-- Restored lease provider-session node fetch now runs through `internal/app/lease`, sharing gateway binding and session-provider factory use with the release/acquire paths.
-- Cleanup-pending progress persistence now runs through `internal/app/lease`, including cleanup-final status handling and final concurrency-slot release.
-- Lease route cleanup now uses a lease-owned helper with failure recording callbacks across normal release, expiry cleanup, and cleanup-pending retry paths.
-- Acquire-attempt provider-account locking and temporary concurrency-slot release/keep behavior now live in `internal/app/lease`; the coordinator supplies only the concrete locked attempt action.
-- Restore route dataplane upsert and temporary concurrency-slot keep/release lifecycle now run through `internal/app/lease`; restore orchestration supplies only provider-node fetch and line-binding resolvers.
-- Session-listener allocation locking now runs through `internal/app/lease`; acquire orchestration only supplies the acquired-route application action.
-- Acquire account-level lock invocation now runs through `internal/app/lease`; the coordinator supplies only the locked acquire action.
-- Cleanup-pending and expiry account-level lock invocations now run through `internal/app/lease`; the coordinator supplies only cleanup actions.
-- Restore, expiry, and cleanup-pending batch loops now use a lease-owned batch processor for per-lease timeout, cancellation checks, error aggregation, and error observation callbacks.
-- Cleanup-pending and expiry current-fact reload plus not-found handling now live in `internal/app/lease`; the coordinator supplies only the current-fact cleanup action.
-- Acquire-attempt provider-account lookup and concurrency-slot acquisition now live in `internal/app/lease`; the coordinator maps only stage-specific errors.
-- Acquire-attempt concurrency-limit and acquired-route apply/fact-save failures now return lease-owned sentinel errors; the coordinator maps transport errors via error classification instead of inspecting lease stage enums.
-- Provider-session factory/create/fetch failures now return lease-owned sentinel errors; the coordinator handles fetch cleanup and transport mapping through error classification instead of switching provider-session error kind.
-- Lease acquire-attempt slot, acquired-route apply, and provider-session acquire APIs no longer return internal stage/error-kind values to the coordinator; callers now consume results plus classified errors only.
-- Final lease save and cleanup-progress APIs no longer return internal save stage values; provider-account concurrency release failures use a lease-owned sentinel error that the coordinator logs and swallows as before.
-- Final lease expired/released persistence now exposes explicit lease-owned APIs instead of requiring the coordinator to pass an internal final-state enum.
-- Settings dynamic-IP provider updates now use the shared settings update-and-schedule flow, and connection-cleanup update helpers are internal to the settings application instead of exported orchestration surface.
-- Mihomo-native settings update now exposes a settings-owned unavailable classification while keeping the concrete missing-updater dependency error internal to the settings package.
-- Runtime settings adapter now constructs the settings usecase once during application wiring instead of rebuilding usecase dependencies on every settings request.
-- Lease worker restorable-active, expired-active, and cleanup-pending list-plus-batch orchestration now lives in `internal/app/lease`; the coordinator supplies only concrete cleanup actions and logging observers.
-- Lease release top-level lookup-plus-retire orchestration now lives in `internal/app/lease`; the coordinator only maps request/lookup errors and injects store, locks, and route-retire side effects.
-- Lease acquire request preparation and account-lock entry orchestration now lives in `internal/app/lease`; the coordinator only maps request validation errors and provides the locked acquire action.
-- Lease account-locked acquire orchestration now lives in `internal/app/lease`, including policy merge, existing-active reuse/replace, and attempt retry sequencing; the coordinator only loads settings, maps policy errors, and runs concrete attempts.
-- Lease selected-attempt preparation now lives in `internal/app/lease`, including provider-account selection extraction, lease ID allocation, and provider-account concurrency-slot acquisition; the coordinator only selects the endpoint and runs the locked provider-account action.
-- Lease selected-attempt provider-account locking and temporary concurrency-slot keep/release lifecycle now run through `internal/app/lease`; the coordinator only supplies the locked provider-account action.
-- Lease provider-account acquire orchestration now lives in `internal/app/lease`, including provider-session create/fetch cleanup recording, line binding, and listener-allocation locking; the coordinator only adapts line resolution, route apply, and transport error mapping.
-- Acquired endpoint route construction plus dataplane/fact apply now lives in `internal/app/lease`; the coordinator only resolves endpoint material and runs local success side effects.
-- Acquired endpoint materialization now lives in `internal/app/lease`, including listener resolution, local egress endpoint resolution, metadata injection, and failed-acquire endpoint recording; the coordinator only supplies listener and endpoint resolver adapters.
-- Acquired route flow now combines endpoint materialization with dataplane/fact apply inside `internal/app/lease`, deleting the app-level acquired-endpoint wrapper; the coordinator only injects endpoint resolvers and post-success local side effects.
-- Acquired route post-apply success observer is now invoked by the lease flow, so the coordinator injects cache cleanup and playground connection cleanup as side-effect callbacks instead of sequencing them after lease persistence itself.
-- Release retire route cleanup, provider-session release, cleanup-failure persistence, and released final-state save now run through `internal/app/lease`; the coordinator injects local cleanup, gateway resolution, and warning observers only.
-- Cleanup-pending current-fact workflow now lives in `internal/app/lease`, including route cleanup retry persistence, provider-session cleanup retry persistence, cleanup flag clearing, and final-state progress save; the coordinator only injects gateway resolution and warning observers.
-- Expired-active current-fact workflow now lives in `internal/app/lease`, including expiry predicate check, route cleanup failure persistence, provider-session cleanup failure persistence, and expired final-state save; the coordinator only injects gateway resolution and warning observers.
-- Stale app-level lease route cleanup and final-save wrappers were removed after release, expiry, and cleanup-pending flows moved into `internal/app/lease`.
-- Restore single-lease flow now lives in `internal/app/lease`, including temporary concurrency-slot lifecycle, provider-session fetch, and dataplane route restore; the coordinator only loads runtime settings and injects gateway/line-binding resolvers.
-- Final provider-account concurrency release warnings are centralized on the lease coordinator and shared by release, expiry, and cleanup-pending flows instead of repeating app-level observer closures.
-- Restore provider config and provider-account identity loading now happens inside the lease restore flow; the coordinator only loads runtime settings and supplies concrete gateway/line-binding resolvers.
-- Provider-session release now reuses the lease-owned provider-config loader instead of directly reading store details in the release flow.
-- Provider-session release locking and failure recording are now owned by the release, expiry, and cleanup-pending lease flows; the app-level provider-session release wrapper was removed.
-- Existing-lease concurrency slot refresh now uses a lease-owned helper for provider-account lookup, holder validation, TTL calculation, and slot acquisition; the coordinator only supplies the runtime settings-derived limit.
-- Restore lease session/listener materialization checks now live in the lease restore flow instead of the app-level coordinator.
-- Lease gateway and line-binding resolver construction is centralized on the coordinator adapter, so acquire and restore no longer duplicate resolver closures.
-- Lease route retirement dependencies are now composed through a lease-owned `LeaseRouteRetirer`; normal release and existing-lease replacement reuse it, and the app-level route-retire wrapper was removed.
-- Restore route dependencies are now composed through a lease-owned `LeaseRouteRestorer`; the coordinator only loads settings and supplies adapter functions for limits, gateways, and line binding.
-- Acquired route apply dependencies are now composed through a lease-owned `AcquiredRouteApplier`; the app-level acquired-route flow struct and apply wrapper were removed.
-- Provider-account acquire dependencies are now composed through a lease-owned `ProviderAccountAcquireRunner`; selected acquire attempts call the runner directly and the app-level provider-account acquire wrapper was removed.
-- Runtime settings repository adapter now centralizes repository availability checks instead of repeating nil checks across every settings operation.
-- Selected acquire attempt dependencies are now composed through a lease-owned `SelectedAcquireAttemptRunner`; the coordinator only selects a dynamic endpoint and maps app-specific errors.
-- Account-locked acquire dependencies are now composed through a lease-owned `AccountLockedAcquireRunner`; the coordinator loads settings and injects adapter callbacks instead of assembling the full acquire input inline.
-- Prepared acquire request validation and account-lock entry now run through a lease-owned `PreparedAcquireRunner`; the app-level account-lock wrapper was removed.
-- Lease coordinator adapter factory methods were split from generic helpers into a focused adapter file after acquire/release/restore runner extraction.
-- Dynamic IP selection result is now a lease-owned model, so acquire attempt runners consume a lease boundary type instead of an app-private selection struct.
-- Dynamic acquire attempt selection, selected-attempt execution, and app-specific error mapping are now grouped inside the lease coordinator adapter factory; the app-level acquire-attempt wrapper file was removed.
-- Lease worker batch entrypoints now use a lease-owned `WorkerProcessor`, so restore/expiry/cleanup batch listing, per-lease timeout, and observers are no longer exposed as coordinator operations.
-- Expiry and cleanup-pending single-lease worker actions now use lease-owned runner structs, removing the app-level expire/cleanup fact wrappers.
-- Acquire/release coordinator operations now call lease-owned prepared/release runners directly, removing the top-level app wrapper files.
-- Restore single-lease worker action now uses a lease-owned restore runner; the runtime restore file only owns startup background lifecycle.
-- Lease settings-backed gateway and line-binding resolution now uses a lease-owned generic settings adapter, removing the coordinator-specific resolver wrappers.
-- Dynamic endpoint selection plus selected-attempt execution now runs through a lease-owned dynamic acquire attempt runner; the coordinator only injects selector, runner factory, and app error mapping.
-- Existing-lease concurrency-slot refresh now uses a lease-owned refresh runner, leaving the coordinator to provide only settings-derived limit calculation.
-- Route-change cache invalidation and playground connection cleanup are grouped behind a route side-effect adapter instead of repeated coordinator callbacks.
-- Provider-account acquired-route apply input mapping now lives in a lease-owned applier adapter instead of an inline coordinator closure.
-- Selected-attempt to provider-account acquire execution now uses a lease-owned action adapter, leaving the coordinator to provide only the provider runner factory and error mapping.
-- Prepared acquire now uses a lease-owned settings-backed action for settings load, egress-profile extraction, account-locked runner creation, and policy error mapping.
-- Acquired endpoint listener and egress resolution are grouped behind a dedicated app adapter instead of inline coordinator closures.
-- Lease coordinator route and acquire adapter factories are split into focused files instead of one mixed adapter factory file.
-- Mihomo hot-reload HTTP failure errors now report only status code and do not echo upstream response bodies, reducing secret/session leakage risk.
-- Dashboard controller error-body sanitization now also redacts bearer tokens and token/secret/password/session fields, not only full URLs.
-- Redis URL parse failures now return a sanitized configuration error instead of wrapping parser errors that may include credentials.
-- Runtime settings apply scheduling is now behind an explicit adapter that owns derived-cache clearing, reconcile request dispatch, and bounded in-user connection cleanup.
-- Mihomo-native settings apply scheduling now uses an explicit adapter for exit-check cache invalidation and reconcile dispatch instead of inline Runtime closures.
-- Settings provider descriptor views now use a dedicated adapter instead of inline runtime dependency closures.
-- Mihomo-native settings load/update are now behind a dedicated settings adapter instead of inline runtime dependency closures.
-- RuntimeService now holds the settings application directly; the old runtimeSettingsApplication forwarding wrapper files were removed.
-- Auth authorization response emission now lives in the auth package, keeping Gin middleware as a thin decision caller.
-- Auth logout response emission now lives in the auth application, including cookie clearing, safe redirect, and no-content handling.
-- Auth session and websocket-token response emission now lives in the auth application instead of runtime HTTP handlers.
-- Auth login decision response emission now lives in the auth application, including session cookie creation, safe redirect, and JSON session response.
-- Auth login-page response emission now lives in the auth application, including authenticated redirect and page rendering.
-- Proxy-runtime frontend requests now use typed error categories for timeout, cancellation, unauthorized, backend-unreachable, validation, provider, and internal failures.
-- Dynamic lease and Playground lease refreshes now abort stale requests, use bounded short refresh timeouts, suppress cancellation noise, and preserve locally returned lease state when post-acquire refresh fails.
-- The Playground lease refresh button now invokes an explicit refresh action and disables while the active lease refresh is in flight.
-- Lease `history` listing now has a dedicated inactive-or-expired repository query for PostgreSQL and SQLite, plus a `(status, expires_at)` index for active/history predicates.
-- Protected dashboard login redirect response emission now lives in the auth application instead of the Gin session handler.
-- Provider-account delete now processes blocking leases in bounded repository batches instead of loading every blocking lease fact in one background loop iteration.
-- Lease HTTP handlers now use a centralized lease error writer for required ID, not-found, application errors, and upstream fallback mapping.
-- Provider-account HTTP dispatch now delegates list/upsert/delete into focused handlers instead of mixing all transport branches in one switch body.
-- Runtime startup now queues the first reconcile in the background before serving HTTP instead of blocking HTTP startup on the initial provider/dataplane refresh; ready/status report pending or running reconcile as applying.
-- Lease expiry and cleanup-pending worker sweeps now run immediately on startup and each operation uses a bounded timeout with duration logging.
-- Mihomo hot reload now reloads the last accepted canonical config when a candidate reload passes but endpoint verification or canonical persistence fails.
-- Runtime status now includes lease worker running/failed state in the existing status label without expanding the public proto contract.
-- Shared runtime HTTP proxy parsing now returns a sanitized invalid proxy error instead of wrapping parser errors that can echo raw proxy URLs.
-- MetaCubeXD proxy-runtime composables now use the shared proxy-runtime error message normalizer instead of duplicating raw Error/String handling across settings, provider, plugin, status, and playground checks.
-- Runtime status polling now aborts stale in-flight requests, suppresses cancellation noise, and keeps the existing bounded status timeout.
-- Settings and Mihomo-native apply scheduling now mark explicit settings-apply pending/running/failed state in runtime status labels without expanding the public proto contract.
-- Mihomo reconcile now wraps normalize, directory preparation, render, restart, and apply failures with explicit projection stage labels so status/logs identify the failed pipeline stage.
-- Dynamic IP endpoint selection for lease acquire now uses an explicit app adapter instead of an inline coordinator closure.
-- Dynamic IP provider UI loads now abort stale provider/settings/account requests and suppress cancellation noise before applying results.
-- In-user rules UI loads now abort stale settings and Mihomo owner requests, and Mihomo controller helpers accept shared request cancellation options.
-- Mihomo-native settings UI loads now abort stale config requests and suppress cancellation noise before applying fixed proxy/subscription state.
-- Plugin settings UI loads now abort stale settings/fraud-provider/geo-provider requests and suppress cancellation noise before applying form state.
-- Playground check requests now abort stale snapshot, exit-IP, geo, and fraud checks, and skip snapshot refresh while an active check is running.
-- Provider-account background delete logs now include operation duration for success and failure paths.
-- Settings HTTP handlers now share load/update dispatch and settings-specific error mapping, and provider descriptor handlers were moved out of proxy check handlers.
-- Mihomo reconcile base/final render preparation now lives in focused stage helpers, leaving the locked reconcile flow as projection stage orchestration.
-- Mihomo config projection now has explicit project, validate, and encode stage helpers instead of hiding the whole render pipeline in one function body.
-- Mihomo projection apply now uses explicit apply inputs, with restart execution and projection state recording split out of the apply decision file.
-- SQLite is confirmed as a supported standalone product runtime path; follow-up store cleanup must consolidate duplicated business predicates instead of removing the adapter.
-- Mihomo render section projection now separates proxy/gateway projection parts from section assembly and group merging.
-- SQLite and PostgreSQL dynamic-lease queries now use named dialect predicates for active, expired, and cleanup-pending lease semantics instead of repeating raw business predicates in every query.
-- Lease selected-attempt provider-account runner construction now lives in a focused acquire-runner factory adapter instead of a coordinator method and inline closure.
-
-Still open:
-
-- Fully extract lease application into `internal/app/lease`; remaining work is to move the remaining app-specific runner factories and side-effect adapters out of the current app-level coordinator. Provider-session acquisition/release/fetch, listener auth resolution, data-plane route apply/delete helpers, listener endpoint projection, lock-window refresh, batch loops, current-fact reload, and concurrency-slot acquire/release semantics now cross lease-owned models/ports, but the coordinator still sequences several workflows.
-- Continue splitting Mihomo sourceplane projection, validation, render, and apply stages so no single file owns the whole config pipeline.
-- Move settings orchestration into an explicit settings application package.
-- Separate `httpapi`, `auth`, and `dashboard` packages and keep handlers as thin transport adapters.
-- Finish provider adapter capability boundaries and secret-handling audit.
-- Expand metrics and structured operation logging for slow paths.
-- Keep SQLite as the supported standalone deployment adapter while removing duplicated business predicates from SQLite and PostgreSQL store implementations.
+- **Lease application extraction**: continue moving app-specific runner factories, side-effect adapters, provider-session acquisition/release/fetch wiring, listener auth resolution, dataplane route apply/delete helpers, listener endpoint projection, lock-window refresh, worker batch loops, current-fact reload, and concurrency-slot acquire/release semantics out of the coordinator and into `internal/app/lease` ports/usecases where appropriate.
+- **Mihomo projection split**: continue separating sourceplane projection, validation, render, restart, apply, rollback, and state-recording stages so no single file owns the whole config pipeline.
+- **Settings application extraction**: separate pure load/normalize/validate from persist/apply, keep GET side-effect free, and model apply state as desired/applied version plus status/error without introducing a second config source.
+- **HTTP/Auth/Dashboard separation**: move routing, middleware, proto JSON, and error mapping into `internal/app/httpapi`; keep auth and dashboard proxy behavior behind focused packages with thin Gin handlers.
+- **Provider boundary and secret hygiene**: keep provider-specific branches inside adapters/capability registry, decrypt secrets only at adapter boundaries, and continue auditing logs/errors/metrics/traces for reusable credentials, Mihomo secret, proxy passwords, full proxy URLs, and session material.
+- **Observability**: add missing slow-path metrics and structured operation logs for lease list/acquire/release, workers, provider requests, dataplane apply, and settings apply.
+- **Store cleanup**: keep SQLite as the supported standalone deployment adapter, and continue consolidating duplicated SQLite/PostgreSQL business predicates behind shared repository semantics.
 
 ### Next Implementation Batches
 
-1. **Finish Mihomo projection split, no behavior change**
-   - Move sourceplane projection helpers, native update orchestration, validation, and render/apply boundaries into focused files/packages.
+1. **Lease coordinator adapter cleanup**
+   - Continue removing inline runner factories and coordinator-owned side-effect sequencing.
+   - Prefer focused app adapters plus lease-owned usecase/port types.
+   - Validate with `gofmt`, focused stale-reference grep, and `rtk git diff --check`.
+
+2. **Mihomo projection/render/apply split**
+   - Move remaining projection helpers, native update orchestration, validation, render, restart/apply, and state-recording boundaries into focused files/packages.
    - Keep generated config output semantically identical.
-   - Validate with focused diffs, `gofmt`, stale-reference search, and remote build/deploy validation only when artifacts are required.
 
-2. **Lease application extraction**
-   - Introduce `internal/app/lease` ports and usecase methods.
-   - Move acquire/release/list/restore/cleanup orchestration out of `Runtime`.
-   - Keep active/blocking/restorable predicates in one semantic layer.
+3. **Settings application cleanup**
+   - Keep read paths pure.
+   - Move update/apply orchestration into the settings application boundary.
+   - Make apply/reconcile status observable without creating a second config model.
 
-3. **Settings application extraction**
-   - Separate pure load/normalize/validate from persist/apply.
-   - Keep GET side-effect free.
-   - Model apply state as desired/applied version plus status/error, without adding a second config source.
+4. **HTTP/Auth/Dashboard cleanup**
+   - Keep handlers as transport adapters only.
+   - Centralize error mapping, proto JSON, auth responses, reverse-proxy bootstrap, Mihomo secret injection, and sanitization.
 
-4. **HTTP/auth/dashboard cleanup**
-   - Move routing, middleware, proto JSON, and error mapping into `internal/app/httpapi`.
-   - Move login/session/cookie/ws-token logic into `internal/app/auth`.
-   - Move dashboard reverse proxy bootstrapping, Mihomo secret injection, and URL/session sanitization into `internal/app/dashboard`.
+5. **Provider and secret audit**
+   - Push provider-specific branching into adapter/capability boundaries.
+   - Audit all public errors, logs, and metrics for sensitive proxy/session material.
 
-5. **Provider boundary and secret hygiene**
-   - Keep provider-specific branches inside adapters/capability registry.
-   - Decrypt secrets only at adapter boundary.
-   - Audit logs, metrics, traces, and client errors for provider credentials, Mihomo secret, proxy passwords, full proxy URLs, and session material.
+6. **Observability and store semantics**
+   - Add missing metrics/log fields for slow paths.
+   - Continue aligning PostgreSQL and SQLite repository semantics while keeping both runtime paths supported.
 
-6. **Observability and store decision**
-	- Add missing slow-path metrics for lease list/acquire/release, workers, provider requests, dataplane apply, and settings apply.
-	- Keep SQLite for standalone deployments and consolidate duplicated SQLite/PostgreSQL business predicates behind shared repository semantics.
-
-### Recommended Commit Sequence
-
-```text
-1. optimize lease list query contract and pagination
-2. decouple playground acquire from lease history refresh
-3. add frontend timeout, cancellation, and error normalization
-4. start HTTP before background lease restore
-5. move lease restore and cleanup into bounded worker
-6. extract lease application from Runtime
-7. remove settings load side effects
-8. make settings apply and reconcile operation-based
-9. split Mihomo projection, validation, and rendering
-10. isolate provider account delete as a background operation
-11. separate httpapi, auth, and dashboard proxy packages
-12. consolidate or remove duplicated SQLite store behavior
-13. add runtime status, metrics, and structured slow-path logs
-```
-
-### First Implementation Batch
-
-The first batch should be small and user-visible:
-
-1. Replace default full lease history loading with bounded active/recent queries.
-2. Remove pre-acquire `leases.load()` from Playground save flow.
-3. Add frontend timeout/cancellation in the proxy-runtime API client.
-4. Make active lease checks include `expires_at > now`.
-
-Expected impact:
-
-- Playground acquire no longer waits behind history scans.
-- Refresh button has visible bounded behavior.
-- Login/dashboard no longer appears unavailable because of full lease list latency.
+Completed implementation history is intentionally omitted from this plan. Use `git log --oneline` for completed batch history.

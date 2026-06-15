@@ -1,9 +1,13 @@
 package app
 
 import (
+	"time"
+
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
+
+const leaseAcquireSlotReleaseTimeout = 5 * time.Second
 
 type leaseSelectedAcquireAttemptRunnerFactory struct {
 	deps           leaseCoordinatorDependencies

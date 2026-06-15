@@ -1,7 +1,6 @@
 package app
 
 import (
-	"context"
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -10,49 +9,21 @@ import (
 
 const leaseAcquireSlotReleaseTimeout = 5 * time.Second
 
-func (c leaseCoordinator) accountLockedAcquireRunner(ctx context.Context, settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.AccountLockedAcquireRunner {
-	retirer := c.leaseRouteRetirer()
-	refresher := c.concurrencySlotRefreshRunner()
-	selector := leaseDynamicIPSelectionAdapter{selector: c.deps.dynamicIPSelector}
-	selectedRunnerFactory := leaseSelectedAcquireAttemptRunnerFactory{
+func (c leaseCoordinator) preparedAcquireRunner(advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.PreparedAcquireRunner {
+	accountLockedFactory := leaseAccountLockedAcquireRunnerFactory{
 		deps:           c.deps,
-		settings:       settings,
 		advertisedHost: advertisedHost,
 		request:        req,
+		retire:         c.leaseRouteRetirer(),
+		reuse:          c.concurrencySlotRefreshRunner(),
 	}
-	attemptRunner := leaseapp.DynamicAcquireAttemptRunner{
-		Select:            selector.Select,
-		NewSelectedRunner: selectedRunnerFactory.New,
-		MapSelectionError: mapDynamicIPSelectionError,
-		MapAttemptError:   acquireAttemptSlotError,
-	}
-	return leaseapp.AccountLockedAcquireRunner{
-		Store:               c.deps.store,
-		Clock:               c.deps.clock,
-		PlaygroundAccountID: playgroundProfileID,
-		PlaygroundUsername:  playgroundUsername,
-		Reuse:               refresher.Refresh,
-		Replace:             retirer.Retire,
-		RunAttempt: func(int) (*proxyruntimev1.ProxyDynamicLease, error) {
-			return attemptRunner.Run(ctx, req, req.GetPolicy())
-		},
-		Retry: retryLeaseAcquireAttempt,
-		Observe: func(attempt int, err error) {
-			c.warn("dynamic IP lease attempt failed", leaseapp.LabelAccountID, req.GetAccountId(), leaseapp.LabelPurpose, req.GetPurpose(), "attempt", attempt, "error_type", errorLogType(err))
-		},
-	}
-}
-
-func (c leaseCoordinator) preparedAcquireRunner(advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.PreparedAcquireRunner {
 	action := leaseapp.SettingsPreparedAcquireAction[*runtimeSettingsFile]{
 		Load:    c.deps.settings.load,
 		Request: req,
 		EgressProfiles: func(settings *runtimeSettingsFile) []*proxyruntimev1.EgressProfileSettings {
 			return settings.GetEgressProfiles()
 		},
-		NewRunner: func(ctx context.Context, settings *runtimeSettingsFile) leaseapp.AccountLockedAcquireRunner {
-			return c.accountLockedAcquireRunner(ctx, settings, advertisedHost, req)
-		},
+		NewRunner:      accountLockedFactory.New,
 		MapPolicyError: leaseProfilePolicyError,
 	}
 	return leaseapp.PreparedAcquireRunner{

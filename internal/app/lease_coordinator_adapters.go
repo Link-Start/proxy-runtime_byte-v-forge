@@ -87,6 +87,14 @@ func (c leaseCoordinator) acquiredRouteApplier(settings *runtimeSettingsFile, ad
 
 func (c leaseCoordinator) providerAccountAcquireRunner(settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, leaseID string, concurrencyHolder string) leaseapp.ProviderAccountAcquireRunner {
 	applier := c.acquiredRouteApplier(settings, advertisedHost, req)
+	apply := leaseapp.ProviderAccountAcquiredRouteApplier{
+		Applier:           applier,
+		LeaseID:           leaseID,
+		Request:           req,
+		SelectionPlan:     selectionPlan,
+		ConcurrencyHolder: concurrencyHolder,
+		MapError:          acquiredRouteApplyError,
+	}
 	settingsAdapter := c.settingsAdapter()
 	return leaseapp.ProviderAccountAcquireRunner{
 		Store:              c.deps.store,
@@ -97,25 +105,7 @@ func (c leaseCoordinator) providerAccountAcquireRunner(settings *runtimeSettings
 		Factory:            c.deps.sessionProviders,
 		Locks:              c.deps.locks,
 		ResolveLineBinding: settingsAdapter.RouteLineBindingResolver(settings),
-		Apply: func(ctx context.Context, acquired leaseapp.ProviderAccountAcquireApplyInput) (*proxyruntimev1.ProxyDynamicLease, error) {
-			lease, err := applier.Apply(ctx, leaseapp.AcquiredRouteApplierInput{
-				Failure:           acquired.Failure,
-				LeaseID:           leaseID,
-				Request:           req,
-				ProviderClient:    acquired.ProviderClient,
-				ProviderAccountID: acquired.ProviderAccountID,
-				ConcurrencyHolder: concurrencyHolder,
-				Session:           acquired.Session,
-				Nodes:             acquired.Nodes,
-				DialerProxy:       acquired.DialerProxy,
-				LineLabels:        acquired.LineLabels,
-				SelectionPlan:     selectionPlan,
-			})
-			if err != nil {
-				return nil, acquiredRouteApplyError(err)
-			}
-			return lease, nil
-		},
+		Apply:              apply.Apply,
 	}
 }
 

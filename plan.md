@@ -995,6 +995,7 @@ Completed user-visible/runtime batches:
 - Dynamic endpoint selection plus selected-attempt execution now runs through a lease-owned dynamic acquire attempt runner; the coordinator only injects selector, runner factory, and app error mapping.
 - Existing-lease concurrency-slot refresh now uses a lease-owned refresh runner, leaving the coordinator to provide only settings-derived limit calculation.
 - Route-change cache invalidation and playground connection cleanup are grouped behind a route side-effect adapter instead of repeated coordinator callbacks.
+- Provider-account acquired-route apply input mapping now lives in a lease-owned applier adapter instead of an inline coordinator closure.
 
 Still open:
 

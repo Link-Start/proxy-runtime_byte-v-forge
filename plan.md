@@ -1005,6 +1005,7 @@ Completed user-visible/runtime batches:
 - Redis URL parse failures now return a sanitized configuration error instead of wrapping parser errors that may include credentials.
 - Runtime settings apply scheduling is now behind an explicit adapter that owns derived-cache clearing, reconcile request dispatch, and bounded in-user connection cleanup.
 - Mihomo-native settings apply scheduling now uses an explicit adapter for exit-check cache invalidation and reconcile dispatch instead of inline Runtime closures.
+- Settings provider descriptor views now use a dedicated adapter instead of inline runtime dependency closures.
 
 Still open:
 

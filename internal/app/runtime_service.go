@@ -85,22 +85,13 @@ func runtimeSettingsDependencies(runtime *Runtime) runtimeSettingsApplicationDep
 	}
 	settingsApply := newRuntimeSettingsApplyScheduler(runtime)
 	mihomoNativeApply := newRuntimeMihomoNativeApplyScheduler(runtime)
+	providerViews := newRuntimeSettingsProviderViewAdapter(runtime)
 	return runtimeSettingsApplicationDependencies{
-		Logger:     runtime.logger,
-		Settings:   runtime.settings,
-		ProxyUsers: runtime.cfg.ProxyUsers,
-		IPFraudProviderViews: func() []*proxyruntimev1.ProxyIPFraudProviderDescriptor {
-			if runtime.ipFraudProviders == nil {
-				return nil
-			}
-			return runtime.ipFraudProviders.ProviderDescriptors()
-		},
-		IPGeoProviderViews: func() []*proxyruntimev1.ProxyIPGeoProviderDescriptor {
-			if runtime.ipGeoProviders == nil {
-				return nil
-			}
-			return runtime.ipGeoProviders.ProviderDescriptors()
-		},
+		Logger:               runtime.logger,
+		Settings:             runtime.settings,
+		ProxyUsers:           runtime.cfg.ProxyUsers,
+		IPFraudProviderViews: providerViews.IPFraudProviderViews,
+		IPGeoProviderViews:   providerViews.IPGeoProviderViews,
 		LoadMihomoNativeSettings: func(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
 			if runtime.settings == nil {
 				return normalizeMihomoNativeSettings(nil), nil

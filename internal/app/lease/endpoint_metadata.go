@@ -62,7 +62,7 @@ func ApplyDynamicEndpointMetadata(endpoint *proxyruntimev1.ProxyEndpoint, input 
 	}
 }
 
-func applyDynamicEndpointLocationLabels(labels map[string]string, requestPolicy *proxyruntimev1.ProxySessionPolicy, selectedPolicy *proxyruntimev1.ProxySessionPolicy) {
+func applyDynamicEndpointLocationLabels(labels map[string]string, requestPolicy *proxyruntimev1.ProxySessionPolicy, selectedPolicy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) {
 	if countryCode := strings.TrimSpace(selectedPolicy.GetCountryCode()); countryCode != "" {
 		labels["country_code"] = countryCode
 	}
@@ -80,7 +80,7 @@ func applyDynamicEndpointLocationLabels(labels map[string]string, requestPolicy 
 	}
 }
 
-func dynamicEndpointRegion(requestPolicy *proxyruntimev1.ProxySessionPolicy, selectedPolicy *proxyruntimev1.ProxySessionPolicy) string {
+func dynamicEndpointRegion(requestPolicy *proxyruntimev1.ProxySessionPolicy, selectedPolicy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) string {
 	if region := strings.TrimSpace(requestPolicy.GetRegion()); region != "" {
 		return region
 	}

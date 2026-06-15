@@ -15,7 +15,10 @@ func (d *Driver) reloadConfigDataLocked(ctx context.Context, canonicalPath strin
 		return err
 	}
 	if err := waitForReloadEndpoint(ctx, endpoint); err != nil {
-		return err
+		return d.rollbackConfigReloadLocked(ctx, canonicalPath, endpoint, err)
 	}
-	return writeConfigData(canonicalPath, data)
+	if err := writeConfigData(canonicalPath, data); err != nil {
+		return d.rollbackConfigReloadLocked(ctx, canonicalPath, endpoint, err)
+	}
+	return nil
 }

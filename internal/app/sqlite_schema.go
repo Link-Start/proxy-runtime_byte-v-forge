@@ -38,6 +38,8 @@ CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_provider_status
   ON proxy_runtime_dynamic_leases(provider_account_id, status);
 CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_provider_status_expires
   ON proxy_runtime_dynamic_leases(provider_account_id, status, expires_at);
+CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_status_expires
+  ON proxy_runtime_dynamic_leases(status, expires_at);
 CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_expires_at
   ON proxy_runtime_dynamic_leases(expires_at);
 CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_acquired_updated

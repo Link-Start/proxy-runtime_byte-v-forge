@@ -42,8 +42,10 @@ func (a *Application) list(ctx context.Context, options ListOptions) ([]*proxyru
 	switch options.Mode {
 	case ListModeActive:
 		return a.repository.ListActiveLeaseFacts(ctx, options.Limit)
-	case ListModeRecent, ListModeHistory:
+	case ListModeRecent:
 		return a.repository.ListRecentLeaseFacts(ctx, options.Limit)
+	case ListModeHistory:
+		return a.repository.ListHistoryLeaseFacts(ctx, options.Limit)
 	default:
 		return nil, fmt.Errorf("unsupported lease list status %q", options.Mode)
 	}

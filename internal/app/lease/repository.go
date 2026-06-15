@@ -9,6 +9,7 @@ import (
 type Repository interface {
 	ListActiveLeaseFacts(context.Context, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 	ListRecentLeaseFacts(context.Context, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
+	ListHistoryLeaseFacts(context.Context, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 	LeaseFactByID(context.Context, string) (*proxyruntimev1.ProxyDynamicLease, error)
 }
 

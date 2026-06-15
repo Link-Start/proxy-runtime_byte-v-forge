@@ -38,6 +38,22 @@ LIMIT $1
 	return scanLeaseFacts(rows)
 }
 
+func (s *PostgresStore) ListHistoryLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+	rows, err := s.pool.Query(ctx, `
+SELECT lease_json::text
+FROM proxy_runtime_dynamic_leases
+WHERE status<>$1
+	OR (expires_at IS NOT NULL AND expires_at<=now())
+ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
+LIMIT $2
+`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), leaseapp.NormalizeListLimit(limit))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanLeaseFacts(rows)
+}
+
 func (s *PostgresStore) RecentLeaseFacts(ctx context.Context, since time.Time, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	if limit <= 0 {
 		limit = 100

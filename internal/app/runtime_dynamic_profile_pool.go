@@ -61,7 +61,7 @@ func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http
 		accountID := strings.TrimSpace(account.GetAccountId())
 		cfg, storedAccountID, err := r.store.ProviderConfig(ctx, accountID)
 		if err != nil {
-			r.logger.Warn("dynamic profile provider account skipped", "account_id", accountID, "provider_id", account.GetProviderId(), "error", err)
+			r.logger.Warn("dynamic profile provider account skipped", "account_id", accountID, "provider_id", account.GetProviderId(), "error_type", errorLogType(err))
 			continue
 		}
 		accountID = firstNonEmpty(storedAccountID, accountID)

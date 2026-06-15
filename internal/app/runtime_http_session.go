@@ -40,7 +40,7 @@ func (api *runtimeHTTPAPI) handleAuthLogout(ctx *gin.Context) {
 
 func (api *runtimeHTTPAPI) handleAuthLoginPage(ctx *gin.Context) {
 	if err := api.auth.WriteLoginPageResponse(ctx.Writer, ctx.Request, api.sessionAuthenticated(ctx.Request)); err != nil {
-		api.logger.Warn("render login page failed", "error", err)
+		api.logger.Warn("render login page failed", "error_type", errorLogType(err))
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 	}
 }

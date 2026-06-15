@@ -11,7 +11,7 @@ import (
 
 func (r *Runtime) closeMihomoInUserConnections(ctx context.Context, usernames []string) {
 	if err := r.closeMihomoConnections(ctx, mihomoConnectionSelector{inboundUsers: usernames}); err != nil {
-		r.logger.Warn("mihomo in-user connection cleanup failed", "error", err)
+		r.logger.Warn("mihomo in-user connection cleanup failed", "error_type", errorLogType(err))
 	}
 }
 

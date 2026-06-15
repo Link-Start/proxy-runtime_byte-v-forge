@@ -40,12 +40,12 @@ func (a Application) updateAndSchedule(ctx context.Context, operation updateOper
 
 func (a Application) changedInUserConnectionUsernamesAfterUpdate(ctx context.Context, repository Repository, before *proxyruntimev1.ProxyRuntimePersistentSettings, errorMessage string) []string {
 	if repository == nil {
-		a.warn(errorMessage, "error", ErrRepositoryRequired)
+		a.warn(errorMessage, "error_type", errorType(ErrRepositoryRequired))
 		return nil
 	}
 	after, err := repository.Load(ctx)
 	if err != nil {
-		a.warn(errorMessage, "error", err)
+		a.warn(errorMessage, "error_type", errorType(err))
 		return nil
 	}
 	return ChangedInUserConnectionUsernames(before, after)

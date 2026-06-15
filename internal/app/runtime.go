@@ -146,13 +146,13 @@ func (r *Runtime) reconcileLoop(ctx context.Context) {
 
 func (r *Runtime) reconcile(ctx context.Context) {
 	if err := r.runReconcile(ctx); err != nil {
-		r.logger.Warn("proxy runtime reconcile failed", "error", err)
+		r.logger.Warn("proxy runtime reconcile failed", "error_type", errorLogType(err))
 	}
 	for {
 		select {
 		case <-r.reconcileCh:
 			if err := r.runReconcile(ctx); err != nil {
-				r.logger.Warn("proxy runtime reconcile failed", "error", err)
+				r.logger.Warn("proxy runtime reconcile failed", "error_type", errorLogType(err))
 			}
 		default:
 			return
@@ -179,7 +179,7 @@ func (r *Runtime) refresh(ctx context.Context) error {
 	}
 	nodes, err := r.provider.Fetch(ctx)
 	if err != nil && r.cfg.Provider != config.ProviderNone {
-		r.logger.Warn("base provider fetch failed", "error", err)
+		r.logger.Warn("base provider fetch failed", "error_type", errorLogType(err))
 		nodes = nil
 	}
 	sourceCfg, err := r.dataPlaneConfig(ctx)

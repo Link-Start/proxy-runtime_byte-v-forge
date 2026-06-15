@@ -31,7 +31,7 @@ func (a *Application) List(ctx context.Context, options ListOptions) ([]*proxyru
 	startedAt := a.now()
 	leases, err := a.list(ctx, options)
 	if err != nil {
-		a.warn("list proxy dynamic leases failed", "mode", options.Mode, "limit", options.Limit, "duration_ms", a.sinceMilliseconds(startedAt), "error", err)
+		a.warn("list proxy dynamic leases failed", "mode", options.Mode, "limit", options.Limit, "duration_ms", a.sinceMilliseconds(startedAt), "error_type", errorType(err))
 		return nil, err
 	}
 	a.info("list proxy dynamic leases finished", "mode", options.Mode, "limit", options.Limit, "rows", len(leases), "duration_ms", a.sinceMilliseconds(startedAt))

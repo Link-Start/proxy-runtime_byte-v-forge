@@ -20,13 +20,13 @@ func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *h
 	cfg.Gateways = []accountproxy.Gateway{selected.endpoint}
 	providerClient, err := r.accountProviders.NewSessionProvider(cfg, client)
 	if err != nil {
-		r.logger.Warn("dynamic profile provider account skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error", err)
+		r.logger.Warn("dynamic profile provider account skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error_type", errorLogType(err))
 		return nil
 	}
 	session := dynamicProfileSession(profileID, selection.accountID, cfg.ProviderID, selected.proto.GetEndpointId(), profile.GetExit().GetDynamicIpPolicy())
 	slot, err := leaseapp.AcquireProviderAccountConcurrencySlot(ctx, r.providerConcurrency, selection.account.GetAccountId(), concurrencyLimit, session.GetPolicy(), concurrencyHolder, leaseapp.ConcurrencySlotTTL(session.GetPolicy(), leaseapp.DefaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
 	if err != nil {
-		r.logger.Warn("dynamic profile provider account skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error", err)
+		r.logger.Warn("dynamic profile provider account skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error_type", errorLogType(err))
 		return nil
 	}
 	keepSlot := false
@@ -37,7 +37,7 @@ func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *h
 	}()
 	nodes, err := leaseapp.FetchProviderSession(ctx, providerClient, session)
 	if err != nil {
-		r.logger.Warn("dynamic profile provider session skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error", err)
+		r.logger.Warn("dynamic profile provider session skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error_type", errorLogType(err))
 		return nil
 	}
 	for index, node := range nodes {

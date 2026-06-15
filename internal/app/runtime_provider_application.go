@@ -311,7 +311,7 @@ func (a runtimeProviderApplication) deleteProviderAccountInBackground(providerAc
 		ctx, cancel := context.WithTimeout(context.Background(), providerAccountDeleteTimeout)
 		defer cancel()
 		if err := a.deleteProviderAccount(ctx, providerAccountID); err != nil {
-			a.warn("delete provider account failed", "provider_account_id", providerAccountID, "duration_ms", time.Since(startedAt).Milliseconds(), "error", err)
+			a.warn("delete provider account failed", "provider_account_id", providerAccountID, "duration_ms", time.Since(startedAt).Milliseconds(), "error_type", errorLogType(err))
 			return
 		}
 		a.info("delete provider account finished", "provider_account_id", providerAccountID, "duration_ms", time.Since(startedAt).Milliseconds())

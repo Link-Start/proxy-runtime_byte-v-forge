@@ -169,22 +169,19 @@ func (c leaseCoordinator) accountLockedAcquireRunner(ctx context.Context, settin
 }
 
 func (c leaseCoordinator) preparedAcquireRunner(advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.PreparedAcquireRunner {
-	return leaseapp.PreparedAcquireRunner{
-		Locks: c.deps.locks,
-		Action: func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
-			settings, err := c.deps.settings.load(ctx)
-			if err != nil {
-				return nil, err
-			}
-			runner := c.accountLockedAcquireRunner(ctx, settings, advertisedHost, req)
-			lease, err := runner.Run(ctx, leaseapp.AccountLockedAcquireRunnerInput{
-				Request:        req,
-				EgressProfiles: settings.GetEgressProfiles(),
-			})
-			if err != nil && leaseapp.IsAcquirePolicyError(err) {
-				return nil, leaseProfilePolicyError(err)
-			}
-			return lease, err
+	action := leaseapp.SettingsPreparedAcquireAction[*runtimeSettingsFile]{
+		Load:    c.deps.settings.load,
+		Request: req,
+		EgressProfiles: func(settings *runtimeSettingsFile) []*proxyruntimev1.EgressProfileSettings {
+			return settings.GetEgressProfiles()
 		},
+		NewRunner: func(ctx context.Context, settings *runtimeSettingsFile) leaseapp.AccountLockedAcquireRunner {
+			return c.accountLockedAcquireRunner(ctx, settings, advertisedHost, req)
+		},
+		MapPolicyError: leaseProfilePolicyError,
+	}
+	return leaseapp.PreparedAcquireRunner{
+		Locks:  c.deps.locks,
+		Action: action.Run,
 	}
 }

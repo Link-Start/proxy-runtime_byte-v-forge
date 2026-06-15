@@ -997,6 +997,7 @@ Completed user-visible/runtime batches:
 - Route-change cache invalidation and playground connection cleanup are grouped behind a route side-effect adapter instead of repeated coordinator callbacks.
 - Provider-account acquired-route apply input mapping now lives in a lease-owned applier adapter instead of an inline coordinator closure.
 - Selected-attempt to provider-account acquire execution now uses a lease-owned action adapter, leaving the coordinator to provide only the provider runner factory and error mapping.
+- Prepared acquire now uses a lease-owned settings-backed action for settings load, egress-profile extraction, account-locked runner creation, and policy error mapping.
 
 Still open:
 

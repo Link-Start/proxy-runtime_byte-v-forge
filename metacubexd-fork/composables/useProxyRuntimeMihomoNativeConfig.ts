@@ -1,4 +1,7 @@
-import { proxyRuntimeUserMessage } from '~/composables/proxyRuntimeFetch'
+import {
+  isProxyRuntimeCancellation,
+  proxyRuntimeUserMessage,
+} from '~/composables/proxyRuntimeFetch'
 import type {
   ProxyRuntimeMihomoNativeFixedProxy,
   ProxyRuntimeMihomoNativeSubscription,
@@ -23,22 +26,49 @@ export function useProxyRuntimeMihomoNativeConfig() {
   const loading = ref(false)
   const saving = ref(false)
   const error = ref('')
+  let loadController: AbortController | undefined
+  let loadSequence = 0
   const rows = computed(() => nativeRows(fixedProxies.value, subscriptions.value))
   const itemCount = computed(() => rows.value.length)
 
   async function load() {
+    const sequence = nextLoadSequence()
+    const controller = new AbortController()
+    loadController = controller
     loading.value = true
     error.value = ''
     try {
-      const config = await api.getNativeConfig()
+      const config = await api.getNativeConfig({ signal: controller.signal })
+      if (!currentLoad(sequence)) return
       fixedProxies.value = config.fixed_proxies || []
       subscriptions.value = config.subscriptions || []
     } catch (err) {
+      if (!currentLoad(sequence) || isProxyRuntimeCancellation(err)) return
       error.value = proxyRuntimeUserMessage(err)
     } finally {
-      loading.value = false
+      if (currentLoad(sequence)) {
+        loading.value = false
+        loadController = undefined
+      }
     }
   }
+
+  function abortLoad() {
+    loadController?.abort()
+    loadController = undefined
+  }
+
+  function nextLoadSequence() {
+    abortLoad()
+    loadSequence += 1
+    return loadSequence
+  }
+
+  function currentLoad(sequence: number) {
+    return sequence === loadSequence
+  }
+
+  onBeforeUnmount(abortLoad)
 
   function resetForm(type: ProxyRuntimeNativeItemType = 'fixed_proxy') {
     Object.assign(form, {

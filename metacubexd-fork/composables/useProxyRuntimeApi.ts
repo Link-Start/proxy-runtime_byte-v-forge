@@ -137,9 +137,11 @@ export function useProxyRuntimeApi() {
           body: proxyRuntimeJsonBody(req),
         },
       ),
-    getNativeConfig: () =>
+    getNativeConfig: (options: ProxyRuntimeRequestOptions = {}) =>
       proxyRuntimeRequest<GetProxyRuntimeMihomoNativeConfigResponse>(
         '/settings/mihomo-native',
+        {},
+        options,
       ).then((response) => response.config || emptyMihomoNativeConfig()),
     updateNativeConfig: (config: ProxyRuntimeMihomoNativeConfig) =>
       proxyRuntimeRequest<UpdateProxyRuntimeMihomoNativeConfigResponse>(

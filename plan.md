@@ -1033,6 +1033,7 @@ Completed user-visible/runtime batches:
 - Dynamic IP endpoint selection for lease acquire now uses an explicit app adapter instead of an inline coordinator closure.
 - Dynamic IP provider UI loads now abort stale provider/settings/account requests and suppress cancellation noise before applying results.
 - In-user rules UI loads now abort stale settings and Mihomo owner requests, and Mihomo controller helpers accept shared request cancellation options.
+- Mihomo-native settings UI loads now abort stale config requests and suppress cancellation noise before applying fixed proxy/subscription state.
 
 Still open:
 

@@ -33,7 +33,7 @@ SELECT EXISTS (
 	return exists, err
 }
 
-func (s *SQLiteStore) BlockingLeaseFactsByProviderAccount(ctx context.Context, providerAccountID string) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *SQLiteStore) BlockingLeaseFactsByProviderAccount(ctx context.Context, providerAccountID string, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	providerAccountID = strings.TrimSpace(providerAccountID)
 	if providerAccountID == "" {
 		return nil, nil
@@ -47,5 +47,6 @@ WHERE provider_account_id=?
     OR (status=? AND `+sqliteCleanupPendingLeasePredicate+`)
   )
 ORDER BY acquired_at DESC, updated_at DESC, lease_id
-`, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String())
+LIMIT ?
+`, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String(), normalizeBlockingLeaseFactLimit(limit))
 }

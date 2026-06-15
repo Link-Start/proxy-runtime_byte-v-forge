@@ -33,7 +33,7 @@ SELECT EXISTS (
 	return exists, err
 }
 
-func (s *PostgresStore) BlockingLeaseFactsByProviderAccount(ctx context.Context, providerAccountID string) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *PostgresStore) BlockingLeaseFactsByProviderAccount(ctx context.Context, providerAccountID string, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	providerAccountID = strings.TrimSpace(providerAccountID)
 	if providerAccountID == "" {
 		return nil, nil
@@ -53,7 +53,8 @@ WHERE provider_account_id=$1
 		)
 	)
 ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
-`, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String())
+LIMIT $4
+`, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String(), normalizeBlockingLeaseFactLimit(limit))
 	if err != nil {
 		return nil, err
 	}

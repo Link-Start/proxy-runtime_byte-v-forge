@@ -19,7 +19,7 @@ type runtimeProviderRepository interface {
 	DeleteProviderAccount(context.Context, string) error
 	ProviderAccount(context.Context, string) (*proxyruntimev1.ProxyProviderAccount, error)
 	ProviderAccountHasBlockingLease(context.Context, string) (bool, error)
-	BlockingLeaseFactsByProviderAccount(context.Context, string) ([]*proxyruntimev1.ProxyDynamicLease, error)
+	BlockingLeaseFactsByProviderAccount(context.Context, string, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 	ProviderAccountMutationState(context.Context, string) (providerAccountMutationState, error)
 }
 
@@ -227,7 +227,7 @@ func (a runtimeProviderApplication) deleteProviderAccount(ctx context.Context, p
 		deleted := false
 		err := a.withProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
 			var err error
-			leases, err = store.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID)
+			leases, err = store.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID, defaultBlockingLeaseFactLimit)
 			if err != nil {
 				return fmt.Errorf("list blocking proxy leases for provider account %q: %w", providerAccountID, err)
 			}

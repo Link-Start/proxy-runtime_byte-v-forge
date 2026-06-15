@@ -1018,6 +1018,7 @@ Completed user-visible/runtime batches:
 - The Playground lease refresh button now invokes an explicit refresh action and disables while the active lease refresh is in flight.
 - Lease `history` listing now has a dedicated inactive-or-expired repository query for PostgreSQL and SQLite, plus a `(status, expires_at)` index for active/history predicates.
 - Protected dashboard login redirect response emission now lives in the auth application instead of the Gin session handler.
+- Provider-account delete now processes blocking leases in bounded repository batches instead of loading every blocking lease fact in one background loop iteration.
 
 Still open:
 

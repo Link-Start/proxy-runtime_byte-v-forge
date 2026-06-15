@@ -43,7 +43,7 @@ type leaseFactStore interface {
 	ListHistoryLeaseFacts(context.Context, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 	RecentLeaseFacts(context.Context, time.Time, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 	ProviderAccountHasBlockingLease(context.Context, string) (bool, error)
-	BlockingLeaseFactsByProviderAccount(context.Context, string) ([]*proxyruntimev1.ProxyDynamicLease, error)
+	BlockingLeaseFactsByProviderAccount(context.Context, string, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 	CleanupPendingLeaseFacts(context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error)
 	ListRestorableLeaseFacts(context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error)
 	ExpiredActiveLeaseFacts(context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error)

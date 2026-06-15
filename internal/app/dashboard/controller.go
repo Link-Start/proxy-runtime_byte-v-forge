@@ -40,15 +40,18 @@ func RedactControllerErrorResponse(resp *http.Response) error {
 	if err != nil {
 		return err
 	}
-	data = RedactURLCredentials(data)
+	data = RedactSensitiveControllerData(data)
 	resp.Body = io.NopCloser(bytes.NewReader(data))
 	resp.ContentLength = int64(len(data))
 	resp.Header.Set("Content-Length", fmt.Sprintf("%d", len(data)))
 	return nil
 }
 
-func RedactURLCredentials(data []byte) []byte {
-	return sensitiveURLPattern.ReplaceAll(data, []byte("[redacted-url]"))
+func RedactSensitiveControllerData(data []byte) []byte {
+	for _, pattern := range sensitiveResponsePatterns {
+		data = pattern.expr.ReplaceAll(data, pattern.replacement)
+	}
+	return data
 }
 
 func APIURL(addr string) (*url.URL, error) {
@@ -94,4 +97,13 @@ func dashboardNoStorePath(requestPath string, contentType string) bool {
 	return strings.HasPrefix(strings.ToLower(contentType), "text/html")
 }
 
-var sensitiveURLPattern = regexp.MustCompile(`https?://[^\s"'<>)\\]+`)
+type sensitiveResponsePattern struct {
+	expr        *regexp.Regexp
+	replacement []byte
+}
+
+var sensitiveResponsePatterns = []sensitiveResponsePattern{
+	{expr: regexp.MustCompile(`https?://[^\s"'<>)\\]+`), replacement: []byte("[redacted-url]")},
+	{expr: regexp.MustCompile(`(?i)(authorization\s*:\s*bearer\s+)[^\s"'<>)\\]+`), replacement: []byte("${1}[redacted]")},
+	{expr: regexp.MustCompile(`(?i)(["']?(?:token|secret|password|session)["']?\s*[:=]\s*["']?)[^"',\s&}]+`), replacement: []byte("${1}[redacted]")},
+}

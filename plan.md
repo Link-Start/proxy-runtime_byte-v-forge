@@ -1001,6 +1001,7 @@ Completed user-visible/runtime batches:
 - Acquired endpoint listener and egress resolution are grouped behind a dedicated app adapter instead of inline coordinator closures.
 - Lease coordinator route and acquire adapter factories are split into focused files instead of one mixed adapter factory file.
 - Mihomo hot-reload HTTP failure errors now report only status code and do not echo upstream response bodies, reducing secret/session leakage risk.
+- Dashboard controller error-body sanitization now also redacts bearer tokens and token/secret/password/session fields, not only full URLs.
 
 Still open:
 

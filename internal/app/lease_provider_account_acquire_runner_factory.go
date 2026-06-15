@@ -24,7 +24,7 @@ func (f leaseProviderAccountAcquireRunnerFactory) New(attempt leaseapp.SelectedA
 		ConcurrencyHolder: attempt.ConcurrencyHolder,
 		MapError:          acquiredRouteApplyError,
 	}
-	settings := f.settingsAdapter()
+	settings := leaseSettingsAdapterFactory{deps: f.deps}.New()
 	return leaseapp.ProviderAccountAcquireRunner{
 		Store:              f.deps.store,
 		IDs:                f.deps.ids,
@@ -61,14 +61,6 @@ func (f leaseProviderAccountAcquireRunnerFactory) acquiredRouteApplier() leaseap
 		ResolveEgress:    endpoint.ResolveEgress,
 		AfterApply: func(ctx context.Context, _ *proxyruntimev1.ProxyDynamicLease) {
 			sideEffects.afterRouteChange(ctx, f.request.GetAccountId())
-		},
-	}
-}
-
-func (f leaseProviderAccountAcquireRunnerFactory) settingsAdapter() leaseapp.SettingsAdapter[*runtimeSettingsFile] {
-	return leaseapp.SettingsAdapter[*runtimeSettingsFile]{
-		ResolveLineBinding: func(ctx context.Context, settings *runtimeSettingsFile, accountID string) (string, map[string]string, error) {
-			return f.deps.dynamicLeaseDialerProxy(ctx, settings, accountID)
 		},
 	}
 }

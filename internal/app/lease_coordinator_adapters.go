@@ -12,6 +12,7 @@ const leaseAcquireSlotReleaseTimeout = 5 * time.Second
 
 func (c leaseCoordinator) leaseRouteRetirer() leaseapp.LeaseRouteRetirer {
 	settings := c.settingsAdapter()
+	sideEffects := c.routeSideEffects()
 	return leaseapp.LeaseRouteRetirer{
 		Store:                   c.deps.store,
 		Limiter:                 c.deps.providerConcurrency,
@@ -21,10 +22,7 @@ func (c leaseCoordinator) leaseRouteRetirer() leaseapp.LeaseRouteRetirer {
 		LocalProtocol:           c.deps.cfg.LocalProtocol,
 		ResolveGatewaysForLease: settings.ProviderGatewaysResolver,
 		AfterRouteCleanup: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
-			c.clearExitCheckCache()
-			if lease.GetAccountId() == playgroundProfileID {
-				c.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
-			}
+			sideEffects.afterRouteChange(ctx, lease.GetAccountId())
 		},
 		ObserveProviderReleaseFailure: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
 			_ = ctx
@@ -66,6 +64,7 @@ func (c leaseCoordinator) leaseRouteRestorer(settings *runtimeSettingsFile) leas
 }
 
 func (c leaseCoordinator) acquiredRouteApplier(settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.AcquiredRouteApplier {
+	sideEffects := c.routeSideEffects()
 	return leaseapp.AcquiredRouteApplier{
 		Store:            c.deps.store,
 		DataPlane:        c.deps.dataPlane,
@@ -81,10 +80,7 @@ func (c leaseCoordinator) acquiredRouteApplier(settings *runtimeSettingsFile, ad
 			return c.deps.localListenerEndpoint(listener, c.deps.sessionAdvertisedHost(advertisedHost, listener))
 		},
 		AfterApply: func(ctx context.Context, _ *proxyruntimev1.ProxyDynamicLease) {
-			c.clearExitCheckCache()
-			if req.GetAccountId() == playgroundProfileID {
-				c.closeMihomoInUserConnections(ctx, []string{playgroundUsername})
-			}
+			sideEffects.afterRouteChange(ctx, req.GetAccountId())
 		},
 	}
 }

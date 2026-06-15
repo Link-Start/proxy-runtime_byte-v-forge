@@ -15,3 +15,10 @@ func newLeaseCoordinator(deps leaseCoordinatorDependencies) leaseCoordinator {
 	}
 	return leaseCoordinator{deps: deps}
 }
+
+func (c leaseCoordinator) routeSideEffects() leaseRouteSideEffects {
+	return leaseRouteSideEffects{
+		exitCheckCache:         c.deps.exitCheckCache,
+		closeInUserConnections: c.deps.closeInUserConnections,
+	}
+}

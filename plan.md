@@ -994,6 +994,7 @@ Completed user-visible/runtime batches:
 - Lease settings-backed gateway and line-binding resolution now uses a lease-owned generic settings adapter, removing the coordinator-specific resolver wrappers.
 - Dynamic endpoint selection plus selected-attempt execution now runs through a lease-owned dynamic acquire attempt runner; the coordinator only injects selector, runner factory, and app error mapping.
 - Existing-lease concurrency-slot refresh now uses a lease-owned refresh runner, leaving the coordinator to provide only settings-derived limit calculation.
+- Route-change cache invalidation and playground connection cleanup are grouped behind a route side-effect adapter instead of repeated coordinator callbacks.
 
 Still open:
 

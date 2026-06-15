@@ -16,15 +16,3 @@ func (c leaseCoordinator) warnFinalConcurrencyReleaseFailed(ctx context.Context,
 	_ = ctx
 	c.warn("release provider account concurrency slot failed", "lease_id", lease.GetLeaseId(), "provider_account_id", lease.GetProviderAccountId())
 }
-
-func (c leaseCoordinator) clearExitCheckCache() {
-	if c.deps.exitCheckCache != nil {
-		c.deps.exitCheckCache.clear()
-	}
-}
-
-func (c leaseCoordinator) closeMihomoInUserConnections(ctx context.Context, usernames []string) {
-	if c.deps.closeInUserConnections != nil {
-		c.deps.closeInUserConnections(ctx, usernames)
-	}
-}

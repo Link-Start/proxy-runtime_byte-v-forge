@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import type { ProxyRuntimePlaygroundChecksState } from '~/composables/useProxyRuntimePlaygroundChecks'
 import type { ProxyIPFraudCheck } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import { IconMapPin, IconSearch, IconShieldCheck } from '@tabler/icons-vue'
+import { IconClipboard, IconMapPin, IconSearch, IconShieldCheck } from '@tabler/icons-vue'
 
 defineProps<{
   canRun: boolean
+  copied: string
+  copyText: (key: string, value: string) => Promise<void>
   state: ProxyRuntimePlaygroundChecksState
 }>()
 
@@ -56,7 +58,19 @@ function fraudScoreText(value?: ProxyIPFraudCheck) {
           <IconSearch :size="16" />
           <span>出口 IP</span>
         </div>
-        <span class="truncate font-mono text-xs">{{ state.exitIP.value?.ip || '-' }}</span>
+        <div class="flex min-w-0 items-center gap-2" @click.stop>
+          <span class="truncate font-mono text-xs">{{ state.exitIP.value?.ip || '-' }}</span>
+          <Button
+            class="btn-ghost btn-xs btn-square"
+            :disabled="!state.exitIP.value?.ip"
+            :title="copied === 'exit-ip' ? '已复制' : '复制出口 IP'"
+            aria-label="复制出口 IP"
+            @click.stop="copyText('exit-ip', state.exitIP.value?.ip || '')"
+          >
+            <IconClipboard :size="14" />
+          </Button>
+          <span v-if="copied === 'exit-ip'" class="text-xs text-success">已复制</span>
+        </div>
       </div>
 
       <div class="flex items-center justify-between gap-4 rounded-lg px-2 py-1.5 transition-colors hover:bg-base-content/5">

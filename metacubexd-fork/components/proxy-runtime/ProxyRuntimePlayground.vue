@@ -46,7 +46,12 @@ const {
             :proxy-authority="proxyAuthority"
             :username="runtime.form.username"
           />
-          <ProxyRuntimePlaygroundChecks :can-run="canSave" :state="checks" />
+          <ProxyRuntimePlaygroundChecks
+            :can-run="canSave"
+            :copied="copied"
+            :copy-text="copyText"
+            :state="checks"
+          />
           <ProxyRuntimePlaygroundLeases :dynamic-exit="dynamicExit" :proxy-authority="proxyAuthority" :state="leases" />
         </template>
         <template #odd>
@@ -74,7 +79,12 @@ const {
             :runtime="runtime"
             :save="save"
           />
-          <ProxyRuntimePlaygroundChecks :can-run="canSave" :state="checks" />
+          <ProxyRuntimePlaygroundChecks
+            :can-run="canSave"
+            :copied="copied"
+            :copy-text="copyText"
+            :state="checks"
+          />
           <ProxyRuntimePlaygroundLeases :dynamic-exit="dynamicExit" :proxy-authority="proxyAuthority" :state="leases" />
         </template>
       </ProxiesRenderWrapper>

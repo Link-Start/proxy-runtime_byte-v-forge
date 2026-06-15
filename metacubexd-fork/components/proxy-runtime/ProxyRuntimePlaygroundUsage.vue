@@ -13,6 +13,7 @@ defineProps<{
 }>()
 
 const expanded = ref(true)
+const usageCopyKeys = new Set(['auth', 'curl', 'proxy'])
 </script>
 
 <template>
@@ -96,7 +97,7 @@ const expanded = ref(true)
         </div>
       </div>
 
-      <div v-if="copied" class="px-2 text-xs text-success">已复制</div>
+      <div v-if="usageCopyKeys.has(copied)" class="px-2 text-xs text-success">已复制</div>
     </div>
   </Collapse>
 </template>

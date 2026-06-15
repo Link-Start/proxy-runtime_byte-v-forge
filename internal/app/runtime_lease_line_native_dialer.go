@@ -1,9 +1,13 @@
 package app
 
-import "strings"
+import (
+	"strings"
 
-func dynamicLeaseNativeDialerProxy(profileID string, nativeConfig mihomoNativeConfigFile, resourceID string, nodeID string) string {
-	fixedByID, fixedByName := currentFixedProxyIndexes(nativeConfig)
+	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
+)
+
+func dynamicLeaseNativeDialerProxy(profileID string, nativeConfig mihomonative.ConfigFile, resourceID string, nodeID string) string {
+	fixedByID, fixedByName := mihomonative.CurrentFixedProxyIndexes(nativeConfig)
 	for _, key := range []string{resourceID, nodeID, mihomoNodeDialerProxyName(resourceID, nodeID)} {
 		key = strings.TrimSpace(key)
 		if key == "" {
@@ -16,7 +20,7 @@ func dynamicLeaseNativeDialerProxy(profileID string, nativeConfig mihomoNativeCo
 			return proxy.Name
 		}
 	}
-	subscriptionByID, subscriptionByName := currentSubscriptionIndexes(nativeConfig)
+	subscriptionByID, subscriptionByName := mihomonative.CurrentSubscriptionIndexes(nativeConfig)
 	for _, key := range []string{resourceID, mihomoNodeResourcePrefix(nodeID)} {
 		key = strings.TrimSpace(key)
 		if key == "" {

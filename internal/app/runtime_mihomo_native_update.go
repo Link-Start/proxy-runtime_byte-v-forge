@@ -4,6 +4,7 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 )
 
 func updateMihomoNativeSettings(ctx context.Context, deps mihomoNativeUpdateDependencies, view *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
@@ -17,7 +18,7 @@ func updateMihomoNativeSettings(ctx context.Context, deps mihomoNativeUpdateDepe
 	if err != nil {
 		return nil, err
 	}
-	plan, err := buildMihomoNativeUpdatePlan(current, view)
+	plan, err := mihomonative.BuildUpdatePlan(current, view)
 	if err != nil {
 		return nil, err
 	}

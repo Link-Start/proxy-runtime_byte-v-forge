@@ -5,14 +5,10 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 )
 
-type mihomoNativeResourceReplacement struct {
-	ResourceID string
-	FixedProxy bool
-}
-
-func (s *runtimeSettingsStore) replaceMihomoResourceRefs(ctx context.Context, replacements map[string]mihomoNativeResourceReplacement) (bool, error) {
+func (s *runtimeSettingsStore) replaceMihomoResourceRefs(ctx context.Context, replacements map[string]mihomonative.ResourceReplacement) (bool, error) {
 	if len(replacements) == 0 {
 		return false, nil
 	}
@@ -30,7 +26,7 @@ func (s *runtimeSettingsStore) replaceMihomoResourceRefs(ctx context.Context, re
 	})
 }
 
-func replaceMihomoNodeRef(ref *proxyruntimev1.EgressProfileMihomoNodeRef, replacements map[string]mihomoNativeResourceReplacement) bool {
+func replaceMihomoNodeRef(ref *proxyruntimev1.EgressProfileMihomoNodeRef, replacements map[string]mihomonative.ResourceReplacement) bool {
 	if ref == nil {
 		return false
 	}
@@ -63,12 +59,12 @@ func (s *runtimeSettingsStore) enabledMihomoResourceIDs(ctx context.Context) (ma
 	}
 	out := map[string]struct{}{}
 	for _, proxy := range view.GetFixedProxies() {
-		normalized := normalizeMihomoNativeFixedProxy(nativeFixedProxyFromProto(proxy), nil)
+		normalized := mihomonative.NormalizeFixedProxy(mihomonative.FixedProxyFromProto(proxy), nil)
 		addEnabledMihomoResourceID(out, normalized.ID)
 		addEnabledMihomoResourceID(out, normalized.Name)
 	}
 	for _, subscription := range view.GetSubscriptions() {
-		normalized := normalizeMihomoNativeSubscription(nativeSubscriptionFromProto(subscription), nil)
+		normalized := mihomonative.NormalizeSubscription(mihomonative.SubscriptionFromProto(subscription), nil)
 		addEnabledMihomoResourceID(out, normalized.ID)
 		addEnabledMihomoResourceID(out, normalized.Name)
 	}

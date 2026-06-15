@@ -5,9 +5,10 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 )
 
-func dynamicLeaseProfileDialerProxy(profile *proxyruntimev1.EgressProfileSettings, nativeConfig mihomoNativeConfigFile) (string, map[string]string, error) {
+func dynamicLeaseProfileDialerProxy(profile *proxyruntimev1.EgressProfileSettings, nativeConfig mihomonative.ConfigFile) (string, map[string]string, error) {
 	node := profile.GetLine().GetMihomoNode()
 	dialer := dynamicLeaseLineDialerProxy(profile.GetProfileId(), nativeConfig, node.GetResourceId(), node.GetNodeId())
 	if dialer == "" {
@@ -26,7 +27,7 @@ func dynamicLeaseProfileDialerProxy(profile *proxyruntimev1.EgressProfileSetting
 	}, nil
 }
 
-func dynamicLeaseLineDialerProxy(profileID string, nativeConfig mihomoNativeConfigFile, resourceID string, nodeID string) string {
+func dynamicLeaseLineDialerProxy(profileID string, nativeConfig mihomonative.ConfigFile, resourceID string, nodeID string) string {
 	resourceID = strings.TrimSpace(resourceID)
 	nodeID = strings.TrimSpace(nodeID)
 	if nodeID == "" {

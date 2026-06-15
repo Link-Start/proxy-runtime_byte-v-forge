@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 )
 
@@ -14,5 +15,5 @@ func decodeMihomoNativeSettings(raw string) (*proxyruntimev1.ProxyRuntimeMihomoN
 			return nil, fmt.Errorf("decode mihomo native settings: %w", err)
 		}
 	}
-	return normalizeMihomoNativeSettings(settings), nil
+	return mihomonative.NormalizeSettings(settings), nil
 }

@@ -5,6 +5,7 @@ import (
 	"log/slog"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
@@ -31,6 +32,6 @@ func newRuntimeSettingsApplication(deps runtimeSettingsApplicationDependencies) 
 		IPGeoProviderViews:          deps.IPGeoProviderViews,
 		LoadMihomoNativeSettings:    deps.LoadMihomoNativeSettings,
 		UpdateMihomoNativeSettings:  deps.UpdateMihomoNativeSettings,
-		DefaultMihomoNativeSettings: func() *proxyruntimev1.ProxyRuntimeMihomoNativeConfig { return normalizeMihomoNativeSettings(nil) },
+		DefaultMihomoNativeSettings: func() *proxyruntimev1.ProxyRuntimeMihomoNativeConfig { return mihomonative.NormalizeSettings(nil) },
 	})
 }

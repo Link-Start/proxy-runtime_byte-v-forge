@@ -4,6 +4,7 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 )
 
 func (s *runtimeSettingsStore) loadMihomoNative(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
@@ -14,13 +15,13 @@ func (s *runtimeSettingsStore) loadMihomoNative(ctx context.Context) (*proxyrunt
 
 func (s *runtimeSettingsStore) loadMihomoNativeLocked(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
 	if s.store == nil {
-		return normalizeMihomoNativeSettings(nil), nil
+		return mihomonative.NormalizeSettings(nil), nil
 	}
 	settings, err := s.store.LoadMihomoNativeSettings(ctx)
 	if err != nil {
 		return nil, err
 	}
-	return normalizeMihomoNativeSettings(settings), nil
+	return mihomonative.NormalizeSettings(settings), nil
 }
 
 func (s *runtimeSettingsStore) saveMihomoNative(ctx context.Context, settings *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) error {
@@ -33,5 +34,5 @@ func (s *runtimeSettingsStore) saveMihomoNativeLocked(ctx context.Context, setti
 	if s.store == nil {
 		return nil
 	}
-	return s.store.SaveMihomoNativeSettings(ctx, normalizeMihomoNativeSettings(settings))
+	return s.store.SaveMihomoNativeSettings(ctx, mihomonative.NormalizeSettings(settings))
 }

@@ -1,12 +1,16 @@
 package app
 
-import "context"
+import (
+	"context"
 
-func persistMihomoNativeUpdatePlan(ctx context.Context, deps mihomoNativeUpdateDependencies, plan mihomoNativeUpdatePlan) error {
-	if err := deps.Repository.saveMihomoNative(ctx, mihomoNativeSettingsFromConfig(plan.Config)); err != nil {
+	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
+)
+
+func persistMihomoNativeUpdatePlan(ctx context.Context, deps mihomoNativeUpdateDependencies, plan mihomonative.UpdatePlan) error {
+	if err := deps.Repository.saveMihomoNative(ctx, mihomonative.SettingsFromConfig(plan.Config)); err != nil {
 		return internalError("save mihomo native settings", err)
 	}
-	if err := saveMihomoNativeConfig(deps.ConfigDir, plan.Config); err != nil {
+	if err := mihomonative.SaveConfig(deps.ConfigDir, plan.Config); err != nil {
 		return internalError("save mihomo native config", err)
 	}
 	if _, err := deps.Repository.replaceMihomoResourceRefs(ctx, plan.ResourceReplacements); err != nil {

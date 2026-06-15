@@ -4,6 +4,7 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 )
 
 type runtimeSettingsMihomoNativeAdapter struct {
@@ -25,7 +26,7 @@ func newRuntimeSettingsMihomoNativeAdapter(runtime *Runtime) runtimeSettingsMiho
 
 func (a runtimeSettingsMihomoNativeAdapter) Load(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
 	if a.repository == nil {
-		return normalizeMihomoNativeSettings(nil), nil
+		return mihomonative.NormalizeSettings(nil), nil
 	}
 	return a.repository.loadMihomoNative(ctx)
 }

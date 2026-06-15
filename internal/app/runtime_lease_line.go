@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"fmt"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 )
 
 func (r *Runtime) dynamicLeaseDialerProxy(ctx context.Context, settings *runtimeSettingsFile, profileID string) (string, map[string]string, error) {
@@ -15,7 +17,7 @@ func (r *Runtime) dynamicLeaseDialerProxy(ctx context.Context, settings *runtime
 	if err != nil {
 		return "", nil, fmt.Errorf("load mihomo native settings for lease line: %w", err)
 	}
-	nativeConfig, err := mihomoNativeConfigFileFromSettings(nativeSettings)
+	nativeConfig, err := mihomonative.ConfigFromSettings(nativeSettings)
 	if err != nil {
 		return "", nil, fmt.Errorf("render mihomo native settings for lease line: %w", err)
 	}

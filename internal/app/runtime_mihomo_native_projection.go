@@ -3,6 +3,8 @@ package app
 import (
 	"context"
 	"strings"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 )
 
 func projectMihomoNativeSettings(ctx context.Context, settings mihomoNativeSettingsRepository, configDir string) error {
@@ -13,21 +15,21 @@ func projectMihomoNativeSettings(ctx context.Context, settings mihomoNativeSetti
 	if err != nil {
 		return err
 	}
-	if mihomoNativeSettingsEmpty(view) {
+	if mihomonative.SettingsEmpty(view) {
 		migrated, err := importMihomoNativeProjection(ctx, settings, configDir)
 		if err != nil {
 			return err
 		}
-		if !mihomoNativeSettingsEmpty(migrated) {
+		if !mihomonative.SettingsEmpty(migrated) {
 			view = migrated
 		}
 	}
-	if mihomoNativeSettingsEmpty(view) && strings.TrimSpace(configDir) == "" {
+	if mihomonative.SettingsEmpty(view) && strings.TrimSpace(configDir) == "" {
 		return nil
 	}
-	config, err := mihomoNativeConfigFileFromSettings(view)
+	config, err := mihomonative.ConfigFromSettings(view)
 	if err != nil {
 		return err
 	}
-	return saveMihomoNativeConfig(configDir, config)
+	return mihomonative.SaveConfig(configDir, config)
 }

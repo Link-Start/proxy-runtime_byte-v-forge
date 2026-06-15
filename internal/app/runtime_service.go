@@ -84,28 +84,17 @@ func runtimeSettingsDependencies(runtime *Runtime) runtimeSettingsApplicationDep
 		return runtimeSettingsApplicationDependencies{}
 	}
 	settingsApply := newRuntimeSettingsApplyScheduler(runtime)
-	mihomoNativeApply := newRuntimeMihomoNativeApplyScheduler(runtime)
 	providerViews := newRuntimeSettingsProviderViewAdapter(runtime)
+	mihomoNative := newRuntimeSettingsMihomoNativeAdapter(runtime)
 	return runtimeSettingsApplicationDependencies{
-		Logger:               runtime.logger,
-		Settings:             runtime.settings,
-		ProxyUsers:           runtime.cfg.ProxyUsers,
-		IPFraudProviderViews: providerViews.IPFraudProviderViews,
-		IPGeoProviderViews:   providerViews.IPGeoProviderViews,
-		LoadMihomoNativeSettings: func(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
-			if runtime.settings == nil {
-				return normalizeMihomoNativeSettings(nil), nil
-			}
-			return runtime.settings.loadMihomoNative(ctx)
-		},
-		UpdateMihomoNativeSettings: func(ctx context.Context, config *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
-			return updateMihomoNativeSettings(ctx, mihomoNativeUpdateDependencies{
-				Repository: runtime.settings,
-				ConfigDir:  runtime.cfg.Mihomo.ConfigDir,
-				AfterApply: mihomoNativeApply.Schedule,
-			}, config)
-		},
-		ScheduleApply: settingsApply.Schedule,
+		Logger:                     runtime.logger,
+		Settings:                   runtime.settings,
+		ProxyUsers:                 runtime.cfg.ProxyUsers,
+		IPFraudProviderViews:       providerViews.IPFraudProviderViews,
+		IPGeoProviderViews:         providerViews.IPGeoProviderViews,
+		LoadMihomoNativeSettings:   mihomoNative.Load,
+		UpdateMihomoNativeSettings: mihomoNative.Update,
+		ScheduleApply:              settingsApply.Schedule,
 	}
 }
 

@@ -97,11 +97,9 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 }
 
 func (r *Runtime) Run(ctx context.Context) error {
-	if err := r.refresh(ctx); err != nil {
-		return err
-	}
 	defer r.dataPlane.Stop()
 	errCh := make(chan error, 2)
+	r.requestReconcile()
 	go r.reconcileLoop(ctx)
 	go r.leaseExpiryLoop(ctx)
 	go r.restoreActiveLeasesInBackground(ctx)

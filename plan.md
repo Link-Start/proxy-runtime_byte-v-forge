@@ -1021,6 +1021,7 @@ Completed user-visible/runtime batches:
 - Provider-account delete now processes blocking leases in bounded repository batches instead of loading every blocking lease fact in one background loop iteration.
 - Lease HTTP handlers now use a centralized lease error writer for required ID, not-found, application errors, and upstream fallback mapping.
 - Provider-account HTTP dispatch now delegates list/upsert/delete into focused handlers instead of mixing all transport branches in one switch body.
+- Runtime startup now queues the first reconcile in the background before serving HTTP instead of blocking HTTP startup on the initial provider/dataplane refresh; ready/status report pending or running reconcile as applying.
 
 Still open:
 

@@ -38,6 +38,13 @@ func (r *Runtime) serveHTTP(ctx context.Context, errCh chan<- error) {
 
 func (r *Runtime) httpHandler() http.Handler {
 	return newRuntimeHTTPAPI(r.service(), r.cfg.Mihomo.APIAddr, r.cfg.ControlAuthToken, func() (bool, string) {
+		reconcile := r.currentReconcileState()
+		if reconcile.running {
+			return false, "data plane reconcile running"
+		}
+		if reconcile.pending {
+			return false, "data plane reconcile pending"
+		}
 		status := r.dataPlane.Status()
 		if !status.Running {
 			return false, firstNonEmpty(status.LastError, "data plane is not running")

@@ -67,10 +67,10 @@ func dataPlaneConfigStale(status dataplane.Status) bool {
 
 func runtimeStatusLabel(ready bool, dataPlaneStatus dataplane.Status, configStale bool, reconcile runtimeReconcileState, leaseRestore runtimeLeaseRestoreState) string {
 	switch {
-	case !dataPlaneStatus.Running:
-		return "stopped"
 	case reconcile.running || reconcile.pending || leaseRestore.running:
 		return "applying"
+	case !dataPlaneStatus.Running:
+		return "stopped"
 	case !ready || configStale || reconcile.lastError != "" || leaseRestore.lastError != "":
 		return "degraded"
 	default:

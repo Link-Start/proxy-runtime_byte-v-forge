@@ -1,3 +1,7 @@
+import {
+  isProxyRuntimeCancellation,
+  proxyRuntimeUserMessage,
+} from '~/composables/proxyRuntimeFetch'
 import type {
   ProxyDynamicLease,
   ProxyProviderDescriptor,
@@ -5,6 +9,7 @@ import type {
 import { ProxyDynamicLeaseStatus } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 
 const refreshIntervalMs = 15_000
+const leaseRefreshTimeoutMs = 8_000
 
 export function useProxyRuntimeDynamicLeases() {
   const api = useProxyRuntimeApi()
@@ -15,24 +20,37 @@ export function useProxyRuntimeDynamicLeases() {
   const busyLeaseID = ref('')
   const error = ref('')
   let refreshTimer: ReturnType<typeof setInterval> | undefined
+  let loadController: AbortController | undefined
+  let loadSequence = 0
   const activeLeases = computed(() =>
     leases.value.filter(isActiveLease),
   )
 
   async function load() {
+    const sequence = nextLoadSequence()
+    const controller = new AbortController()
+    loadController = controller
     loading.value = true
     error.value = ''
     try {
       const [providerRes, leaseRes] = await Promise.all([
-        api.listProviders(),
-        leaseApi.listLeases({ status: 'active', limit: 50 }),
+        api.listProviders({ signal: controller.signal }),
+        leaseApi.listLeases(
+          { status: 'active', limit: 50 },
+          { signal: controller.signal, timeoutMs: leaseRefreshTimeoutMs },
+        ),
       ])
+      if (!currentLoad(sequence)) return
       providers.value = providerRes.providers || []
       leases.value = leaseRes.leases || []
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      if (!currentLoad(sequence) || isProxyRuntimeCancellation(err)) return
+      error.value = proxyRuntimeUserMessage(err)
     } finally {
-      loading.value = false
+      if (currentLoad(sequence)) {
+        loading.value = false
+        loadController = undefined
+      }
     }
   }
 
@@ -40,14 +58,17 @@ export function useProxyRuntimeDynamicLeases() {
     busyLeaseID.value = lease.lease_id
     error.value = ''
     try {
-      await leaseApi.releaseLease({
+      const response = await leaseApi.releaseLease({
         account_id: lease.account_id,
         lease_id: lease.lease_id,
         purpose: lease.purpose,
       })
+      if (response.lease) upsertLease(response.lease)
       await load()
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      if (!isProxyRuntimeCancellation(err)) {
+        error.value = proxyRuntimeUserMessage(err)
+      }
     } finally {
       busyLeaseID.value = ''
     }
@@ -69,8 +90,35 @@ export function useProxyRuntimeDynamicLeases() {
     refreshTimer = undefined
   }
 
+  function abortLoad() {
+    loadController?.abort()
+    loadController = undefined
+  }
+
+  function nextLoadSequence() {
+    abortLoad()
+    loadSequence += 1
+    return loadSequence
+  }
+
+  function currentLoad(sequence: number) {
+    return sequence === loadSequence
+  }
+
+  function upsertLease(lease: ProxyDynamicLease) {
+    const index = leases.value.findIndex((item) => item.lease_id === lease.lease_id)
+    if (index >= 0) {
+      leases.value.splice(index, 1, lease)
+      return
+    }
+    leases.value = [lease, ...leases.value]
+  }
+
   onMounted(startAutoRefresh)
-  onBeforeUnmount(stopAutoRefresh)
+  onBeforeUnmount(() => {
+    stopAutoRefresh()
+    abortLoad()
+  })
 
   return {
     activeLeases,

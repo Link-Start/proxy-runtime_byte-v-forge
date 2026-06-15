@@ -1013,6 +1013,9 @@ Completed user-visible/runtime batches:
 - Auth session and websocket-token response emission now lives in the auth application instead of runtime HTTP handlers.
 - Auth login decision response emission now lives in the auth application, including session cookie creation, safe redirect, and JSON session response.
 - Auth login-page response emission now lives in the auth application, including authenticated redirect and page rendering.
+- Proxy-runtime frontend requests now use typed error categories for timeout, cancellation, unauthorized, backend-unreachable, validation, provider, and internal failures.
+- Dynamic lease and Playground lease refreshes now abort stale requests, use bounded short refresh timeouts, suppress cancellation noise, and preserve locally returned lease state when post-acquire refresh fails.
+- The Playground lease refresh button now invokes an explicit refresh action and disables while the active lease refresh is in flight.
 
 Still open:
 

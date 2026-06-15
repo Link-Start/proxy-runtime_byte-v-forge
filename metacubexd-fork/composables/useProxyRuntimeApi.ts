@@ -34,6 +34,7 @@ import {
 import {
   proxyRuntimeFetchJson,
   proxyRuntimeJsonBody,
+  type ProxyRuntimeRequestOptions,
 } from '~/composables/proxyRuntimeFetch'
 
 const base = '/api'
@@ -41,8 +42,14 @@ const base = '/api'
 async function proxyRuntimeRequest<T>(
   path: string,
   init: RequestInit = {},
+  options: ProxyRuntimeRequestOptions = {},
 ): Promise<T> {
-  return proxyRuntimeFetchJson<T>(base, path, init, { json: true })
+  return proxyRuntimeFetchJson<T>(
+    base,
+    path,
+    { ...init, signal: options.signal },
+    { json: true, timeoutMs: options.timeoutMs },
+  )
 }
 
 const emptyMihomoNativeConfig = (): ProxyRuntimeMihomoNativeConfig => ({
@@ -52,11 +59,17 @@ const emptyMihomoNativeConfig = (): ProxyRuntimeMihomoNativeConfig => ({
 
 export function useProxyRuntimeApi() {
   return {
-    listProviders: () =>
-      proxyRuntimeRequest<ListProxyProvidersResponse>('/providers'),
-    listProviderAccounts: () =>
+    listProviders: (options: ProxyRuntimeRequestOptions = {}) =>
+      proxyRuntimeRequest<ListProxyProvidersResponse>(
+        '/providers',
+        {},
+        options,
+      ),
+    listProviderAccounts: (options: ProxyRuntimeRequestOptions = {}) =>
       proxyRuntimeRequest<ListProxyProviderAccountsResponse>(
         '/provider-accounts',
+        {},
+        options,
       ),
     upsertProviderAccount: (req: UpsertProxyProviderAccountRequest) =>
       proxyRuntimeRequest<UpsertProxyProviderAccountResponse>(

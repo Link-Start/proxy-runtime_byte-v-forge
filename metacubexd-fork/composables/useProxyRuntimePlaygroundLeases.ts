@@ -1,3 +1,7 @@
+import {
+  isProxyRuntimeCancellation,
+  proxyRuntimeUserMessage,
+} from '~/composables/proxyRuntimeFetch'
 import type { ProxyRuntimeInUserRulesState } from '~/composables/useProxyRuntimeInUserRules'
 import {
   dynamicIPEndpointLabel,
@@ -13,6 +17,7 @@ import {
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
 
 const playgroundPurpose = 'playground'
+const leaseRefreshTimeoutMs = 8_000
 
 export function useProxyRuntimePlaygroundLeases(
   runtime: ProxyRuntimeInUserRulesState,
@@ -23,6 +28,8 @@ export function useProxyRuntimePlaygroundLeases(
   const loading = ref(false)
   const busy = ref(false)
   const error = ref('')
+  let loadController: AbortController | undefined
+  let loadSequence = 0
   const profileID = computed(() => runtime.form.profile_id.trim() || 'playground-egress')
   const rows = computed(() =>
     leases.value
@@ -35,18 +42,33 @@ export function useProxyRuntimePlaygroundLeases(
   const acquireDisabledReason = computed(() => activeRows.value.length > 0 ? 'PlayGround 已有活跃租约' : playgroundAcquireDisabledReason(runtime))
 
   async function load(options: { preserveError?: boolean } = {}) {
+    const sequence = nextLoadSequence()
+    const controller = new AbortController()
+    loadController = controller
     loading.value = true
     const previousError = error.value
     if (!options.preserveError) error.value = ''
     try {
-      leases.value =
-        (await leaseApi.listLeases({ status: 'active', limit: 50 })).leases ||
-        []
+      const response = await leaseApi.listLeases(
+        { status: 'active', limit: 50 },
+        { signal: controller.signal, timeoutMs: leaseRefreshTimeoutMs },
+      )
+      if (!currentLoad(sequence)) return
+      leases.value = response.leases || []
       if (options.preserveError) error.value = previousError
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      if (!currentLoad(sequence) || isProxyRuntimeCancellation(err)) return
+      const message = proxyRuntimeUserMessage(err)
+      if (options.preserveError) {
+        error.value = previousError || `租约已更新，刷新失败：${message}`
+        return
+      }
+      error.value = message
     } finally {
-      loading.value = false
+      if (currentLoad(sequence)) {
+        loading.value = false
+        loadController = undefined
+      }
     }
   }
 
@@ -57,27 +79,55 @@ export function useProxyRuntimePlaygroundLeases(
     }
     await withBusy(async () => {
       await persist()
-      await leaseApi.acquireLease({
+      const response = await leaseApi.acquireLease({
         account_id: profileID.value,
         purpose: playgroundPurpose,
         policy: playgroundLeasePolicy(runtime.form, profileID.value),
         force_new: false,
         selection_policy: undefined,
       })
+      if (response.lease) upsertLease(response.lease)
       await load({ preserveError: true })
     })
   }
 
   async function release(lease: ProxyDynamicLease) {
     await withBusy(async () => {
-      await leaseApi.releaseLease({
+      const response = await leaseApi.releaseLease({
         account_id: lease.account_id,
         lease_id: lease.lease_id,
         purpose: lease.purpose || playgroundPurpose,
       })
+      if (response.lease) upsertLease(response.lease)
       await load()
     })
   }
+
+  function abortLoad() {
+    loadController?.abort()
+    loadController = undefined
+  }
+
+  function nextLoadSequence() {
+    abortLoad()
+    loadSequence += 1
+    return loadSequence
+  }
+
+  function currentLoad(sequence: number) {
+    return sequence === loadSequence
+  }
+
+  function upsertLease(lease: ProxyDynamicLease) {
+    const index = leases.value.findIndex((item) => item.lease_id === lease.lease_id)
+    if (index >= 0) {
+      leases.value.splice(index, 1, lease)
+      return
+    }
+    leases.value = [lease, ...leases.value]
+  }
+
+  onBeforeUnmount(abortLoad)
 
   return { acquire, acquireDisabledReason, activeRows, busy, canAcquire, currentLease, error, load, loading, profileID, release, rows }
 
@@ -87,7 +137,9 @@ export function useProxyRuntimePlaygroundLeases(
     try {
       await action()
     } catch (err) {
-      error.value = err instanceof Error ? err.message : String(err)
+      if (!isProxyRuntimeCancellation(err)) {
+        error.value = proxyRuntimeUserMessage(err)
+      }
     } finally {
       busy.value = false
     }

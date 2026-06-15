@@ -4,9 +4,35 @@ import {
   redirectToProxyRuntimeSetup,
 } from '~/composables/proxyRuntimeEndpointAuth'
 
+export type ProxyRuntimeErrorKind =
+  | 'timeout'
+  | 'cancelled'
+  | 'unauthorized'
+  | 'backend_unreachable'
+  | 'validation_error'
+  | 'provider_error'
+  | 'internal_error'
+
 interface ProxyRuntimeFetchOptions {
   json?: boolean
   timeoutMs?: number
+}
+
+export interface ProxyRuntimeRequestOptions {
+  signal?: AbortSignal
+  timeoutMs?: number
+}
+
+export class ProxyRuntimeRequestError extends Error {
+  readonly kind: ProxyRuntimeErrorKind
+  readonly status?: number
+
+  constructor(kind: ProxyRuntimeErrorKind, message: string, status?: number) {
+    super(message)
+    this.name = 'ProxyRuntimeRequestError'
+    this.kind = kind
+    this.status = status
+  }
 }
 
 const defaultProxyRuntimeTimeoutMs = 30000
@@ -39,17 +65,25 @@ export async function proxyRuntimeFetchJson<T>(
     })
     const text = await response.text()
     if (!response.ok) {
-      if (isUnauthorizedStatus(response.status)) {
+      const message = proxyRuntimeErrorMessage(response, text)
+      const kind = proxyRuntimeHTTPErrorKind(response.status)
+      if (kind === 'unauthorized') {
         redirectToProxyRuntimeSetup()
       }
-      throw new Error(proxyRuntimeErrorMessage(response, text))
+      throw new ProxyRuntimeRequestError(kind, message, response.status)
     }
     if (response.status === 204 || !text.trim()) return {} as T
     return JSON.parse(text) as T
   } catch (err) {
-    if (timedOut) throw new Error('Proxy Runtime 请求超时')
-    if (controller.signal.aborted) throw new Error('Proxy Runtime 请求已取消')
-    if (err instanceof TypeError) throw new Error('Proxy Runtime 后端不可达')
+    if (timedOut) {
+      throw new ProxyRuntimeRequestError('timeout', 'Proxy Runtime 请求超时')
+    }
+    if (controller.signal.aborted) {
+      throw new ProxyRuntimeRequestError('cancelled', 'Proxy Runtime 请求已取消')
+    }
+    if (err instanceof TypeError) {
+      throw new ProxyRuntimeRequestError('backend_unreachable', 'Proxy Runtime 后端不可达')
+    }
     throw err
   } finally {
     globalThis.clearTimeout(timeoutID)
@@ -80,4 +114,24 @@ function proxyRuntimeErrorMessage(response: Response, text: string) {
     }
   }
   return `${response.status} ${response.statusText}`
+}
+
+
+export function proxyRuntimeUserMessage(err: unknown) {
+  if (err instanceof ProxyRuntimeRequestError) return err.message
+  if (err instanceof Error) return err.message
+  return String(err)
+}
+
+export function isProxyRuntimeCancellation(err: unknown) {
+  return (
+    err instanceof ProxyRuntimeRequestError && err.kind === 'cancelled'
+  )
+}
+
+function proxyRuntimeHTTPErrorKind(status: number): ProxyRuntimeErrorKind {
+  if (isUnauthorizedStatus(status)) return 'unauthorized'
+  if (status === 400 || status === 422) return 'validation_error'
+  if (status === 502 || status === 503 || status === 504) return 'provider_error'
+  return 'internal_error'
 }

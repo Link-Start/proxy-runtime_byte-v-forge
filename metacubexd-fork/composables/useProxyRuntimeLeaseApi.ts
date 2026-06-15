@@ -8,6 +8,7 @@ import type {
 import {
   proxyRuntimeFetchJson,
   proxyRuntimeJsonBody,
+  type ProxyRuntimeRequestOptions,
 } from '~/composables/proxyRuntimeFetch'
 
 interface ProxyRuntimeLeaseListOptions {
@@ -19,28 +20,53 @@ const base = '/api'
 
 export function useProxyRuntimeLeaseApi() {
   return {
-    acquireLease: (req: AcquireProxyLeaseRequest) =>
-      proxyRuntimeRequest<AcquireProxyLeaseResponse>('/leases/acquire', {
-        method: 'POST',
-        body: proxyRuntimeJsonBody(req),
-      }),
-    listLeases: (options: ProxyRuntimeLeaseListOptions = {}) =>
-      proxyRuntimeRequest<ListProxyDynamicLeasesResponse>(
-        leaseListPath(options),
+    acquireLease: (
+      req: AcquireProxyLeaseRequest,
+      options: ProxyRuntimeRequestOptions = {},
+    ) =>
+      proxyRuntimeRequest<AcquireProxyLeaseResponse>(
+        '/leases/acquire',
+        {
+          method: 'POST',
+          body: proxyRuntimeJsonBody(req),
+        },
+        options,
       ),
-    releaseLease: (req: ReleaseProxyLeaseRequest) =>
-      proxyRuntimeRequest<ReleaseProxyLeaseResponse>('/leases/release', {
-        method: 'POST',
-        body: proxyRuntimeJsonBody(req),
-      }),
+    listLeases: (
+      listOptions: ProxyRuntimeLeaseListOptions = {},
+      requestOptions: ProxyRuntimeRequestOptions = {},
+    ) =>
+      proxyRuntimeRequest<ListProxyDynamicLeasesResponse>(
+        leaseListPath(listOptions),
+        {},
+        requestOptions,
+      ),
+    releaseLease: (
+      req: ReleaseProxyLeaseRequest,
+      options: ProxyRuntimeRequestOptions = {},
+    ) =>
+      proxyRuntimeRequest<ReleaseProxyLeaseResponse>(
+        '/leases/release',
+        {
+          method: 'POST',
+          body: proxyRuntimeJsonBody(req),
+        },
+        options,
+      ),
   }
 }
 
 async function proxyRuntimeRequest<T>(
   path: string,
   init: RequestInit = {},
+  options: ProxyRuntimeRequestOptions = {},
 ): Promise<T> {
-  return proxyRuntimeFetchJson<T>(base, path, init, { json: true })
+  return proxyRuntimeFetchJson<T>(
+    base,
+    path,
+    { ...init, signal: options.signal },
+    { json: true, timeoutMs: options.timeoutMs },
+  )
 }
 
 function leaseListPath(options: ProxyRuntimeLeaseListOptions) {

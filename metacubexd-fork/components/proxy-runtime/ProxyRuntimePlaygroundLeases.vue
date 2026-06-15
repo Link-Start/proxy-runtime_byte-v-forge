@@ -68,7 +68,7 @@ function active(lease?: ProxyDynamicLease) {
           </div>
         </div>
         <div class="flex shrink-0 items-center gap-1" @click.stop>
-          <Button class="btn-ghost btn-xs btn-square" title="刷新租约" @click="state.load">
+          <Button class="btn-ghost btn-xs btn-square" :disabled="state.loading.value" title="刷新租约" @click="state.load()">
             <IconRefresh :size="15" :class="{ 'animate-spin': state.loading.value }" />
           </Button>
           <Button class="btn-primary btn-xs btn-square" :disabled="state.busy.value || !state.canAcquire.value" title="申请租约" @click="state.acquire">

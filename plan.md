@@ -1022,6 +1022,7 @@ Completed user-visible/runtime batches:
 - Lease HTTP handlers now use a centralized lease error writer for required ID, not-found, application errors, and upstream fallback mapping.
 - Provider-account HTTP dispatch now delegates list/upsert/delete into focused handlers instead of mixing all transport branches in one switch body.
 - Runtime startup now queues the first reconcile in the background before serving HTTP instead of blocking HTTP startup on the initial provider/dataplane refresh; ready/status report pending or running reconcile as applying.
+- Lease expiry and cleanup-pending worker sweeps now run immediately on startup and each operation uses a bounded timeout with duration logging.
 
 Still open:
 

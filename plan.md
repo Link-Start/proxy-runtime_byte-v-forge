@@ -1000,6 +1000,7 @@ Completed user-visible/runtime batches:
 - Prepared acquire now uses a lease-owned settings-backed action for settings load, egress-profile extraction, account-locked runner creation, and policy error mapping.
 - Acquired endpoint listener and egress resolution are grouped behind a dedicated app adapter instead of inline coordinator closures.
 - Lease coordinator route and acquire adapter factories are split into focused files instead of one mixed adapter factory file.
+- Mihomo hot-reload HTTP failure errors now report only status code and do not echo upstream response bodies, reducing secret/session leakage risk.
 
 Still open:
 

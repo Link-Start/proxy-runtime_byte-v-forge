@@ -2,11 +2,14 @@ package app
 
 import (
 	"context"
+	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
+
+const leaseAcquireSlotReleaseTimeout = 5 * time.Second
 
 func (c leaseCoordinator) providerSessionGatewaysResolver(lease *proxyruntimev1.ProxyDynamicLease) func(context.Context, string) ([]accountproxy.Gateway, error) {
 	return func(ctx context.Context, providerID string) ([]accountproxy.Gateway, error) {
@@ -170,7 +173,19 @@ func (c leaseCoordinator) accountLockedAcquireRunner(ctx context.Context, settin
 		Reuse:               c.refreshLeaseConcurrencySlot,
 		Replace:             retirer.Retire,
 		RunAttempt: func(int) (*proxyruntimev1.ProxyDynamicLease, error) {
-			return c.acquireLeaseAttempt(ctx, advertisedHost, req, settings)
+			selection, err := c.deps.dynamicIPSelector.selectDynamicIPEndpoint(ctx, req)
+			if err != nil {
+				return nil, failedPrecondition("no dynamic IP endpoint candidate", err)
+			}
+			runner := c.selectedAcquireAttemptRunner(settings, advertisedHost, req, selection)
+			lease, err := runner.Run(ctx, leaseapp.SelectedAcquireAttemptRunnerInput{
+				SelectionPlan: selection.Plan,
+				Policy:        req.GetPolicy(),
+			})
+			if err != nil {
+				return nil, acquireAttemptSlotError(err)
+			}
+			return lease, nil
 		},
 		Retry: retryLeaseAcquireAttempt,
 		Observe: func(attempt int, err error) {

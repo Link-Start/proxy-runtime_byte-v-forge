@@ -986,6 +986,7 @@ Completed user-visible/runtime batches:
 - Prepared acquire request validation and account-lock entry now run through a lease-owned `PreparedAcquireRunner`; the app-level account-lock wrapper was removed.
 - Lease coordinator adapter factory methods were split from generic helpers into a focused adapter file after acquire/release/restore runner extraction.
 - Dynamic IP selection result is now a lease-owned model, so acquire attempt runners consume a lease boundary type instead of an app-private selection struct.
+- Dynamic acquire attempt selection, selected-attempt execution, and app-specific error mapping are now grouped inside the lease coordinator adapter factory; the app-level acquire-attempt wrapper file was removed.
 
 Still open:
 

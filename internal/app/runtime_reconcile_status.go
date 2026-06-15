@@ -18,6 +18,12 @@ type runtimeLeaseWorkerState struct {
 	lastError string
 }
 
+type runtimeSettingsApplyState struct {
+	pending   bool
+	running   bool
+	lastError string
+}
+
 func (r *Runtime) markReconcilePending() {
 	r.reconcileMu.Lock()
 	defer r.reconcileMu.Unlock()
@@ -43,7 +49,7 @@ func (r *Runtime) markReconcileFinished(err error) {
 }
 
 func (r *Runtime) dataPlaneStatus() string {
-	return r.decorateLeaseWorkerStatus(r.decorateLeaseRestoreStatus(r.decorateRuntimeStatus(statusString(r.dataPlane.Status()))))
+	return r.decorateSettingsApplyStatus(r.decorateLeaseWorkerStatus(r.decorateLeaseRestoreStatus(r.decorateRuntimeStatus(statusString(r.dataPlane.Status())))))
 }
 
 func statusString(status dataplane.Status) string {
@@ -126,6 +132,49 @@ func (r *Runtime) decorateLeaseWorkerStatus(status string) string {
 		return status + "; running lease worker"
 	case r.leaseWorker.lastError != "":
 		return status + "; lease worker failed"
+	default:
+		return status
+	}
+}
+
+func (r *Runtime) markSettingsApplyPending() {
+	r.settingsApplyMu.Lock()
+	defer r.settingsApplyMu.Unlock()
+	r.settingsApply.pending = true
+}
+
+func (r *Runtime) markSettingsApplyStartedIfPending() bool {
+	r.settingsApplyMu.Lock()
+	defer r.settingsApplyMu.Unlock()
+	if !r.settingsApply.pending {
+		return false
+	}
+	r.settingsApply.pending = false
+	r.settingsApply.running = true
+	return true
+}
+
+func (r *Runtime) markSettingsApplyFinished(err error) {
+	r.settingsApplyMu.Lock()
+	defer r.settingsApplyMu.Unlock()
+	r.settingsApply.running = false
+	if err != nil {
+		r.settingsApply.lastError = "failed"
+		return
+	}
+	r.settingsApply.lastError = ""
+}
+
+func (r *Runtime) decorateSettingsApplyStatus(status string) string {
+	r.settingsApplyMu.RLock()
+	defer r.settingsApplyMu.RUnlock()
+	switch {
+	case r.settingsApply.running:
+		return status + "; applying settings"
+	case r.settingsApply.pending:
+		return status + "; settings apply pending"
+	case r.settingsApply.lastError != "":
+		return status + "; settings apply failed"
 	default:
 		return status
 	}

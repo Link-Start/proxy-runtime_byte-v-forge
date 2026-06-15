@@ -35,11 +35,12 @@ func (r *Runtime) runtimeStatus() *proxyruntimev1.ProxyRuntimeStatus {
 	reconcile := r.currentReconcileState()
 	leaseRestore := r.currentLeaseRestoreState()
 	leaseWorker := r.currentLeaseWorkerState()
+	settingsApply := r.currentSettingsApplyState()
 	configStale := dataPlaneConfigStale(dataPlaneStatus)
 	ready := dataPlaneStatus.Running && dataPlaneStatus.LastError == "" && !configStale
 	return &proxyruntimev1.ProxyRuntimeStatus{
 		Ready:                ready,
-		Status:               runtimeStatusLabel(ready, dataPlaneStatus, configStale, reconcile, leaseRestore, leaseWorker),
+		Status:               runtimeStatusLabel(ready, dataPlaneStatus, configStale, reconcile, leaseRestore, leaseWorker, settingsApply),
 		DataPlaneRunning:     dataPlaneStatus.Running,
 		DataPlaneConfigStale: configStale,
 		ReconcilePending:     reconcile.pending,
@@ -68,17 +69,23 @@ func (r *Runtime) currentLeaseWorkerState() runtimeLeaseWorkerState {
 	return r.leaseWorker
 }
 
+func (r *Runtime) currentSettingsApplyState() runtimeSettingsApplyState {
+	r.settingsApplyMu.RLock()
+	defer r.settingsApplyMu.RUnlock()
+	return r.settingsApply
+}
+
 func dataPlaneConfigStale(status dataplane.Status) bool {
 	return status.DesiredConfigHash != "" && status.DesiredConfigHash != status.AppliedConfigHash
 }
 
-func runtimeStatusLabel(ready bool, dataPlaneStatus dataplane.Status, configStale bool, reconcile runtimeReconcileState, leaseRestore runtimeLeaseRestoreState, leaseWorker runtimeLeaseWorkerState) string {
+func runtimeStatusLabel(ready bool, dataPlaneStatus dataplane.Status, configStale bool, reconcile runtimeReconcileState, leaseRestore runtimeLeaseRestoreState, leaseWorker runtimeLeaseWorkerState, settingsApply runtimeSettingsApplyState) string {
 	switch {
-	case reconcile.running || reconcile.pending || leaseRestore.running || leaseWorker.running:
+	case reconcile.running || reconcile.pending || leaseRestore.running || leaseWorker.running || settingsApply.running || settingsApply.pending:
 		return "applying"
 	case !dataPlaneStatus.Running:
 		return "stopped"
-	case !ready || configStale || reconcile.lastError != "" || leaseRestore.lastError != "" || leaseWorker.lastError != "":
+	case !ready || configStale || reconcile.lastError != "" || leaseRestore.lastError != "" || leaseWorker.lastError != "" || settingsApply.lastError != "":
 		return "degraded"
 	default:
 		return "running"

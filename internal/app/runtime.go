@@ -34,16 +34,18 @@ type Runtime struct {
 	logger              *slog.Logger
 	providerHTTPClient  *http.Client
 
-	refreshMu      sync.Mutex
-	reconcileMu    sync.RWMutex
-	reconcileState runtimeReconcileState
-	leaseRestoreMu sync.RWMutex
-	leaseRestore   runtimeLeaseRestoreState
-	leaseWorkerMu  sync.RWMutex
-	leaseWorker    runtimeLeaseWorkerState
-	fraudChecker   ipFraudCheckerCache
-	geoCache       ipGeoCache
-	exitCheckCache proxyExitCheckCache
+	refreshMu       sync.Mutex
+	reconcileMu     sync.RWMutex
+	reconcileState  runtimeReconcileState
+	leaseRestoreMu  sync.RWMutex
+	leaseRestore    runtimeLeaseRestoreState
+	leaseWorkerMu   sync.RWMutex
+	leaseWorker     runtimeLeaseWorkerState
+	settingsApplyMu sync.RWMutex
+	settingsApply   runtimeSettingsApplyState
+	fraudChecker    ipFraudCheckerCache
+	geoCache        ipGeoCache
+	exitCheckCache  proxyExitCheckCache
 
 	dynamicProfileMu        sync.RWMutex
 	dynamicProfilePoolNodes []provider.Node
@@ -160,8 +162,12 @@ func (r *Runtime) reconcile(ctx context.Context) {
 
 func (r *Runtime) runReconcile(ctx context.Context) error {
 	r.markReconcileStarted()
+	settingsApplyStarted := r.markSettingsApplyStartedIfPending()
 	err := r.refresh(ctx)
 	r.markReconcileFinished(err)
+	if settingsApplyStarted {
+		r.markSettingsApplyFinished(err)
+	}
 	return err
 }
 

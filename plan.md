@@ -1028,6 +1028,7 @@ Completed user-visible/runtime batches:
 - Shared runtime HTTP proxy parsing now returns a sanitized invalid proxy error instead of wrapping parser errors that can echo raw proxy URLs.
 - MetaCubeXD proxy-runtime composables now use the shared proxy-runtime error message normalizer instead of duplicating raw Error/String handling across settings, provider, plugin, status, and playground checks.
 - Runtime status polling now aborts stale in-flight requests, suppresses cancellation noise, and keeps the existing bounded status timeout.
+- Settings and Mihomo-native apply scheduling now mark explicit settings-apply pending/running/failed state in runtime status labels without expanding the public proto contract.
 
 Still open:
 

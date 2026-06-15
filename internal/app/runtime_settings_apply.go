@@ -11,6 +11,7 @@ type runtimeSettingsApplyScheduler struct {
 	resetIPFraudChecker   func()
 	geoCache              *ipGeoCache
 	exitCheckCache        *proxyExitCheckCache
+	markApplyPending      func()
 	requestReconcile      func()
 	closeInUserConnection leaseConnectionCleanupFunc
 }
@@ -23,6 +24,7 @@ func newRuntimeSettingsApplyScheduler(runtime *Runtime) runtimeSettingsApplySche
 		resetIPFraudChecker:   runtime.resetIPFraudChecker,
 		geoCache:              &runtime.geoCache,
 		exitCheckCache:        &runtime.exitCheckCache,
+		markApplyPending:      runtime.markSettingsApplyPending,
 		requestReconcile:      runtime.requestReconcile,
 		closeInUserConnection: runtime.closeMihomoInUserConnections,
 	}
@@ -54,6 +56,9 @@ func (s runtimeSettingsApplyScheduler) clearDerivedState() {
 }
 
 func (s runtimeSettingsApplyScheduler) requestApply() {
+	if s.markApplyPending != nil {
+		s.markApplyPending()
+	}
 	if s.requestReconcile != nil {
 		s.requestReconcile()
 	}

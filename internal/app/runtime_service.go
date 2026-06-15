@@ -84,6 +84,7 @@ func runtimeSettingsDependencies(runtime *Runtime) runtimeSettingsApplicationDep
 		return runtimeSettingsApplicationDependencies{}
 	}
 	settingsApply := newRuntimeSettingsApplyScheduler(runtime)
+	mihomoNativeApply := newRuntimeMihomoNativeApplyScheduler(runtime)
 	return runtimeSettingsApplicationDependencies{
 		Logger:     runtime.logger,
 		Settings:   runtime.settings,
@@ -110,10 +111,7 @@ func runtimeSettingsDependencies(runtime *Runtime) runtimeSettingsApplicationDep
 			return updateMihomoNativeSettings(ctx, mihomoNativeUpdateDependencies{
 				Repository: runtime.settings,
 				ConfigDir:  runtime.cfg.Mihomo.ConfigDir,
-				AfterApply: func() {
-					runtime.exitCheckCache.clear()
-					runtime.requestReconcile()
-				},
+				AfterApply: mihomoNativeApply.Schedule,
 			}, config)
 		},
 		ScheduleApply: settingsApply.Schedule,

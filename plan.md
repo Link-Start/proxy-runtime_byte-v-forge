@@ -1004,6 +1004,7 @@ Completed user-visible/runtime batches:
 - Dashboard controller error-body sanitization now also redacts bearer tokens and token/secret/password/session fields, not only full URLs.
 - Redis URL parse failures now return a sanitized configuration error instead of wrapping parser errors that may include credentials.
 - Runtime settings apply scheduling is now behind an explicit adapter that owns derived-cache clearing, reconcile request dispatch, and bounded in-user connection cleanup.
+- Mihomo-native settings apply scheduling now uses an explicit adapter for exit-check cache invalidation and reconcile dispatch instead of inline Runtime closures.
 
 Still open:
 

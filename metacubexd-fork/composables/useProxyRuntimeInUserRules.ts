@@ -1,4 +1,7 @@
-import { proxyRuntimeUserMessage } from '~/composables/proxyRuntimeFetch'
+import {
+  isProxyRuntimeCancellation,
+  proxyRuntimeUserMessage,
+} from '~/composables/proxyRuntimeFetch'
 import type {
   EgressProfileSettings,
   ProxyDynamicIPProviderSettings,
@@ -30,6 +33,8 @@ export function useProxyRuntimeInUserRules() {
   const loading = ref(false)
   const saving = ref(false)
   const error = ref('')
+  let loadController: AbortController | undefined
+  let loadSequence = 0
   const allRows = computed(() =>
     rules.value.map((rule) => ({
       rule,
@@ -44,23 +49,49 @@ export function useProxyRuntimeInUserRules() {
   const ruleCount = computed(() => rows.value.length)
 
   async function load() {
+    const sequence = nextLoadSequence()
+    const controller = new AbortController()
+    loadController = controller
     loading.value = true
     error.value = ''
     try {
+      const requestOptions = { signal: controller.signal }
       const [settings, mihomoOwners] = await Promise.all([
-        api.getSettings(),
-        api.listMihomoEgressOwners(),
+        api.getSettings(requestOptions),
+        api.listMihomoEgressOwners(requestOptions),
       ])
+      if (!currentLoad(sequence)) return
       rules.value = settings.settings?.ingress_rules || []
       profiles.value = settings.settings?.egress_profiles || []
       dynamicProviders.value = settings.settings?.dynamic_ip_providers || []
       owners.value = mihomoOwnersFromController(mihomoOwners)
     } catch (err) {
+      if (!currentLoad(sequence) || isProxyRuntimeCancellation(err)) return
       error.value = proxyRuntimeUserMessage(err)
     } finally {
-      loading.value = false
+      if (currentLoad(sequence)) {
+        loading.value = false
+        loadController = undefined
+      }
     }
   }
+
+  function abortLoad() {
+    loadController?.abort()
+    loadController = undefined
+  }
+
+  function nextLoadSequence() {
+    abortLoad()
+    loadSequence += 1
+    return loadSequence
+  }
+
+  function currentLoad(sequence: number) {
+    return sequence === loadSequence
+  }
+
+  onBeforeUnmount(abortLoad)
 
   function resetForm() {
     Object.assign(form, newInUserRuleForm())

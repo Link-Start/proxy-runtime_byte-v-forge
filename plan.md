@@ -1032,6 +1032,7 @@ Completed user-visible/runtime batches:
 - Mihomo reconcile now wraps normalize, directory preparation, render, restart, and apply failures with explicit projection stage labels so status/logs identify the failed pipeline stage.
 - Dynamic IP endpoint selection for lease acquire now uses an explicit app adapter instead of an inline coordinator closure.
 - Dynamic IP provider UI loads now abort stale provider/settings/account requests and suppress cancellation noise before applying results.
+- In-user rules UI loads now abort stale settings and Mihomo owner requests, and Mihomo controller helpers accept shared request cancellation options.
 
 Still open:
 

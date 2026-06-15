@@ -2,7 +2,10 @@ import type {
   GetProxyRuntimeMihomoNativeConfigResponse,
   ProxyRuntimeMihomoNativeConfig,
 } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import { proxyRuntimeFetchJson } from '~/composables/proxyRuntimeFetch'
+import {
+  proxyRuntimeFetchJson,
+  type ProxyRuntimeRequestOptions,
+} from '~/composables/proxyRuntimeFetch'
 
 const mihomoControllerBase = '/mihomo/controller'
 const proxyRuntimeBase = '/api'
@@ -46,11 +49,13 @@ interface MihomoProvidersResponse {
   providers?: Record<string, MihomoProviderState>
 }
 
-export async function listMihomoEgressOwners() {
+export async function listMihomoEgressOwners(
+  options: ProxyRuntimeRequestOptions = {},
+) {
   const [proxies, providers, nativeConfig] = await Promise.all([
-    mihomoControllerRequest<MihomoProxiesResponse>('/proxies'),
-    mihomoControllerRequest<MihomoProvidersResponse>('/providers/proxies'),
-    getMihomoNativeConfig(),
+    mihomoControllerRequest<MihomoProxiesResponse>('/proxies', options),
+    mihomoControllerRequest<MihomoProvidersResponse>('/providers/proxies', options),
+    getMihomoNativeConfig(options),
   ])
   return {
     proxies: proxies.proxies || {},
@@ -59,28 +64,50 @@ export async function listMihomoEgressOwners() {
   }
 }
 
-export async function listMihomoConfigNodes(ownerId: string) {
+export async function listMihomoConfigNodes(
+  ownerId: string,
+  options: ProxyRuntimeRequestOptions = {},
+) {
   const [{ proxies }, { providers }, nativeConfig] = await Promise.all([
-    mihomoControllerRequest<MihomoProxiesResponse>('/proxies'),
-    mihomoControllerRequest<MihomoProvidersResponse>('/providers/proxies'),
-    getMihomoNativeConfig(),
+    mihomoControllerRequest<MihomoProxiesResponse>('/proxies', options),
+    mihomoControllerRequest<MihomoProvidersResponse>('/providers/proxies', options),
+    getMihomoNativeConfig(options),
   ])
   return nodesFromMihomo(ownerId, proxies || {}, providers || {}, nativeConfig)
 }
 
-async function getMihomoNativeConfig(): Promise<ProxyRuntimeMihomoNativeConfig> {
+async function getMihomoNativeConfig(
+  options: ProxyRuntimeRequestOptions = {},
+): Promise<ProxyRuntimeMihomoNativeConfig> {
   const response = await proxyRuntimeRequest<GetProxyRuntimeMihomoNativeConfigResponse>(
     '/settings/mihomo-native',
+    options,
   )
   return response.config || { fixed_proxies: [], subscriptions: [] }
 }
 
-async function mihomoControllerRequest<T>(path: string): Promise<T> {
-  return proxyRuntimeFetchJson<T>(mihomoControllerBase, path)
+async function mihomoControllerRequest<T>(
+  path: string,
+  options: ProxyRuntimeRequestOptions = {},
+): Promise<T> {
+  return proxyRuntimeFetchJson<T>(
+    mihomoControllerBase,
+    path,
+    { signal: options.signal },
+    { timeoutMs: options.timeoutMs },
+  )
 }
 
-async function proxyRuntimeRequest<T>(path: string): Promise<T> {
-  return proxyRuntimeFetchJson<T>(proxyRuntimeBase, path)
+async function proxyRuntimeRequest<T>(
+  path: string,
+  options: ProxyRuntimeRequestOptions = {},
+): Promise<T> {
+  return proxyRuntimeFetchJson<T>(
+    proxyRuntimeBase,
+    path,
+    { signal: options.signal },
+    { timeoutMs: options.timeoutMs },
+  )
 }
 
 function nodesFromMihomo(

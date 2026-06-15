@@ -10,44 +10,19 @@ import (
 
 const leaseAcquireSlotReleaseTimeout = 5 * time.Second
 
-func (c leaseCoordinator) selectedAcquireAttemptRunner(settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest, selection leaseapp.DynamicIPSelection) leaseapp.SelectedAcquireAttemptRunner {
-	providerRunnerFactory := leaseProviderAccountAcquireRunnerFactory{
-		deps:           c.deps,
-		settings:       settings,
-		advertisedHost: advertisedHost,
-		request:        req,
-		selectionPlan:  selection.Plan,
-	}
-	action := leaseapp.SelectedAttemptProviderAccountAction{
-		Selection: selection,
-		Request:   req,
-		NewRunner: providerRunnerFactory.New,
-		MapError:  providerSessionAcquireError,
-	}
-	return leaseapp.SelectedAcquireAttemptRunner{
-		Store:          c.deps.store,
-		IDs:            c.deps.ids,
-		Limiter:        c.deps.providerConcurrency,
-		Locks:          c.deps.locks,
-		DefaultTTL:     leaseapp.DefaultDynamicIPStickyTTL,
-		TTLBuffer:      providerAccountConcurrencyTTLBuffer,
-		ReleaseTimeout: leaseAcquireSlotReleaseTimeout,
-		Limit: func(selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
-			return dynamicProviderConcurrencyLimit(settings, leaseapp.SelectedDynamicProviderID(selectionPlan), policy)
-		},
-		Action: action.Run,
-	}
-}
-
 func (c leaseCoordinator) accountLockedAcquireRunner(ctx context.Context, settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.AccountLockedAcquireRunner {
 	retirer := c.leaseRouteRetirer()
 	refresher := c.concurrencySlotRefreshRunner()
 	selector := leaseDynamicIPSelectionAdapter{selector: c.deps.dynamicIPSelector}
+	selectedRunnerFactory := leaseSelectedAcquireAttemptRunnerFactory{
+		deps:           c.deps,
+		settings:       settings,
+		advertisedHost: advertisedHost,
+		request:        req,
+	}
 	attemptRunner := leaseapp.DynamicAcquireAttemptRunner{
-		Select: selector.Select,
-		NewSelectedRunner: func(selection leaseapp.DynamicIPSelection) leaseapp.SelectedAcquireAttemptRunner {
-			return c.selectedAcquireAttemptRunner(settings, advertisedHost, req, selection)
-		},
+		Select:            selector.Select,
+		NewSelectedRunner: selectedRunnerFactory.New,
 		MapSelectionError: mapDynamicIPSelectionError,
 		MapAttemptError:   acquireAttemptSlotError,
 	}

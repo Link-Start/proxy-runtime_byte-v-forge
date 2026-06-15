@@ -10,12 +10,6 @@ import {
 const props = defineProps<{ runtime: ProxyRuntimeMetricsState }>()
 const runtimeStatus = useProxyRuntimeStatus()
 
-const evenRows = computed(() =>
-  props.runtime.rows.value.filter((_, index) => index % 2 === 0),
-)
-const oddRows = computed(() =>
-  props.runtime.rows.value.filter((_, index) => index % 2 === 1),
-)
 const stats = computed(() => {
   const overview = props.runtime.overview.value
   const total = overview.totalCount || 0
@@ -100,35 +94,11 @@ const stats = computed(() => {
         {{ runtime.loading.value ? '正在读取指标' : '暂无运行指标' }}
       </div>
 
-      <ProxiesRenderWrapper v-else>
-        <template #even>
-          <ProxyRuntimeMetricOperationCard
-            v-for="(row, index) in evenRows"
-            :key="`${row.operation}:${row.status}`"
-            :index="index"
-            :row="row"
-            :slow-threshold-label="runtime.slowThresholdLabel.value"
-          />
-        </template>
-        <template #odd>
-          <ProxyRuntimeMetricOperationCard
-            v-for="(row, index) in oddRows"
-            :key="`${row.operation}:${row.status}`"
-            :index="index"
-            :row="row"
-            :slow-threshold-label="runtime.slowThresholdLabel.value"
-          />
-        </template>
-        <template #default>
-          <ProxyRuntimeMetricOperationCard
-            v-for="(row, index) in runtime.rows.value"
-            :key="`${row.operation}:${row.status}`"
-            :index="index"
-            :row="row"
-            :slow-threshold-label="runtime.slowThresholdLabel.value"
-          />
-        </template>
-      </ProxiesRenderWrapper>
+      <ProxyRuntimeMetricsTable
+        v-else
+        :rows="runtime.rows.value"
+        :slow-threshold-label="runtime.slowThresholdLabel.value"
+      />
     </div>
   </main>
 </template>

@@ -74,6 +74,15 @@ func (a Application) WriteLoginDecision(w http.ResponseWriter, req *http.Request
 	return nil
 }
 
+func (a Application) WriteLoginPageResponse(w http.ResponseWriter, req *http.Request, authenticated bool) error {
+	page := LoginPageOptionsFromRequest(req)
+	if authenticated {
+		http.Redirect(w, req, page.Next, http.StatusSeeOther)
+		return nil
+	}
+	return WriteLoginPage(w, page)
+}
+
 func (a Application) WriteSessionResponse(w http.ResponseWriter, authenticated bool) {
 	WriteSessionResponse(w, authenticated, a.Enabled())
 }

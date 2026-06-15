@@ -39,12 +39,7 @@ func (api *runtimeHTTPAPI) handleAuthLogout(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleAuthLoginPage(ctx *gin.Context) {
-	page := authapp.LoginPageOptionsFromRequest(ctx.Request)
-	if api.sessionAuthenticated(ctx.Request) {
-		ctx.Redirect(http.StatusSeeOther, page.Next)
-		return
-	}
-	if err := authapp.WriteLoginPage(ctx.Writer, page); err != nil {
+	if err := api.auth.WriteLoginPageResponse(ctx.Writer, ctx.Request, api.sessionAuthenticated(ctx.Request)); err != nil {
 		api.logger.Warn("render login page failed", "error", err)
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 	}

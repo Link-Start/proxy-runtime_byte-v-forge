@@ -1012,6 +1012,7 @@ Completed user-visible/runtime batches:
 - Auth logout response emission now lives in the auth application, including cookie clearing, safe redirect, and no-content handling.
 - Auth session and websocket-token response emission now lives in the auth application instead of runtime HTTP handlers.
 - Auth login decision response emission now lives in the auth application, including session cookie creation, safe redirect, and JSON session response.
+- Auth login-page response emission now lives in the auth application, including authenticated redirect and page rendering.
 
 Still open:
 

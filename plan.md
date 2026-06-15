@@ -1025,6 +1025,7 @@ Completed user-visible/runtime batches:
 - Lease expiry and cleanup-pending worker sweeps now run immediately on startup and each operation uses a bounded timeout with duration logging.
 - Mihomo hot reload now reloads the last accepted canonical config when a candidate reload passes but endpoint verification or canonical persistence fails.
 - Runtime status now includes lease worker running/failed state in the existing status label without expanding the public proto contract.
+- Shared runtime HTTP proxy parsing now returns a sanitized invalid proxy error instead of wrapping parser errors that can echo raw proxy URLs.
 
 Still open:
 

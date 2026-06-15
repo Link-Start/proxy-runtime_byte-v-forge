@@ -2,6 +2,7 @@ package runtimehttp
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
@@ -37,7 +38,7 @@ func transportWithProxy(timeout time.Duration, proxyRawURL string, schemes ...st
 	}
 	parsed, err := url.Parse(proxyRawURL)
 	if err != nil {
-		return nil, fmt.Errorf("parse proxy_url: %w", err)
+		return nil, errors.New("proxy_url is invalid")
 	}
 	allowed := normalizedProxySchemes(schemes)
 	scheme := strings.ToLower(parsed.Scheme)

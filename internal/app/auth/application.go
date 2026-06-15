@@ -58,6 +58,22 @@ func (a Application) WriteLogoutResponse(w http.ResponseWriter, req *http.Reques
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (a Application) WriteLoginDecision(w http.ResponseWriter, req *http.Request, decision LoginDecision, now time.Time) error {
+	if !decision.Authenticated {
+		http.Redirect(w, req, decision.RedirectURL, http.StatusSeeOther)
+		return nil
+	}
+	if err := a.SetSessionCookie(w, req, now); err != nil {
+		return err
+	}
+	if decision.RedirectURL != "" {
+		http.Redirect(w, req, decision.RedirectURL, http.StatusSeeOther)
+		return nil
+	}
+	a.WriteSessionResponse(w, true)
+	return nil
+}
+
 func (a Application) WriteSessionResponse(w http.ResponseWriter, authenticated bool) {
 	WriteSessionResponse(w, authenticated, a.Enabled())
 }

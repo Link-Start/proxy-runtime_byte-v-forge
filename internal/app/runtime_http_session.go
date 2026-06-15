@@ -29,19 +29,9 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 		writeHTTPError(ctx.Writer, err, http.StatusUnauthorized)
 		return
 	}
-	if !decision.Authenticated {
-		ctx.Redirect(http.StatusSeeOther, decision.RedirectURL)
-		return
-	}
-	if err := api.auth.SetSessionCookie(ctx.Writer, ctx.Request, time.Now()); err != nil {
+	if err := api.auth.WriteLoginDecision(ctx.Writer, ctx.Request, decision, time.Now()); err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
-		return
 	}
-	if decision.RedirectURL != "" {
-		ctx.Redirect(http.StatusSeeOther, decision.RedirectURL)
-		return
-	}
-	api.auth.WriteSessionResponse(ctx.Writer, true)
 }
 
 func (api *runtimeHTTPAPI) handleAuthLogout(ctx *gin.Context) {

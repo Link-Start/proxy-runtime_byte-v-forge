@@ -43,13 +43,16 @@ func (d *Driver) applyFinalConfigProjectionLocked(ctx context.Context, configPat
 
 func (d *Driver) restartConfigProjectionLocked(ctx context.Context, configPath string, config renderedMihomoConfig, endpoint sourceplane.Endpoint) error {
 	if err := writeConfigData(configPath, config.data); err != nil {
-		return err
+		return configProjectionStageError("write restart config", err)
 	}
 	d.stopLocked()
 	if err := d.startLocked(ctx, filepath.Dir(configPath), configPath); err != nil {
-		return err
+		return configProjectionStageError("start process", err)
 	}
-	return waitForReloadEndpoint(ctx, endpoint)
+	if err := waitForReloadEndpoint(ctx, endpoint); err != nil {
+		return configProjectionStageError("wait listener", err)
+	}
+	return nil
 }
 
 func (d *Driver) recordAppliedConfigProjection(configPath string, endpoint sourceplane.Endpoint, baseConfig renderedMihomoConfig, finalConfig renderedMihomoConfig) {

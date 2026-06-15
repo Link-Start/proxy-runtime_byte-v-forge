@@ -1029,6 +1029,7 @@ Completed user-visible/runtime batches:
 - MetaCubeXD proxy-runtime composables now use the shared proxy-runtime error message normalizer instead of duplicating raw Error/String handling across settings, provider, plugin, status, and playground checks.
 - Runtime status polling now aborts stale in-flight requests, suppresses cancellation noise, and keeps the existing bounded status timeout.
 - Settings and Mihomo-native apply scheduling now mark explicit settings-apply pending/running/failed state in runtime status labels without expanding the public proto contract.
+- Mihomo reconcile now wraps normalize, directory preparation, render, restart, and apply failures with explicit projection stage labels so status/logs identify the failed pipeline stage.
 
 Still open:
 

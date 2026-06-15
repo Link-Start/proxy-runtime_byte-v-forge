@@ -1041,6 +1041,8 @@ Completed user-visible/runtime batches:
 - Mihomo reconcile base/final render preparation now lives in focused stage helpers, leaving the locked reconcile flow as projection stage orchestration.
 - Mihomo config projection now has explicit project, validate, and encode stage helpers instead of hiding the whole render pipeline in one function body.
 - Mihomo projection apply now uses explicit apply inputs, with restart execution and projection state recording split out of the apply decision file.
+- SQLite is confirmed as a supported standalone product runtime path; follow-up store cleanup must consolidate duplicated business predicates instead of removing the adapter.
+- Mihomo render section projection now separates proxy/gateway projection parts from section assembly and group merging.
 
 Still open:
 
@@ -1050,7 +1052,7 @@ Still open:
 - Separate `httpapi`, `auth`, and `dashboard` packages and keep handlers as thin transport adapters.
 - Finish provider adapter capability boundaries and secret-handling audit.
 - Expand metrics and structured operation logging for slow paths.
-- Decide whether SQLite remains a supported adapter; if it stays, remove duplicated business predicates from store implementations.
+- Keep SQLite as the supported standalone deployment adapter while removing duplicated business predicates from SQLite and PostgreSQL store implementations.
 
 ### Next Implementation Batches
 
@@ -1080,8 +1082,8 @@ Still open:
    - Audit logs, metrics, traces, and client errors for provider credentials, Mihomo secret, proxy passwords, full proxy URLs, and session material.
 
 6. **Observability and store decision**
-   - Add missing slow-path metrics for lease list/acquire/release, workers, provider requests, dataplane apply, and settings apply.
-   - Verify deployed store mode and remove SQLite from runtime path if it is no longer a product requirement.
+	- Add missing slow-path metrics for lease list/acquire/release, workers, provider requests, dataplane apply, and settings apply.
+	- Keep SQLite for standalone deployments and consolidate duplicated SQLite/PostgreSQL business predicates behind shared repository semantics.
 
 ### Recommended Commit Sequence
 

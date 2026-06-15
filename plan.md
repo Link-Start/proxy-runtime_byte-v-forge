@@ -1027,6 +1027,7 @@ Completed user-visible/runtime batches:
 - Runtime status now includes lease worker running/failed state in the existing status label without expanding the public proto contract.
 - Shared runtime HTTP proxy parsing now returns a sanitized invalid proxy error instead of wrapping parser errors that can echo raw proxy URLs.
 - MetaCubeXD proxy-runtime composables now use the shared proxy-runtime error message normalizer instead of duplicating raw Error/String handling across settings, provider, plugin, status, and playground checks.
+- Runtime status polling now aborts stale in-flight requests, suppresses cancellation noise, and keeps the existing bounded status timeout.
 
 Still open:
 

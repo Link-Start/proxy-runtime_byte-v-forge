@@ -1,16 +1,20 @@
 import type { GetProxyRuntimeStatusResponse } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import { proxyRuntimeFetchJson } from '~/composables/proxyRuntimeFetch'
+import {
+  proxyRuntimeFetchJson,
+  type ProxyRuntimeRequestOptions,
+} from '~/composables/proxyRuntimeFetch'
 
 const base = '/api'
+const runtimeStatusTimeoutMs = 10000
 
 export function useProxyRuntimeStatusApi() {
   return {
-    getStatus: () =>
+    getStatus: (options: ProxyRuntimeRequestOptions = {}) =>
       proxyRuntimeFetchJson<GetProxyRuntimeStatusResponse>(
         base,
         '/runtime/status',
-        {},
-        { json: true, timeoutMs: 10000 },
+        { signal: options.signal },
+        { json: true, timeoutMs: options.timeoutMs || runtimeStatusTimeoutMs },
       ),
   }
 }

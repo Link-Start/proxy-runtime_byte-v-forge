@@ -21,6 +21,6 @@ The project overlay adds:
 - `入口用户` inside MetaCubeXD `proxies` for proxy username/password, line, and exit bindings.
 - `动态IP提供商` inside MetaCubeXD `proxies` for proxy-runtime-only dynamic provider instances, endpoints, and provider accounts.
 - `动态租约` inside MetaCubeXD `connections` for active dynamic lease runtime state.
-- `观测` page for proxy-runtime operation metrics.
+- `观测` tab inside MetaCubeXD `overview` for proxy-runtime operation metrics.
 
 Both use `/api/*`. They do not hand-edit the generated Mihomo runtime projection.

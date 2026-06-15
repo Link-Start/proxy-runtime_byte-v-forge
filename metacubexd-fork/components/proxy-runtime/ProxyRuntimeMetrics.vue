@@ -51,7 +51,7 @@ const stats = computed(() => {
 </script>
 
 <template>
-  <main class="flex h-full min-h-0 flex-col gap-3">
+  <main class="flex min-w-0 flex-col gap-4">
     <div class="animate-fade-slide-in flex shrink-0 items-center justify-between gap-2">
       <div class="flex min-w-0 items-center gap-2">
         <ProxyRuntimeStatusBadge :state="runtimeStatus" />
@@ -87,7 +87,12 @@ const stats = computed(() => {
       />
     </div>
 
-    <div class="min-h-0 flex-1 overflow-y-auto">
+    <ProxyRuntimeMetricsCharts
+      :loading="runtime.loading.value"
+      :rows="runtime.rows.value"
+    />
+
+    <div class="min-w-0">
       <div
         v-if="runtime.rows.value.length === 0"
         class="py-8 text-center text-sm opacity-60"

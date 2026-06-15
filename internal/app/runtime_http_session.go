@@ -48,12 +48,7 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleAuthLogout(ctx *gin.Context) {
-	api.auth.ClearSessionCookie(ctx.Writer, ctx.Request)
-	if redirect := authapp.LogoutRedirect(ctx.Query("redirect")); redirect != "" {
-		ctx.Redirect(http.StatusSeeOther, redirect)
-		return
-	}
-	ctx.Status(http.StatusNoContent)
+	api.auth.WriteLogoutResponse(ctx.Writer, ctx.Request, ctx.Query("redirect"))
 }
 
 func (api *runtimeHTTPAPI) handleAuthLoginPage(ctx *gin.Context) {

@@ -49,6 +49,15 @@ func (a Application) ClearSessionCookie(w http.ResponseWriter, req *http.Request
 	http.SetCookie(w, a.NewClearSessionCookie(httpapi.ForwardedProto(req) == "https"))
 }
 
+func (a Application) WriteLogoutResponse(w http.ResponseWriter, req *http.Request, redirect string) {
+	a.ClearSessionCookie(w, req)
+	if target := LogoutRedirect(redirect); target != "" {
+		http.Redirect(w, req, target, http.StatusSeeOther)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
 func (a Application) NewWebSocketToken(now time.Time) (string, error) {
 	return NewWebSocketToken(a.secret, now)
 }

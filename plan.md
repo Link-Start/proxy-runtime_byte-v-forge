@@ -1009,6 +1009,7 @@ Completed user-visible/runtime batches:
 - Mihomo-native settings load/update are now behind a dedicated settings adapter instead of inline runtime dependency closures.
 - RuntimeService now holds the settings application directly; the old runtimeSettingsApplication forwarding wrapper files were removed.
 - Auth authorization response emission now lives in the auth package, keeping Gin middleware as a thin decision caller.
+- Auth logout response emission now lives in the auth application, including cookie clearing, safe redirect, and no-content handling.
 
 Still open:
 

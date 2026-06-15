@@ -58,6 +58,19 @@ func (a Application) WriteLogoutResponse(w http.ResponseWriter, req *http.Reques
 	w.WriteHeader(http.StatusNoContent)
 }
 
+func (a Application) WriteSessionResponse(w http.ResponseWriter, authenticated bool) {
+	WriteSessionResponse(w, authenticated, a.Enabled())
+}
+
+func (a Application) WriteWebSocketTokenResponse(w http.ResponseWriter, now time.Time) error {
+	token, err := a.NewWebSocketToken(now)
+	if err != nil {
+		return err
+	}
+	WriteWebSocketTokenResponse(w, token)
+	return nil
+}
+
 func (a Application) NewWebSocketToken(now time.Time) (string, error) {
 	return NewWebSocketToken(a.secret, now)
 }

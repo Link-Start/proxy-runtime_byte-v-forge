@@ -9,16 +9,13 @@ import (
 )
 
 func (api *runtimeHTTPAPI) handleAuthSession(ctx *gin.Context) {
-	api.writeAuthSession(ctx, api.sessionAuthenticated(ctx.Request))
+	api.auth.WriteSessionResponse(ctx.Writer, api.sessionAuthenticated(ctx.Request))
 }
 
 func (api *runtimeHTTPAPI) handleAuthWebSocketToken(ctx *gin.Context) {
-	token, err := api.auth.NewWebSocketToken(time.Now())
-	if err != nil {
+	if err := api.auth.WriteWebSocketTokenResponse(ctx.Writer, time.Now()); err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
-		return
 	}
-	authapp.WriteWebSocketTokenResponse(ctx.Writer, token)
 }
 
 func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
@@ -44,7 +41,7 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 		ctx.Redirect(http.StatusSeeOther, decision.RedirectURL)
 		return
 	}
-	api.writeAuthSession(ctx, true)
+	api.auth.WriteSessionResponse(ctx.Writer, true)
 }
 
 func (api *runtimeHTTPAPI) handleAuthLogout(ctx *gin.Context) {
@@ -61,10 +58,6 @@ func (api *runtimeHTTPAPI) handleAuthLoginPage(ctx *gin.Context) {
 		api.logger.Warn("render login page failed", "error", err)
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 	}
-}
-
-func (api *runtimeHTTPAPI) writeAuthSession(ctx *gin.Context, authenticated bool) {
-	authapp.WriteSessionResponse(ctx.Writer, authenticated, api.auth.Enabled())
 }
 
 func (api *runtimeHTTPAPI) redirectToLoginIfRequired(ctx *gin.Context) bool {

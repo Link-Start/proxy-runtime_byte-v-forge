@@ -16,7 +16,7 @@
 
 ## 控制面鉴权
 
-设置 `PROXY_RUNTIME_CONTROL_AUTH_TOKEN` 后，MetaCubeXD 静态 UI、后台配置 API 与 `/mihomo/controller/*` 需要先通过 `/login` 登录。登录成功后服务端下发 `HttpOnly` session cookie；浏览器不保存 Mihomo controller secret，proxy-runtime 在反向代理到 Mihomo 时内部注入 controller 鉴权。`/api/leases/acquire`、`/api/leases/release` 和出口检测类 API 保持服务间机器调用入口，不依赖浏览器登录态。
+设置 `PROXY_RUNTIME_CONTROL_AUTH_TOKEN` 后，控制面、MetaCubeXD 静态 UI 与 `/mihomo/controller/*` 需要先通过 `/login` 登录。登录成功后服务端下发 `HttpOnly` session cookie；浏览器不保存 Mihomo controller secret，proxy-runtime 在反向代理到 Mihomo 时内部注入 controller 鉴权。
 
 ## 入口
 

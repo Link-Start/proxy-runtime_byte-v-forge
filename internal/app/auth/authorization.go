@@ -18,7 +18,7 @@ func (a Application) Authorize(req *http.Request, now time.Time, controlPlanePre
 	if req != nil && req.URL != nil {
 		requestPath = req.URL.Path
 	}
-	if !a.RequestRequired(requestMethod(req), requestPath) || !a.Enabled() || a.RequestAuthenticated(req, now) {
+	if !a.Required(requestPath) || !a.Enabled() || a.RequestAuthenticated(req, now) {
 		return AuthorizationDecision{Authorized: true}
 	}
 	if a.LoginRedirectPreferred(req, controlPlanePrefix) {
@@ -32,13 +32,6 @@ func (a Application) LoginRedirectIfRequired(req *http.Request, protectedPath st
 		return "", false
 	}
 	return LoginRedirect(requestURI(req)), true
-}
-
-func requestMethod(req *http.Request) string {
-	if req == nil {
-		return ""
-	}
-	return req.Method
 }
 
 func requestURI(req *http.Request) string {

@@ -24,10 +24,6 @@ func (a Application) Required(requestPath string) bool {
 	return Required(a.secret, requestPath)
 }
 
-func (a Application) RequestRequired(method string, requestPath string) bool {
-	return RequestRequired(a.secret, method, requestPath)
-}
-
 func (a Application) TokenMatches(token string) bool {
 	return TokenMatches(token, a.secret)
 }

@@ -154,6 +154,21 @@ func (c leaseCoordinator) selectedAcquireAttemptRunner(settings *runtimeSettings
 
 func (c leaseCoordinator) accountLockedAcquireRunner(ctx context.Context, settings *runtimeSettingsFile, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) leaseapp.AccountLockedAcquireRunner {
 	retirer := c.leaseRouteRetirer()
+	attemptRunner := leaseapp.DynamicAcquireAttemptRunner{
+		Select: func(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (leaseapp.DynamicIPSelection, error) {
+			if c.deps.dynamicIPSelector == nil {
+				return leaseapp.DynamicIPSelection{}, internalError("dynamic IP selector is not configured", nil)
+			}
+			return c.deps.dynamicIPSelector.selectDynamicIPEndpoint(ctx, req)
+		},
+		NewSelectedRunner: func(selection leaseapp.DynamicIPSelection) leaseapp.SelectedAcquireAttemptRunner {
+			return c.selectedAcquireAttemptRunner(settings, advertisedHost, req, selection)
+		},
+		MapSelectionError: func(err error) error {
+			return failedPrecondition("no dynamic IP endpoint candidate", err)
+		},
+		MapAttemptError: acquireAttemptSlotError,
+	}
 	return leaseapp.AccountLockedAcquireRunner{
 		Store:               c.deps.store,
 		Clock:               c.deps.clock,
@@ -162,19 +177,7 @@ func (c leaseCoordinator) accountLockedAcquireRunner(ctx context.Context, settin
 		Reuse:               c.refreshLeaseConcurrencySlot,
 		Replace:             retirer.Retire,
 		RunAttempt: func(int) (*proxyruntimev1.ProxyDynamicLease, error) {
-			selection, err := c.deps.dynamicIPSelector.selectDynamicIPEndpoint(ctx, req)
-			if err != nil {
-				return nil, failedPrecondition("no dynamic IP endpoint candidate", err)
-			}
-			runner := c.selectedAcquireAttemptRunner(settings, advertisedHost, req, selection)
-			lease, err := runner.Run(ctx, leaseapp.SelectedAcquireAttemptRunnerInput{
-				SelectionPlan: selection.Plan,
-				Policy:        req.GetPolicy(),
-			})
-			if err != nil {
-				return nil, acquireAttemptSlotError(err)
-			}
-			return lease, nil
+			return attemptRunner.Run(ctx, req, req.GetPolicy())
 		},
 		Retry: retryLeaseAcquireAttempt,
 		Observe: func(attempt int, err error) {

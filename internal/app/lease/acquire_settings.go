@@ -10,6 +10,7 @@ import (
 var ErrAccountLockedAcquireRunnerFactoryRequired = errors.New("account locked acquire runner factory is required")
 
 type SettingsEgressProfilesFunc[T any] func(T) []*proxyruntimev1.EgressProfileSettings
+type SettingsIngressRulesFunc[T any] func(T) []*proxyruntimev1.ProxyIngressRuleSettings
 
 type AccountLockedAcquireRunnerFactory[T any] func(context.Context, T) AccountLockedAcquireRunner
 
@@ -19,6 +20,7 @@ type SettingsPreparedAcquireAction[T any] struct {
 	Load           SettingsLoader[T]
 	Request        *proxyruntimev1.AcquireProxyLeaseRequest
 	EgressProfiles SettingsEgressProfilesFunc[T]
+	IngressRules   SettingsIngressRulesFunc[T]
 	NewRunner      AccountLockedAcquireRunnerFactory[T]
 	MapPolicyError AcquirePolicyErrorMapper
 }
@@ -34,10 +36,13 @@ func (a SettingsPreparedAcquireAction[T]) Run(ctx context.Context) (*proxyruntim
 	if a.NewRunner == nil {
 		return nil, ErrAccountLockedAcquireRunnerFactoryRequired
 	}
+	egressProfiles := a.egressProfiles(settings)
+	ingressRules := a.ingressRules(settings)
+	ResolveAcquireRequestAccountID(egressProfiles, ingressRules, a.Request)
 	runner := a.NewRunner(ctx, settings)
 	lease, err := runner.Run(ctx, AccountLockedAcquireRunnerInput{
 		Request:        a.Request,
-		EgressProfiles: a.egressProfiles(settings),
+		EgressProfiles: egressProfiles,
 	})
 	if err != nil && IsAcquirePolicyError(err) {
 		return nil, a.mapPolicyError(err)
@@ -50,6 +55,13 @@ func (a SettingsPreparedAcquireAction[T]) egressProfiles(settings T) []*proxyrun
 		return nil
 	}
 	return a.EgressProfiles(settings)
+}
+
+func (a SettingsPreparedAcquireAction[T]) ingressRules(settings T) []*proxyruntimev1.ProxyIngressRuleSettings {
+	if a.IngressRules == nil {
+		return nil
+	}
+	return a.IngressRules(settings)
 }
 
 func (a SettingsPreparedAcquireAction[T]) mapPolicyError(err error) error {

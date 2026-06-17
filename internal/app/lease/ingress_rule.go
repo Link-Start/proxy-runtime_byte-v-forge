@@ -16,6 +16,20 @@ func ListenerPassword(rules []*proxyruntimev1.ProxyIngressRuleSettings, profileI
 	return ""
 }
 
+func IngressRuleByUsername(rules []*proxyruntimev1.ProxyIngressRuleSettings, username string) *proxyruntimev1.ProxyIngressRuleSettings {
+	username = strings.TrimSpace(username)
+	if username == "" {
+		return nil
+	}
+	for _, rule := range rules {
+		if !rule.GetEnabled() || strings.TrimSpace(rule.GetUsername()) != username || strings.TrimSpace(rule.GetProfileId()) == "" {
+			continue
+		}
+		return rule
+	}
+	return nil
+}
+
 func IngressRuleForProfile(rules []*proxyruntimev1.ProxyIngressRuleSettings, profileID string) *proxyruntimev1.ProxyIngressRuleSettings {
 	profileID = strings.TrimSpace(profileID)
 	if profileID == "" {

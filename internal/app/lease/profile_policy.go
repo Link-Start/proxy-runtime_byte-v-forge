@@ -34,6 +34,21 @@ func ApplyProfileDynamicIPPolicy(profiles []*proxyruntimev1.EgressProfileSetting
 	return nil
 }
 
+func ResolveAcquireRequestAccountID(profiles []*proxyruntimev1.EgressProfileSettings, rules []*proxyruntimev1.ProxyIngressRuleSettings, req *proxyruntimev1.AcquireProxyLeaseRequest) {
+	if req == nil {
+		return
+	}
+	accountID := strings.TrimSpace(req.GetAccountId())
+	if accountID == "" || EgressProfileByID(profiles, accountID) != nil {
+		return
+	}
+	rule := IngressRuleByUsername(rules, accountID)
+	if rule == nil || strings.TrimSpace(rule.GetProfileId()) == "" {
+		return
+	}
+	req.AccountId = strings.TrimSpace(rule.GetProfileId())
+}
+
 func ProfileDynamicIPLeasePolicy(profilePolicy *proxyruntimev1.ProxySessionPolicy, requestPolicy *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxySessionPolicy {
 	policy := NormalizeDynamicIPSessionPolicy(profilePolicy)
 	request := NormalizeDynamicIPSessionPolicy(requestPolicy)

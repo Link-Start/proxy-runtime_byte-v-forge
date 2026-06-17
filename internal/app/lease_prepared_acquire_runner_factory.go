@@ -25,6 +25,7 @@ func (f leasePreparedAcquireRunnerFactory) New() leaseapp.PreparedAcquireRunner 
 		Load:           f.deps.settings.load,
 		Request:        f.request,
 		EgressProfiles: leaseSettingsEgressProfiles,
+		IngressRules:   leaseSettingsIngressRules,
 		NewRunner:      accountLockedFactory.New,
 		MapPolicyError: leaseProfilePolicyError,
 	}
@@ -46,4 +47,8 @@ func (c leaseCoordinator) preparedAcquireRunner(advertisedHost string, req *prox
 
 func leaseSettingsEgressProfiles(settings *runtimeSettingsFile) []*proxyruntimev1.EgressProfileSettings {
 	return settings.GetEgressProfiles()
+}
+
+func leaseSettingsIngressRules(settings *runtimeSettingsFile) []*proxyruntimev1.ProxyIngressRuleSettings {
+	return settings.GetIngressRules()
 }

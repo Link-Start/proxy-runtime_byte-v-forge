@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"strings"
@@ -39,6 +40,7 @@ func (r *Runtime) probeExitIP(ctx context.Context, client *http.Client) (string,
 			results <- probeResult{ip: geo.IP}
 		}()
 	}
+	var probeErrs []error
 	for range endpoints {
 		select {
 		case <-ctx.Done():
@@ -48,7 +50,13 @@ func (r *Runtime) probeExitIP(ctx context.Context, client *http.Client) (string,
 				cancel()
 				return result.ip, nil
 			}
+			if result.err != nil {
+				probeErrs = append(probeErrs, result.err)
+			}
 		}
+	}
+	if len(probeErrs) > 0 {
+		return "", fmt.Errorf("check proxy exit ip failed: %w", errors.Join(probeErrs...))
 	}
 	return "", errors.New("check proxy exit ip failed")
 }

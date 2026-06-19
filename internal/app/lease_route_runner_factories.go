@@ -24,18 +24,13 @@ func (f leaseRouteRetirerFactory) New() leaseapp.LeaseRouteRetirer {
 		LocalProtocol:                     f.deps.cfg.LocalProtocol,
 		ResolveGatewaysForLease:           f.settings.ProviderGatewaysResolver,
 		AfterRouteCleanup:                 f.afterRouteCleanup,
-		ObserveProviderReleaseFailure:     f.observeProviderReleaseFailure,
+		ObserveProviderReleaseFailure:     warnLeaseProviderSessionReleaseFailed(f.deps.logger),
 		ObserveFinalConcurrencyReleaseErr: f.observeFinalConcurrencyReleaseFailure(),
 	}
 }
 
 func (f leaseRouteRetirerFactory) afterRouteCleanup(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
 	f.sideEffects.afterRouteChange(ctx, lease.GetAccountId())
-}
-
-func (f leaseRouteRetirerFactory) observeProviderReleaseFailure(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
-	_ = ctx
-	warnLeaseProviderSessionReleaseFailed(f.deps.logger, lease)
 }
 
 func (f leaseRouteRetirerFactory) observeFinalConcurrencyReleaseFailure() leaseapp.LeaseObserver {
@@ -89,9 +84,12 @@ func (f leaseRouteRestorerFactory) resolveGateways(lease *proxyruntimev1.ProxyDy
 	return f.adapter.ProviderGatewaysResolverForSettings(f.settings, lease)
 }
 
-func warnLeaseProviderSessionReleaseFailed(logger leaseapp.Logger, lease *proxyruntimev1.ProxyDynamicLease) {
-	if logger == nil {
-		return
+func warnLeaseProviderSessionReleaseFailed(logger leaseapp.Logger) leaseapp.LeaseErrorObserver {
+	return func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, err error) {
+		_ = ctx
+		if logger == nil || lease == nil {
+			return
+		}
+		logger.Warn("provider session release failed", leaseapp.LabelAccountID, lease.GetAccountId(), leaseapp.LabelProviderAccountID, lease.GetProviderAccountId(), "error_type", errorLogType(err))
 	}
-	logger.Warn("provider session release failed", leaseapp.LabelAccountID, lease.GetAccountId(), leaseapp.LabelProviderAccountID, lease.GetProviderAccountId())
 }

@@ -17,6 +17,7 @@ type ExpireLeaseRunner struct {
 	LocalProtocol                     string
 	IsNotFound                        StoreNotFoundFunc
 	ResolveGatewaysForLease           ProviderSessionGatewaysResolverFactory
+	ObserveProviderReleaseFailure     LeaseErrorObserver
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
 }
 
@@ -32,6 +33,7 @@ func (r ExpireLeaseRunner) Expire(ctx context.Context, lease *proxyruntimev1.Pro
 		IsNotFound:                        r.IsNotFound,
 		Now:                               r.now().UTC(),
 		ResolveGateways:                   r.resolveGateways(lease),
+		ObserveProviderReleaseFailure:     r.ObserveProviderReleaseFailure,
 		ObserveFinalConcurrencyReleaseErr: r.ObserveFinalConcurrencyReleaseErr,
 	})
 }

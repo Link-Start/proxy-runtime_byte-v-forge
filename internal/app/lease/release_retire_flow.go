@@ -9,6 +9,8 @@ import (
 
 type LeaseObserver func(context.Context, *proxyruntimev1.ProxyDynamicLease)
 
+type LeaseErrorObserver func(context.Context, *proxyruntimev1.ProxyDynamicLease, error)
+
 type ProviderSessionGatewaysResolverFactory func(*proxyruntimev1.ProxyDynamicLease) ProviderSessionGatewaysResolver
 
 type LeaseRouteRetirer struct {
@@ -20,7 +22,7 @@ type LeaseRouteRetirer struct {
 	LocalProtocol                     string
 	ResolveGatewaysForLease           ProviderSessionGatewaysResolverFactory
 	AfterRouteCleanup                 LeaseObserver
-	ObserveProviderReleaseFailure     LeaseObserver
+	ObserveProviderReleaseFailure     LeaseErrorObserver
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
 }
 
@@ -34,7 +36,7 @@ type RetireLeaseRouteInput struct {
 	Lease                             *proxyruntimev1.ProxyDynamicLease
 	ResolveGateways                   ProviderSessionGatewaysResolver
 	AfterRouteCleanup                 LeaseObserver
-	ObserveProviderReleaseFailure     LeaseObserver
+	ObserveProviderReleaseFailure     LeaseErrorObserver
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
 }
 
@@ -83,7 +85,7 @@ func RetireLeaseRoute(ctx context.Context, input RetireLeaseRouteInput) error {
 		ResolveGateways: input.ResolveGateways,
 	})
 	if releaseErr != nil {
-		observeLease(ctx, input.ObserveProviderReleaseFailure, input.Lease)
+		observeLeaseErr(ctx, input.ObserveProviderReleaseFailure, input.Lease, releaseErr)
 		if err := SaveReleaseCleanupFailure(ctx, input.Store, input.Lease, false, true, "provider session release failed"); err != nil {
 			return err
 		}
@@ -104,5 +106,11 @@ func saveReleasedFinalState(ctx context.Context, input RetireLeaseRouteInput) er
 func observeLease(ctx context.Context, observe LeaseObserver, lease *proxyruntimev1.ProxyDynamicLease) {
 	if observe != nil {
 		observe(ctx, lease)
+	}
+}
+
+func observeLeaseErr(ctx context.Context, observe LeaseErrorObserver, lease *proxyruntimev1.ProxyDynamicLease, err error) {
+	if observe != nil {
+		observe(ctx, lease, err)
 	}
 }

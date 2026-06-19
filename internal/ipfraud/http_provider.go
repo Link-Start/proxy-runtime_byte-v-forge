@@ -88,11 +88,11 @@ func (p *httpProvider) requestJSON(ctx context.Context, ip string, key string) (
 		return nil, retryAfter, quotaError{retryAfter: retryAfter}
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, 0, fmt.Errorf("IP fraud request failed")
+		return nil, 0, fmt.Errorf("IP fraud request failed: HTTP %d", resp.StatusCode)
 	}
 	var payload map[string]any
 	if err := json.Unmarshal(body, &payload); err != nil {
-		return nil, 0, fmt.Errorf("decode IP fraud response")
+		return nil, 0, fmt.Errorf("decode IP fraud response: %w", err)
 	}
 	if quotaPayload(payload) {
 		return nil, 0, quotaError{}

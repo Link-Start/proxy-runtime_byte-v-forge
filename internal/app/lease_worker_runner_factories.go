@@ -99,6 +99,7 @@ func (f leaseExpireRunnerFactory) New() leaseapp.ExpireLeaseRunner {
 		LocalProtocol:                     f.deps.cfg.LocalProtocol,
 		IsNotFound:                        isStoreNotFound,
 		ResolveGatewaysForLease:           f.settings.ProviderGatewaysResolver,
+		ObserveProviderReleaseFailure:     warnLeaseProviderSessionReleaseFailed(f.deps.logger),
 		ObserveFinalConcurrencyReleaseErr: warnFinalLeaseConcurrencyReleaseFailed(f.deps.logger),
 	}
 }
@@ -118,6 +119,7 @@ func (f leaseCleanupPendingRunnerFactory) New() leaseapp.CleanupPendingLeaseRunn
 		LocalProtocol:                     f.deps.cfg.LocalProtocol,
 		IsNotFound:                        isStoreNotFound,
 		ResolveGatewaysForLease:           f.settings.ProviderGatewaysResolver,
+		ObserveProviderReleaseFailure:     warnLeaseProviderSessionReleaseFailed(f.deps.logger),
 		ObserveFinalConcurrencyReleaseErr: warnFinalLeaseConcurrencyReleaseFailed(f.deps.logger),
 	}
 }

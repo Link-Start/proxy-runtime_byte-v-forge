@@ -3,6 +3,7 @@ package ipgeo
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"sort"
 	"strings"
@@ -61,7 +62,7 @@ func (s *Service) Lookup(ctx context.Context, ip string) (*proxyruntimev1.ProxyE
 	for _, item := range s.providers {
 		geo, err := item.checker.Lookup(ctx, ip)
 		if err != nil {
-			s.logger.Debug("IP geo provider unavailable")
+			s.logger.Warn("IP geo provider unavailable", "provider", item.id, "error_type", fmt.Sprintf("%T", err))
 			continue
 		}
 		geo.Ip = ip

@@ -19,6 +19,7 @@ type ExpireLeaseInput struct {
 	IsNotFound                        StoreNotFoundFunc
 	Now                               time.Time
 	ResolveGateways                   ProviderSessionGatewaysResolver
+	ObserveProviderReleaseFailure     LeaseErrorObserver
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
 }
 
@@ -65,7 +66,7 @@ func expireLeaseProviderSession(ctx context.Context, input ExpireLeaseInput, lea
 		Lease:           lease,
 		ResolveGateways: input.ResolveGateways,
 		RecordFailure: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, err error) error {
-			_ = err
+			observeLeaseErr(ctx, input.ObserveProviderReleaseFailure, lease, err)
 			return SaveExpiredCleanupFailure(ctx, input.Store, lease, false, true, "expired provider session cleanup failed")
 		},
 	})

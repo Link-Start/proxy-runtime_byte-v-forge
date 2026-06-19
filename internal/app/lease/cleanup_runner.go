@@ -15,6 +15,7 @@ type CleanupPendingLeaseRunner struct {
 	LocalProtocol                     string
 	IsNotFound                        StoreNotFoundFunc
 	ResolveGatewaysForLease           ProviderSessionGatewaysResolverFactory
+	ObserveProviderReleaseFailure     LeaseErrorObserver
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
 }
 
@@ -29,6 +30,7 @@ func (r CleanupPendingLeaseRunner) Cleanup(ctx context.Context, lease *proxyrunt
 		Lease:                             lease,
 		IsNotFound:                        r.IsNotFound,
 		ResolveGateways:                   r.resolveGateways(lease),
+		ObserveProviderReleaseFailure:     r.ObserveProviderReleaseFailure,
 		ObserveFinalConcurrencyReleaseErr: r.ObserveFinalConcurrencyReleaseErr,
 	})
 }

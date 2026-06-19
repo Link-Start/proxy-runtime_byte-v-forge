@@ -3,6 +3,7 @@ package ipfraud
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"sort"
 	"strings"
@@ -84,7 +85,7 @@ func (s *Service) Check(ctx context.Context, ip string) (*proxyruntimev1.ProxyIP
 	for _, item := range s.providers {
 		result, err := item.checker.lookup(ctx, ip)
 		if err != nil {
-			s.logger.Debug("IP fraud provider unavailable")
+			s.logger.Warn("IP fraud provider unavailable", "provider", item.id, "error_type", fmt.Sprintf("%T", err))
 			continue
 		}
 		result.providerID = item.id

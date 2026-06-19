@@ -17,6 +17,7 @@ type CleanupPendingLeaseInput struct {
 	Lease                             *proxyruntimev1.ProxyDynamicLease
 	IsNotFound                        StoreNotFoundFunc
 	ResolveGateways                   ProviderSessionGatewaysResolver
+	ObserveProviderReleaseFailure     LeaseErrorObserver
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
 }
 
@@ -69,7 +70,7 @@ func cleanupPendingProviderSession(ctx context.Context, input CleanupPendingLeas
 		Lease:           lease,
 		ResolveGateways: input.ResolveGateways,
 		RecordFailure: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, err error) error {
-			_ = err
+			observeLeaseErr(ctx, input.ObserveProviderReleaseFailure, lease, err)
 			return SaveCleanupRetry(ctx, input.Store, lease, "provider session cleanup failed")
 		},
 	})

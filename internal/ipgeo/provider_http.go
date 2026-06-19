@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -62,12 +63,12 @@ func (p httpProvider) lookupJSON(ctx context.Context, ip string) (map[string]any
 			return nil, readErr
 		}
 		if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-			lastErr = errors.New("IP geo request failed")
+			lastErr = fmt.Errorf("IP geo request failed: HTTP %d", resp.StatusCode)
 			continue
 		}
 		var payload map[string]any
 		if err := json.Unmarshal(body, &payload); err != nil {
-			return nil, errors.New("decode IP geo response")
+			return nil, fmt.Errorf("decode IP geo response: %w", err)
 		}
 		return payload, nil
 	}

@@ -14,6 +14,19 @@ func (r *Runtime) lookupIPGeo(ctx context.Context, ip string) (proxyExitGeo, err
 	if geo, ok := r.geoCache.get(ip); ok {
 		return geo, nil
 	}
+	out, err, _ := r.geoLookupSF.Do(ip, func() (any, error) {
+		if geo, ok := r.geoCache.get(ip); ok {
+			return geo, nil
+		}
+		return r.loadIPGeo(ctx, ip)
+	})
+	if err != nil {
+		return proxyExitGeo{}, err
+	}
+	return out.(proxyExitGeo), nil
+}
+
+func (r *Runtime) loadIPGeo(ctx context.Context, ip string) (proxyExitGeo, error) {
 	settings, err := r.settings.load(ctx)
 	if err != nil {
 		return proxyExitGeo{}, err

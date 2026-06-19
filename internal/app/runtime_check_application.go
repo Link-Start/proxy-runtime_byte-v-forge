@@ -10,6 +10,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -21,6 +22,7 @@ type runtimeCheckApplication struct {
 	checkFraud     runtimeCheckFraudChecker
 	runEdgeCanary  runtimeCheckEdgeCanary
 	exitCheckCache runtimeCheckCache
+	exitIPSF       *singleflight.Group
 }
 
 type runtimeCheckApplicationDependencies struct {
@@ -64,6 +66,7 @@ func newRuntimeCheckApplication(deps runtimeCheckApplicationDependencies) runtim
 		checkFraud:     deps.CheckFraud,
 		runEdgeCanary:  deps.RunEdgeCanary,
 		exitCheckCache: deps.ExitCheckCache,
+		exitIPSF:       &singleflight.Group{},
 	}
 }
 
@@ -104,7 +107,7 @@ func (a runtimeCheckApplication) GetProxyExitIP(ctx context.Context, req *proxyr
 	defer client.CloseIdleConnections()
 	probeCtx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
-	ip, err := a.checkExitIP(probeCtx, client)
+	ip, err := a.checkExitIPDedup(probeCtx, req.GetListenerId(), client)
 	if err != nil {
 		return nil, err
 	}
@@ -162,7 +165,7 @@ func (a runtimeCheckApplication) CheckProxyEdgeAccess(ctx context.Context, req *
 	ip := strings.TrimSpace(req.GetIp())
 	if net.ParseIP(ip) == nil {
 		probeCtx, cancel := context.WithTimeout(ctx, timeout)
-		exitIP, err := a.checkExitIP(probeCtx, client)
+		exitIP, err := a.checkExitIPDedup(probeCtx, req.GetListenerId(), client)
 		cancel()
 		if err != nil {
 			return nil, err
@@ -238,6 +241,19 @@ func (a runtimeCheckApplication) checkExitIP(ctx context.Context, client *http.C
 		return "", internalError("runtime check exit IP probe is not configured", nil)
 	}
 	return a.probeExitIP(ctx, client)
+}
+
+func (a runtimeCheckApplication) checkExitIPDedup(ctx context.Context, listenerID string, client *http.Client) (string, error) {
+	if a.exitIPSF == nil {
+		return a.checkExitIP(ctx, client)
+	}
+	ip, err, _ := a.exitIPSF.Do(listenerID, func() (any, error) {
+		return a.checkExitIP(ctx, client)
+	})
+	if err != nil {
+		return "", err
+	}
+	return ip.(string), nil
 }
 
 func (a runtimeCheckApplication) lookupExitGeo(ctx context.Context, ip string) (proxyExitGeo, error) {

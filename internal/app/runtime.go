@@ -15,6 +15,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
+	"golang.org/x/sync/singleflight"
 )
 
 type Runtime struct {
@@ -46,6 +47,7 @@ type Runtime struct {
 	settingsApply   runtimeSettingsApplyState
 	fraudChecker    ipFraudCheckerCache
 	geoCache        ipGeoCache
+	geoLookupSF     singleflight.Group
 	exitCheckCache  proxyExitCheckCache
 
 	dynamicProfileMu        sync.RWMutex

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -18,6 +19,7 @@ type proxyExitCheckCache struct {
 	geos      map[string]cachedProxyExitGeo
 	frauds    map[string]cachedProxyIPFraudCheck
 	edgeRisks map[string]cachedProxyEdgeAccessCheck
+	clock     clock.Clock
 }
 
 type cachedProxyExitIP struct {
@@ -51,7 +53,7 @@ func (c *proxyExitCheckCache) snapshot(listenerID string) *proxyruntimev1.ProxyE
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	now := time.Now()
+	now := c.clock.Now()
 	exitIP, ok := c.cachedExitIP(listenerID, now)
 	if !ok {
 		return nil
@@ -86,7 +88,7 @@ func (c *proxyExitCheckCache) putExitIP(listenerID string, value *proxyruntimev1
 	if listenerID == "" || value == nil || strings.TrimSpace(value.GetIp()) == "" {
 		return
 	}
-	now := time.Now()
+	now := c.clock.Now()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.exitIPs == nil {
@@ -103,7 +105,7 @@ func (c *proxyExitCheckCache) putGeo(value *proxyruntimev1.ProxyExitGeo) {
 	if ip == "" {
 		return
 	}
-	now := time.Now()
+	now := c.clock.Now()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.geos == nil {
@@ -120,7 +122,7 @@ func (c *proxyExitCheckCache) putFraud(value *proxyruntimev1.ProxyIPFraudCheck) 
 	if ip == "" {
 		return
 	}
-	now := time.Now()
+	now := c.clock.Now()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.frauds == nil {
@@ -134,7 +136,7 @@ func (c *proxyExitCheckCache) putEdge(listenerID string, value *proxyruntimev1.P
 	if listenerID == "" || value == nil {
 		return
 	}
-	now := time.Now()
+	now := c.clock.Now()
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.edgeRisks == nil {

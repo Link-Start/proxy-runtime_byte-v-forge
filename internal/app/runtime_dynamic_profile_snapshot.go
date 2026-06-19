@@ -10,7 +10,7 @@ func (r *Runtime) setDynamicProfilePoolSnapshot(nodes []provider.Node) {
 	r.dynamicProfileMu.Lock()
 	defer r.dynamicProfileMu.Unlock()
 	r.dynamicProfilePoolNodes = cloneProviderNodes(nodes)
-	r.dynamicProfileUpdatedAt = time.Now().UTC()
+	r.dynamicProfileUpdatedAt = r.clock.Now().UTC()
 }
 
 func (r *Runtime) dynamicProfilePoolSnapshot() ([]provider.Node, time.Time) {

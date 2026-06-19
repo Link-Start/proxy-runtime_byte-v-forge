@@ -11,5 +11,6 @@ func runtimeDynamicIPSelectorDependencies(runtime *Runtime) dynamicIPSelectorDep
 		Concurrency:      runtime.providerConcurrency,
 		Logger:           runtime.logger,
 		LookupIPGeo:      runtime.lookupIPGeo,
+		Clock:            runtime.clock,
 	}
 }

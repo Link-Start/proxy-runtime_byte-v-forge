@@ -21,7 +21,7 @@ func (p *dynamicIPSelector) dynamicIPEndpointHealthScores(ctx context.Context) m
 	if p == nil || p.store == nil {
 		return nil
 	}
-	leases, err := p.store.RecentLeaseFacts(ctx, time.Now().UTC().Add(-dynamicIPEndpointHealthWindow), dynamicIPEndpointHealthLimit)
+	leases, err := p.store.RecentLeaseFacts(ctx, p.clock.Now().UTC().Add(-dynamicIPEndpointHealthWindow), dynamicIPEndpointHealthLimit)
 	if err != nil {
 		p.warn("load dynamic IP endpoint health facts failed", "error_type", errorLogType(err))
 		return nil

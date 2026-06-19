@@ -18,6 +18,7 @@ func runtimeLeaseCoordinatorDependencies(runtime *Runtime) leaseCoordinatorDepen
 		cfg:                     runtime.cfg,
 		store:                   store,
 		settings:                runtime.settings,
+		clock:                   runtime.clock,
 		locks:                   locks,
 		dataPlane:               leaseRuntimeDataPlaneApplier{dataPlane: runtime.dataPlane, metrics: runtime.metrics},
 		dynamicIPSelector:       runtime.dynamicIPSelector,

@@ -3,12 +3,14 @@ package app
 import (
 	"strings"
 	"sync"
-	"time"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 )
 
 type ipGeoCache struct {
 	mu    sync.Mutex
 	items map[string]cachedIPGeo
+	clock clock.Clock
 }
 
 func (c *ipGeoCache) get(ip string) (proxyExitGeo, bool) {
@@ -22,7 +24,7 @@ func (c *ipGeoCache) get(ip string) (proxyExitGeo, bool) {
 		return proxyExitGeo{}, false
 	}
 	item, ok := c.items[ip]
-	if !ok || time.Now().After(item.expiresAt) {
+	if !ok || c.clock.Now().After(item.expiresAt) {
 		delete(c.items, ip)
 		return proxyExitGeo{}, false
 	}
@@ -39,7 +41,7 @@ func (c *ipGeoCache) put(ip string, geo proxyExitGeo) {
 	if c.items == nil {
 		c.items = map[string]cachedIPGeo{}
 	}
-	c.items[ip] = cachedIPGeo{geo: geo, expiresAt: time.Now().Add(ipGeoCacheTTL)}
+	c.items[ip] = cachedIPGeo{geo: geo, expiresAt: c.clock.Now().Add(ipGeoCacheTTL)}
 }
 
 func (c *ipGeoCache) clear() {

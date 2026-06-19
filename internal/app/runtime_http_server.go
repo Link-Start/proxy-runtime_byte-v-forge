@@ -11,6 +11,7 @@ import (
 
 	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
 	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/gin-gonic/gin"
 )
 
@@ -56,7 +57,7 @@ func (r *Runtime) httpHandler() http.Handler {
 			return false, "data plane config projection is stale"
 		}
 		return true, ""
-	}, r.logger).handler()
+	}, r.logger, r.clock).handler()
 }
 
 type runtimeReadyFunc func() (bool, string)
@@ -66,10 +67,11 @@ type runtimeHTTPAPI struct {
 	auth             authapp.Application
 	ready            runtimeReadyFunc
 	logger           *slog.Logger
+	clock            clock.Clock
 	dashboardProxies dashboardProxyHandlers
 }
 
-func newRuntimeHTTPAPI(service *RuntimeService, mihomoAPIAddr string, authToken string, serviceAuthToken string, ready runtimeReadyFunc, logger *slog.Logger) *runtimeHTTPAPI {
+func newRuntimeHTTPAPI(service *RuntimeService, mihomoAPIAddr string, authToken string, serviceAuthToken string, ready runtimeReadyFunc, logger *slog.Logger, clk clock.Clock) *runtimeHTTPAPI {
 	if logger == nil {
 		logger = slog.Default()
 	}
@@ -79,6 +81,7 @@ func newRuntimeHTTPAPI(service *RuntimeService, mihomoAPIAddr string, authToken 
 		auth:    authapp.NewApplication(trimmedAuthToken, serviceAuthToken),
 		ready:   ready,
 		logger:  logger,
+		clock:   clk,
 	}
 	api.dashboardProxies = newDashboardProxyHandlers(mihomoAPIAddr, trimmedAuthToken)
 	return api

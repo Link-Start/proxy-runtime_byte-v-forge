@@ -2,7 +2,6 @@ package app
 
 import (
 	"net/http"
-	"time"
 
 	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
 	"github.com/gin-gonic/gin"
@@ -13,7 +12,7 @@ func (api *runtimeHTTPAPI) handleAuthSession(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleAuthWebSocketToken(ctx *gin.Context) {
-	if err := api.auth.WriteWebSocketTokenResponse(ctx.Writer, time.Now()); err != nil {
+	if err := api.auth.WriteWebSocketTokenResponse(ctx.Writer, api.clock.Now()); err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 	}
 }
@@ -29,7 +28,7 @@ func (api *runtimeHTTPAPI) handleAuthLogin(ctx *gin.Context) {
 		writeHTTPError(ctx.Writer, err, http.StatusUnauthorized)
 		return
 	}
-	if err := api.auth.WriteLoginDecision(ctx.Writer, ctx.Request, decision, time.Now()); err != nil {
+	if err := api.auth.WriteLoginDecision(ctx.Writer, ctx.Request, decision, api.clock.Now()); err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 	}
 }
@@ -46,9 +45,9 @@ func (api *runtimeHTTPAPI) handleAuthLoginPage(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) redirectToLoginIfRequired(ctx *gin.Context) bool {
-	return api.auth.WriteLoginRedirectIfRequired(ctx.Writer, ctx.Request, "/ui", time.Now())
+	return api.auth.WriteLoginRedirectIfRequired(ctx.Writer, ctx.Request, "/ui", api.clock.Now())
 }
 
 func (api *runtimeHTTPAPI) sessionAuthenticated(req *http.Request) bool {
-	return api.auth.SessionAuthenticated(req, time.Now())
+	return api.auth.SessionAuthenticated(req, api.clock.Now())
 }

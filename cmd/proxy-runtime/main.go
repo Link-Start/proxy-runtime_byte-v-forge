@@ -90,6 +90,7 @@ func main() {
 		ProviderConcurrency: providerConcurrency,
 		ProviderHTTPClient:  providerHTTPClient,
 		Logger:              logger,
+		Clock:               appClock,
 	})
 	if err != nil {
 		logger.Error("create runtime failed", "error", err)

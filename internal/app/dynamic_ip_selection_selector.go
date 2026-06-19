@@ -8,6 +8,7 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -25,6 +26,7 @@ type dynamicIPSelector struct {
 	concurrency      leaseapp.ProviderAccountConcurrencyLimiter
 	logger           dynamicIPSelectionLogger
 	lookupIPGeo      func(context.Context, string) (proxyExitGeo, error)
+	clock            clock.Clock
 }
 
 type dynamicIPSelectorDependencies struct {
@@ -34,6 +36,7 @@ type dynamicIPSelectorDependencies struct {
 	Concurrency      leaseapp.ProviderAccountConcurrencyLimiter
 	Logger           dynamicIPSelectionLogger
 	LookupIPGeo      func(context.Context, string) (proxyExitGeo, error)
+	Clock            clock.Clock
 }
 
 type dynamicIPSelectionStore interface {
@@ -62,6 +65,7 @@ func newDynamicIPSelector(deps dynamicIPSelectorDependencies) *dynamicIPSelector
 		concurrency:      deps.Concurrency,
 		logger:           deps.Logger,
 		lookupIPGeo:      deps.LookupIPGeo,
+		clock:            deps.Clock,
 	}
 }
 
@@ -89,7 +93,7 @@ func (p *dynamicIPSelector) selectDynamicIPEndpoint(ctx context.Context, req *pr
 		Policy:           dynamicIPSelectionPlanPolicy(policy),
 		SelectedEndpoint: selectedEndpoint.proto,
 		SelectionReasons: reasons,
-		SelectedAt:       timestamppb.New(time.Now().UTC()),
+		SelectedAt:       timestamppb.New(p.clock.Now().UTC()),
 	}
 	return leaseapp.DynamicIPSelection{Plan: plan, Endpoint: selectedEndpoint.endpoint}, nil
 }

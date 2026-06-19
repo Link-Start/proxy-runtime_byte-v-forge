@@ -9,6 +9,7 @@ import (
 	"time"
 
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
@@ -35,6 +36,7 @@ type Runtime struct {
 	appService          *RuntimeService
 	logger              *slog.Logger
 	providerHTTPClient  *http.Client
+	clock               clock.Clock
 
 	refreshMu       sync.Mutex
 	reconcileMu     sync.RWMutex
@@ -69,6 +71,7 @@ type RuntimeDeps struct {
 	ProviderConcurrency leaseapp.ProviderAccountConcurrencyLimiter
 	ProviderHTTPClient  *http.Client
 	Logger              *slog.Logger
+	Clock               clock.Clock
 }
 
 func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
@@ -81,6 +84,10 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 	}
 	if deps.ProviderHTTPClient == nil {
 		return nil, fmt.Errorf("provider HTTP client is required")
+	}
+	clk := deps.Clock
+	if clk == nil {
+		clk = clock.SystemClock{}
 	}
 	runtime := &Runtime{
 		cfg:                 deps.Config,
@@ -96,8 +103,11 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 		settings:            newRuntimeSettingsStore(deps.Store, deps.AccountProviders, deps.IPFraudProviders, deps.IPGeoProviders),
 		metrics:             newRuntimeMetrics(),
 		logger:              logger,
+		clock:               clk,
 		reconcileCh:         make(chan struct{}, 1),
 	}
+	runtime.geoCache.clock = clk
+	runtime.exitCheckCache.clock = clk
 	runtime.dynamicIPSelector = newDynamicIPSelector(runtimeDynamicIPSelectorDependencies(runtime))
 	runtime.leaseCoordinator = newLeaseCoordinator(runtimeLeaseCoordinatorDependencies(runtime))
 	runtime.appService = NewRuntimeService(runtime)

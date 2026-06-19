@@ -15,8 +15,8 @@ func (c Config) validate() error {
 	if strings.TrimSpace(c.PostgresDSN) == "" && strings.TrimSpace(c.DataDir) == "" {
 		return errors.New("PROXY_RUNTIME_DATA_DIR is required when PostgreSQL is not configured")
 	}
-	if strings.TrimSpace(c.PostgresDSN) != "" && strings.TrimSpace(c.RedisURL) == "" {
-		return errors.New("PROXY_RUNTIME_REDIS_URL is required when PostgreSQL is configured")
+	if strings.TrimSpace(c.RedisURL) == "" {
+		return errors.New("PROXY_RUNTIME_REDIS_URL is required")
 	}
 	if strings.TrimSpace(c.EncryptionKey) == "" {
 		return errors.New("PROXY_RUNTIME_ENCRYPTION_KEY is required")

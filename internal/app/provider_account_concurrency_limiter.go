@@ -36,9 +36,6 @@ type redisProviderAccountConcurrencySlot struct {
 }
 
 func NewProviderAccountConcurrencyLimiter(ctx context.Context, cfg config.Config) (providerAccountConcurrencyRuntime, error) {
-	if strings.TrimSpace(cfg.RedisURL) == "" {
-		return newLocalProviderAccountConcurrencyLimiter(), nil
-	}
 	client, err := newRedisClient(ctx, cfg.RedisURL)
 	if err != nil {
 		return nil, err

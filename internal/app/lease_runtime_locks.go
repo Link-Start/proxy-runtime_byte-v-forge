@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"strings"
 	"time"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
@@ -25,8 +24,5 @@ type leaseRuntimeLocks interface {
 }
 
 func NewLeaseRuntimeLocks(ctx context.Context, cfg config.Config) (leaseRuntimeLocks, error) {
-	if strings.TrimSpace(cfg.RedisURL) == "" {
-		return newLocalLeaseRuntimeLocks(), nil
-	}
 	return newRedisLeaseRuntimeLocks(ctx, cfg)
 }

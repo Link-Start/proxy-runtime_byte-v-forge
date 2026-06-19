@@ -1,76 +1,38 @@
 package ipgeo
 
 import (
-	"fmt"
-	"sort"
-
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/provider/lookup"
 )
 
 type Registry struct {
-	plugins map[proxyruntimev1.ProxyIPGeoProviderKind]Plugin
-	kinds   []proxyruntimev1.ProxyIPGeoProviderKind
+	*lookup.Registry[proxyruntimev1.ProxyIPGeoProviderKind, Plugin]
 }
 
 func NewRegistry(plugins ...Plugin) (*Registry, error) {
-	registry := &Registry{plugins: make(map[proxyruntimev1.ProxyIPGeoProviderKind]Plugin, len(plugins))}
-	for _, plugin := range plugins {
-		if plugin == nil {
-			return nil, fmt.Errorf("IP geo provider plugin is required")
-		}
-		kind := plugin.Kind()
-		if kind == proxyruntimev1.ProxyIPGeoProviderKind_PROXY_IP_GEO_PROVIDER_KIND_UNSPECIFIED {
-			return nil, fmt.Errorf("IP geo provider plugin kind is required")
-		}
-		if _, exists := registry.plugins[kind]; exists {
-			return nil, fmt.Errorf("duplicate IP geo provider kind %s", kind.String())
-		}
-		registry.plugins[kind] = plugin
-		registry.kinds = append(registry.kinds, kind)
+	base, err := lookup.NewRegistry[proxyruntimev1.ProxyIPGeoProviderKind, Plugin]("IP geo", plugins...)
+	if err != nil {
+		return nil, err
 	}
-	registry.sortKinds()
-	return registry, nil
+	return &Registry{base}, nil
 }
 
 func NewDefaultRegistry() (*Registry, error) {
 	return NewRegistry(ipinfoPlugin{}, ip2LocationPlugin{}, ipAPIComPlugin{})
 }
 
-func (r *Registry) PluginForKind(kind proxyruntimev1.ProxyIPGeoProviderKind) (Plugin, bool) {
-	if r == nil {
-		return nil, false
-	}
-	plugin, ok := r.plugins[kind]
-	return plugin, ok
-}
-
-func (r *Registry) IsProviderKindSupported(kind proxyruntimev1.ProxyIPGeoProviderKind) bool {
-	_, ok := r.PluginForKind(kind)
-	return ok
-}
-
-func (r *Registry) DefaultProviderID(kind proxyruntimev1.ProxyIPGeoProviderKind) string {
-	plugin, ok := r.PluginForKind(kind)
-	if !ok {
-		return ""
-	}
-	return plugin.ProviderID()
-}
-
 func (r *Registry) ProviderDescriptors() []*proxyruntimev1.ProxyIPGeoProviderDescriptor {
 	if r == nil {
 		return nil
 	}
-	out := make([]*proxyruntimev1.ProxyIPGeoProviderDescriptor, 0, len(r.kinds))
-	for _, kind := range r.kinds {
-		plugin := r.plugins[kind]
+	kinds := r.Kinds()
+	out := make([]*proxyruntimev1.ProxyIPGeoProviderDescriptor, 0, len(kinds))
+	for _, kind := range kinds {
+		plugin, ok := r.PluginForKind(kind)
+		if !ok {
+			continue
+		}
 		out = append(out, &proxyruntimev1.ProxyIPGeoProviderDescriptor{ProviderId: plugin.ProviderID(), DisplayName: plugin.DisplayName(), DefaultWeight: plugin.DefaultWeight(), Kind: kind, SupportsAnonymous: plugin.SupportsAnonymous(), SupportsApiKey: plugin.SupportsAPIKey()})
 	}
 	return out
-}
-
-func (r *Registry) sortKinds() {
-	sort.Slice(r.kinds, func(i, j int) bool {
-		return r.plugins[r.kinds[i]].DefaultWeight() > r.plugins[r.kinds[j]].DefaultWeight()
-	})
 }

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/provider/lookup"
 )
 
 type ProviderConfig struct {
@@ -28,12 +29,7 @@ type AuthConfig struct {
 }
 
 type Plugin interface {
-	Kind() proxyruntimev1.ProxyIPGeoProviderKind
-	ProviderID() string
-	DisplayName() string
-	DefaultWeight() uint32
-	SupportsAnonymous() bool
-	SupportsAPIKey() bool
+	lookup.PluginMeta[proxyruntimev1.ProxyIPGeoProviderKind]
 	Auth(apiKeys []string, anonymous bool) AuthConfig
 	New(client *http.Client, cfg ProviderConfig) provider
 }

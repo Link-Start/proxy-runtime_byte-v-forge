@@ -79,7 +79,7 @@ WHERE secret_id=$1
 	if strings.TrimSpace(ref.GetPurpose()) != "" && strings.TrimSpace(ref.GetPurpose()) != purpose {
 		return "", errors.New("secret purpose mismatch")
 	}
-	if expiresAt.Valid && time.Now().After(expiresAt.Time) {
+	if expiresAt.Valid && s.clock.Now().After(expiresAt.Time) {
 		return "", errors.New("secret ref is expired")
 	}
 	plain, err := s.box.Open(payload)

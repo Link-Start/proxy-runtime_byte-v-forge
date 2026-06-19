@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"time"
 )
 
 func (s *SQLiteStore) loadRuntimeSettingJSON(ctx context.Context, key string) (string, bool, error) {
@@ -20,7 +19,7 @@ func (s *SQLiteStore) loadRuntimeSettingJSON(ctx context.Context, key string) (s
 }
 
 func (s *SQLiteStore) saveRuntimeSettingJSON(ctx context.Context, key string, data []byte) error {
-	now := sqliteTime(time.Now().UTC())
+	now := sqliteTime(s.clock.Now().UTC())
 	_, err := s.db.ExecContext(ctx, `INSERT INTO proxy_runtime_settings (setting_key, setting_json, updated_at) VALUES (?,?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_json=excluded.setting_json, updated_at=excluded.updated_at`, key, string(data), now)
 	return err
 }

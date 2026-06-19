@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
@@ -12,7 +11,7 @@ func (s *SQLiteStore) SaveLeaseFact(ctx context.Context, lease *proxyruntimev1.P
 	if err != nil {
 		return err
 	}
-	now := sqliteTime(time.Now().UTC())
+	now := sqliteTime(s.clock.Now().UTC())
 	_, err = s.db.ExecContext(ctx, `
 INSERT INTO proxy_runtime_dynamic_leases (lease_id, account_id, purpose, provider_account_id, status, lease_json, acquired_at, expires_at, created_at, updated_at)
 VALUES (?,?,?,?,?,?,?,?,?,?)

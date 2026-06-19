@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
@@ -100,7 +99,7 @@ func (s *SQLiteStore) UpsertProviderAccount(ctx context.Context, req *proxyrunti
 			return nil, fmt.Errorf("enabled provider account invalid: %w", err)
 		}
 	}
-	now := time.Now().UTC()
+	now := s.clock.Now().UTC()
 	createdAt := now
 	if existing != nil && !existing.CreatedAt.IsZero() {
 		createdAt = existing.CreatedAt

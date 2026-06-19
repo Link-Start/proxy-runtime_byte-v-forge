@@ -15,7 +15,7 @@ FROM proxy_runtime_dynamic_leases
 WHERE status=? AND `+sqliteLeaseActiveUntilPredicate+`
 ORDER BY acquired_at DESC, updated_at DESC, lease_id
 LIMIT ?
-`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), leaseapp.NormalizeListLimit(limit))
+`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(s.clock.Now().UTC()), leaseapp.NormalizeListLimit(limit))
 }
 
 func (s *SQLiteStore) ListRecentLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
@@ -34,7 +34,7 @@ FROM proxy_runtime_dynamic_leases
 WHERE status!=? OR `+sqliteLeaseExpiredByPredicate+`
 ORDER BY acquired_at DESC, updated_at DESC, lease_id
 LIMIT ?
-`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), leaseapp.NormalizeListLimit(limit))
+`, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(s.clock.Now().UTC()), leaseapp.NormalizeListLimit(limit))
 }
 
 func (s *SQLiteStore) RecentLeaseFacts(ctx context.Context, since time.Time, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {

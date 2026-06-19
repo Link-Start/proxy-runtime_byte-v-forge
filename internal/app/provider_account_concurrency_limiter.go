@@ -10,6 +10,7 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/redis/go-redis/v9"
 )
@@ -21,6 +22,7 @@ const (
 
 type redisProviderAccountConcurrencyLimiter struct {
 	client *redis.Client
+	clock  clock.Clock
 }
 
 type providerAccountConcurrencyRuntime interface {
@@ -35,12 +37,12 @@ type redisProviderAccountConcurrencySlot struct {
 	holder    string
 }
 
-func NewProviderAccountConcurrencyLimiter(ctx context.Context, cfg config.Config) (providerAccountConcurrencyRuntime, error) {
+func NewProviderAccountConcurrencyLimiter(ctx context.Context, cfg config.Config, clk clock.Clock) (providerAccountConcurrencyRuntime, error) {
 	client, err := newRedisClient(ctx, cfg.RedisURL)
 	if err != nil {
 		return nil, err
 	}
-	return &redisProviderAccountConcurrencyLimiter{client: client}, nil
+	return &redisProviderAccountConcurrencyLimiter{client: client, clock: clk}, nil
 }
 
 func (l *redisProviderAccountConcurrencyLimiter) Close() error {
@@ -55,7 +57,7 @@ func (l *redisProviderAccountConcurrencyLimiter) Available(ctx context.Context, 
 	if err != nil {
 		return false, err
 	}
-	result, err := providerAccountConcurrencyAvailableScript.Run(ctx, l.client, []string{redisKey}, cleanHolder, strconv.FormatUint(uint64(limit), 10), strconv.FormatInt(time.Now().UnixMilli(), 10)).Int()
+	result, err := providerAccountConcurrencyAvailableScript.Run(ctx, l.client, []string{redisKey}, cleanHolder, strconv.FormatUint(uint64(limit), 10), strconv.FormatInt(l.clock.Now().UnixMilli(), 10)).Int()
 	if err != nil {
 		return false, err
 	}
@@ -68,7 +70,7 @@ func (l *redisProviderAccountConcurrencyLimiter) Acquire(ctx context.Context, ac
 		return nil, err
 	}
 	ttl = effectiveProviderAccountConcurrencySlotTTL(ttl)
-	result, err := providerAccountConcurrencyAcquireScript.Run(ctx, l.client, []string{redisKey}, cleanHolder, strconv.FormatUint(uint64(limit), 10), strconv.FormatInt(ttl.Milliseconds(), 10), strconv.FormatInt(time.Now().UnixMilli(), 10)).Int()
+	result, err := providerAccountConcurrencyAcquireScript.Run(ctx, l.client, []string{redisKey}, cleanHolder, strconv.FormatUint(uint64(limit), 10), strconv.FormatInt(ttl.Milliseconds(), 10), strconv.FormatInt(l.clock.Now().UnixMilli(), 10)).Int()
 	if err != nil {
 		return nil, err
 	}

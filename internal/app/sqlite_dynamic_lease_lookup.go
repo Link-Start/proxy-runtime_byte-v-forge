@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"strings"
-	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
@@ -27,7 +26,7 @@ func (s *SQLiteStore) ActiveLeaseFactBySession(ctx context.Context, accountID st
 SELECT lease_json
 FROM proxy_runtime_dynamic_leases
 WHERE account_id=? AND status=? AND ` + sqliteLeaseActiveUntilPredicate + ` AND json_extract(lease_json, '$.session.sessionId')=?`
-	args := []any{strings.TrimSpace(accountID), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()), sessionID}
+	args := []any{strings.TrimSpace(accountID), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(s.clock.Now().UTC()), sessionID}
 	if purpose = strings.TrimSpace(purpose); purpose != "" {
 		query += ` AND purpose=?`
 		args = append(args, purpose)
@@ -59,7 +58,7 @@ WHERE account_id=?`
 	}
 	if activeOnly {
 		query += ` AND status=? AND ` + sqliteLeaseActiveUntilPredicate
-		args = append(args, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(time.Now().UTC()))
+		args = append(args, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(s.clock.Now().UTC()))
 	}
 	query += ` ORDER BY acquired_at DESC, updated_at DESC, lease_id LIMIT 1`
 	row := s.db.QueryRowContext(ctx, query, args...)

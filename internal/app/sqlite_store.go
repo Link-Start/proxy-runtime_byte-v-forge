@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretbox"
@@ -21,9 +22,10 @@ type SQLiteStore struct {
 	box              secretbox.Box
 	accountProviders *providerregistry.Registry
 	logger           *slog.Logger
+	clock            clock.Clock
 }
 
-func NewSQLiteStore(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger) (*SQLiteStore, error) {
+func NewSQLiteStore(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger, clk clock.Clock) (*SQLiteStore, error) {
 	box, err := secretbox.New(cfg.EncryptionKey)
 	if err != nil {
 		return nil, err
@@ -37,7 +39,7 @@ func NewSQLiteStore(ctx context.Context, cfg config.Config, accountProviders *pr
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
-	store := &SQLiteStore{db: db, box: box, accountProviders: accountProviders, logger: logger}
+	store := &SQLiteStore{db: db, box: box, accountProviders: accountProviders, logger: logger, clock: clk}
 	if err := store.applySchema(ctx); err != nil {
 		_ = db.Close()
 		return nil, err

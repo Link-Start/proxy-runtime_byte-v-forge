@@ -6,6 +6,7 @@ import (
 	"time"
 
 	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretbox"
@@ -17,6 +18,7 @@ type PostgresStore struct {
 	box              secretbox.Box
 	accountProviders *providerregistry.Registry
 	logger           *slog.Logger
+	clock            clock.Clock
 }
 
 type providerCredential struct {
@@ -37,7 +39,7 @@ type providerAccountRecord struct {
 	UpdatedAt         time.Time
 }
 
-func NewPostgresStore(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger) (*PostgresStore, error) {
+func NewPostgresStore(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger, clk clock.Clock) (*PostgresStore, error) {
 	box, err := secretbox.New(cfg.EncryptionKey)
 	if err != nil {
 		return nil, err
@@ -46,7 +48,7 @@ func NewPostgresStore(ctx context.Context, cfg config.Config, accountProviders *
 	if err != nil {
 		return nil, err
 	}
-	store := &PostgresStore{pool: pool, box: box, accountProviders: accountProviders, logger: logger}
+	store := &PostgresStore{pool: pool, box: box, accountProviders: accountProviders, logger: logger, clock: clk}
 	if err := store.applySchema(ctx); err != nil {
 		pool.Close()
 		return nil, err

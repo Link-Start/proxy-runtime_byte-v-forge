@@ -8,6 +8,7 @@ import (
 	"syscall"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
@@ -58,7 +59,8 @@ func main() {
 		DashboardDir:     cfg.Mihomo.DashboardDir,
 		DashboardURL:     cfg.Mihomo.DashboardURL,
 	}, logger)
-	store, err := app.NewControlStore(context.Background(), cfg, proxyProviders, logger)
+	appClock := clock.SystemClock{}
+	store, err := app.NewControlStore(context.Background(), cfg, proxyProviders, logger, appClock)
 	if err != nil {
 		logger.Error("create store failed", "error", err)
 		os.Exit(1)
@@ -70,7 +72,7 @@ func main() {
 		os.Exit(1)
 	}
 	defer leaseRuntimeLocks.Close()
-	providerConcurrency, err := app.NewProviderAccountConcurrencyLimiter(context.Background(), cfg)
+	providerConcurrency, err := app.NewProviderAccountConcurrencyLimiter(context.Background(), cfg, appClock)
 	if err != nil {
 		logger.Error("create provider account concurrency limiter failed", "error", err)
 		os.Exit(1)

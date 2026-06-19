@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"strings"
-	"time"
 
 	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
@@ -36,7 +35,7 @@ func (s *SQLiteStore) WriteSecret(ctx context.Context, req secretref.WriteReques
 	if err != nil {
 		return nil, err
 	}
-	now := sqliteTime(time.Now().UTC())
+	now := sqliteTime(s.clock.Now().UTC())
 	_, err = s.db.ExecContext(ctx, `
 INSERT INTO proxy_runtime_secrets (secret_id, provider, purpose, secret_payload, expires_at, created_at, updated_at)
 VALUES (?,?,?,?,?,?,?)
@@ -69,7 +68,7 @@ func (s *SQLiteStore) ResolveSecret(ctx context.Context, ref *commonv1.SecretRef
 	if strings.TrimSpace(ref.GetPurpose()) != "" && strings.TrimSpace(ref.GetPurpose()) != purpose {
 		return "", errors.New("secret purpose mismatch")
 	}
-	if expiresAt := parseSQLiteTime(expiresAtRaw); !expiresAt.IsZero() && time.Now().After(expiresAt) {
+	if expiresAt := parseSQLiteTime(expiresAtRaw); !expiresAt.IsZero() && s.clock.Now().After(expiresAt) {
 		return "", errors.New("secret ref is expired")
 	}
 	plain, err := s.box.Open(payload)

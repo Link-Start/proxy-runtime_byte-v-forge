@@ -104,18 +104,32 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 
 func (r *Runtime) Run(ctx context.Context) error {
 	defer r.dataPlane.Stop()
-	errCh := make(chan error, 2)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	errCh := make(chan error, 1)
 	r.requestReconcile()
-	go r.reconcileLoop(ctx)
-	go r.leaseExpiryLoop(ctx)
-	go r.restoreActiveLeasesInBackground(ctx)
-	go r.serveHTTP(ctx, errCh)
+
+	var wg sync.WaitGroup
+	spawn := func(fn func(context.Context)) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			fn(ctx)
+		}()
+	}
+	spawn(r.reconcileLoop)
+	spawn(r.leaseExpiryLoop)
+	spawn(r.restoreActiveLeasesInBackground)
+	spawn(func(ctx context.Context) { r.serveHTTP(ctx, errCh) })
+
+	var runErr error
 	select {
 	case <-ctx.Done():
-		return nil
-	case err := <-errCh:
-		return err
+	case runErr = <-errCh:
 	}
+	cancel()
+	wg.Wait()
+	return runErr
 }
 
 func (r *Runtime) requestReconcile() {

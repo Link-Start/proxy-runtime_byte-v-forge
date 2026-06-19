@@ -28,7 +28,11 @@ func (s *PostgresStore) ListProviderAccounts(ctx context.Context) ([]*proxyrunti
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, record.toProto(s.box))
+		account, err := s.providerAccountToProto(ctx, record)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, account)
 	}
 	return out, rows.Err()
 }
@@ -122,7 +126,7 @@ RETURNING `+providerAccountColumns(), accountID, providerID, dynamicProviderID, 
 	if err != nil {
 		return nil, err
 	}
-	return record.toProto(s.box), nil
+	return s.providerAccountToProto(ctx, record)
 }
 
 func credentialFromSecret(box secretbox.Box, secret string) *providerCredential {
@@ -194,6 +198,10 @@ func scanProviderAccount(row pgx.Row) (*providerAccountRecord, error) {
 	return &record, err
 }
 
+func (s *PostgresStore) providerAccountToProto(ctx context.Context, record *providerAccountRecord) (*proxyruntimev1.ProxyProviderAccount, error) {
+	return providerAccountToProto(ctx, s, s.box, record)
+}
+
 func (s *PostgresStore) ProviderAccountMutationState(ctx context.Context, accountID string) (providerAccountMutationState, error) {
 	record, err := s.providerAccountRecord(ctx, accountID)
 	if err != nil {
@@ -231,6 +239,28 @@ func providerConfigFromCredentialSecret(ctx context.Context, resolver secretref.
 		cfg.Password = password
 	}
 	return cfg, nil
+}
+
+func providerAccountToProto(ctx context.Context, resolver secretref.Resolver, box secretbox.Box, record *providerAccountRecord) (*proxyruntimev1.ProxyProviderAccount, error) {
+	account := record.toProto(box)
+	credential := credentialFromSecret(box, record.CredentialSecret)
+	if password := credentialRawPassword(credential); password != "" {
+		account.PasswordValue = password
+		return account, nil
+	}
+	if credential == nil || !secretRefConfigured(credential.PasswordSecretRef) {
+		return account, nil
+	}
+	ref := cloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password")
+	if ref == nil {
+		return account, nil
+	}
+	password, err := resolver.ResolveSecret(ctx, ref)
+	if err != nil {
+		return account, nil
+	}
+	account.PasswordValue = password
+	return account, nil
 }
 
 func credentialRawPassword(credential *providerCredential) string {

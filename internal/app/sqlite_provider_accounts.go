@@ -26,7 +26,11 @@ func (s *SQLiteStore) ListProviderAccounts(ctx context.Context) ([]*proxyruntime
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, record.toProto(s.box))
+		account, err := providerAccountToProto(ctx, s, s.box, record)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, account)
 	}
 	return out, rows.Err()
 }
@@ -110,7 +114,7 @@ ON CONFLICT(account_id) DO UPDATE SET provider_id=excluded.provider_id, dynamic_
 	if err != nil {
 		return nil, err
 	}
-	return record.toProto(s.box), nil
+	return providerAccountToProto(ctx, s, s.box, record)
 }
 
 func (s *SQLiteStore) DeleteProviderAccount(ctx context.Context, accountID string) error {
@@ -123,7 +127,7 @@ func (s *SQLiteStore) ProviderAccount(ctx context.Context, accountID string) (*p
 	if err != nil {
 		return nil, err
 	}
-	return record.toProto(s.box), nil
+	return providerAccountToProto(ctx, s, s.box, record)
 }
 
 func (s *SQLiteStore) ProviderAccountMutationState(ctx context.Context, accountID string) (providerAccountMutationState, error) {

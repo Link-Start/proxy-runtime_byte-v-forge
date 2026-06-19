@@ -18,7 +18,7 @@ var HTTPProxySchemes = []string{"http", "https"}
 var CommonProxySchemes = []string{"http", "https", "socks5", "socks5h"}
 
 func New(timeout time.Duration) *http.Client {
-	return &http.Client{Timeout: normalizeTimeout(timeout)}
+	return &http.Client{Timeout: normalizeTimeout(timeout), Transport: newRetryTransport(http.DefaultTransport, defaultRetryPolicy)}
 }
 
 func NewWithProxy(timeout time.Duration, proxyRawURL string, schemes ...string) (*http.Client, error) {
@@ -27,7 +27,7 @@ func NewWithProxy(timeout time.Duration, proxyRawURL string, schemes ...string) 
 	if err != nil {
 		return nil, err
 	}
-	return &http.Client{Timeout: timeout, Transport: transport}, nil
+	return &http.Client{Timeout: timeout, Transport: newRetryTransport(transport, defaultRetryPolicy)}, nil
 }
 
 func transportWithProxy(timeout time.Duration, proxyRawURL string, schemes ...string) (*http.Transport, error) {

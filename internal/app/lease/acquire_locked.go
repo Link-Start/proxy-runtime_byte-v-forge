@@ -82,7 +82,7 @@ func RunAccountLockedAcquire(ctx context.Context, input AccountLockedAcquireInpu
 	if handled {
 		return existing, nil
 	}
-	return RunAcquireAttempts(input.Request, selectionPolicy, input.RunAttempt, input.Retry, input.Observe)
+	return RunAcquireAttempts(ctx, input.Request, selectionPolicy, input.RunAttempt, input.Retry, input.Observe)
 }
 
 func IsAcquirePolicyError(err error) bool {

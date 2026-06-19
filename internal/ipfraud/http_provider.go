@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"time"
 
@@ -129,13 +128,13 @@ func (p *httpProvider) applyAuth(req *http.Request, key string) {
 }
 
 func quotaResponse(status int, header http.Header, body []byte) (time.Duration, bool) {
-	retryAfter := retryAfterDuration(header.Get("Retry-After"))
+	retryAfter := runtimehttp.ParseRetryAfter(header.Get("Retry-After"))
 	if status == http.StatusTooManyRequests || status == http.StatusPaymentRequired {
 		return retryAfter, true
 	}
 	for _, name := range []string{"X-RateLimit-Remaining", "RateLimit-Remaining", "X-Quota-Remaining", "X-Rl"} {
 		if strings.TrimSpace(header.Get(name)) == "0" {
-			return firstDuration(retryAfter, retryAfterDuration(header.Get("X-Ttl"))), true
+			return firstDuration(retryAfter, runtimehttp.ParseRetryAfter(header.Get("X-Ttl"))), true
 		}
 	}
 	text := strings.ToLower(string(body))
@@ -174,18 +173,4 @@ func quotaPayload(payload map[string]any) bool {
 		}
 	}
 	return false
-}
-
-func retryAfterDuration(value string) time.Duration {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return 0
-	}
-	if seconds, err := strconv.Atoi(value); err == nil && seconds > 0 {
-		return time.Duration(seconds) * time.Second
-	}
-	if at, err := http.ParseTime(value); err == nil {
-		return time.Until(at)
-	}
-	return 0
 }

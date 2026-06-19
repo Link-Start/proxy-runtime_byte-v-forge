@@ -8,6 +8,8 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/geox"
 )
 
+const maxDynamicIPSelectionAttempts = 20
+
 func NormalizeDynamicIPSelectionPolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) *proxyruntimev1.ProxyDynamicIPSelectionPolicy {
 	in := req.GetSelectionPolicy()
 	policy := &proxyruntimev1.ProxyDynamicIPSelectionPolicy{}
@@ -31,6 +33,9 @@ func NormalizeDynamicIPSelectionPolicy(req *proxyruntimev1.AcquireProxyLeaseRequ
 	if policy.MaxAttempts == 0 {
 		policy.MaxAttempts = 10
 	}
+	if policy.MaxAttempts > maxDynamicIPSelectionAttempts {
+		policy.MaxAttempts = maxDynamicIPSelectionAttempts
+	}
 	return policy
 }
 
@@ -53,6 +58,9 @@ func DynamicIPSelectionMaxAttempts(policy *proxyruntimev1.ProxyDynamicIPSelectio
 	attempts := int(policy.GetMaxAttempts())
 	if attempts < 1 {
 		return 1
+	}
+	if attempts > maxDynamicIPSelectionAttempts {
+		return maxDynamicIPSelectionAttempts
 	}
 	return attempts
 }

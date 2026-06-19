@@ -21,6 +21,8 @@ func (p definitionPlugin) ID() string { return p.definition.ProviderID }
 
 func (p definitionPlugin) DisplayName() string { return p.definition.DisplayName }
 
+func (p definitionPlugin) Default() bool { return p.definition.Default }
+
 func (p definitionPlugin) Descriptor(gateways []Gateway) *proxyruntimev1.ProxyProviderDescriptor {
 	return descriptor(p.definition, gateways)
 }

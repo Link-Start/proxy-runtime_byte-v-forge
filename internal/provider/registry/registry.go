@@ -29,10 +29,11 @@ type plugin struct {
 }
 
 type Registry struct {
-	plugins        map[string]Plugin
-	ids            []string
-	accountPlugins map[string]accountproxy.Plugin
-	accountIDs     []string
+	plugins          map[string]Plugin
+	ids              []string
+	accountPlugins   map[string]accountproxy.Plugin
+	accountIDs       []string
+	defaultAccountID string
 }
 
 func NewRegistry(plugins ...Plugin) (*Registry, error) {
@@ -112,6 +113,12 @@ func (r *Registry) registerAccountPlugins(plugins ...accountproxy.Plugin) error 
 		if _, exists := r.accountPlugins[id]; exists {
 			return fmt.Errorf("duplicate proxy account plugin %q", id)
 		}
+		if plugin.Default() {
+			if r.defaultAccountID != "" {
+				return fmt.Errorf("multiple default proxy account plugins: %q and %q", r.defaultAccountID, id)
+			}
+			r.defaultAccountID = id
+		}
 		r.accountPlugins[id] = plugin
 		r.accountIDs = append(r.accountIDs, id)
 	}
@@ -130,6 +137,13 @@ func (r *Registry) accountPlugin(providerID string) (accountproxy.Plugin, bool) 
 func (r *Registry) IsSupported(providerID string) bool {
 	_, ok := r.accountPlugin(providerID)
 	return ok
+}
+
+func (r *Registry) DefaultProviderID() string {
+	if r == nil {
+		return ""
+	}
+	return r.defaultAccountID
 }
 
 func (r *Registry) Descriptors(gateways map[string][]accountproxy.Gateway) []*proxyruntimev1.ProxyProviderDescriptor {

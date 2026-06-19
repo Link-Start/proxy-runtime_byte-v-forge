@@ -57,7 +57,10 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 	if providerID == "" && existing != nil {
 		providerID = existing.ProviderID
 	}
-	providerID = firstNonEmpty(providerID, accountproxy.ProviderTen24)
+	providerID = firstNonEmpty(providerID, s.accountProviders.DefaultProviderID())
+	if providerID == "" {
+		return nil, failedPrecondition("provider_id is required", nil)
+	}
 	if !s.accountProviders.IsSupported(providerID) {
 		return nil, fmt.Errorf("unsupported provider_id %q", providerID)
 	}

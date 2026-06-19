@@ -48,7 +48,10 @@ func (s *SQLiteStore) UpsertProviderAccount(ctx context.Context, req *proxyrunti
 	if err != nil && !isStoreNotFound(err) {
 		return nil, err
 	}
-	providerID := firstNonEmpty(strings.TrimSpace(req.GetProviderId()), existingProviderID(existing), accountproxy.ProviderTen24)
+	providerID := firstNonEmpty(strings.TrimSpace(req.GetProviderId()), existingProviderID(existing), s.accountProviders.DefaultProviderID())
+	if providerID == "" {
+		return nil, failedPrecondition("provider_id is required", nil)
+	}
 	if !s.accountProviders.IsSupported(providerID) {
 		return nil, fmt.Errorf("unsupported provider_id %q", providerID)
 	}

@@ -33,6 +33,7 @@ type Gateway struct {
 type Plugin interface {
 	ID() string
 	DisplayName() string
+	Default() bool
 	Descriptor(gateways []Gateway) *proxyruntimev1.ProxyProviderDescriptor
 	GatewayProtocol(gateway Gateway) string
 	NewSessionProvider(cfg Config, client *http.Client) (provider.SessionProvider, error)
@@ -45,6 +46,7 @@ type SessionIDGenerator func() (string, error)
 type Definition struct {
 	ProviderID               string
 	DisplayName              string
+	Default                  bool
 	DefaultProtocol          string
 	Protocols                []string
 	Gateways                 []Gateway

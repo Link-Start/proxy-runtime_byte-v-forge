@@ -11,6 +11,7 @@ func Ten24Plugin() Plugin {
 	return NewDefinitionPlugin(Definition{
 		ProviderID:               ProviderTen24,
 		DisplayName:              "1024Proxy",
+		Default:                  true,
 		DefaultProtocol:          "socks5",
 		Protocols:                []string{"http", "socks5"},
 		UsernameParameterSession: true,

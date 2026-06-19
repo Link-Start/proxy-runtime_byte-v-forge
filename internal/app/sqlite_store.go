@@ -42,7 +42,7 @@ func NewSQLiteStore(ctx context.Context, cfg config.Config, accountProviders *pr
 		_ = db.Close()
 		return nil, err
 	}
-	if err := seedStoreFromConfig(ctx, store, cfg); err != nil {
+	if err := seedStoreFromConfig(ctx, store, accountProviders.DefaultProviderID(), cfg); err != nil {
 		_ = db.Close()
 		return nil, err
 	}

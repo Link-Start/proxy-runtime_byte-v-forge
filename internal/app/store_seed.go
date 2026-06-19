@@ -6,14 +6,17 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
 func (s *PostgresStore) seedFromConfig(ctx context.Context, cfg config.Config) error {
-	return seedStoreFromConfig(ctx, s, cfg)
+	return seedStoreFromConfig(ctx, s, s.accountProviders.DefaultProviderID(), cfg)
 }
 
-func seedStoreFromConfig(ctx context.Context, store providerAccountStore, cfg config.Config) error {
+func seedStoreFromConfig(ctx context.Context, store providerAccountStore, defaultProviderID string, cfg config.Config) error {
+	defaultProviderID = strings.TrimSpace(defaultProviderID)
+	if defaultProviderID == "" {
+		return nil
+	}
 	accounts, err := store.ListProviderAccounts(ctx)
 	if err != nil {
 		return err
@@ -23,7 +26,7 @@ func seedStoreFromConfig(ctx context.Context, store providerAccountStore, cfg co
 	}
 	_, err = store.UpsertProviderAccount(ctx, &proxyruntimev1.UpsertProxyProviderAccountRequest{
 		AccountId:     "default-1024proxy",
-		ProviderId:    accountproxy.ProviderTen24,
+		ProviderId:    defaultProviderID,
 		DisplayName:   "Default 1024Proxy",
 		Enabled:       true,
 		Username:      cfg.Ten24.Username,

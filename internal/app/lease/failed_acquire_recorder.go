@@ -4,12 +4,13 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 )
 
 type FailedAcquireRecorderInput struct {
 	Store             OrchestrationStore
 	IDs               IDGenerator
-	Clock             Clock
+	Clock             clock.Clock
 	DataPlane         DataPlaneApplier
 	Logger            Logger
 	Request           *proxyruntimev1.AcquireProxyLeaseRequest
@@ -22,7 +23,7 @@ type FailedAcquireRecorderInput struct {
 type FailedAcquireRecorder struct {
 	store             OrchestrationStore
 	ids               IDGenerator
-	clock             Clock
+	clock             clock.Clock
 	dataPlane         DataPlaneApplier
 	logger            Logger
 	request           *proxyruntimev1.AcquireProxyLeaseRequest

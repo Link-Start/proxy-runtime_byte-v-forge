@@ -1,6 +1,6 @@
 package app
 
-import leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+import "github.com/byte-v-forge/proxy-runtime/internal/clock"
 
 type leaseCoordinator struct {
 	deps leaseCoordinatorDependencies
@@ -8,7 +8,7 @@ type leaseCoordinator struct {
 
 func newLeaseCoordinator(deps leaseCoordinatorDependencies) leaseCoordinator {
 	if deps.clock == nil {
-		deps.clock = leaseapp.SystemClock{}
+		deps.clock = clock.SystemClock{}
 	}
 	if deps.ids == nil {
 		deps.ids = randomLeaseIDGenerator{byteLength: leaseIDByteLength}

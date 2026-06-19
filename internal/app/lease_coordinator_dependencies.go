@@ -5,6 +5,7 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
@@ -22,7 +23,7 @@ type leaseCoordinatorDependencies struct {
 	cfg                     config.Config
 	store                   leaseapp.OrchestrationStore
 	settings                leaseCoordinatorSettings
-	clock                   leaseapp.Clock
+	clock                   clock.Clock
 	ids                     leaseapp.IDGenerator
 	locks                   leaseapp.LockManager
 	dataPlane               leaseapp.DataPlaneApplier

@@ -1,10 +1,12 @@
 package lease
 
+import "github.com/byte-v-forge/proxy-runtime/internal/clock"
+
 type Dependencies struct {
 	Repository  Repository
 	Coordinator Coordinator
 	Worker      Worker
-	Clock       Clock
+	Clock       clock.Clock
 	Logger      Logger
 }
 
@@ -12,20 +14,20 @@ type Application struct {
 	repository  Repository
 	coordinator Coordinator
 	worker      Worker
-	clock       Clock
+	clock       clock.Clock
 	logger      Logger
 }
 
 func NewApplication(deps Dependencies) *Application {
-	clock := deps.Clock
-	if clock == nil {
-		clock = SystemClock{}
+	clk := deps.Clock
+	if clk == nil {
+		clk = clock.SystemClock{}
 	}
 	return &Application{
 		repository:  deps.Repository,
 		coordinator: deps.Coordinator,
 		worker:      deps.Worker,
-		clock:       clock,
+		clock:       clk,
 		logger:      deps.Logger,
 	}
 }

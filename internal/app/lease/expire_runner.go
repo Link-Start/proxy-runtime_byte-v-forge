@@ -5,6 +5,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 )
 
 type ExpireLeaseRunner struct {
@@ -13,7 +14,7 @@ type ExpireLeaseRunner struct {
 	Locks                             LockManager
 	DataPlane                         DataPlaneApplier
 	Factory                           SessionProviderFactory
-	Clock                             Clock
+	Clock                             clock.Clock
 	LocalProtocol                     string
 	IsNotFound                        StoreNotFoundFunc
 	ResolveGatewaysForLease           ProviderSessionGatewaysResolverFactory

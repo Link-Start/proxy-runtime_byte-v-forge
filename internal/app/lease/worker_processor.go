@@ -5,11 +5,12 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 )
 
 type WorkerProcessor struct {
 	Store              OrchestrationStore
-	Clock              Clock
+	Clock              clock.Clock
 	RestoreTimeout     time.Duration
 	CleanupTimeout     time.Duration
 	Restore            BatchProcessor

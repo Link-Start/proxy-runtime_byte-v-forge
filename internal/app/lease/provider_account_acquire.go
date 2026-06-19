@@ -5,6 +5,7 @@ import (
 	"errors"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
@@ -14,7 +15,7 @@ var ErrProviderAccountAcquireApplyRequired = errors.New("provider account acquir
 type ProviderAccountAcquireInput struct {
 	Store              OrchestrationStore
 	IDs                IDGenerator
-	Clock              Clock
+	Clock              clock.Clock
 	DataPlane          DataPlaneApplier
 	Logger             Logger
 	Factory            SessionProviderFactory
@@ -31,7 +32,7 @@ type ProviderAccountAcquireInput struct {
 type ProviderAccountAcquireRunner struct {
 	Store              OrchestrationStore
 	IDs                IDGenerator
-	Clock              Clock
+	Clock              clock.Clock
 	DataPlane          DataPlaneApplier
 	Logger             Logger
 	Factory            SessionProviderFactory

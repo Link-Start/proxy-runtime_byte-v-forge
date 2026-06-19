@@ -5,6 +5,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
@@ -34,7 +35,7 @@ type AcquiredRouteFlowInput struct {
 type AcquiredRouteApplier struct {
 	Store            OrchestrationStore
 	DataPlane        DataPlaneApplier
-	Clock            Clock
+	Clock            clock.Clock
 	LocalProtocol    string
 	Managed          bool
 	FallbackProtocol string

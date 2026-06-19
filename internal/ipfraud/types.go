@@ -6,6 +6,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 )
 
 type ProviderConfig struct {
@@ -33,6 +34,7 @@ type Config struct {
 	Timeout     time.Duration
 	CacheTTL    time.Duration
 	KeyCooldown time.Duration
+	Clock       clock.Clock
 }
 
 type Plugin interface {
@@ -43,7 +45,7 @@ type Plugin interface {
 	SupportsAnonymous() bool
 	SupportsAPIKey() bool
 	Auth(apiKeys []string, anonymous bool) AuthConfig
-	New(client *http.Client, cfg ProviderConfig, cooldown time.Duration) provider
+	New(client *http.Client, cfg ProviderConfig, cooldown time.Duration, clk clock.Clock) provider
 }
 
 type report struct {

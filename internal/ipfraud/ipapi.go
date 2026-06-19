@@ -6,6 +6,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 )
 
 type ipapiProvider struct {
@@ -30,9 +31,9 @@ func (ipapiPlugin) Auth(keys []string, anonymous bool) AuthConfig {
 	}
 	return AuthConfig{APIKey: &APIKeyAuthConfig{Keys: append([]string(nil), keys...), Placement: "query", Name: "key"}}
 }
-func (ipapiPlugin) New(client *http.Client, cfg ProviderConfig, cooldown time.Duration) provider {
+func (ipapiPlugin) New(client *http.Client, cfg ProviderConfig, cooldown time.Duration, clk clock.Clock) provider {
 	return &ipapiProvider{
-		httpProvider: newHTTPProvider(client, ipapiEndpoint, cfg.Auth, cooldown),
+		httpProvider: newHTTPProvider(client, ipapiEndpoint, cfg.Auth, cooldown, clk),
 	}
 }
 

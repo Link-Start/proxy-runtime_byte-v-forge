@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
 )
 
@@ -19,9 +20,10 @@ type httpProvider struct {
 	template string
 	auth     AuthConfig
 	keys     *keyRing
+	clock    clock.Clock
 }
 
-func newHTTPProvider(client *http.Client, template string, auth AuthConfig, cooldown time.Duration) httpProvider {
+func newHTTPProvider(client *http.Client, template string, auth AuthConfig, cooldown time.Duration, clk clock.Clock) httpProvider {
 	if client == nil {
 		client = runtimehttp.New(10 * time.Second)
 	}
@@ -36,7 +38,8 @@ func newHTTPProvider(client *http.Client, template string, auth AuthConfig, cool
 		client:   client,
 		template: template,
 		auth:     auth,
-		keys:     newKeyRing(keys, cooldown),
+		keys:     newKeyRing(keys, cooldown, clk),
+		clock:    clk,
 	}
 }
 
@@ -46,7 +49,7 @@ func (p *httpProvider) lookupJSON(ctx context.Context, ip string) (map[string]an
 		attempts = 1
 	}
 	for attempt := 0; attempt < attempts; attempt++ {
-		keyIndex, key, ok := p.keys.nextAvailable(time.Now())
+		keyIndex, key, ok := p.keys.nextAvailable(p.clock.Now())
 		if !ok {
 			return nil, errQuotaExhausted
 		}

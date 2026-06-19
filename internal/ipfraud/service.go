@@ -11,6 +11,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
 	"google.golang.org/protobuf/proto"
 )
@@ -19,6 +20,7 @@ type Service struct {
 	providers []providerEntry
 	cacheTTL  time.Duration
 	logger    *slog.Logger
+	clock     clock.Clock
 
 	mu    sync.Mutex
 	cache map[string]cacheEntry
@@ -45,6 +47,9 @@ func NewService(registry *Registry, cfg Config, logger *slog.Logger) *Service {
 	if cfg.CacheTTL <= 0 {
 		cfg.CacheTTL = 10 * time.Minute
 	}
+	if cfg.Clock == nil {
+		cfg.Clock = clock.SystemClock{}
+	}
 	sort.SliceStable(cfg.Providers, func(i, j int) bool {
 		return cfg.Providers[i].Weight > cfg.Providers[j].Weight
 	})
@@ -62,13 +67,14 @@ func NewService(registry *Registry, cfg Config, logger *slog.Logger) *Service {
 		providers = append(providers, providerEntry{
 			id:          providerID,
 			displayName: plugin.DisplayName(),
-			checker:     plugin.New(client, item, cfg.KeyCooldown),
+			checker:     plugin.New(client, item, cfg.KeyCooldown, cfg.Clock),
 		})
 	}
 	return &Service{
 		providers: providers,
 		cacheTTL:  cfg.CacheTTL,
 		logger:    logger,
+		clock:     cfg.Clock,
 		cache:     map[string]cacheEntry{},
 	}
 }
@@ -78,7 +84,7 @@ func (s *Service) Check(ctx context.Context, ip string) (*proxyruntimev1.ProxyIP
 	if ip == "" {
 		return nil, errors.New("ip is required")
 	}
-	if cached := s.cached(ip, time.Now()); cached != nil {
+	if cached := s.cached(ip, s.clock.Now()); cached != nil {
 		return cached, nil
 	}
 	reports := make([]report, 0, len(s.providers))
@@ -97,7 +103,7 @@ func (s *Service) Check(ctx context.Context, ip string) (*proxyruntimev1.ProxyIP
 		errorMessage = "IP fraud check unavailable"
 	}
 	check := mergeReports(ip, reports, errorMessage)
-	s.store(ip, check, time.Now().Add(s.cacheTTL))
+	s.store(ip, check, s.clock.Now().Add(s.cacheTTL))
 	return cloneCheck(check), nil
 }
 

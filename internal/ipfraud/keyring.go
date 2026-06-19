@@ -4,6 +4,8 @@ import (
 	"errors"
 	"sync"
 	"time"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 )
 
 var errQuotaExhausted = errors.New("IP fraud provider quota exhausted")
@@ -35,9 +37,10 @@ type keyRing struct {
 	keys     []keyState
 	next     int
 	cooldown time.Duration
+	clock    clock.Clock
 }
 
-func newKeyRing(keys []string, cooldown time.Duration) *keyRing {
+func newKeyRing(keys []string, cooldown time.Duration, clk clock.Clock) *keyRing {
 	if cooldown <= 0 {
 		cooldown = 24 * time.Hour
 	}
@@ -53,7 +56,7 @@ func newKeyRing(keys []string, cooldown time.Duration) *keyRing {
 	if len(states) == 0 {
 		states = append(states, keyState{})
 	}
-	return &keyRing{keys: states, cooldown: cooldown}
+	return &keyRing{keys: states, cooldown: cooldown, clock: clk}
 }
 
 func (r *keyRing) nextAvailable(now time.Time) (int, string, bool) {
@@ -94,5 +97,5 @@ func (r *keyRing) markUnavailable(index int, duration time.Duration) {
 	if duration <= 0 {
 		duration = r.cooldown
 	}
-	r.keys[index].unavailableUntil = time.Now().Add(duration)
+	r.keys[index].unavailableUntil = r.clock.Now().Add(duration)
 }

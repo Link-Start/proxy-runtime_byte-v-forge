@@ -6,6 +6,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 )
 
 type ipQualityScoreProvider struct{ httpProvider }
@@ -25,8 +26,8 @@ func (ipQualityScorePlugin) SupportsAPIKey() bool    { return true }
 func (ipQualityScorePlugin) Auth(keys []string, _ bool) AuthConfig {
 	return AuthConfig{APIKey: &APIKeyAuthConfig{Keys: append([]string(nil), keys...), Placement: "path"}}
 }
-func (ipQualityScorePlugin) New(client *http.Client, cfg ProviderConfig, cooldown time.Duration) provider {
-	return &ipQualityScoreProvider{httpProvider: newHTTPProvider(client, ipQualityScoreEndpoint, cfg.Auth, cooldown)}
+func (ipQualityScorePlugin) New(client *http.Client, cfg ProviderConfig, cooldown time.Duration, clk clock.Clock) provider {
+	return &ipQualityScoreProvider{httpProvider: newHTTPProvider(client, ipQualityScoreEndpoint, cfg.Auth, cooldown, clk)}
 }
 
 func (p *ipQualityScoreProvider) lookup(ctx context.Context, ip string) (report, error) {

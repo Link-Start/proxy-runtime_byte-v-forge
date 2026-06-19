@@ -7,6 +7,7 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 )
 
 type abuseIPDBProvider struct{ httpProvider }
@@ -26,8 +27,8 @@ func (abuseIPDBPlugin) SupportsAPIKey() bool    { return true }
 func (abuseIPDBPlugin) Auth(keys []string, _ bool) AuthConfig {
 	return AuthConfig{APIKey: &APIKeyAuthConfig{Keys: append([]string(nil), keys...), Placement: "header", Name: "Key"}}
 }
-func (abuseIPDBPlugin) New(client *http.Client, cfg ProviderConfig, cooldown time.Duration) provider {
-	return &abuseIPDBProvider{httpProvider: newHTTPProvider(client, abuseIPDBEndpoint, cfg.Auth, cooldown)}
+func (abuseIPDBPlugin) New(client *http.Client, cfg ProviderConfig, cooldown time.Duration, clk clock.Clock) provider {
+	return &abuseIPDBProvider{httpProvider: newHTTPProvider(client, abuseIPDBEndpoint, cfg.Auth, cooldown, clk)}
 }
 
 func (p *abuseIPDBProvider) lookup(ctx context.Context, ip string) (report, error) {

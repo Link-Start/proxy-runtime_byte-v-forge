@@ -8,6 +8,7 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
@@ -59,6 +60,7 @@ type leaseRegistrySessionProviderFactory struct {
 	registry *providerregistry.Registry
 	client   *http.Client
 	metrics  *runtimeMetrics
+	clock    clock.Clock
 }
 
 func (f leaseRegistrySessionProviderFactory) NewSessionProvider(providerCfg accountproxy.Config) (leaseapp.SessionProvider, error) {
@@ -66,7 +68,7 @@ func (f leaseRegistrySessionProviderFactory) NewSessionProvider(providerCfg acco
 		return nil, errors.New("provider session factory is required")
 	}
 	startedAt := time.Now()
-	sessionProvider, err := f.registry.NewSessionProvider(providerCfg, f.client)
+	sessionProvider, err := f.registry.NewSessionProvider(providerCfg, f.client, f.clock)
 	f.observe(runtimeMetricProviderSessionFactory, startedAt, err)
 	if err != nil {
 		return nil, err

@@ -22,7 +22,7 @@ func runtimeLeaseCoordinatorDependencies(runtime *Runtime) leaseCoordinatorDepen
 		locks:                   locks,
 		dataPlane:               leaseRuntimeDataPlaneApplier{dataPlane: runtime.dataPlane, metrics: runtime.metrics},
 		dynamicIPSelector:       runtime.dynamicIPSelector,
-		sessionProviders:        leaseRegistrySessionProviderFactory{registry: runtime.accountProviders, client: runtime.providerHTTPClient, metrics: runtime.metrics},
+		sessionProviders:        leaseRegistrySessionProviderFactory{registry: runtime.accountProviders, client: runtime.providerHTTPClient, metrics: runtime.metrics, clock: runtime.clock},
 		providerConcurrency:     runtime.providerConcurrency,
 		logger:                  runtime.logger,
 		exitCheckCache:          &runtime.exitCheckCache,

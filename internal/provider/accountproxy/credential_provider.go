@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/random"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -16,10 +16,11 @@ import (
 type CredentialProvider struct {
 	cfg        Config
 	definition Definition
+	clock      clock.Clock
 }
 
-func NewCredentialProvider(cfg Config, definition Definition) *CredentialProvider {
-	return &CredentialProvider{cfg: cfg, definition: definition}
+func NewCredentialProvider(cfg Config, definition Definition, clk clock.Clock) *CredentialProvider {
+	return &CredentialProvider{cfg: cfg, definition: definition, clock: clk}
 }
 
 func (p *CredentialProvider) Name() string { return p.definition.ProviderID }
@@ -46,7 +47,7 @@ func (p *CredentialProvider) CreateSession(_ context.Context, req *proxyruntimev
 		}
 		sessionID = generated
 	}
-	now := time.Now().UTC()
+	now := p.clock.Now().UTC()
 	return &proxyruntimev1.ProxySession{SessionId: sessionID, ProviderId: p.Name(), Policy: policy, CreatedAt: timestamppb.New(now), ExpiresAt: timestamppb.New(now.Add(policyStickyTTL(policy))), AccountId: strings.TrimSpace(req.GetAccountId()), Purpose: strings.TrimSpace(req.GetPurpose()), Labels: sessionLabels(p.definition)}, nil
 }
 

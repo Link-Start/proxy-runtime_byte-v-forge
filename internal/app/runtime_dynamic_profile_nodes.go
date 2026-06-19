@@ -18,7 +18,7 @@ func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *h
 	profileID := runtimeSafeID(profile.GetProfileId())
 	cfg := selection.config
 	cfg.Gateways = []accountproxy.Gateway{selected.endpoint}
-	providerClient, err := r.accountProviders.NewSessionProvider(cfg, client)
+	providerClient, err := r.accountProviders.NewSessionProvider(cfg, client, r.clock)
 	if err != nil {
 		r.logger.Warn("dynamic profile provider account skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error_type", errorLogType(err))
 		return nil

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
@@ -157,12 +158,12 @@ func (r *Registry) Descriptors(gateways map[string][]accountproxy.Gateway) []*pr
 	return out
 }
 
-func (r *Registry) NewSessionProvider(cfg accountproxy.Config, client *http.Client) (provider.SessionProvider, error) {
+func (r *Registry) NewSessionProvider(cfg accountproxy.Config, client *http.Client, clk clock.Clock) (provider.SessionProvider, error) {
 	plugin, ok := r.accountPlugin(cfg.ProviderID)
 	if !ok {
 		return nil, fmt.Errorf("unsupported provider_id %q", cfg.ProviderID)
 	}
-	return plugin.NewSessionProvider(cfg, client)
+	return plugin.NewSessionProvider(cfg, client, clk)
 }
 
 func (r *Registry) Validate(cfg accountproxy.Config) error {

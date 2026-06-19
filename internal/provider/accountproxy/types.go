@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
@@ -36,7 +37,7 @@ type Plugin interface {
 	Default() bool
 	Descriptor(gateways []Gateway) *proxyruntimev1.ProxyProviderDescriptor
 	GatewayProtocol(gateway Gateway) string
-	NewSessionProvider(cfg Config, client *http.Client) (provider.SessionProvider, error)
+	NewSessionProvider(cfg Config, client *http.Client, clk clock.Clock) (provider.SessionProvider, error)
 	Validate(cfg Config) error
 }
 

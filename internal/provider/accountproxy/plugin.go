@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
 
@@ -31,7 +32,7 @@ func (p definitionPlugin) GatewayProtocol(gateway Gateway) string {
 	return GatewayProtocol(gateway, p.definition.DefaultProtocol)
 }
 
-func (p definitionPlugin) NewSessionProvider(cfg Config, client *http.Client) (provider.SessionProvider, error) {
+func (p definitionPlugin) NewSessionProvider(cfg Config, client *http.Client, clk clock.Clock) (provider.SessionProvider, error) {
 	cfg.ProviderID = p.definition.ProviderID
 	if err := p.Validate(cfg); err != nil {
 		return nil, err
@@ -41,7 +42,7 @@ func (p definitionPlugin) NewSessionProvider(cfg Config, client *http.Client) (p
 	}
 	definition := p.definition
 	definition.Gateways = cfg.Gateways
-	return NewCredentialProvider(cfg, definition), nil
+	return NewCredentialProvider(cfg, definition, clk), nil
 }
 
 func (p definitionPlugin) Validate(cfg Config) error {

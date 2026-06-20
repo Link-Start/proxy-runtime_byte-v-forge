@@ -5,6 +5,8 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func (s *PostgresStore) ProviderAccountHasBlockingLease(ctx context.Context, providerAccountID string) (bool, error) {
@@ -42,7 +44,7 @@ WHERE provider_account_id=$1
 	)
 ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
 LIMIT $4
-`, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String(), normalizeBlockingLeaseFactLimit(limit))
+`, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String(), settingscore.NormalizeBlockingLeaseFactLimit(limit))
 	if err != nil {
 		return nil, err
 	}

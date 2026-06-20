@@ -1,13 +1,13 @@
-package app
+package settingscore
 
 const (
-	defaultBlockingLeaseFactLimit = 20
+	DefaultBlockingLeaseFactLimit = 20
 	maxBlockingLeaseFactLimit     = 100
 )
 
-func normalizeBlockingLeaseFactLimit(limit int) int {
+func NormalizeBlockingLeaseFactLimit(limit int) int {
 	if limit <= 0 {
-		return defaultBlockingLeaseFactLimit
+		return DefaultBlockingLeaseFactLimit
 	}
 	if limit > maxBlockingLeaseFactLimit {
 		return maxBlockingLeaseFactLimit

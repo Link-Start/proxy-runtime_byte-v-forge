@@ -1,4 +1,4 @@
-package app
+package settingscore
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 )
 
-func decodeMihomoNativeSettings(raw string) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+func DecodeMihomoNativeSettings(raw string) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
 	settings := &proxyruntimev1.ProxyRuntimeMihomoNativeConfig{}
 	if raw != "" {
 		if err := protojsoncodec.Unmarshal([]byte(raw), settings); err != nil {

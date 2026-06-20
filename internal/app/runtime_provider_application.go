@@ -11,6 +11,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 const providerAccountDeleteTimeout = 2 * time.Minute
@@ -229,7 +230,7 @@ func (a runtimeProviderApplication) deleteProviderAccount(ctx context.Context, p
 		deleted := false
 		err := a.withProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
 			var err error
-			leases, err = store.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID, defaultBlockingLeaseFactLimit)
+			leases, err = store.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID, settingscore.DefaultBlockingLeaseFactLimit)
 			if err != nil {
 				return fmt.Errorf("list blocking proxy leases for provider account %q: %w", providerAccountID, err)
 			}

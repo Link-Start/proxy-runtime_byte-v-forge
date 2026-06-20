@@ -32,7 +32,7 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 	if edgeCanaryEnabled(settings.GetEdgeCanary()) && strings.TrimSpace(settings.GetEdgeCanary().GetUrl()) == "" {
 		return nil, errors.New("edge canary url is required when enabled")
 	}
-	settings.IpFraudProviders, err = ipFraudProvidersFromRequest(ctx, writer, req.GetIpFraudProviders(), current, ipFraudProviders)
+	settings.IpFraudProviders, err = settingscore.IPFraudProvidersFromRequest(ctx, writer, req.GetIpFraudProviders(), current, ipFraudProviders)
 	if err != nil {
 		return nil, err
 	}

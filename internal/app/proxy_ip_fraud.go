@@ -18,7 +18,7 @@ type ipFraudCheckerCache struct {
 }
 
 func (r *Runtime) checkIPFraud(ctx context.Context, ip string, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyIPFraudCheck, error) {
-	providers, err := ipFraudProviders(ctx, r.store, settings, r.ipFraudProviders)
+	providers, err := settingscore.IPFraudProviders(ctx, r.store, settings, r.ipFraudProviders)
 	if err != nil {
 		return unsupportedIPFraudCheck(ip), nil
 	}

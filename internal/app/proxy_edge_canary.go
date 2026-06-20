@@ -9,16 +9,10 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 )
 
-type edgeCanaryOutcome struct {
-	level        proxyruntimev1.ProxyEdgeAccessRiskLevel
-	score        float64
-	signal       proxyruntimev1.ProxyEdgeAccessRiskSignal
-	errorMessage string
-}
-
-func (r *Runtime) runEdgeCanary(ctx context.Context, client *http.Client, settings *runtimeSettingsFile) edgeCanaryOutcome {
+func (r *Runtime) runEdgeCanary(ctx context.Context, client *http.Client, settings *runtimeSettingsFile) proxycheck.EdgeCanaryOutcome {
 	edgeCanary := settings.GetEdgeCanary()
 	target := strings.TrimSpace(edgeCanary.GetUrl())
 	token := ""
@@ -29,10 +23,10 @@ func (r *Runtime) runEdgeCanary(ctx context.Context, client *http.Client, settin
 		}
 	}
 	if !edgeCanaryEnabled(edgeCanary) || target == "" || token == "" {
-		return edgeCanaryOutcome{
-			level:        proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_UNSUPPORTED,
-			signal:       proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_ACCESS_UNSUPPORTED,
-			errorMessage: "edge access canary is not configured",
+		return proxycheck.EdgeCanaryOutcome{
+			Level:        proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_UNSUPPORTED,
+			Signal:       proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_ACCESS_UNSUPPORTED,
+			ErrorMessage: "edge access canary is not configured",
 		}
 	}
 	canaryCtx, cancel := context.WithTimeout(ctx, r.cfg.EdgeCanaryTimeout)
@@ -56,43 +50,43 @@ func (r *Runtime) runEdgeCanary(ctx context.Context, client *http.Client, settin
 		return edgeUnavailableOutcome()
 	}
 	if edgeChallengeDetected(resp.Header, body) {
-		return edgeCanaryOutcome{
-			level:  proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_CHALLENGE_LIKELY,
-			score:  85,
-			signal: proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_CHALLENGE_DETECTED,
+		return proxycheck.EdgeCanaryOutcome{
+			Level:  proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_CHALLENGE_LIKELY,
+			Score:  85,
+			Signal: proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_CHALLENGE_DETECTED,
 		}
 	}
 	switch {
 	case resp.StatusCode == http.StatusTooManyRequests:
-		return edgeCanaryOutcome{
-			level:  proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_HIGH,
-			score:  70,
-			signal: proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_RATE_LIMIT_DETECTED,
+		return proxycheck.EdgeCanaryOutcome{
+			Level:  proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_HIGH,
+			Score:  70,
+			Signal: proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_RATE_LIMIT_DETECTED,
 		}
 	case resp.StatusCode == http.StatusForbidden:
-		return edgeCanaryOutcome{
-			level:  proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_BLOCK_LIKELY,
-			score:  90,
-			signal: proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_BLOCK_DETECTED,
+		return proxycheck.EdgeCanaryOutcome{
+			Level:  proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_BLOCK_LIKELY,
+			Score:  90,
+			Signal: proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_BLOCK_DETECTED,
 		}
 	case resp.StatusCode >= 500 || resp.StatusCode == http.StatusNotFound || resp.StatusCode == http.StatusUnauthorized:
 		return edgeUnavailableOutcome()
 	case resp.StatusCode >= 200 && resp.StatusCode < 300:
-		return edgeCanaryOutcome{
-			level:  proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_LOW,
-			score:  0,
-			signal: proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_ACCESS_PASSED,
+		return proxycheck.EdgeCanaryOutcome{
+			Level:  proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_LOW,
+			Score:  0,
+			Signal: proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_ACCESS_PASSED,
 		}
 	default:
 		return edgeUnavailableOutcome()
 	}
 }
 
-func edgeUnavailableOutcome() edgeCanaryOutcome {
-	return edgeCanaryOutcome{
-		level:        proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_UNKNOWN,
-		signal:       proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_UNAVAILABLE,
-		errorMessage: "edge access check unavailable",
+func edgeUnavailableOutcome() proxycheck.EdgeCanaryOutcome {
+	return proxycheck.EdgeCanaryOutcome{
+		Level:        proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_UNKNOWN,
+		Signal:       proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_UNAVAILABLE,
+		ErrorMessage: "edge access check unavailable",
 	}
 }
 

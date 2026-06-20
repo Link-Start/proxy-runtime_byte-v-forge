@@ -51,7 +51,7 @@ type runtimeCheckGeoLookup func(context.Context, string) (proxycheck.ExitGeo, er
 
 type runtimeCheckFraudChecker func(context.Context, string, *runtimeSettingsFile) (*proxyruntimev1.ProxyIPFraudCheck, error)
 
-type runtimeCheckEdgeCanary func(context.Context, *http.Client, *runtimeSettingsFile) edgeCanaryOutcome
+type runtimeCheckEdgeCanary func(context.Context, *http.Client, *runtimeSettingsFile) proxycheck.EdgeCanaryOutcome
 
 type runtimeCheckCache interface {
 	PutExitIP(string, *proxyruntimev1.ProxyExitIP)
@@ -179,7 +179,7 @@ func (a runtimeCheckApplication) CheckProxyEdgeAccess(ctx context.Context, req *
 	if err != nil {
 		return nil, err
 	}
-	check := buildEdgeAccessCheck(edgeBaseFraudCheck(ip), strings.TrimSpace(req.GetExpectedCountryCode()), outcome)
+	check := proxycheck.BuildEdgeAccessCheck(proxycheck.EdgeBaseFraudCheck(ip), strings.TrimSpace(req.GetExpectedCountryCode()), outcome)
 	a.putEdge(req.GetListenerId(), check)
 	return &proxyruntimev1.CheckProxyEdgeAccessResponse{Check: check}, nil
 }
@@ -198,7 +198,7 @@ func (a runtimeCheckApplication) CheckProxyTargetConnectivity(ctx context.Contex
 		return nil, err
 	}
 	defer client.CloseIdleConnections()
-	target, err := normalizeConnectivityTarget(req.GetTargetUrl())
+	target, err := proxycheck.NormalizeConnectivityTarget(req.GetTargetUrl())
 	if err != nil {
 		return nil, err
 	}
@@ -273,9 +273,9 @@ func (a runtimeCheckApplication) checkIPFraud(ctx context.Context, ip string, se
 	return a.checkFraud(ctx, ip, settings)
 }
 
-func (a runtimeCheckApplication) checkEdgeAccess(ctx context.Context, client *http.Client, settings *runtimeSettingsFile) (edgeCanaryOutcome, error) {
+func (a runtimeCheckApplication) checkEdgeAccess(ctx context.Context, client *http.Client, settings *runtimeSettingsFile) (proxycheck.EdgeCanaryOutcome, error) {
 	if a.runEdgeCanary == nil {
-		return edgeCanaryOutcome{}, appcore.InternalError("runtime check edge canary is not configured", nil)
+		return proxycheck.EdgeCanaryOutcome{}, appcore.InternalError("runtime check edge canary is not configured", nil)
 	}
 	return a.runEdgeCanary(ctx, client, settings), nil
 }

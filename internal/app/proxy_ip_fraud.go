@@ -56,14 +56,6 @@ func (c *ipFraudCheckerCache) reset() {
 	c.signature = ""
 }
 
-func edgeBaseFraudCheck(ip string) *proxyruntimev1.ProxyIPFraudCheck {
-	return &proxyruntimev1.ProxyIPFraudCheck{
-		Ip:        ip,
-		RiskLevel: proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_LOW,
-		CheckedAt: timestamppb.Now(),
-	}
-}
-
 func unsupportedIPFraudCheck(ip string) *proxyruntimev1.ProxyIPFraudCheck {
 	return &proxyruntimev1.ProxyIPFraudCheck{
 		Ip:        ip,

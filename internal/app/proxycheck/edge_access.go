@@ -1,16 +1,32 @@
-package app
+package proxycheck
 
 import (
 	"sort"
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func buildEdgeAccessCheck(
+type EdgeCanaryOutcome struct {
+	Level        proxyruntimev1.ProxyEdgeAccessRiskLevel
+	Score        float64
+	Signal       proxyruntimev1.ProxyEdgeAccessRiskSignal
+	ErrorMessage string
+}
+
+func EdgeBaseFraudCheck(ip string) *proxyruntimev1.ProxyIPFraudCheck {
+	return &proxyruntimev1.ProxyIPFraudCheck{
+		Ip:        ip,
+		RiskLevel: proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_LOW,
+		CheckedAt: timestamppb.Now(),
+	}
+}
+
+func BuildEdgeAccessCheck(
 	fraudCheck *proxyruntimev1.ProxyIPFraudCheck,
 	expectedCountryCode string,
-	outcome edgeCanaryOutcome,
+	outcome EdgeCanaryOutcome,
 ) *proxyruntimev1.ProxyEdgeAccessCheck {
 	check := &proxyruntimev1.ProxyEdgeAccessCheck{
 		Ip:           fraudCheck.GetIp(),
@@ -18,11 +34,11 @@ func buildEdgeAccessCheck(
 		RiskLevel:    proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_UNKNOWN,
 		RiskScore:    clampEdgeScore(fraudCheck.GetRiskScore()),
 		CheckedAt:    fraudCheck.GetCheckedAt(),
-		ErrorMessage: outcome.errorMessage,
+		ErrorMessage: outcome.ErrorMessage,
 	}
-	if outcome.level == proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_UNSUPPORTED {
-		check.RiskLevel = outcome.level
-		check.RiskSignals = []proxyruntimev1.ProxyEdgeAccessRiskSignal{outcome.signal}
+	if outcome.Level == proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_UNSUPPORTED {
+		check.RiskLevel = outcome.Level
+		check.RiskSignals = []proxyruntimev1.ProxyEdgeAccessRiskSignal{outcome.Signal}
 		return check
 	}
 	signals := map[proxyruntimev1.ProxyEdgeAccessRiskSignal]struct{}{}
@@ -50,12 +66,12 @@ func buildEdgeAccessCheck(
 		addSignal(proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_GEO_MISMATCH)
 		check.RiskScore = maxFloat(check.GetRiskScore(), 60)
 	}
-	addSignal(outcome.signal)
-	check.RiskScore = maxFloat(check.GetRiskScore(), outcome.score)
+	addSignal(outcome.Signal)
+	check.RiskScore = maxFloat(check.GetRiskScore(), outcome.Score)
 	check.RiskLevel = edgeRiskFromScore(check.GetRiskScore())
 	check.RiskLevel = maxEdgeRisk(check.GetRiskLevel(), edgeRiskFromIP(fraudCheck.GetRiskLevel()))
-	check.RiskLevel = maxEdgeRisk(check.GetRiskLevel(), outcome.level)
-	if outcome.signal == proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_UNAVAILABLE &&
+	check.RiskLevel = maxEdgeRisk(check.GetRiskLevel(), outcome.Level)
+	if outcome.Signal == proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_UNAVAILABLE &&
 		check.GetRiskLevel() == proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_LOW {
 		check.RiskLevel = proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_UNKNOWN
 	}

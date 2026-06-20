@@ -1,4 +1,4 @@
-package app
+package proxycheck
 
 import (
 	"errors"
@@ -6,7 +6,7 @@ import (
 	"strings"
 )
 
-func normalizeConnectivityTarget(value string) (string, error) {
+func NormalizeConnectivityTarget(value string) (string, error) {
 	value = strings.TrimSpace(value)
 	if value == "" {
 		return "", errors.New("target_url is required")

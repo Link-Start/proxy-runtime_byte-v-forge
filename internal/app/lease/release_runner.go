@@ -14,10 +14,14 @@ type ReleaseRunner struct {
 }
 
 func (r ReleaseRunner) Release(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
-	return ReleaseLease(ctx, ReleaseInput{
+	lease, err := LookupReleaseLease(ctx, r.Store, req, r.IsNotFound)
+	if err != nil {
+		return nil, err
+	}
+	return RetireReleaseLease(ctx, ReleaseRetireInput{
 		Store:      r.Store,
 		Locks:      r.Locks,
-		Request:    req,
+		Lease:      lease,
 		IsNotFound: r.IsNotFound,
 		Retire:     r.Retire,
 	})

@@ -36,7 +36,6 @@ func (f leaseAccountLockedAcquireRunnerFactory) New(ctx context.Context, setting
 }
 
 func (f leaseAccountLockedAcquireRunnerFactory) dynamicAttemptRunner(settings *runtimeSettingsFile) leaseapp.DynamicAcquireAttemptRunner {
-	selector := leaseDynamicIPSelectionAdapter{selector: f.deps.dynamicIPSelector}
 	selectedRunnerFactory := leaseSelectedAcquireAttemptRunnerFactory{
 		deps:           f.deps,
 		settings:       settings,
@@ -44,7 +43,7 @@ func (f leaseAccountLockedAcquireRunnerFactory) dynamicAttemptRunner(settings *r
 		request:        f.request,
 	}
 	return leaseapp.DynamicAcquireAttemptRunner{
-		Select:            selector.Select,
+		Select:            f.deps.dynamicIPSelector.SelectDynamicIPEndpoint,
 		NewSelectedRunner: selectedRunnerFactory.New,
 		MapSelectionError: mapDynamicIPSelectionError,
 		MapAttemptError:   acquireAttemptSlotError,
@@ -56,4 +55,8 @@ func (f leaseAccountLockedAcquireRunnerFactory) observeAttemptFailure(attempt in
 		return
 	}
 	f.deps.logger.Warn("dynamic IP lease attempt failed", leaseapp.LabelAccountID, f.request.GetAccountId(), leaseapp.LabelPurpose, f.request.GetPurpose(), "attempt", attempt, "error_type", appcore.ErrorLogType(err))
+}
+
+func mapDynamicIPSelectionError(err error) error {
+	return appcore.FailedPrecondition("no dynamic IP endpoint candidate", err)
 }

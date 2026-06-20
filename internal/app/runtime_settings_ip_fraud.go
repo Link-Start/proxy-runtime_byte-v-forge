@@ -7,6 +7,8 @@ import (
 	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 const ipFraudAPIKeyPurpose = "ip_fraud_api_key"
@@ -39,7 +41,7 @@ func normalizeIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSetti
 }
 
 func cleanIPFraudSecretRefs(values []*commonv1.SecretRef) []*commonv1.SecretRef {
-	return cleanSecretRefs(values, "proxy-runtime", ipFraudAPIKeyPurpose)
+	return appcore.CleanSecretRefs(values, "proxy-runtime", ipFraudAPIKeyPurpose)
 }
 
 func providerDefaultWeight(kind proxyruntimev1.ProxyIPFraudProviderKind, index int, registry *ipfraud.Registry) uint32 {

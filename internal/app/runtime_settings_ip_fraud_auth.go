@@ -6,6 +6,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func ipFraudProviders(ctx context.Context, resolver secretref.Resolver, settings *runtimeSettingsFile, registry *ipfraud.Registry) ([]ipfraud.ProviderConfig, error) {
@@ -37,7 +39,7 @@ func ipFraudAuth(ctx context.Context, resolver secretref.Resolver, provider *pro
 	if !ok {
 		return ipfraud.AuthConfig{}, nil
 	}
-	values, err := resolveRuntimeSecretRefs(ctx, resolver, provider.GetApiKeySecretRefs(), ipFraudAPIKeyPurpose)
+	values, err := appcore.ResolveRuntimeSecretRefs(ctx, resolver, provider.GetApiKeySecretRefs(), ipFraudAPIKeyPurpose)
 	if err != nil {
 		return ipfraud.AuthConfig{}, err
 	}

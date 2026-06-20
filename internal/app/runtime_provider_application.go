@@ -202,7 +202,7 @@ func (a runtimeProviderApplication) rejectActiveProviderAccountRuntimeMutation(c
 	if username := strings.TrimSpace(req.GetUsername()); username != "" && username != state.Username {
 		return appcore.FailedPrecondition("provider account has active leases", nil)
 	}
-	if req.GetClearPassword() || secretRefConfigured(req.GetPasswordSecretRef()) || strings.TrimSpace(req.GetPasswordValue()) != "" {
+	if req.GetClearPassword() || appcore.SecretRefConfigured(req.GetPasswordSecretRef()) || strings.TrimSpace(req.GetPasswordValue()) != "" {
 		return appcore.FailedPrecondition("provider account has active leases", nil)
 	}
 	return nil

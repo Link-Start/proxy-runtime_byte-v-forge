@@ -6,6 +6,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func normalizeRuntimeSettings(settings *runtimeSettingsFile) *runtimeSettingsFile {
@@ -14,7 +16,7 @@ func normalizeRuntimeSettings(settings *runtimeSettingsFile) *runtimeSettingsFil
 	}
 	if settings.EdgeCanary != nil {
 		settings.EdgeCanary.Url = strings.TrimSpace(settings.EdgeCanary.GetUrl())
-		settings.EdgeCanary.TokenSecretRef = cloneSecretRef(settings.EdgeCanary.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token")
+		settings.EdgeCanary.TokenSecretRef = appcore.CloneSecretRef(settings.EdgeCanary.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token")
 	}
 	for _, provider := range settings.IpFraudProviders {
 		if provider == nil {

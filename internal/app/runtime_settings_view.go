@@ -2,6 +2,8 @@ package app
 
 import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func runtimeSettingsView(settings *runtimeSettingsFile) *proxyruntimev1.ProxyRuntimeSettings {
@@ -10,7 +12,7 @@ func runtimeSettingsView(settings *runtimeSettingsFile) *proxyruntimev1.ProxyRun
 	out := &proxyruntimev1.ProxyRuntimeSettings{
 		EdgeCanary: &proxyruntimev1.ProxyEdgeCanarySettingsView{
 			Url:             edge.GetUrl(),
-			TokenConfigured: secretRefConfigured(edge.GetTokenSecretRef()),
+			TokenConfigured: appcore.SecretRefConfigured(edge.GetTokenSecretRef()),
 			Enabled:         edgeCanaryEnabled(edge),
 		},
 		CheckSettings: cloneCheckSettings(settings.GetCheckSettings()),

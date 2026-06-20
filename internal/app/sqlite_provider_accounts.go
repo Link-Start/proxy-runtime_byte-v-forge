@@ -68,7 +68,7 @@ func (s *SQLiteStore) UpsertProviderAccount(ctx context.Context, req *proxyrunti
 	if username := strings.TrimSpace(req.GetUsername()); username != "" {
 		credential.Username = username
 	}
-	if ref := cloneSecretRef(req.GetPasswordSecretRef(), "proxy-runtime", "dynamic_ip_provider_password"); ref != nil {
+	if ref := appcore.CloneSecretRef(req.GetPasswordSecretRef(), "proxy-runtime", "dynamic_ip_provider_password"); ref != nil {
 		credential.PasswordSecretRef = ref
 	}
 	if rawPassword := strings.TrimSpace(req.GetPasswordValue()); rawPassword != "" {
@@ -143,7 +143,7 @@ func (s *SQLiteStore) ProviderAccountMutationState(ctx context.Context, accountI
 	state := providerAccountMutationState{ProviderID: record.ProviderID, DynamicProviderID: record.DynamicProviderID, PasswordConfigured: record.CredentialSecret != ""}
 	if credential != nil {
 		state.Username = credential.Username
-		state.PasswordSecretRef = cloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password")
+		state.PasswordSecretRef = appcore.CloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password")
 	}
 	return state, nil
 }

@@ -20,7 +20,7 @@ func edgeCanaryFromRequest(ctx context.Context, writer secretref.Writer, req *pr
 		Enabled: req.GetEnabled(),
 		Url:     appcore.FirstNonEmpty(req.GetUrl(), current.GetUrl()),
 	}
-	if ref := cloneSecretRef(req.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token"); ref != nil {
+	if ref := appcore.CloneSecretRef(req.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token"); ref != nil {
 		settings.TokenSecretRef = ref
 		return settings, nil
 	}
@@ -36,7 +36,7 @@ func edgeCanaryFromRequest(ctx context.Context, writer secretref.Writer, req *pr
 		settings.TokenSecretRef = nil
 		return settings, nil
 	}
-	settings.TokenSecretRef = cloneSecretRef(current.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token")
+	settings.TokenSecretRef = appcore.CloneSecretRef(current.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token")
 	return settings, nil
 }
 
@@ -62,7 +62,7 @@ func cloneEdgeCanary(in *proxyruntimev1.ProxyEdgeCanarySettings) *proxyruntimev1
 	}
 	return &proxyruntimev1.ProxyEdgeCanarySettings{
 		Url:            in.GetUrl(),
-		TokenSecretRef: cloneSecretRef(in.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token"),
+		TokenSecretRef: appcore.CloneSecretRef(in.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token"),
 		ClearToken:     in.GetClearToken(),
 		Enabled:        in.GetEnabled(),
 		TokenValue:     "",

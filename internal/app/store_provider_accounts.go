@@ -84,7 +84,7 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 	if username := strings.TrimSpace(req.GetUsername()); username != "" {
 		credential.Username = username
 	}
-	if ref := cloneSecretRef(req.GetPasswordSecretRef(), "proxy-runtime", "dynamic_ip_provider_password"); ref != nil {
+	if ref := appcore.CloneSecretRef(req.GetPasswordSecretRef(), "proxy-runtime", "dynamic_ip_provider_password"); ref != nil {
 		credential.PasswordSecretRef = ref
 	}
 	if rawPassword := strings.TrimSpace(req.GetPasswordValue()); rawPassword != "" {
@@ -220,7 +220,7 @@ func (s *PostgresStore) ProviderAccountMutationState(ctx context.Context, accoun
 	}
 	if credential != nil {
 		state.Username = credential.Username
-		state.PasswordSecretRef = cloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password")
+		state.PasswordSecretRef = appcore.CloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password")
 	}
 	return state, nil
 }
@@ -236,7 +236,7 @@ func providerConfigFromCredentialSecret(ctx context.Context, resolver secretref.
 		cfg.Password = password
 		return cfg, nil
 	}
-	if ref := cloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password"); ref != nil {
+	if ref := appcore.CloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password"); ref != nil {
 		password, err := resolver.ResolveSecret(ctx, ref)
 		if err != nil {
 			return accountproxy.Config{}, err
@@ -253,10 +253,10 @@ func providerAccountToProto(ctx context.Context, resolver secretref.Resolver, bo
 		account.PasswordValue = password
 		return account, nil
 	}
-	if credential == nil || !secretRefConfigured(credential.PasswordSecretRef) {
+	if credential == nil || !appcore.SecretRefConfigured(credential.PasswordSecretRef) {
 		return account, nil
 	}
-	ref := cloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password")
+	ref := appcore.CloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password")
 	if ref == nil {
 		return account, nil
 	}

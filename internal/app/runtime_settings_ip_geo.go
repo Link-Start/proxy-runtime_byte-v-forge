@@ -7,6 +7,8 @@ import (
 	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 const ipGeoAPIKeyPurpose = "ip_geo_api_key"
@@ -39,7 +41,7 @@ func normalizeIPGeoProvider(provider *proxyruntimev1.ProxyIPGeoProviderSettings,
 }
 
 func cleanIPGeoSecretRefs(values []*commonv1.SecretRef) []*commonv1.SecretRef {
-	return cleanSecretRefs(values, "proxy-runtime", ipGeoAPIKeyPurpose)
+	return appcore.CleanSecretRefs(values, "proxy-runtime", ipGeoAPIKeyPurpose)
 }
 
 func ipGeoProviderDefaultWeight(kind proxyruntimev1.ProxyIPGeoProviderKind, index int, registry *ipgeo.Registry) uint32 {

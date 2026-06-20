@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 type edgeCanaryOutcome struct {
@@ -20,7 +22,7 @@ func (r *Runtime) runEdgeCanary(ctx context.Context, client *http.Client, settin
 	edgeCanary := settings.GetEdgeCanary()
 	target := strings.TrimSpace(edgeCanary.GetUrl())
 	token := ""
-	if r.store != nil && secretRefConfigured(edgeCanary.GetTokenSecretRef()) {
+	if r.store != nil && appcore.SecretRefConfigured(edgeCanary.GetTokenSecretRef()) {
 		resolved, err := r.store.ResolveSecret(ctx, edgeCanary.GetTokenSecretRef())
 		if err == nil {
 			token = strings.TrimSpace(resolved)

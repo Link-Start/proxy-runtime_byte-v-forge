@@ -6,6 +6,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func ipGeoProviders(ctx context.Context, resolver secretref.Resolver, settings *runtimeSettingsFile, registry *ipgeo.Registry) ([]ipgeo.ProviderConfig, error) {
@@ -37,7 +39,7 @@ func ipGeoAuth(ctx context.Context, resolver secretref.Resolver, provider *proxy
 	if !ok {
 		return ipgeo.AuthConfig{}, nil
 	}
-	values, err := resolveRuntimeSecretRefs(ctx, resolver, provider.GetApiKeySecretRefs(), ipGeoAPIKeyPurpose)
+	values, err := appcore.ResolveRuntimeSecretRefs(ctx, resolver, provider.GetApiKeySecretRefs(), ipGeoAPIKeyPurpose)
 	if err != nil {
 		return ipgeo.AuthConfig{}, err
 	}

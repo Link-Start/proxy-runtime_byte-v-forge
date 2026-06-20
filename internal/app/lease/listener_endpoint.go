@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 const (
@@ -29,7 +31,7 @@ func NewListenerEndpoint(listener Listener, advertisedHost string, fallbackProto
 	if advertisedHost != "" && localEndpointHost(host) {
 		host = advertisedHost
 	}
-	labels := cloneStringMap(listener.Labels)
+	labels := appcore.CloneStringMap(listener.Labels)
 	if listener.Username != "" || listener.Password != "" {
 		if labels == nil {
 			labels = map[string]string{}

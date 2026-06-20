@@ -5,7 +5,6 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
@@ -28,8 +27,8 @@ func EgressProfileLineFromProto(in *proxyruntimev1.EgressProfileLineSettings) *p
 		Kind:           in.GetKind(),
 		MihomoNode:     EgressProfileMihomoNodeRefFromProto(in.GetMihomoNode()),
 		HealthCheckUrl: strings.TrimSpace(in.GetHealthCheckUrl()),
-		HealthInterval: CloneDuration(in.GetHealthInterval()),
-		HealthTimeout:  CloneDuration(in.GetHealthTimeout()),
+		HealthInterval: appcore.CloneDuration(in.GetHealthInterval()),
+		HealthTimeout:  appcore.CloneDuration(in.GetHealthTimeout()),
 		ExpectedStatus: in.GetExpectedStatus(),
 	}
 	if out.GetKind() == proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_UNSPECIFIED {
@@ -46,8 +45,8 @@ func EgressProfileExitFromProto(in *proxyruntimev1.EgressProfileExitSettings) *p
 		Kind:              in.GetKind(),
 		MihomoNode:        EgressProfileMihomoNodeRefFromProto(in.GetMihomoNode()),
 		HealthCheckUrl:    strings.TrimSpace(in.GetHealthCheckUrl()),
-		HealthInterval:    CloneDuration(in.GetHealthInterval()),
-		HealthTimeout:     CloneDuration(in.GetHealthTimeout()),
+		HealthInterval:    appcore.CloneDuration(in.GetHealthInterval()),
+		HealthTimeout:     appcore.CloneDuration(in.GetHealthTimeout()),
 		ExpectedStatus:    in.GetExpectedStatus(),
 		DynamicProviderId: strings.TrimSpace(in.GetDynamicProviderId()),
 		DynamicIpPolicy:   EgressProfileDynamicIPPolicyFromProto(in.GetDynamicIpPolicy()),
@@ -70,11 +69,4 @@ func EgressProfileMihomoNodeRefFromProto(in *proxyruntimev1.EgressProfileMihomoN
 		ResourceId: strings.TrimSpace(in.GetResourceId()),
 		NodeId:     strings.TrimSpace(in.GetNodeId()),
 	}
-}
-
-func CloneDuration(value *durationpb.Duration) *durationpb.Duration {
-	if value == nil {
-		return nil
-	}
-	return durationpb.New(value.AsDuration())
 }

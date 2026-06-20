@@ -51,24 +51,6 @@ func NewProviderHTTPClient(cfg config.Config) (*http.Client, error) {
 	return client, nil
 }
 
-func cloneStringMap(values map[string]string) map[string]string {
-	if len(values) == 0 {
-		return nil
-	}
-	out := make(map[string]string, len(values))
-	for key, value := range values {
-		key = strings.TrimSpace(key)
-		if key == "" {
-			continue
-		}
-		out[key] = strings.TrimSpace(value)
-	}
-	if len(out) == 0 {
-		return nil
-	}
-	return out
-}
-
 func protoDuration(value *durationpb.Duration, fallback time.Duration) time.Duration {
 	if value == nil || value.AsDuration() <= 0 {
 		return fallback

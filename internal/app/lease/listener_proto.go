@@ -1,6 +1,10 @@
 package lease
 
-import proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+import (
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+)
 
 const LabelMode = "mode"
 
@@ -11,7 +15,7 @@ func EgressListenerProto(listener Listener, managed bool, fallbackProtocol strin
 		kind = proxyruntimev1.EgressListenerKind_EGRESS_LISTENER_KIND_DIRECT
 		routeID = "direct"
 	}
-	labels := cloneStringMap(listener.Labels)
+	labels := appcore.CloneStringMap(listener.Labels)
 	if listener.Username != "" || listener.Password != "" {
 		if labels == nil {
 			labels = map[string]string{}

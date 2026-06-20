@@ -3,10 +3,10 @@ package app
 import (
 	"context"
 	"errors"
-	"time"
 
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/redisclient"
+	"github.com/go-redsync/redsync/v4"
 )
 
 func (s *redisLeaseRuntimeLocks) withLock(ctx context.Context, key string, fn leaseapp.LockFunc) error {
@@ -18,35 +18,30 @@ func (s *redisLeaseRuntimeLocks) withLock(ctx context.Context, key string, fn le
 }
 
 func (s *redisLeaseRuntimeLocks) lock(ctx context.Context, key string) (*redisLeaseRuntimeLock, error) {
-	if s == nil || s.client == nil {
+	if s == nil || s.rs == nil {
 		return nil, errors.New("redis lease lock client is not configured")
 	}
 	redisKeyValue, ok := redisclient.Key(leaseRuntimeLockPrefix, key)
 	if !ok {
 		return nil, errors.New("redis lease lock key is required")
 	}
-	token, err := redisLeaseRuntimeLockToken()
-	if err != nil {
+	mutex := s.rs.NewMutex(redisKeyValue,
+		redsync.WithExpiry(leaseRuntimeLockTTL),
+		redsync.WithTries(leaseRuntimeLockTries),
+		redsync.WithRetryDelay(leaseRuntimeLockRetry),
+	)
+	if err := mutex.LockContext(ctx); err != nil {
 		return nil, err
 	}
-	for {
-		locked, err := s.client.SetNX(ctx, redisKeyValue, token, leaseRuntimeLockTTL).Result()
-		if err != nil {
-			return nil, err
-		}
-		if locked {
-			scopeCtx, scopeCancel := context.WithCancel(ctx)
-			renewCtx, renewCancel := context.WithCancel(context.Background())
-			lock := &redisLeaseRuntimeLock{client: s.client, key: redisKeyValue, token: token, scopeCtx: scopeCtx, scopeCancel: scopeCancel, renewCancel: renewCancel, done: make(chan struct{})}
-			go lock.renew(renewCtx)
-			return lock, nil
-		}
-		timer := time.NewTimer(leaseRuntimeLockRetry)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return nil, ctx.Err()
-		case <-timer.C:
-		}
+	scopeCtx, scopeCancel := context.WithCancel(ctx)
+	renewCtx, renewCancel := context.WithCancel(context.Background())
+	lock := &redisLeaseRuntimeLock{
+		mutex:       mutex,
+		scopeCtx:    scopeCtx,
+		scopeCancel: scopeCancel,
+		renewCancel: renewCancel,
+		done:        make(chan struct{}),
 	}
+	go lock.renew(renewCtx)
+	return lock, nil
 }

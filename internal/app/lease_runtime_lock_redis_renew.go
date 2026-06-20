@@ -2,7 +2,6 @@ package app
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
@@ -34,9 +33,5 @@ func (l *redisLeaseRuntimeLock) renew(ctx context.Context) {
 }
 
 func (l *redisLeaseRuntimeLock) extend(ctx context.Context) (bool, error) {
-	result, err := redisLeaseRuntimeExtendScript.Run(ctx, l.client, []string{l.key}, l.token, leaseRuntimeLockTTL.Milliseconds()).Int()
-	if err != nil {
-		return false, fmt.Errorf("extend redis lease runtime lock: %w", err)
-	}
-	return result == 1, nil
+	return l.mutex.ExtendContext(ctx)
 }

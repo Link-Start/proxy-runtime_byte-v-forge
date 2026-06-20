@@ -13,6 +13,8 @@ const (
 	leaseRuntimeLockTTL    = 2 * time.Minute
 	leaseRuntimeLockRetry  = 100 * time.Millisecond
 	leaseRuntimeUnlockWait = 5 * time.Second
+	// 获取锁的等待由调用方 ctx 主导;leaseRuntimeLockTries 为 ctx 无截止时的兜底上限,约覆盖一个锁 TTL 的等待。
+	leaseRuntimeLockTries = int(leaseRuntimeLockTTL / leaseRuntimeLockRetry)
 )
 
 type leaseRuntimeLocks interface {

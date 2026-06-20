@@ -6,13 +6,11 @@ import (
 	"sync/atomic"
 
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/redis/go-redis/v9"
+	"github.com/go-redsync/redsync/v4"
 )
 
 type redisLeaseRuntimeLock struct {
-	client      *redis.Client
-	key         string
-	token       string
+	mutex       *redsync.Mutex
 	scopeCtx    context.Context
 	scopeCancel context.CancelFunc
 	renewCancel context.CancelFunc
@@ -21,7 +19,7 @@ type redisLeaseRuntimeLock struct {
 }
 
 func (l *redisLeaseRuntimeLock) Unlock(ctx context.Context) error {
-	if l == nil || l.client == nil || l.key == "" || l.token == "" {
+	if l == nil || l.mutex == nil {
 		return nil
 	}
 	if l.renewCancel != nil {
@@ -30,7 +28,10 @@ func (l *redisLeaseRuntimeLock) Unlock(ctx context.Context) error {
 	if l.done != nil {
 		<-l.done
 	}
-	return redisLeaseRuntimeUnlockScript.Run(ctx, l.client, []string{l.key}, l.token).Err()
+	if _, err := l.mutex.UnlockContext(ctx); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (l *redisLeaseRuntimeLock) run(fn leaseapp.LockFunc) error {

@@ -7,6 +7,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 type ipFraudCheckerCache struct {
@@ -28,7 +30,7 @@ func (r *Runtime) checkIPFraud(ctx context.Context, ip string, settings *runtime
 }
 
 func (r *Runtime) ipFraudChecker(settings *runtimeSettingsFile, providers []ipfraud.ProviderConfig) ipFraudChecker {
-	signature := runtimeSettingsSignature(settings, r.ipFraudProviders, r.ipGeoProviders)
+	signature := settingscore.RuntimeSettingsSignature(settings, r.ipFraudProviders, r.ipGeoProviders)
 	return r.fraudChecker.get(signature, func() ipFraudChecker {
 		return newIPFraudChecker(r.ipFraudProviders, r.cfg.IPFraud, providers, r.logger, r.clock)
 	})

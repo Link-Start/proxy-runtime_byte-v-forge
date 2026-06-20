@@ -8,10 +8,11 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 func (s *SQLiteStore) LoadMihomoNativeSettings(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
-	raw, found, err := s.loadRuntimeSettingJSON(ctx, mihomoNativeSettingsKey)
+	raw, found, err := s.loadRuntimeSettingJSON(ctx, store.MihomoNativeSettingsKey)
 	if err != nil {
 		return nil, err
 	}
@@ -26,5 +27,5 @@ func (s *SQLiteStore) SaveMihomoNativeSettings(ctx context.Context, settings *pr
 	if err != nil {
 		return err
 	}
-	return s.saveRuntimeSettingJSON(ctx, mihomoNativeSettingsKey, data)
+	return s.saveRuntimeSettingJSON(ctx, store.MihomoNativeSettingsKey, data)
 }

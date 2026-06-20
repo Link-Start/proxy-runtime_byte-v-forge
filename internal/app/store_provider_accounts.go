@@ -38,7 +38,7 @@ func (s *PostgresStore) ListProviderAccounts(ctx context.Context) ([]*proxyrunti
 }
 
 func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.ProxyProviderAccount, error) {
-	accountID := normalizeID(req.GetAccountId())
+	accountID := store.NormalizeID(req.GetAccountId())
 	if accountID == "" {
 		generated, err := store.GeneratedID("dynacct")
 		if err != nil {
@@ -133,7 +133,7 @@ RETURNING `+providerAccountColumns(), accountID, providerID, dynamicProviderID, 
 }
 
 func (s *PostgresStore) DeleteProviderAccount(ctx context.Context, accountID string) error {
-	_, err := s.pool.Exec(ctx, `DELETE FROM proxy_runtime_provider_accounts WHERE account_id=$1`, normalizeID(accountID))
+	_, err := s.pool.Exec(ctx, `DELETE FROM proxy_runtime_provider_accounts WHERE account_id=$1`, store.NormalizeID(accountID))
 	return err
 }
 
@@ -167,7 +167,7 @@ func (s *PostgresStore) DefaultProviderAccountID(ctx context.Context) (string, e
 }
 
 func (s *PostgresStore) providerAccountRecord(ctx context.Context, accountID string) (*store.ProviderAccountRecord, error) {
-	row := s.pool.QueryRow(ctx, `SELECT `+providerAccountColumns()+` FROM proxy_runtime_provider_accounts WHERE account_id=$1`, normalizeID(accountID))
+	row := s.pool.QueryRow(ctx, `SELECT `+providerAccountColumns()+` FROM proxy_runtime_provider_accounts WHERE account_id=$1`, store.NormalizeID(accountID))
 	return scanProviderAccount(row)
 }
 
@@ -202,5 +202,3 @@ func (s *PostgresStore) ProviderAccountMutationState(ctx context.Context, accoun
 	}
 	return state, nil
 }
-
-func normalizeID(value string) string { return strings.TrimSpace(value) }

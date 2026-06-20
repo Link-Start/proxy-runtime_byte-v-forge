@@ -8,12 +8,11 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
-const mihomoNativeSettingsKey = "mihomo_native"
-
 func (s *PostgresStore) LoadMihomoNativeSettings(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
-	raw, found, err := s.loadRuntimeSettingJSON(ctx, mihomoNativeSettingsKey)
+	raw, found, err := s.loadRuntimeSettingJSON(ctx, store.MihomoNativeSettingsKey)
 	if err != nil {
 		return nil, err
 	}
@@ -28,5 +27,5 @@ func (s *PostgresStore) SaveMihomoNativeSettings(ctx context.Context, settings *
 	if err != nil {
 		return err
 	}
-	return s.saveRuntimeSettingJSON(ctx, mihomoNativeSettingsKey, data)
+	return s.saveRuntimeSettingJSON(ctx, store.MihomoNativeSettingsKey, data)
 }

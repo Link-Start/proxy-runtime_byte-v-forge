@@ -6,12 +6,11 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
-const runtimeSettingsKey = "runtime"
-
 func (s *PostgresStore) LoadRuntimeSettings(ctx context.Context) (*runtimeSettingsFile, error) {
-	raw, found, err := s.loadRuntimeSettingJSON(ctx, runtimeSettingsKey)
+	raw, found, err := s.loadRuntimeSettingJSON(ctx, store.RuntimeSettingsKey)
 	if err != nil {
 		return nil, err
 	}
@@ -26,5 +25,5 @@ func (s *PostgresStore) SaveRuntimeSettings(ctx context.Context, settings *runti
 	if err != nil {
 		return err
 	}
-	return s.saveRuntimeSettingJSON(ctx, runtimeSettingsKey, data)
+	return s.saveRuntimeSettingJSON(ctx, store.RuntimeSettingsKey, data)
 }

@@ -13,6 +13,7 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 const dynamicProfileSlotReleaseTimeout = 5 * time.Second
@@ -27,7 +28,7 @@ func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *h
 		return nil
 	}
 	session := dynamicProfileSession(profileID, selection.accountID, cfg.ProviderID, selected.Proto.GetEndpointId(), profile.GetExit().GetDynamicIpPolicy())
-	slot, err := leaseapp.AcquireProviderAccountConcurrencySlot(ctx, r.providerConcurrency, selection.account.GetAccountId(), concurrencyLimit, session.GetPolicy(), concurrencyHolder, leaseapp.ConcurrencySlotTTL(session.GetPolicy(), leaseapp.DefaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
+	slot, err := leaseapp.AcquireProviderAccountConcurrencySlot(ctx, r.providerConcurrency, selection.account.GetAccountId(), concurrencyLimit, session.GetPolicy(), concurrencyHolder, leaseapp.ConcurrencySlotTTL(session.GetPolicy(), kernel.DefaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
 	if err != nil {
 		r.logger.Warn("dynamic profile provider account skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error_type", appcore.ErrorLogType(err))
 		return nil

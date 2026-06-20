@@ -6,7 +6,7 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 func egressProfileFromProto(in *proxyruntimev1.EgressProfileSettings) *proxyruntimev1.EgressProfileSettings {
@@ -17,9 +17,9 @@ func egressProfileFromProto(in *proxyruntimev1.EgressProfileSettings) *proxyrunt
 		ProfileId:   appcore.RuntimeSafeID(in.GetProfileId()),
 		DisplayName: strings.TrimSpace(in.GetDisplayName()),
 		Enabled:     in.GetEnabled(),
-		Line:        settingscore.EgressProfileLineFromProto(in.GetLine()),
-		Exit:        settingscore.EgressProfileExitFromProto(in.GetExit()),
+		Line:        kernel.EgressProfileLineFromProto(in.GetLine()),
+		Exit:        kernel.EgressProfileExitFromProto(in.GetExit()),
 	}
-	settingscore.NormalizeEgressProfile(out)
+	kernel.NormalizeEgressProfile(out)
 	return out
 }

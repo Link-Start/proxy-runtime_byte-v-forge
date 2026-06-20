@@ -4,6 +4,8 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
@@ -35,7 +37,7 @@ func (f leaseSelectedAcquireAttemptRunnerFactory) New(selection leaseapp.Dynamic
 		IDs:            f.deps.ids,
 		Limiter:        f.deps.providerConcurrency,
 		Locks:          f.deps.locks,
-		DefaultTTL:     leaseapp.DefaultDynamicIPStickyTTL,
+		DefaultTTL:     kernel.DefaultDynamicIPStickyTTL,
 		TTLBuffer:      providerAccountConcurrencyTTLBuffer,
 		ReleaseTimeout: leaseAcquireSlotReleaseTimeout,
 		Limit:          f.limit,

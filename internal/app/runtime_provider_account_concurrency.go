@@ -8,7 +8,7 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 const providerAccountConcurrencyTTLBuffer = 2 * time.Minute
@@ -21,7 +21,7 @@ func dynamicProviderConcurrencyLimit(settings *runtimeSettingsFile, dynamicProvi
 		}
 	}
 	if leaseapp.ConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
-		return settingscore.DefaultDynamicProviderRotatingConcurrencyLimit
+		return kernel.DefaultDynamicProviderRotatingConcurrencyLimit
 	}
-	return settingscore.DefaultDynamicProviderStickyConcurrencyLimit
+	return kernel.DefaultDynamicProviderStickyConcurrencyLimit
 }

@@ -5,11 +5,11 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 func runtimeSettingsView(settings *runtimeSettingsFile) *proxyruntimev1.ProxyRuntimeSettings {
-	settings = settingscore.NormalizeRuntimeSettings(settings)
+	settings = kernel.NormalizeRuntimeSettings(settings)
 	edge := settings.GetEdgeCanary()
 	out := &proxyruntimev1.ProxyRuntimeSettings{
 		EdgeCanary: &proxyruntimev1.ProxyEdgeCanarySettingsView{
@@ -17,7 +17,7 @@ func runtimeSettingsView(settings *runtimeSettingsFile) *proxyruntimev1.ProxyRun
 			TokenConfigured: appcore.SecretRefConfigured(edge.GetTokenSecretRef()),
 			Enabled:         edgeCanaryEnabled(edge),
 		},
-		CheckSettings: settingscore.CloneCheckSettings(settings.GetCheckSettings()),
+		CheckSettings: kernel.CloneCheckSettings(settings.GetCheckSettings()),
 	}
 	for _, provider := range settings.GetIpFraudProviders() {
 		out.IpFraudProviders = append(out.IpFraudProviders, &proxyruntimev1.ProxyIPFraudProviderSettingsView{

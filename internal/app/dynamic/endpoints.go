@@ -8,7 +8,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 func Endpoints(settings *proxyruntimev1.ProxyRuntimePersistentSettings, dynamicProviderID string, providerID string) []accountproxy.Gateway {
@@ -74,13 +74,13 @@ type ProviderInstance struct {
 
 func ProviderInstances(settings *proxyruntimev1.ProxyRuntimePersistentSettings) []ProviderInstance {
 	out := []ProviderInstance{}
-	for _, provider := range settingscore.NormalizeRuntimeSettings(settings).GetDynamicIpProviders() {
+	for _, provider := range kernel.NormalizeRuntimeSettings(settings).GetDynamicIpProviders() {
 		out = append(out, ProviderInstance{
-			DynamicProviderID:        settingscore.DynamicIPProviderID(provider),
+			DynamicProviderID:        kernel.DynamicIPProviderID(provider),
 			ProviderID:               strings.TrimSpace(provider.GetProviderId()),
 			DisplayName:              strings.TrimSpace(provider.GetDisplayName()),
-			RotatingConcurrencyLimit: settingscore.NormalizeDynamicProviderRotatingConcurrencyLimit(provider.GetRotatingConcurrencyLimit()),
-			StickyConcurrencyLimit:   settingscore.NormalizeDynamicProviderStickyConcurrencyLimit(provider.GetStickyConcurrencyLimit()),
+			RotatingConcurrencyLimit: kernel.NormalizeDynamicProviderRotatingConcurrencyLimit(provider.GetRotatingConcurrencyLimit()),
+			StickyConcurrencyLimit:   kernel.NormalizeDynamicProviderStickyConcurrencyLimit(provider.GetStickyConcurrencyLimit()),
 			Endpoints:                accountProxyEndpoints(provider.GetEndpoints()),
 		})
 	}
@@ -90,7 +90,7 @@ func ProviderInstances(settings *proxyruntimev1.ProxyRuntimePersistentSettings) 
 func accountProxyEndpoints(endpoints []*proxyruntimev1.ProxyDynamicIPEndpointSettings) []accountproxy.Gateway {
 	out := make([]accountproxy.Gateway, 0, len(endpoints))
 	for _, endpoint := range endpoints {
-		endpointURL := settingscore.NormalizeEndpointURL(endpoint.GetEndpointUrl())
+		endpointURL := kernel.NormalizeEndpointURL(endpoint.GetEndpointUrl())
 		if endpointURL == "" {
 			continue
 		}
@@ -103,7 +103,7 @@ func accountProxyEndpoints(endpoints []*proxyruntimev1.ProxyDynamicIPEndpointSet
 }
 
 func EndpointIDFromURL(value string) string {
-	value = settingscore.NormalizeEndpointURL(value)
+	value = kernel.NormalizeEndpointURL(value)
 	if value == "" {
 		return ""
 	}
@@ -112,7 +112,7 @@ func EndpointIDFromURL(value string) string {
 
 func ProviderInstanceConcurrencyLimit(provider ProviderInstance, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
 	if leaseapp.ConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
-		return settingscore.NormalizeDynamicProviderRotatingConcurrencyLimit(provider.RotatingConcurrencyLimit)
+		return kernel.NormalizeDynamicProviderRotatingConcurrencyLimit(provider.RotatingConcurrencyLimit)
 	}
-	return settingscore.NormalizeDynamicProviderStickyConcurrencyLimit(provider.StickyConcurrencyLimit)
+	return kernel.NormalizeDynamicProviderStickyConcurrencyLimit(provider.StickyConcurrencyLimit)
 }

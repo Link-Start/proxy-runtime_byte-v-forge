@@ -12,7 +12,7 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
@@ -212,7 +212,7 @@ func (a Service) deleteProviderAccount(ctx context.Context, providerAccountID st
 		deleted := false
 		err := a.withProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
 			var err error
-			leases, err = repo.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID, settingscore.DefaultBlockingLeaseFactLimit)
+			leases, err = repo.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID, kernel.DefaultBlockingLeaseFactLimit)
 			if err != nil {
 				return fmt.Errorf("list blocking proxy leases for provider account %q: %w", providerAccountID, err)
 			}

@@ -7,6 +7,7 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
@@ -69,7 +70,7 @@ func (f leaseRouteRestorerFactory) New() leaseapp.LeaseRouteRestorer {
 		Store:              f.deps.store,
 		DataPlane:          f.deps.dataPlane,
 		Factory:            f.deps.sessionProviders,
-		DefaultTTL:         leaseapp.DefaultDynamicIPStickyTTL,
+		DefaultTTL:         kernel.DefaultDynamicIPStickyTTL,
 		TTLBuffer:          providerAccountConcurrencyTTLBuffer,
 		SlotReleaseTimeout: leaseRestoreSlotReleaseTimeout,
 		LocalProtocol:      f.deps.cfg.LocalProtocol,

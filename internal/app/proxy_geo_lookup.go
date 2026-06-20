@@ -8,6 +8,7 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
@@ -40,9 +41,9 @@ func (r *Runtime) loadIPGeo(ctx context.Context, ip string) (proxycheck.ExitGeo,
 	if len(providers) == 0 {
 		return proxycheck.ExitGeo{}, errors.New("IP geo provider is not configured")
 	}
-	lookupCtx, cancel := context.WithTimeout(ctx, settingscore.ProxyExitIPTimeout(settings))
+	lookupCtx, cancel := context.WithTimeout(ctx, kernel.ProxyExitIPTimeout(settings))
 	defer cancel()
-	geo, err := newIPGeoLookup(r.ipGeoProviders, settingscore.ProxyExitIPTimeout(settings), providers, r.logger).Lookup(lookupCtx, ip)
+	geo, err := newIPGeoLookup(r.ipGeoProviders, kernel.ProxyExitIPTimeout(settings), providers, r.logger).Lookup(lookupCtx, ip)
 	if err != nil {
 		return proxycheck.ExitGeo{}, err
 	}

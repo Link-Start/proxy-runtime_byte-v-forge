@@ -7,6 +7,7 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 var (
@@ -52,8 +53,8 @@ func ResolveAcquireRequestAccountID(profiles []*proxyruntimev1.EgressProfileSett
 }
 
 func ProfileDynamicIPLeasePolicy(profilePolicy *proxyruntimev1.ProxySessionPolicy, requestPolicy *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxySessionPolicy {
-	policy := NormalizeDynamicIPSessionPolicy(profilePolicy)
-	request := NormalizeDynamicIPSessionPolicy(requestPolicy)
+	policy := kernel.NormalizeDynamicIPSessionPolicy(profilePolicy)
+	request := kernel.NormalizeDynamicIPSessionPolicy(requestPolicy)
 	policy.StickyTtl = appcore.CloneDuration(request.GetStickyTtl())
 	policy.Labels = appcore.CloneStringMap(policy.GetLabels())
 	if policy.Labels == nil {

@@ -4,6 +4,8 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
@@ -15,7 +17,7 @@ func (f leaseConcurrencySlotRefreshRunnerFactory) New() leaseapp.RefreshConcurre
 	return leaseapp.RefreshConcurrencySlotRunner{
 		Store:      f.deps.store,
 		Limiter:    f.deps.providerConcurrency,
-		DefaultTTL: leaseapp.DefaultDynamicIPStickyTTL,
+		DefaultTTL: kernel.DefaultDynamicIPStickyTTL,
 		TTLBuffer:  providerAccountConcurrencyTTLBuffer,
 		Limit:      f.limit,
 	}

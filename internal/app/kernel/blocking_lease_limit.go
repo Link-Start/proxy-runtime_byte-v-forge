@@ -1,4 +1,4 @@
-package settingscore
+package kernel
 
 const (
 	DefaultBlockingLeaseFactLimit = 20

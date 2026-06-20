@@ -11,11 +11,12 @@ import (
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, current *runtimeSettingsFile, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry, nativeResourceIDs map[string]struct{}) (*runtimeSettingsFile, error) {
-	current = settingscore.NormalizeRuntimeSettingsWithProviders(current, ipFraudProviders, ipGeoProviders)
+	current = kernel.NormalizeRuntimeSettingsWithProviders(current, ipFraudProviders, ipGeoProviders)
 	edgeCanary, err := edgeCanaryFromRequest(ctx, writer, req.GetEdgeCanary(), current.GetEdgeCanary())
 	if err != nil {
 		return nil, err
@@ -27,7 +28,7 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 		DynamicIpProviders: make([]*proxyruntimev1.ProxyDynamicIPProviderSettings, 0, len(req.GetDynamicIpProviders())),
 		EgressProfiles:     make([]*proxyruntimev1.EgressProfileSettings, 0, len(req.GetEgressProfiles())),
 		IngressRules:       make([]*proxyruntimev1.ProxyIngressRuleSettings, 0, len(req.GetIngressRules())),
-		CheckSettings:      settingscore.CheckSettingsFromRequest(req.GetCheckSettings(), current.GetCheckSettings()),
+		CheckSettings:      kernel.CheckSettingsFromRequest(req.GetCheckSettings(), current.GetCheckSettings()),
 	}
 	if edgeCanaryEnabled(settings.GetEdgeCanary()) && strings.TrimSpace(settings.GetEdgeCanary().GetUrl()) == "" {
 		return nil, errors.New("edge canary url is required when enabled")
@@ -53,5 +54,5 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 	if err != nil {
 		return nil, err
 	}
-	return settingscore.NormalizeRuntimeSettingsWithProviders(settings, ipFraudProviders, ipGeoProviders), nil
+	return kernel.NormalizeRuntimeSettingsWithProviders(settings, ipFraudProviders, ipGeoProviders), nil
 }

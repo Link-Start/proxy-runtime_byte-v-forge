@@ -1,10 +1,9 @@
-package settingscore
+package kernel
 
 import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
@@ -58,7 +57,7 @@ func EgressProfileDynamicIPPolicyFromProto(in *proxyruntimev1.ProxySessionPolicy
 	if in == nil {
 		return nil
 	}
-	return leaseapp.NormalizeDynamicIPSessionPolicy(in)
+	return NormalizeDynamicIPSessionPolicy(in)
 }
 
 func EgressProfileMihomoNodeRefFromProto(in *proxyruntimev1.EgressProfileMihomoNodeRef) *proxyruntimev1.EgressProfileMihomoNodeRef {

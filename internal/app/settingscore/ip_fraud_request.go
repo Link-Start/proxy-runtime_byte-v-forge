@@ -11,6 +11,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 // IPFraudProvidersFromRequest builds the persisted ip-fraud provider settings
@@ -40,8 +41,8 @@ func IPFraudProvidersFromRequest(ctx context.Context, writer secretref.Writer, r
 
 func ipFraudProviderSecrets(settings *proxyruntimev1.ProxyRuntimePersistentSettings, providers *ipfraud.Registry) map[string][]*commonv1.SecretRef {
 	secrets := map[string][]*commonv1.SecretRef{}
-	for _, item := range NormalizeRuntimeSettingsWithProviders(settings, providers, nil).GetIpFraudProviders() {
-		secrets[ipFraudProviderSecretKey(item.GetKind(), item.GetProviderId())] = CleanIPFraudSecretRefs(item.GetApiKeySecretRefs())
+	for _, item := range kernel.NormalizeRuntimeSettingsWithProviders(settings, providers, nil).GetIpFraudProviders() {
+		secrets[ipFraudProviderSecretKey(item.GetKind(), item.GetProviderId())] = kernel.CleanIPFraudSecretRefs(item.GetApiKeySecretRefs())
 	}
 	return secrets
 }
@@ -67,7 +68,7 @@ func ipFraudProviderFromRequest(ctx context.Context, writer secretref.Writer, in
 	}
 	weight := in.GetWeight()
 	if weight == 0 {
-		weight = ProviderDefaultWeight(in.GetKind(), index, registry)
+		weight = kernel.ProviderDefaultWeight(in.GetKind(), index, registry)
 	}
 	return &proxyruntimev1.ProxyIPFraudProviderSettings{
 		ProviderId:       id,
@@ -80,7 +81,7 @@ func ipFraudProviderFromRequest(ctx context.Context, writer secretref.Writer, in
 }
 
 func ipFraudSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPFraudProviderSettings, providerID string) ([]*commonv1.SecretRef, error) {
-	if refs := CleanIPFraudSecretRefs(in.GetApiKeySecretRefs()); len(refs) > 0 {
+	if refs := kernel.CleanIPFraudSecretRefs(in.GetApiKeySecretRefs()); len(refs) > 0 {
 		return refs, nil
 	}
 	rawValues := appcore.CleanList(in.GetApiKeyValues())
@@ -90,13 +91,13 @@ func ipFraudSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, 
 	out := make([]*commonv1.SecretRef, 0, len(rawValues))
 	for index, raw := range rawValues {
 		secretID := secretref.StableID("proxy-runtime-ip-fraud-api-key", fmt.Sprintf("%d", in.GetKind()), providerID, fmt.Sprintf("%d", index))
-		saved, err := WriteRuntimeSecret(ctx, writer, raw, secretID, IPFraudAPIKeyPurpose)
+		saved, err := WriteRuntimeSecret(ctx, writer, raw, secretID, kernel.IPFraudAPIKeyPurpose)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, saved)
 	}
-	return CleanIPFraudSecretRefs(out), nil
+	return kernel.CleanIPFraudSecretRefs(out), nil
 }
 
 func validateIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettings, index int, registry *ipfraud.Registry) error {

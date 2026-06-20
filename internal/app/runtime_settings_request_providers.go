@@ -6,7 +6,7 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 func dynamicIPProvidersFromRequest(req []*proxyruntimev1.ProxyDynamicIPProviderSettings, registry *providerregistry.Registry) ([]*proxyruntimev1.ProxyDynamicIPProviderSettings, error) {
@@ -17,7 +17,7 @@ func dynamicIPProvidersFromRequest(req []*proxyruntimev1.ProxyDynamicIPProviderS
 		if err := validateDynamicIPProvider(item, index, registry); err != nil {
 			return nil, err
 		}
-		id := settingscore.DynamicIPProviderID(item)
+		id := kernel.DynamicIPProviderID(item)
 		if _, exists := seenProviders[id]; exists {
 			return nil, fmt.Errorf("dynamic_ip_providers[%d] duplicates dynamic provider %q", index, id)
 		}

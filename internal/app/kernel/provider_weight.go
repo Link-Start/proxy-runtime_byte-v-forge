@@ -1,4 +1,4 @@
-package settingscore
+package kernel
 
 func DefaultProviderWeight(index int) uint32 {
 	if index < 0 {

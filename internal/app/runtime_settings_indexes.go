@@ -5,13 +5,13 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 func enabledDynamicProviderEndpointIDs(settings *runtimeSettingsFile) map[string]map[string]struct{} {
 	out := map[string]map[string]struct{}{}
-	for _, provider := range settingscore.NormalizeRuntimeSettings(settings).GetDynamicIpProviders() {
-		dynamicProviderID := settingscore.DynamicIPProviderID(provider)
+	for _, provider := range kernel.NormalizeRuntimeSettings(settings).GetDynamicIpProviders() {
+		dynamicProviderID := kernel.DynamicIPProviderID(provider)
 		if dynamicProviderID == "" {
 			continue
 		}

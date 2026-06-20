@@ -1,4 +1,4 @@
-package settingscore
+package kernel
 
 import (
 	"fmt"

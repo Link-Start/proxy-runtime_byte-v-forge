@@ -6,7 +6,7 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 func dynamicIPProviderFromProto(in *proxyruntimev1.ProxyDynamicIPProviderSettings) *proxyruntimev1.ProxyDynamicIPProviderSettings {
@@ -17,14 +17,14 @@ func dynamicIPProviderFromProto(in *proxyruntimev1.ProxyDynamicIPProviderSetting
 		ProviderId:               strings.TrimSpace(in.GetProviderId()),
 		DynamicProviderId:        appcore.RuntimeSafeID(in.GetDynamicProviderId()),
 		DisplayName:              strings.TrimSpace(in.GetDisplayName()),
-		RotatingConcurrencyLimit: settingscore.NormalizeDynamicProviderRotatingConcurrencyLimit(in.GetRotatingConcurrencyLimit()),
-		StickyConcurrencyLimit:   settingscore.NormalizeDynamicProviderStickyConcurrencyLimit(in.GetStickyConcurrencyLimit()),
+		RotatingConcurrencyLimit: kernel.NormalizeDynamicProviderRotatingConcurrencyLimit(in.GetRotatingConcurrencyLimit()),
+		StickyConcurrencyLimit:   kernel.NormalizeDynamicProviderStickyConcurrencyLimit(in.GetStickyConcurrencyLimit()),
 		Endpoints:                make([]*proxyruntimev1.ProxyDynamicIPEndpointSettings, 0, len(in.GetEndpoints())),
 	}
 	for _, endpoint := range in.GetEndpoints() {
 		out.Endpoints = append(out.Endpoints, dynamicIPEndpointFromProto(endpoint))
 	}
-	settingscore.NormalizeDynamicIPProvider(out)
+	kernel.NormalizeDynamicIPProvider(out)
 	return out
 }
 
@@ -33,7 +33,7 @@ func dynamicIPEndpointFromProto(in *proxyruntimev1.ProxyDynamicIPEndpointSetting
 		return &proxyruntimev1.ProxyDynamicIPEndpointSettings{}
 	}
 	out := &proxyruntimev1.ProxyDynamicIPEndpointSettings{
-		EndpointUrl: settingscore.NormalizeEndpointURL(in.GetEndpointUrl()),
+		EndpointUrl: kernel.NormalizeEndpointURL(in.GetEndpointUrl()),
 	}
 	return out
 }

@@ -14,8 +14,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 type Service struct {
@@ -75,7 +75,7 @@ func (a Service) GetProxyExitIP(ctx context.Context, req *proxyruntimev1.GetProx
 	if err != nil {
 		return nil, err
 	}
-	timeout := settingscore.ProxyExitIPTimeout(settings)
+	timeout := kernel.ProxyExitIPTimeout(settings)
 	client, err := a.newCheckClient(ctx, req.GetListenerId(), timeout)
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func (a Service) CheckProxyEdgeAccess(ctx context.Context, req *proxyruntimev1.C
 	if err != nil {
 		return nil, err
 	}
-	timeout := settingscore.ProxyExitIPTimeout(settings)
+	timeout := kernel.ProxyExitIPTimeout(settings)
 	client, err := a.newCheckClient(ctx, req.GetListenerId(), timeout)
 	if err != nil {
 		return nil, err
@@ -165,7 +165,7 @@ func (a Service) CheckProxyTargetConnectivity(ctx context.Context, req *proxyrun
 	if err != nil {
 		return nil, err
 	}
-	client, err := a.newCheckClient(ctx, req.GetListenerId(), settingscore.ProxyExitIPTimeout(settings))
+	client, err := a.newCheckClient(ctx, req.GetListenerId(), kernel.ProxyExitIPTimeout(settings))
 	if err != nil {
 		return nil, err
 	}

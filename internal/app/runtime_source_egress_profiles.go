@@ -1,9 +1,13 @@
 package app
 
-import "github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+import (
+	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+)
 
 func sourcePlaneEgressProfiles(settings *runtimeSettingsFile) []sourceplane.EgressProfile {
-	settings = normalizeRuntimeSettings(settings)
+	settings = settingscore.NormalizeRuntimeSettings(settings)
 	out := make([]sourceplane.EgressProfile, 0, len(settings.GetEgressProfiles()))
 	for _, profile := range settings.GetEgressProfiles() {
 		if !profile.GetEnabled() {

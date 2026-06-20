@@ -5,6 +5,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func validateDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderSettings, index int, accountProviders *providerregistry.Registry) error {
@@ -16,7 +18,7 @@ func validateDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderSe
 	}
 	seen := map[string]struct{}{}
 	for endpointIndex, endpoint := range provider.GetEndpoints() {
-		endpointURL := normalizeEndpointURL(endpoint.GetEndpointUrl())
+		endpointURL := settingscore.NormalizeEndpointURL(endpoint.GetEndpointUrl())
 		if endpointURL == "" {
 			return fmt.Errorf("dynamic_ip_providers[%d].endpoints[%d].endpoint_url is required", index, endpointIndex)
 		}

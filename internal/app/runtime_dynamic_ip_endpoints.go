@@ -7,6 +7,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func dynamicIPEndpoints(settings *runtimeSettingsFile, dynamicProviderID string, providerID string) []accountproxy.Gateway {
@@ -72,13 +73,13 @@ type dynamicIPProviderInstance struct {
 
 func dynamicIPProviderInstances(settings *runtimeSettingsFile) []dynamicIPProviderInstance {
 	out := []dynamicIPProviderInstance{}
-	for _, provider := range normalizeRuntimeSettings(settings).GetDynamicIpProviders() {
+	for _, provider := range settingscore.NormalizeRuntimeSettings(settings).GetDynamicIpProviders() {
 		out = append(out, dynamicIPProviderInstance{
 			dynamicProviderID:        dynamicIPProviderID(provider),
 			providerID:               strings.TrimSpace(provider.GetProviderId()),
 			displayName:              strings.TrimSpace(provider.GetDisplayName()),
-			rotatingConcurrencyLimit: normalizeDynamicProviderRotatingConcurrencyLimit(provider.GetRotatingConcurrencyLimit()),
-			stickyConcurrencyLimit:   normalizeDynamicProviderStickyConcurrencyLimit(provider.GetStickyConcurrencyLimit()),
+			rotatingConcurrencyLimit: settingscore.NormalizeDynamicProviderRotatingConcurrencyLimit(provider.GetRotatingConcurrencyLimit()),
+			stickyConcurrencyLimit:   settingscore.NormalizeDynamicProviderStickyConcurrencyLimit(provider.GetStickyConcurrencyLimit()),
 			endpoints:                accountProxyEndpoints(provider.GetEndpoints()),
 		})
 	}
@@ -88,7 +89,7 @@ func dynamicIPProviderInstances(settings *runtimeSettingsFile) []dynamicIPProvid
 func accountProxyEndpoints(endpoints []*proxyruntimev1.ProxyDynamicIPEndpointSettings) []accountproxy.Gateway {
 	out := make([]accountproxy.Gateway, 0, len(endpoints))
 	for _, endpoint := range endpoints {
-		endpointURL := normalizeEndpointURL(endpoint.GetEndpointUrl())
+		endpointURL := settingscore.NormalizeEndpointURL(endpoint.GetEndpointUrl())
 		if endpointURL == "" {
 			continue
 		}
@@ -100,12 +101,8 @@ func accountProxyEndpoints(endpoints []*proxyruntimev1.ProxyDynamicIPEndpointSet
 	return out
 }
 
-func normalizeEndpointURL(value string) string {
-	return strings.TrimSpace(value)
-}
-
 func endpointIDFromURL(value string) string {
-	value = normalizeEndpointURL(value)
+	value = settingscore.NormalizeEndpointURL(value)
 	if value == "" {
 		return ""
 	}

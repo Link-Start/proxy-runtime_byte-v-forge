@@ -7,33 +7,16 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
-const (
-	defaultDynamicProviderRotatingConcurrencyLimit uint32 = 10
-	defaultDynamicProviderStickyConcurrencyLimit   uint32 = 2
-	providerAccountConcurrencyTTLBuffer                   = 2 * time.Minute
-)
-
-func normalizeDynamicProviderRotatingConcurrencyLimit(value uint32) uint32 {
-	if value == 0 {
-		return defaultDynamicProviderRotatingConcurrencyLimit
-	}
-	return value
-}
-
-func normalizeDynamicProviderStickyConcurrencyLimit(value uint32) uint32 {
-	if value == 0 {
-		return defaultDynamicProviderStickyConcurrencyLimit
-	}
-	return value
-}
+const providerAccountConcurrencyTTLBuffer = 2 * time.Minute
 
 func dynamicProviderInstanceConcurrencyLimit(provider dynamicIPProviderInstance, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
 	if leaseapp.ConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
-		return normalizeDynamicProviderRotatingConcurrencyLimit(provider.rotatingConcurrencyLimit)
+		return settingscore.NormalizeDynamicProviderRotatingConcurrencyLimit(provider.rotatingConcurrencyLimit)
 	}
-	return normalizeDynamicProviderStickyConcurrencyLimit(provider.stickyConcurrencyLimit)
+	return settingscore.NormalizeDynamicProviderStickyConcurrencyLimit(provider.stickyConcurrencyLimit)
 }
 
 func dynamicProviderConcurrencyLimit(settings *runtimeSettingsFile, dynamicProviderID string, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
@@ -44,7 +27,7 @@ func dynamicProviderConcurrencyLimit(settings *runtimeSettingsFile, dynamicProvi
 		}
 	}
 	if leaseapp.ConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
-		return defaultDynamicProviderRotatingConcurrencyLimit
+		return settingscore.DefaultDynamicProviderRotatingConcurrencyLimit
 	}
-	return defaultDynamicProviderStickyConcurrencyLimit
+	return settingscore.DefaultDynamicProviderStickyConcurrencyLimit
 }

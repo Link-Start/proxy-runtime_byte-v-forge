@@ -9,31 +9,11 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
-func ingressRuleFromProto(in *proxyruntimev1.ProxyIngressRuleSettings, index int) *proxyruntimev1.ProxyIngressRuleSettings {
-	if in == nil {
-		return &proxyruntimev1.ProxyIngressRuleSettings{RuleId: fmt.Sprintf("ingress-%d", index+1)}
-	}
-	ruleID := appcore.RuntimeSafeID(in.GetRuleId())
-	if ruleID == "" {
-		ruleID = appcore.RuntimeSafeID(appcore.FirstNonEmpty(in.GetUsername(), in.GetDisplayName()))
-	}
-	if ruleID == "" {
-		ruleID = fmt.Sprintf("ingress-%d", index+1)
-	}
-	return &proxyruntimev1.ProxyIngressRuleSettings{
-		RuleId:        ruleID,
-		DisplayName:   strings.TrimSpace(in.GetDisplayName()),
-		Enabled:       in.GetEnabled(),
-		Username:      strings.TrimSpace(in.GetUsername()),
-		PasswordValue: in.GetPasswordValue(),
-		ProfileId:     appcore.RuntimeSafeID(in.GetProfileId()),
-	}
-}
-
 func cloneIngressRule(in *proxyruntimev1.ProxyIngressRuleSettings) *proxyruntimev1.ProxyIngressRuleSettings {
-	return ingressRuleFromProto(in, 0)
+	return settingscore.IngressRuleFromProto(in, 0)
 }
 
 func ingressRulesFromRequest(in []*proxyruntimev1.ProxyIngressRuleSettings, profiles []*proxyruntimev1.EgressProfileSettings) ([]*proxyruntimev1.ProxyIngressRuleSettings, error) {
@@ -42,7 +22,7 @@ func ingressRulesFromRequest(in []*proxyruntimev1.ProxyIngressRuleSettings, prof
 	seenUsers := map[string]struct{}{}
 	enabledProfiles := enabledEgressProfileIDsFromProfiles(profiles)
 	for index, rule := range in {
-		item := ingressRuleFromProto(rule, index)
+		item := settingscore.IngressRuleFromProto(rule, index)
 		if err := validateIngressRule(item, index, enabledProfiles); err != nil {
 			return nil, err
 		}
@@ -82,7 +62,7 @@ func validateIngressRule(rule *proxyruntimev1.ProxyIngressRuleSettings, index in
 }
 
 func sourcePlaneProxyUserRoutes(settings *runtimeSettingsFile) []dataplane.ProxyUserRoute {
-	settings = normalizeRuntimeSettings(settings)
+	settings = settingscore.NormalizeRuntimeSettings(settings)
 	out := make([]dataplane.ProxyUserRoute, 0, len(settings.GetIngressRules()))
 	for _, rule := range settings.GetIngressRules() {
 		if !rule.GetEnabled() || strings.TrimSpace(rule.GetUsername()) == "" {
@@ -102,7 +82,7 @@ func sourcePlaneProxyUserRoutes(settings *runtimeSettingsFile) []dataplane.Proxy
 func rejectMissingIngressRuleProfiles(rules []*proxyruntimev1.ProxyIngressRuleSettings, profiles []*proxyruntimev1.EgressProfileSettings) error {
 	enabled := enabledEgressProfileIDsFromProfiles(profiles)
 	for index, rule := range rules {
-		item := ingressRuleFromProto(rule, index)
+		item := settingscore.IngressRuleFromProto(rule, index)
 		if !item.GetEnabled() {
 			continue
 		}

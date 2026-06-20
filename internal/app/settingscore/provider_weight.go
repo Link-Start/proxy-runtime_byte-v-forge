@@ -1,6 +1,6 @@
-package app
+package settingscore
 
-func defaultProviderWeight(index int) uint32 {
+func DefaultProviderWeight(index int) uint32 {
 	if index < 0 {
 		return 100
 	}

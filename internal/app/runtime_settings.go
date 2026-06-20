@@ -2,7 +2,6 @@ package app
 
 import (
 	"sync"
-	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
@@ -12,8 +11,6 @@ import (
 )
 
 type runtimeSettingsFile = proxyruntimev1.ProxyRuntimePersistentSettings
-
-const defaultProxyExitIPTimeout = 5 * time.Second
 
 type runtimeSettingsStore struct {
 	store            runtimeSettingsPersistence

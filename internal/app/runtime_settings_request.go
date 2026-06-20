@@ -10,10 +10,12 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, current *runtimeSettingsFile, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry, nativeResourceIDs map[string]struct{}) (*runtimeSettingsFile, error) {
-	current = normalizeRuntimeSettingsWithProviders(current, ipFraudProviders, ipGeoProviders)
+	current = settingscore.NormalizeRuntimeSettingsWithProviders(current, ipFraudProviders, ipGeoProviders)
 	edgeCanary, err := edgeCanaryFromRequest(ctx, writer, req.GetEdgeCanary(), current.GetEdgeCanary())
 	if err != nil {
 		return nil, err
@@ -51,5 +53,5 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 	if err != nil {
 		return nil, err
 	}
-	return normalizeRuntimeSettingsWithProviders(settings, ipFraudProviders, ipGeoProviders), nil
+	return settingscore.NormalizeRuntimeSettingsWithProviders(settings, ipFraudProviders, ipGeoProviders), nil
 }

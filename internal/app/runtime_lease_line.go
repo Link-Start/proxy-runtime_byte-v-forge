@@ -5,10 +5,12 @@ import (
 	"fmt"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func (r *Runtime) dynamicLeaseDialerProxy(ctx context.Context, settings *runtimeSettingsFile, profileID string) (string, map[string]string, error) {
-	settings = normalizeRuntimeSettings(settings)
+	settings = settingscore.NormalizeRuntimeSettings(settings)
 	profiles := dynamicLeaseLineProfiles(settings, profileID)
 	if len(profiles) == 0 {
 		return "", nil, nil

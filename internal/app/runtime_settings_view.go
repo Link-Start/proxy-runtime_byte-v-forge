@@ -4,10 +4,12 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func runtimeSettingsView(settings *runtimeSettingsFile) *proxyruntimev1.ProxyRuntimeSettings {
-	settings = normalizeRuntimeSettings(settings)
+	settings = settingscore.NormalizeRuntimeSettings(settings)
 	edge := settings.GetEdgeCanary()
 	out := &proxyruntimev1.ProxyRuntimeSettings{
 		EdgeCanary: &proxyruntimev1.ProxyEdgeCanarySettingsView{

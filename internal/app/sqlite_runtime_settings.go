@@ -4,6 +4,8 @@ import (
 	"context"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func (s *SQLiteStore) LoadRuntimeSettings(ctx context.Context) (*runtimeSettingsFile, error) {
@@ -12,13 +14,13 @@ func (s *SQLiteStore) LoadRuntimeSettings(ctx context.Context) (*runtimeSettings
 		return nil, err
 	}
 	if !found {
-		return normalizeRuntimeSettings(nil), nil
+		return settingscore.NormalizeRuntimeSettings(nil), nil
 	}
-	return decodeRuntimeSettings(raw)
+	return settingscore.DecodeRuntimeSettings(raw)
 }
 
 func (s *SQLiteStore) SaveRuntimeSettings(ctx context.Context, settings *runtimeSettingsFile) error {
-	data, err := protojsoncodec.Marshal(normalizeRuntimeSettings(settings))
+	data, err := protojsoncodec.Marshal(settingscore.NormalizeRuntimeSettings(settings))
 	if err != nil {
 		return err
 	}

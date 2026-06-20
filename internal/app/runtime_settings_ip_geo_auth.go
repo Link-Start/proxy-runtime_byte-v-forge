@@ -8,10 +8,12 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func ipGeoProviders(ctx context.Context, resolver secretref.Resolver, settings *runtimeSettingsFile, registry *ipgeo.Registry) ([]ipgeo.ProviderConfig, error) {
-	items := normalizeRuntimeSettingsWithProviders(settings, nil, registry).GetIpGeoProviders()
+	items := settingscore.NormalizeRuntimeSettingsWithProviders(settings, nil, registry).GetIpGeoProviders()
 	providers := make([]ipgeo.ProviderConfig, 0, len(items))
 	for _, item := range items {
 		if !item.GetAnonymous() && len(item.GetApiKeySecretRefs()) == 0 {
@@ -39,7 +41,7 @@ func ipGeoAuth(ctx context.Context, resolver secretref.Resolver, provider *proxy
 	if !ok {
 		return ipgeo.AuthConfig{}, nil
 	}
-	values, err := appcore.ResolveRuntimeSecretRefs(ctx, resolver, provider.GetApiKeySecretRefs(), ipGeoAPIKeyPurpose)
+	values, err := appcore.ResolveRuntimeSecretRefs(ctx, resolver, provider.GetApiKeySecretRefs(), settingscore.IPGeoAPIKeyPurpose)
 	if err != nil {
 		return ipgeo.AuthConfig{}, err
 	}

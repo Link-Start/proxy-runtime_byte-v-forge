@@ -1,6 +1,10 @@
 package app
 
-import "context"
+import (
+	"context"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+)
 
 func (s *runtimeSettingsStore) load(ctx context.Context) (*runtimeSettingsFile, error) {
 	s.mu.Lock()
@@ -10,13 +14,13 @@ func (s *runtimeSettingsStore) load(ctx context.Context) (*runtimeSettingsFile, 
 
 func (s *runtimeSettingsStore) loadLocked(ctx context.Context) (*runtimeSettingsFile, error) {
 	if s.store == nil {
-		return normalizeRuntimeSettingsWithProviders(nil, s.ipFraudProviders, s.ipGeoProviders), nil
+		return settingscore.NormalizeRuntimeSettingsWithProviders(nil, s.ipFraudProviders, s.ipGeoProviders), nil
 	}
 	settings, err := s.store.LoadRuntimeSettings(ctx)
 	if err != nil {
 		return nil, err
 	}
-	settings = normalizeRuntimeSettingsWithProviders(settings, s.ipFraudProviders, s.ipGeoProviders)
+	settings = settingscore.NormalizeRuntimeSettingsWithProviders(settings, s.ipFraudProviders, s.ipGeoProviders)
 	return settings, nil
 }
 
@@ -24,7 +28,7 @@ func (s *runtimeSettingsStore) saveLocked(ctx context.Context, settings *runtime
 	if s.store == nil {
 		return nil
 	}
-	return s.store.SaveRuntimeSettings(ctx, normalizeRuntimeSettingsWithProviders(settings, s.ipFraudProviders, s.ipGeoProviders))
+	return s.store.SaveRuntimeSettings(ctx, settingscore.NormalizeRuntimeSettingsWithProviders(settings, s.ipFraudProviders, s.ipGeoProviders))
 }
 
 func (s *runtimeSettingsStore) replace(ctx context.Context, settings *runtimeSettingsFile) error {

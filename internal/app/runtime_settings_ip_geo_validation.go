@@ -23,13 +23,3 @@ func validateIPGeoProvider(provider *proxyruntimev1.ProxyIPGeoProviderSettings, 
 	}
 	return nil
 }
-
-func supportedIPGeoProviders(providers []*proxyruntimev1.ProxyIPGeoProviderSettings, registry *ipgeo.Registry) []*proxyruntimev1.ProxyIPGeoProviderSettings {
-	out := make([]*proxyruntimev1.ProxyIPGeoProviderSettings, 0, len(providers))
-	for _, provider := range providers {
-		if registry.IsProviderKindSupported(provider.GetKind()) {
-			out = append(out, provider)
-		}
-	}
-	return out
-}

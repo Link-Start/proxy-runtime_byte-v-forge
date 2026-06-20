@@ -11,6 +11,8 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func ipGeoProviderFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPGeoProviderSettings, current map[string][]*commonv1.SecretRef, index int, registry *ipgeo.Registry) (*proxyruntimev1.ProxyIPGeoProviderSettings, error) {
@@ -30,7 +32,7 @@ func ipGeoProviderFromRequest(ctx context.Context, writer secretref.Writer, in *
 	}
 	weight := in.GetWeight()
 	if weight == 0 {
-		weight = ipGeoProviderDefaultWeight(in.GetKind(), index, registry)
+		weight = settingscore.IPGeoProviderDefaultWeight(in.GetKind(), index, registry)
 	}
 	return &proxyruntimev1.ProxyIPGeoProviderSettings{
 		ProviderId:       id,
@@ -43,7 +45,7 @@ func ipGeoProviderFromRequest(ctx context.Context, writer secretref.Writer, in *
 }
 
 func ipGeoSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPGeoProviderSettings, providerID string) ([]*commonv1.SecretRef, error) {
-	if refs := cleanIPGeoSecretRefs(in.GetApiKeySecretRefs()); len(refs) > 0 {
+	if refs := settingscore.CleanIPGeoSecretRefs(in.GetApiKeySecretRefs()); len(refs) > 0 {
 		return refs, nil
 	}
 	rawValues := appcore.CleanList(in.GetApiKeyValues())
@@ -53,11 +55,11 @@ func ipGeoSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, in
 	out := make([]*commonv1.SecretRef, 0, len(rawValues))
 	for index, raw := range rawValues {
 		secretID := secretref.StableID("proxy-runtime-ip-geo-api-key", fmt.Sprintf("%d", in.GetKind()), providerID, fmt.Sprintf("%d", index))
-		saved, err := writeRuntimeSecret(ctx, writer, raw, secretID, ipGeoAPIKeyPurpose)
+		saved, err := writeRuntimeSecret(ctx, writer, raw, secretID, settingscore.IPGeoAPIKeyPurpose)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, saved)
 	}
-	return cleanIPGeoSecretRefs(out), nil
+	return settingscore.CleanIPGeoSecretRefs(out), nil
 }

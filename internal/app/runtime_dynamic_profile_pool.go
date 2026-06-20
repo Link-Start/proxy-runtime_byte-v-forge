@@ -10,13 +10,15 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func (r *Runtime) dynamicProfilePool(ctx context.Context, settings *runtimeSettingsFile) ([]provider.Node, error) {
 	if r.store == nil || r.accountProviders == nil {
 		return nil, nil
 	}
-	settings = normalizeRuntimeSettings(settings)
+	settings = settingscore.NormalizeRuntimeSettings(settings)
 	instances := dynamicIPProviderInstances(settings)
 	if len(instances) == 0 {
 		return nil, nil

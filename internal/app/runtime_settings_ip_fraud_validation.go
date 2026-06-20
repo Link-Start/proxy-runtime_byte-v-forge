@@ -23,13 +23,3 @@ func validateIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettin
 	}
 	return nil
 }
-
-func supportedIPFraudProviders(providers []*proxyruntimev1.ProxyIPFraudProviderSettings, registry *ipfraud.Registry) []*proxyruntimev1.ProxyIPFraudProviderSettings {
-	out := make([]*proxyruntimev1.ProxyIPFraudProviderSettings, 0, len(providers))
-	for _, provider := range providers {
-		if registry.IsProviderKindSupported(provider.GetKind()) {
-			out = append(out, provider)
-		}
-	}
-	return out
-}

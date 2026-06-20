@@ -8,10 +8,12 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func ipFraudProviders(ctx context.Context, resolver secretref.Resolver, settings *runtimeSettingsFile, registry *ipfraud.Registry) ([]ipfraud.ProviderConfig, error) {
-	items := normalizeRuntimeSettingsWithProviders(settings, registry, nil).GetIpFraudProviders()
+	items := settingscore.NormalizeRuntimeSettingsWithProviders(settings, registry, nil).GetIpFraudProviders()
 	providers := make([]ipfraud.ProviderConfig, 0, len(items))
 	for _, item := range items {
 		if !item.GetAnonymous() && len(item.GetApiKeySecretRefs()) == 0 {
@@ -39,7 +41,7 @@ func ipFraudAuth(ctx context.Context, resolver secretref.Resolver, provider *pro
 	if !ok {
 		return ipfraud.AuthConfig{}, nil
 	}
-	values, err := appcore.ResolveRuntimeSecretRefs(ctx, resolver, provider.GetApiKeySecretRefs(), ipFraudAPIKeyPurpose)
+	values, err := appcore.ResolveRuntimeSecretRefs(ctx, resolver, provider.GetApiKeySecretRefs(), settingscore.IPFraudAPIKeyPurpose)
 	if err != nil {
 		return ipfraud.AuthConfig{}, err
 	}

@@ -6,6 +6,7 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func dynamicIPProviderFromProto(in *proxyruntimev1.ProxyDynamicIPProviderSettings) *proxyruntimev1.ProxyDynamicIPProviderSettings {
@@ -16,14 +17,14 @@ func dynamicIPProviderFromProto(in *proxyruntimev1.ProxyDynamicIPProviderSetting
 		ProviderId:               strings.TrimSpace(in.GetProviderId()),
 		DynamicProviderId:        appcore.RuntimeSafeID(in.GetDynamicProviderId()),
 		DisplayName:              strings.TrimSpace(in.GetDisplayName()),
-		RotatingConcurrencyLimit: normalizeDynamicProviderRotatingConcurrencyLimit(in.GetRotatingConcurrencyLimit()),
-		StickyConcurrencyLimit:   normalizeDynamicProviderStickyConcurrencyLimit(in.GetStickyConcurrencyLimit()),
+		RotatingConcurrencyLimit: settingscore.NormalizeDynamicProviderRotatingConcurrencyLimit(in.GetRotatingConcurrencyLimit()),
+		StickyConcurrencyLimit:   settingscore.NormalizeDynamicProviderStickyConcurrencyLimit(in.GetStickyConcurrencyLimit()),
 		Endpoints:                make([]*proxyruntimev1.ProxyDynamicIPEndpointSettings, 0, len(in.GetEndpoints())),
 	}
 	for _, endpoint := range in.GetEndpoints() {
 		out.Endpoints = append(out.Endpoints, dynamicIPEndpointFromProto(endpoint))
 	}
-	normalizeDynamicIPProvider(out)
+	settingscore.NormalizeDynamicIPProvider(out)
 	return out
 }
 
@@ -32,36 +33,9 @@ func dynamicIPEndpointFromProto(in *proxyruntimev1.ProxyDynamicIPEndpointSetting
 		return &proxyruntimev1.ProxyDynamicIPEndpointSettings{}
 	}
 	out := &proxyruntimev1.ProxyDynamicIPEndpointSettings{
-		EndpointUrl: normalizeEndpointURL(in.GetEndpointUrl()),
+		EndpointUrl: settingscore.NormalizeEndpointURL(in.GetEndpointUrl()),
 	}
 	return out
-}
-
-func normalizeDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderSettings) {
-	if provider == nil {
-		return
-	}
-	provider.ProviderId = strings.TrimSpace(provider.GetProviderId())
-	provider.DynamicProviderId = appcore.RuntimeSafeID(provider.GetDynamicProviderId())
-	if provider.DynamicProviderId == "" {
-		provider.DynamicProviderId = appcore.RuntimeSafeID(provider.GetProviderId())
-	}
-	provider.DisplayName = strings.TrimSpace(provider.GetDisplayName())
-	if provider.DisplayName == "" {
-		provider.DisplayName = provider.GetDynamicProviderId()
-	}
-	provider.RotatingConcurrencyLimit = normalizeDynamicProviderRotatingConcurrencyLimit(provider.GetRotatingConcurrencyLimit())
-	provider.StickyConcurrencyLimit = normalizeDynamicProviderStickyConcurrencyLimit(provider.GetStickyConcurrencyLimit())
-	for index := range provider.Endpoints {
-		normalizeDynamicIPEndpoint(provider.Endpoints[index])
-	}
-}
-
-func normalizeDynamicIPEndpoint(endpoint *proxyruntimev1.ProxyDynamicIPEndpointSettings) {
-	if endpoint == nil {
-		return
-	}
-	endpoint.EndpointUrl = normalizeEndpointURL(endpoint.GetEndpointUrl())
 }
 
 func cloneDynamicIPProvider(in *proxyruntimev1.ProxyDynamicIPProviderSettings) *proxyruntimev1.ProxyDynamicIPProviderSettings {

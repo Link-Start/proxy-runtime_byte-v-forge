@@ -3,11 +3,13 @@ package app
 import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func enabledDynamicProviderIDs(settings *runtimeSettingsFile) map[string]struct{} {
 	out := map[string]struct{}{}
-	for _, provider := range normalizeRuntimeSettings(settings).GetDynamicIpProviders() {
+	for _, provider := range settingscore.NormalizeRuntimeSettings(settings).GetDynamicIpProviders() {
 		if id := dynamicIPProviderID(provider); id != "" {
 			out[id] = struct{}{}
 		}
@@ -17,7 +19,7 @@ func enabledDynamicProviderIDs(settings *runtimeSettingsFile) map[string]struct{
 
 func enabledDynamicProviderEndpointIDs(settings *runtimeSettingsFile) map[string]map[string]struct{} {
 	out := map[string]map[string]struct{}{}
-	for _, provider := range normalizeRuntimeSettings(settings).GetDynamicIpProviders() {
+	for _, provider := range settingscore.NormalizeRuntimeSettings(settings).GetDynamicIpProviders() {
 		dynamicProviderID := dynamicIPProviderID(provider)
 		if dynamicProviderID == "" {
 			continue

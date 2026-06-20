@@ -11,6 +11,8 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func ipFraudProviderFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPFraudProviderSettings, current map[string][]*commonv1.SecretRef, index int, registry *ipfraud.Registry) (*proxyruntimev1.ProxyIPFraudProviderSettings, error) {
@@ -30,7 +32,7 @@ func ipFraudProviderFromRequest(ctx context.Context, writer secretref.Writer, in
 	}
 	weight := in.GetWeight()
 	if weight == 0 {
-		weight = providerDefaultWeight(in.GetKind(), index, registry)
+		weight = settingscore.ProviderDefaultWeight(in.GetKind(), index, registry)
 	}
 	return &proxyruntimev1.ProxyIPFraudProviderSettings{
 		ProviderId:       id,
@@ -43,7 +45,7 @@ func ipFraudProviderFromRequest(ctx context.Context, writer secretref.Writer, in
 }
 
 func ipFraudSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPFraudProviderSettings, providerID string) ([]*commonv1.SecretRef, error) {
-	if refs := cleanIPFraudSecretRefs(in.GetApiKeySecretRefs()); len(refs) > 0 {
+	if refs := settingscore.CleanIPFraudSecretRefs(in.GetApiKeySecretRefs()); len(refs) > 0 {
 		return refs, nil
 	}
 	rawValues := appcore.CleanList(in.GetApiKeyValues())
@@ -53,11 +55,11 @@ func ipFraudSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, 
 	out := make([]*commonv1.SecretRef, 0, len(rawValues))
 	for index, raw := range rawValues {
 		secretID := secretref.StableID("proxy-runtime-ip-fraud-api-key", fmt.Sprintf("%d", in.GetKind()), providerID, fmt.Sprintf("%d", index))
-		saved, err := writeRuntimeSecret(ctx, writer, raw, secretID, ipFraudAPIKeyPurpose)
+		saved, err := writeRuntimeSecret(ctx, writer, raw, secretID, settingscore.IPFraudAPIKeyPurpose)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, saved)
 	}
-	return cleanIPFraudSecretRefs(out), nil
+	return settingscore.CleanIPFraudSecretRefs(out), nil
 }

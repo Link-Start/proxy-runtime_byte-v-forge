@@ -3,9 +3,86 @@ package lease
 import (
 	"context"
 	"errors"
+	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
+
+type CleanupPendingLeaseRunner struct {
+	Store                             OrchestrationStore
+	Limiter                           ProviderAccountConcurrencyLimiter
+	Locks                             LockManager
+	DataPlane                         DataPlaneApplier
+	Factory                           SessionProviderFactory
+	LocalProtocol                     string
+	IsNotFound                        StoreNotFoundFunc
+	ResolveGatewaysForLease           ProviderSessionGatewaysResolverFactory
+	ObserveProviderReleaseFailure     LeaseErrorObserver
+	ObserveFinalConcurrencyReleaseErr LeaseObserver
+}
+
+func (r CleanupPendingLeaseRunner) Cleanup(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+	return CleanupPendingLease(ctx, CleanupPendingLeaseInput{
+		Store:                             r.Store,
+		Limiter:                           r.Limiter,
+		Locks:                             r.Locks,
+		DataPlane:                         r.DataPlane,
+		Factory:                           r.Factory,
+		LocalProtocol:                     r.LocalProtocol,
+		Lease:                             lease,
+		IsNotFound:                        r.IsNotFound,
+		ResolveGateways:                   r.resolveGateways(lease),
+		ObserveProviderReleaseFailure:     r.ObserveProviderReleaseFailure,
+		ObserveFinalConcurrencyReleaseErr: r.ObserveFinalConcurrencyReleaseErr,
+	})
+}
+
+func (r CleanupPendingLeaseRunner) resolveGateways(lease *proxyruntimev1.ProxyDynamicLease) ProviderSessionGatewaysResolver {
+	if r.ResolveGatewaysForLease == nil {
+		return nil
+	}
+	return r.ResolveGatewaysForLease(lease)
+}
+
+func MarkCleanupPending(lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool, finalStatus string) {
+	if lease == nil {
+		return
+	}
+	session := lease.GetSession()
+	if session == nil {
+		session = &proxyruntimev1.ProxySession{}
+		lease.Session = session
+	}
+	if session.Labels == nil {
+		session.Labels = map[string]string{}
+	}
+	if routePending {
+		session.Labels[RouteCleanupPendingLabel] = "true"
+	}
+	if providerPending {
+		session.Labels[ProviderCleanupPendingLabel] = "true"
+	}
+	if strings.TrimSpace(finalStatus) != "" {
+		session.Labels[CleanupFinalStatusLabel] = strings.TrimSpace(finalStatus)
+	}
+}
+
+func ClearCleanupPending(lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool) {
+	if lease == nil || lease.GetSession() == nil || lease.GetSession().Labels == nil {
+		return
+	}
+	if routePending {
+		delete(lease.GetSession().Labels, RouteCleanupPendingLabel)
+	}
+	if providerPending {
+		delete(lease.GetSession().Labels, ProviderCleanupPendingLabel)
+	}
+}
+
+func MarkFailedAcquireCleanupPending(session *proxyruntimev1.ProxySession, routePending bool, providerPending bool) {
+	lease := &proxyruntimev1.ProxyDynamicLease{Session: session}
+	MarkCleanupPending(lease, routePending, providerPending, CleanupFinalFailed)
+}
 
 type CleanupPendingLeaseInput struct {
 	Store                             OrchestrationStore

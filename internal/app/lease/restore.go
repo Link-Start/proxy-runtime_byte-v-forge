@@ -6,7 +6,27 @@ import (
 	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 )
+
+var ErrLeaseRouteRestorerRequired = errors.New("lease route restorer is required")
+
+type LeaseRouteRestorerResolver func(context.Context, *proxyruntimev1.ProxyDynamicLease) (LeaseRouteRestorer, error)
+
+type RestoreLeaseRouteRunner struct {
+	ResolveRestorer LeaseRouteRestorerResolver
+}
+
+func (r RestoreLeaseRouteRunner) Restore(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+	if r.ResolveRestorer == nil {
+		return ErrLeaseRouteRestorerRequired
+	}
+	restorer, err := r.ResolveRestorer(ctx, lease)
+	if err != nil {
+		return err
+	}
+	return restorer.Restore(ctx, lease)
+}
 
 var ErrRestoreLeaseRouteRequired = errors.New("lease session or listener is missing")
 
@@ -119,4 +139,24 @@ func acquireRestoreLeaseSlot(ctx context.Context, input RestoreLeaseInput, provi
 		ConcurrencyHolder(input.Lease),
 		ConcurrencySlotTTL(policy, input.DefaultTTL, input.TTLBuffer),
 	)
+}
+
+type RestoreRouteInput struct {
+	DataPlane          DataPlaneApplier
+	Lease              *proxyruntimev1.ProxyDynamicLease
+	Nodes              []provider.Node
+	LocalProtocol      string
+	ResolveLineBinding RouteLineBindingResolver
+}
+
+func RestoreLeaseRoute(ctx context.Context, input RestoreRouteInput) error {
+	lineBinding, err := PrepareRouteLineBinding(ctx, input.Nodes, input.Lease.GetAccountId(), input.ResolveLineBinding)
+	if err != nil {
+		return err
+	}
+	route, ok := SessionRouteFromLease(input.Lease, lineBinding.Nodes, lineBinding.DialerProxy, input.LocalProtocol)
+	if !ok {
+		return nil
+	}
+	return UpsertSessionRoute(ctx, input.DataPlane, route)
 }

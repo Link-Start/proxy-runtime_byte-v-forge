@@ -8,6 +8,7 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
 var (
@@ -82,4 +83,120 @@ func StatelessProviderSession(session *proxyruntimev1.ProxySession) bool {
 	default:
 		return false
 	}
+}
+
+var ErrSessionProviderFactoryRequired = errors.New("provider session factory is required")
+
+type ProviderSessionAcquireInput struct {
+	Store             OrchestrationStore
+	Factory           SessionProviderFactory
+	ProviderAccountID string
+	Gateway           accountproxy.Gateway
+	Request           *proxyruntimev1.AcquireProxyLeaseRequest
+	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	ConcurrencyHolder string
+}
+
+type ProviderSessionAcquireResult struct {
+	ProviderAccountID string
+	ProviderClient    SessionProvider
+	Session           *proxyruntimev1.ProxySession
+	Nodes             []provider.Node
+}
+
+func AcquireProviderSession(ctx context.Context, input ProviderSessionAcquireInput) (ProviderSessionAcquireResult, error) {
+	providerCfg, accountID, err := ProviderConfigForGateway(ctx, input.Store, input.ProviderAccountID, input.Gateway)
+	if err != nil {
+		return ProviderSessionAcquireResult{}, err
+	}
+	providerClient, err := NewSessionProvider(input.Factory, providerCfg)
+	result := ProviderSessionAcquireResult{ProviderAccountID: accountID, ProviderClient: providerClient}
+	if err != nil {
+		return result, WrapProviderSessionFactoryFailure(err)
+	}
+	session, nodes, err := CreateAndFetchProviderSession(ctx, providerClient, input.Request, input.SelectionPlan, input.ConcurrencyHolder)
+	result.Session = session
+	result.Nodes = nodes
+	return result, WrapProviderSessionCreateFetchFailure(session, err)
+}
+
+func NewSessionProvider(factory SessionProviderFactory, providerCfg accountproxy.Config) (SessionProvider, error) {
+	if factory == nil {
+		return nil, ErrSessionProviderFactoryRequired
+	}
+	return factory.NewSessionProvider(providerCfg)
+}
+
+type ProviderSessionFetchInput struct {
+	Factory         SessionProviderFactory
+	Lease           *proxyruntimev1.ProxyDynamicLease
+	ProviderConfig  accountproxy.Config
+	ResolveGateways ProviderSessionGatewaysResolver
+}
+
+func FetchLeaseProviderSession(ctx context.Context, input ProviderSessionFetchInput) ([]provider.Node, error) {
+	providerCfg := input.ProviderConfig
+	if input.ResolveGateways != nil {
+		gateways, err := input.ResolveGateways(ctx, providerCfg.ProviderID)
+		if err != nil {
+			return nil, err
+		}
+		providerCfg.Gateways = gateways
+	}
+	providerClient, err := NewSessionProvider(input.Factory, providerCfg)
+	if err != nil {
+		return nil, err
+	}
+	return FetchProviderSession(ctx, providerClient, input.Lease.GetSession())
+}
+
+type ProviderSessionGatewaysResolver func(context.Context, string) ([]accountproxy.Gateway, error)
+
+type ProviderSessionReleaseInput struct {
+	Store           OrchestrationStore
+	Factory         SessionProviderFactory
+	Lease           *proxyruntimev1.ProxyDynamicLease
+	ResolveGateways ProviderSessionGatewaysResolver
+	RecordFailure   ProviderSessionReleaseFailureRecorder
+}
+
+type ProviderSessionReleaseFailureRecorder func(context.Context, *proxyruntimev1.ProxyDynamicLease, error) error
+
+func ReleaseLeaseProviderSession(ctx context.Context, input ProviderSessionReleaseInput) error {
+	if !NeedsProviderSessionRelease(input.Lease) {
+		return nil
+	}
+	providerCfg, _, err := ProviderConfigForLease(ctx, input.Store, input.Lease)
+	if err != nil {
+		return err
+	}
+	if input.ResolveGateways != nil {
+		gateways, err := input.ResolveGateways(ctx, providerCfg.ProviderID)
+		if err != nil {
+			return err
+		}
+		providerCfg.Gateways = gateways
+	}
+	providerClient, err := NewSessionProvider(input.Factory, providerCfg)
+	if err != nil {
+		return err
+	}
+	return ReleaseProviderSession(ctx, providerClient, input.Lease.GetSession())
+}
+
+func NeedsProviderSessionRelease(lease *proxyruntimev1.ProxyDynamicLease) bool {
+	if lease == nil || lease.GetSession() == nil || strings.TrimSpace(lease.GetProviderAccountId()) == "" {
+		return false
+	}
+	return !StatelessProviderSession(lease.GetSession())
+}
+
+func ReleaseLeaseProviderSessionWithLock(ctx context.Context, locks LockManager, input ProviderSessionReleaseInput) error {
+	return WithProviderAccountLock(ctx, locks, input.Lease.GetProviderAccountId(), func(ctx context.Context) error {
+		err := ReleaseLeaseProviderSession(ctx, input)
+		if err != nil && input.RecordFailure != nil {
+			_ = input.RecordFailure(ctx, input.Lease, err)
+		}
+		return err
+	})
 }

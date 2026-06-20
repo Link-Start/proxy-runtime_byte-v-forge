@@ -7,6 +7,27 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
+type ReleaseRunner struct {
+	Store      OrchestrationStore
+	Locks      LockManager
+	IsNotFound StoreNotFoundFunc
+	Retire     ReleaseRetireAction
+}
+
+func (r ReleaseRunner) Release(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
+	lease, err := LookupReleaseLease(ctx, r.Store, req, r.IsNotFound)
+	if err != nil {
+		return nil, err
+	}
+	return RetireReleaseLease(ctx, ReleaseRetireInput{
+		Store:      r.Store,
+		Locks:      r.Locks,
+		Lease:      lease,
+		IsNotFound: r.IsNotFound,
+		Retire:     r.Retire,
+	})
+}
+
 var (
 	ErrReleaseLeaseIDNotFound = errors.New("lease_id not found")
 	ErrActiveLeaseNotFound    = errors.New("active lease not found")
@@ -71,4 +92,22 @@ func releaseLeaseByAccount(ctx context.Context, store OrchestrationStore, lookup
 
 func storeNotFound(isNotFound StoreNotFoundFunc, err error) bool {
 	return isNotFound != nil && isNotFound(err)
+}
+
+func RefreshReleaseLease(ctx context.Context, store OrchestrationStore, lease *proxyruntimev1.ProxyDynamicLease, isNotFound StoreNotFoundFunc) (*proxyruntimev1.ProxyDynamicLease, error) {
+	if store == nil || !HasLeaseID(lease) {
+		return lease, nil
+	}
+	current, err := store.LeaseFactByID(ctx, lease.GetLeaseId())
+	if err != nil {
+		if storeNotFound(isNotFound, err) {
+			return lease, nil
+		}
+		return nil, err
+	}
+	return current, nil
+}
+
+func ReleaseNeedsRouteRetire(lease *proxyruntimev1.ProxyDynamicLease) bool {
+	return HasActiveStatus(lease) && !HasReleasedStatus(lease)
 }

@@ -14,7 +14,7 @@ func (s *runtimeSettingsStore) updateInUserRules(ctx context.Context, profiles [
 		if err != nil {
 			return nil, err
 		}
-		dynamicProviderEndpoints := enabledDynamicProviderEndpointIDs(settings)
+		dynamicProviderEndpoints := settingsdomain.EnabledDynamicProviderEndpointIDs(settings)
 		nextProfiles, err := settingsdomain.EgressProfilesFromRequest(profiles, nativeResourceIDs, dynamicProviderEndpoints)
 		if err != nil {
 			return nil, err

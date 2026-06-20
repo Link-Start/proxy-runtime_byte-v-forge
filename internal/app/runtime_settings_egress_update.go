@@ -14,7 +14,7 @@ func (s *runtimeSettingsStore) updateEgressProfiles(ctx context.Context, profile
 		if err != nil {
 			return nil, err
 		}
-		nextProfiles, err := settingsdomain.EgressProfilesFromRequest(profiles, nativeResourceIDs, enabledDynamicProviderEndpointIDs(settings))
+		nextProfiles, err := settingsdomain.EgressProfilesFromRequest(profiles, nativeResourceIDs, settingsdomain.EnabledDynamicProviderEndpointIDs(settings))
 		if err != nil {
 			return nil, err
 		}

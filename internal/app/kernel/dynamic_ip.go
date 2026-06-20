@@ -44,6 +44,14 @@ func NormalizeEndpointURL(value string) string {
 	return strings.TrimSpace(value)
 }
 
+func EndpointIDFromURL(value string) string {
+	value = NormalizeEndpointURL(value)
+	if value == "" {
+		return ""
+	}
+	return "endpoint-" + appcore.ShortHash(value)
+}
+
 func NormalizeDynamicProviderRotatingConcurrencyLimit(value uint32) uint32 {
 	if value == 0 {
 		return DefaultDynamicProviderRotatingConcurrencyLimit

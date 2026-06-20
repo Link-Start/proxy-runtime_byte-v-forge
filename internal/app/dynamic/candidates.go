@@ -9,6 +9,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 func (p *IPSelector) dynamicIPEndpointCandidates(ctx context.Context, settings *proxyruntimev1.ProxyRuntimePersistentSettings, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxyruntimev1.ProxySessionPolicy) ([]ScoredEndpointCandidate, error) {
@@ -76,7 +77,7 @@ func (p *IPSelector) DynamicIPEndpointCandidatesForAccount(ctx context.Context, 
 			if strings.TrimSpace(endpoint.EndpointURL) == "" {
 				continue
 			}
-			endpointID := appcore.FirstNonEmpty(endpoint.ID, EndpointIDFromURL(endpoint.EndpointURL))
+			endpointID := appcore.FirstNonEmpty(endpoint.ID, kernel.EndpointIDFromURL(endpoint.EndpointURL))
 			if filter.endpointID != "" && filter.endpointID != endpointID {
 				continue
 			}

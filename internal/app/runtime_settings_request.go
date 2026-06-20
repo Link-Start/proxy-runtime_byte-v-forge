@@ -46,7 +46,7 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 	if err != nil {
 		return nil, err
 	}
-	dynamicProviderEndpoints := enabledDynamicProviderEndpointIDs(settings)
+	dynamicProviderEndpoints := settingsdomain.EnabledDynamicProviderEndpointIDs(settings)
 	settings.EgressProfiles, err = settingsdomain.EgressProfilesFromRequest(req.GetEgressProfiles(), nativeResourceIDs, dynamicProviderEndpoints)
 	if err != nil {
 		return nil, err

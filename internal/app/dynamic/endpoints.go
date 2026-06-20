@@ -24,7 +24,7 @@ func Endpoints(settings *proxyruntimev1.ProxyRuntimePersistentSettings, dynamicP
 			continue
 		}
 		for _, endpoint := range provider.Endpoints {
-			key := appcore.FirstNonEmpty(endpoint.ID, EndpointIDFromURL(endpoint.EndpointURL), endpoint.EndpointURL)
+			key := appcore.FirstNonEmpty(endpoint.ID, kernel.EndpointIDFromURL(endpoint.EndpointURL), endpoint.EndpointURL)
 			if key == "" {
 				continue
 			}
@@ -49,7 +49,7 @@ func EndpointMap(settings *proxyruntimev1.ProxyRuntimePersistentSettings) map[st
 			seen[provider.ProviderID] = map[string]struct{}{}
 		}
 		for _, endpoint := range provider.Endpoints {
-			key := appcore.FirstNonEmpty(endpoint.ID, EndpointIDFromURL(endpoint.EndpointURL), endpoint.EndpointURL)
+			key := appcore.FirstNonEmpty(endpoint.ID, kernel.EndpointIDFromURL(endpoint.EndpointURL), endpoint.EndpointURL)
 			if key == "" {
 				continue
 			}
@@ -95,19 +95,11 @@ func accountProxyEndpoints(endpoints []*proxyruntimev1.ProxyDynamicIPEndpointSet
 			continue
 		}
 		out = append(out, accountproxy.Gateway{
-			ID:          EndpointIDFromURL(endpointURL),
+			ID:          kernel.EndpointIDFromURL(endpointURL),
 			EndpointURL: endpointURL,
 		})
 	}
 	return out
-}
-
-func EndpointIDFromURL(value string) string {
-	value = kernel.NormalizeEndpointURL(value)
-	if value == "" {
-		return ""
-	}
-	return "endpoint-" + appcore.ShortHash(value)
 }
 
 func ProviderInstanceConcurrencyLimit(provider ProviderInstance, policy *proxyruntimev1.ProxySessionPolicy) uint32 {

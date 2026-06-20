@@ -7,7 +7,6 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
@@ -19,7 +18,7 @@ func (s *Store) LoadMihomoNativeSettings(ctx context.Context) (*proxyruntimev1.P
 	if !found {
 		return mihomonative.NormalizeSettings(nil), nil
 	}
-	return settingscore.DecodeMihomoNativeSettings(raw)
+	return mihomonative.DecodeMihomoNativeSettings(raw)
 }
 
 func (s *Store) SaveMihomoNativeSettings(ctx context.Context, settings *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) error {

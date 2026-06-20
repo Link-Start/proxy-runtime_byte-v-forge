@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings"
+	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings/application"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )

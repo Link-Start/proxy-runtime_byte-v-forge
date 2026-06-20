@@ -5,7 +5,7 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	providerapp "github.com/byte-v-forge/proxy-runtime/internal/app/provider/application"
 	checkapp "github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck/application"
-	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings"
+	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings/application"
 )
 
 type RuntimeService struct {

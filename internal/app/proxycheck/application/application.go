@@ -1,4 +1,4 @@
-package app
+package application
 
 import (
 	"context"
@@ -18,42 +18,38 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
-type runtimeCheckApplication struct {
-	settings       runtimeCheckSettings
-	checkClient    runtimeCheckHTTPClientFactory
-	probeExitIP    runtimeCheckExitIPProbe
-	lookupGeo      runtimeCheckGeoLookup
-	checkFraud     runtimeCheckFraudChecker
-	runEdgeCanary  runtimeCheckEdgeCanary
-	exitCheckCache runtimeCheckCache
+type Service struct {
+	loadSettingsFn func(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
+	checkClient    HTTPClientFactory
+	probeExitIP    ExitIPProbe
+	lookupGeo      GeoLookup
+	checkFraud     FraudChecker
+	runEdgeCanary  EdgeCanary
+	exitCheckCache Cache
 	exitIPSF       *singleflight.Group
 }
 
-type runtimeCheckApplicationDependencies struct {
-	Settings       runtimeCheckSettings
-	CheckClient    runtimeCheckHTTPClientFactory
-	ProbeExitIP    runtimeCheckExitIPProbe
-	LookupGeo      runtimeCheckGeoLookup
-	CheckFraud     runtimeCheckFraudChecker
-	RunEdgeCanary  runtimeCheckEdgeCanary
-	ExitCheckCache runtimeCheckCache
+type Dependencies struct {
+	LoadSettings   func(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
+	CheckClient    HTTPClientFactory
+	ProbeExitIP    ExitIPProbe
+	LookupGeo      GeoLookup
+	CheckFraud     FraudChecker
+	RunEdgeCanary  EdgeCanary
+	ExitCheckCache Cache
 }
 
-type runtimeCheckSettings interface {
-	load(context.Context) (*runtimeSettingsFile, error)
-}
+type HTTPClientFactory func(context.Context, string, time.Duration) (*http.Client, error)
 
-type runtimeCheckHTTPClientFactory func(context.Context, string, time.Duration) (*http.Client, error)
+type ExitIPProbe func(context.Context, *http.Client) (string, error)
 
-type runtimeCheckExitIPProbe func(context.Context, *http.Client) (string, error)
+type GeoLookup func(context.Context, string) (proxycheck.ExitGeo, error)
 
-type runtimeCheckGeoLookup func(context.Context, string) (proxycheck.ExitGeo, error)
+type FraudChecker func(context.Context, string, *proxyruntimev1.ProxyRuntimePersistentSettings) (*proxyruntimev1.ProxyIPFraudCheck, error)
 
-type runtimeCheckFraudChecker func(context.Context, string, *runtimeSettingsFile) (*proxyruntimev1.ProxyIPFraudCheck, error)
+type EdgeCanary func(context.Context, *http.Client, *proxyruntimev1.ProxyRuntimePersistentSettings) proxycheck.EdgeCanaryOutcome
 
-type runtimeCheckEdgeCanary func(context.Context, *http.Client, *runtimeSettingsFile) proxycheck.EdgeCanaryOutcome
-
-type runtimeCheckCache interface {
+type Cache interface {
 	PutExitIP(string, *proxyruntimev1.ProxyExitIP)
 	PutGeo(*proxyruntimev1.ProxyExitGeo)
 	PutFraud(*proxyruntimev1.ProxyIPFraudCheck)
@@ -61,9 +57,9 @@ type runtimeCheckCache interface {
 	Snapshot(string) *proxyruntimev1.ProxyExitCheckSnapshot
 }
 
-func newRuntimeCheckApplication(deps runtimeCheckApplicationDependencies) runtimeCheckApplication {
-	return runtimeCheckApplication{
-		settings:       deps.Settings,
+func New(deps Dependencies) Service {
+	return Service{
+		loadSettingsFn: deps.LoadSettings,
 		checkClient:    deps.CheckClient,
 		probeExitIP:    deps.ProbeExitIP,
 		lookupGeo:      deps.LookupGeo,
@@ -74,31 +70,7 @@ func newRuntimeCheckApplication(deps runtimeCheckApplicationDependencies) runtim
 	}
 }
 
-func (s *RuntimeService) GetProxyExitIP(ctx context.Context, req *proxyruntimev1.GetProxyExitIPRequest) (*proxyruntimev1.GetProxyExitIPResponse, error) {
-	return s.checks.GetProxyExitIP(ctx, req)
-}
-
-func (s *RuntimeService) GetProxyExitGeo(ctx context.Context, req *proxyruntimev1.GetProxyExitGeoRequest) (*proxyruntimev1.GetProxyExitGeoResponse, error) {
-	return s.checks.GetProxyExitGeo(ctx, req)
-}
-
-func (s *RuntimeService) CheckProxyIPFraud(ctx context.Context, req *proxyruntimev1.CheckProxyIPFraudRequest) (*proxyruntimev1.CheckProxyIPFraudResponse, error) {
-	return s.checks.CheckProxyIPFraud(ctx, req)
-}
-
-func (s *RuntimeService) CheckProxyEdgeAccess(ctx context.Context, req *proxyruntimev1.CheckProxyEdgeAccessRequest) (*proxyruntimev1.CheckProxyEdgeAccessResponse, error) {
-	return s.checks.CheckProxyEdgeAccess(ctx, req)
-}
-
-func (s *RuntimeService) CheckProxyTargetConnectivity(ctx context.Context, req *proxyruntimev1.CheckProxyTargetConnectivityRequest) (*proxyruntimev1.CheckProxyTargetConnectivityResponse, error) {
-	return s.checks.CheckProxyTargetConnectivity(ctx, req)
-}
-
-func (s *RuntimeService) GetProxyExitCheckSnapshot(ctx context.Context, req *proxyruntimev1.GetProxyExitCheckSnapshotRequest) (*proxyruntimev1.GetProxyExitCheckSnapshotResponse, error) {
-	return s.checks.GetProxyExitCheckSnapshot(ctx, req)
-}
-
-func (a runtimeCheckApplication) GetProxyExitIP(ctx context.Context, req *proxyruntimev1.GetProxyExitIPRequest) (*proxyruntimev1.GetProxyExitIPResponse, error) {
+func (a Service) GetProxyExitIP(ctx context.Context, req *proxyruntimev1.GetProxyExitIPRequest) (*proxyruntimev1.GetProxyExitIPResponse, error) {
 	settings, err := a.loadSettings(ctx)
 	if err != nil {
 		return nil, err
@@ -120,7 +92,7 @@ func (a runtimeCheckApplication) GetProxyExitIP(ctx context.Context, req *proxyr
 	return &proxyruntimev1.GetProxyExitIPResponse{ProxyExitIp: exitIP}, nil
 }
 
-func (a runtimeCheckApplication) GetProxyExitGeo(ctx context.Context, req *proxyruntimev1.GetProxyExitGeoRequest) (*proxyruntimev1.GetProxyExitGeoResponse, error) {
+func (a Service) GetProxyExitGeo(ctx context.Context, req *proxyruntimev1.GetProxyExitGeoRequest) (*proxyruntimev1.GetProxyExitGeoResponse, error) {
 	ip := strings.TrimSpace(req.GetIp())
 	if net.ParseIP(ip) == nil {
 		return nil, errors.New("ip is required")
@@ -134,7 +106,7 @@ func (a runtimeCheckApplication) GetProxyExitGeo(ctx context.Context, req *proxy
 	return &proxyruntimev1.GetProxyExitGeoResponse{ProxyExitGeo: out}, nil
 }
 
-func (a runtimeCheckApplication) CheckProxyIPFraud(ctx context.Context, req *proxyruntimev1.CheckProxyIPFraudRequest) (*proxyruntimev1.CheckProxyIPFraudResponse, error) {
+func (a Service) CheckProxyIPFraud(ctx context.Context, req *proxyruntimev1.CheckProxyIPFraudRequest) (*proxyruntimev1.CheckProxyIPFraudResponse, error) {
 	ip := strings.TrimSpace(req.GetIp())
 	if net.ParseIP(ip) == nil {
 		return nil, errors.New("ip is required")
@@ -154,7 +126,7 @@ func (a runtimeCheckApplication) CheckProxyIPFraud(ctx context.Context, req *pro
 	return &proxyruntimev1.CheckProxyIPFraudResponse{Check: check}, nil
 }
 
-func (a runtimeCheckApplication) CheckProxyEdgeAccess(ctx context.Context, req *proxyruntimev1.CheckProxyEdgeAccessRequest) (*proxyruntimev1.CheckProxyEdgeAccessResponse, error) {
+func (a Service) CheckProxyEdgeAccess(ctx context.Context, req *proxyruntimev1.CheckProxyEdgeAccessRequest) (*proxyruntimev1.CheckProxyEdgeAccessResponse, error) {
 	settings, err := a.loadSettings(ctx)
 	if err != nil {
 		return nil, err
@@ -184,11 +156,11 @@ func (a runtimeCheckApplication) CheckProxyEdgeAccess(ctx context.Context, req *
 	return &proxyruntimev1.CheckProxyEdgeAccessResponse{Check: check}, nil
 }
 
-func (a runtimeCheckApplication) GetProxyExitCheckSnapshot(_ context.Context, req *proxyruntimev1.GetProxyExitCheckSnapshotRequest) (*proxyruntimev1.GetProxyExitCheckSnapshotResponse, error) {
+func (a Service) GetProxyExitCheckSnapshot(_ context.Context, req *proxyruntimev1.GetProxyExitCheckSnapshotRequest) (*proxyruntimev1.GetProxyExitCheckSnapshotResponse, error) {
 	return &proxyruntimev1.GetProxyExitCheckSnapshotResponse{Snapshot: a.snapshot(req.GetListenerId())}, nil
 }
 
-func (a runtimeCheckApplication) CheckProxyTargetConnectivity(ctx context.Context, req *proxyruntimev1.CheckProxyTargetConnectivityRequest) (*proxyruntimev1.CheckProxyTargetConnectivityResponse, error) {
+func (a Service) CheckProxyTargetConnectivity(ctx context.Context, req *proxyruntimev1.CheckProxyTargetConnectivityRequest) (*proxyruntimev1.CheckProxyTargetConnectivityResponse, error) {
 	settings, err := a.loadSettings(ctx)
 	if err != nil {
 		return nil, err
@@ -225,28 +197,28 @@ func (a runtimeCheckApplication) CheckProxyTargetConnectivity(ctx context.Contex
 	return &proxyruntimev1.CheckProxyTargetConnectivityResponse{Check: check}, nil
 }
 
-func (a runtimeCheckApplication) loadSettings(ctx context.Context) (*runtimeSettingsFile, error) {
-	if a.settings == nil {
+func (a Service) loadSettings(ctx context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error) {
+	if a.loadSettingsFn == nil {
 		return nil, appcore.InternalError("runtime check settings repository is not configured", nil)
 	}
-	return a.settings.load(ctx)
+	return a.loadSettingsFn(ctx)
 }
 
-func (a runtimeCheckApplication) newCheckClient(ctx context.Context, listenerID string, timeout time.Duration) (*http.Client, error) {
+func (a Service) newCheckClient(ctx context.Context, listenerID string, timeout time.Duration) (*http.Client, error) {
 	if a.checkClient == nil {
 		return nil, appcore.InternalError("runtime check HTTP client factory is not configured", nil)
 	}
 	return a.checkClient(ctx, listenerID, timeout)
 }
 
-func (a runtimeCheckApplication) checkExitIP(ctx context.Context, client *http.Client) (string, error) {
+func (a Service) checkExitIP(ctx context.Context, client *http.Client) (string, error) {
 	if a.probeExitIP == nil {
 		return "", appcore.InternalError("runtime check exit IP probe is not configured", nil)
 	}
 	return a.probeExitIP(ctx, client)
 }
 
-func (a runtimeCheckApplication) checkExitIPDedup(ctx context.Context, listenerID string, client *http.Client) (string, error) {
+func (a Service) checkExitIPDedup(ctx context.Context, listenerID string, client *http.Client) (string, error) {
 	if a.exitIPSF == nil {
 		return a.checkExitIP(ctx, client)
 	}
@@ -259,52 +231,52 @@ func (a runtimeCheckApplication) checkExitIPDedup(ctx context.Context, listenerI
 	return ip.(string), nil
 }
 
-func (a runtimeCheckApplication) lookupExitGeo(ctx context.Context, ip string) (proxycheck.ExitGeo, error) {
+func (a Service) lookupExitGeo(ctx context.Context, ip string) (proxycheck.ExitGeo, error) {
 	if a.lookupGeo == nil {
 		return proxycheck.ExitGeo{}, appcore.InternalError("runtime check geo lookup is not configured", nil)
 	}
 	return a.lookupGeo(ctx, ip)
 }
 
-func (a runtimeCheckApplication) checkIPFraud(ctx context.Context, ip string, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyIPFraudCheck, error) {
+func (a Service) checkIPFraud(ctx context.Context, ip string, settings *proxyruntimev1.ProxyRuntimePersistentSettings) (*proxyruntimev1.ProxyIPFraudCheck, error) {
 	if a.checkFraud == nil {
 		return nil, appcore.InternalError("runtime check IP fraud service is not configured", nil)
 	}
 	return a.checkFraud(ctx, ip, settings)
 }
 
-func (a runtimeCheckApplication) checkEdgeAccess(ctx context.Context, client *http.Client, settings *runtimeSettingsFile) (proxycheck.EdgeCanaryOutcome, error) {
+func (a Service) checkEdgeAccess(ctx context.Context, client *http.Client, settings *proxyruntimev1.ProxyRuntimePersistentSettings) (proxycheck.EdgeCanaryOutcome, error) {
 	if a.runEdgeCanary == nil {
 		return proxycheck.EdgeCanaryOutcome{}, appcore.InternalError("runtime check edge canary is not configured", nil)
 	}
 	return a.runEdgeCanary(ctx, client, settings), nil
 }
 
-func (a runtimeCheckApplication) putExitIP(listenerID string, exitIP *proxyruntimev1.ProxyExitIP) {
+func (a Service) putExitIP(listenerID string, exitIP *proxyruntimev1.ProxyExitIP) {
 	if a.exitCheckCache != nil {
 		a.exitCheckCache.PutExitIP(listenerID, exitIP)
 	}
 }
 
-func (a runtimeCheckApplication) putGeo(geo *proxyruntimev1.ProxyExitGeo) {
+func (a Service) putGeo(geo *proxyruntimev1.ProxyExitGeo) {
 	if a.exitCheckCache != nil {
 		a.exitCheckCache.PutGeo(geo)
 	}
 }
 
-func (a runtimeCheckApplication) putFraud(check *proxyruntimev1.ProxyIPFraudCheck) {
+func (a Service) putFraud(check *proxyruntimev1.ProxyIPFraudCheck) {
 	if a.exitCheckCache != nil {
 		a.exitCheckCache.PutFraud(check)
 	}
 }
 
-func (a runtimeCheckApplication) putEdge(listenerID string, check *proxyruntimev1.ProxyEdgeAccessCheck) {
+func (a Service) putEdge(listenerID string, check *proxyruntimev1.ProxyEdgeAccessCheck) {
 	if a.exitCheckCache != nil {
 		a.exitCheckCache.PutEdge(listenerID, check)
 	}
 }
 
-func (a runtimeCheckApplication) snapshot(listenerID string) *proxyruntimev1.ProxyExitCheckSnapshot {
+func (a Service) snapshot(listenerID string) *proxyruntimev1.ProxyExitCheckSnapshot {
 	if a.exitCheckCache == nil {
 		return nil
 	}

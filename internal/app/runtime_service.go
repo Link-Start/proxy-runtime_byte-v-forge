@@ -4,6 +4,7 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	providerapp "github.com/byte-v-forge/proxy-runtime/internal/app/provider/application"
+	checkapp "github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck/application"
 	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings"
 )
 
@@ -11,7 +12,7 @@ type RuntimeService struct {
 	proxyruntimev1.UnimplementedProxyRuntimeServiceServer
 	providers providerapp.Service
 	leases    runtimeLeaseApplication
-	checks    runtimeCheckApplication
+	checks    checkapp.Service
 	settings  settingsapp.Application
 	status    runtimeStatusApplication
 	metrics   *runtimeMetrics
@@ -24,7 +25,7 @@ func NewRuntimeService(runtime *Runtime) *RuntimeService {
 	return &RuntimeService{
 		providers: providerapp.New(runtimeProviderDependencies(runtime)),
 		leases:    newRuntimeLeaseApplication(runtimeLeaseDependencies(runtime)),
-		checks:    newRuntimeCheckApplication(runtimeCheckDependencies(runtime)),
+		checks:    checkapp.New(runtimeCheckDependencies(runtime)),
 		settings:  newRuntimeSettingsApplication(runtimeSettingsDependencies(runtime)),
 		status:    newRuntimeStatusApplication(runtimeStatusDependencies(runtime)),
 		metrics:   runtimeMetricsFromRuntime(runtime),
@@ -81,12 +82,12 @@ func runtimeLeaseDependencies(runtime *Runtime) leaseapp.Dependencies {
 	}
 }
 
-func runtimeCheckDependencies(runtime *Runtime) runtimeCheckApplicationDependencies {
+func runtimeCheckDependencies(runtime *Runtime) checkapp.Dependencies {
 	if runtime == nil {
-		return runtimeCheckApplicationDependencies{}
+		return checkapp.Dependencies{}
 	}
-	return runtimeCheckApplicationDependencies{
-		Settings:       runtime.settings,
+	return checkapp.Dependencies{
+		LoadSettings:   runtime.settings.load,
 		CheckClient:    runtime.checkProxyHTTPClient,
 		ProbeExitIP:    runtime.probeExitIP,
 		LookupGeo:      runtime.lookupIPGeo,

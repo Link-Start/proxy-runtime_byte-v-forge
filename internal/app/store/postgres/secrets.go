@@ -1,4 +1,4 @@
-package app
+package postgres
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
-func (s *PostgresStore) WriteSecret(ctx context.Context, req secretref.WriteRequest) (*commonv1.SecretRef, error) {
+func (s *Store) WriteSecret(ctx context.Context, req secretref.WriteRequest) (*commonv1.SecretRef, error) {
 	if s == nil {
 		return nil, errors.New("secret store is not configured")
 	}
@@ -55,7 +55,7 @@ ON CONFLICT (secret_id) DO UPDATE SET provider=EXCLUDED.provider, purpose=EXCLUD
 	return secretref.New(provider, purpose, secretID, req.ExpiresAt), nil
 }
 
-func (s *PostgresStore) ResolveSecret(ctx context.Context, ref *commonv1.SecretRef) (string, error) {
+func (s *Store) ResolveSecret(ctx context.Context, ref *commonv1.SecretRef) (string, error) {
 	if s == nil {
 		return "", errors.New("secret store is not configured")
 	}

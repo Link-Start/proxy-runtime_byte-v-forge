@@ -1,4 +1,4 @@
-package app
+package postgres
 
 const (
 	postgresLeaseActiveUntilNowPredicate = `(expires_at IS NULL OR expires_at > now())`

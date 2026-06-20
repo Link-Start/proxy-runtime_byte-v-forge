@@ -1,4 +1,4 @@
-package app
+package postgres
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type PostgresStore struct {
+type Store struct {
 	pool             *pgxpool.Pool
 	box              secretbox.Box
 	accountProviders *providerregistry.Registry
@@ -19,7 +19,7 @@ type PostgresStore struct {
 	clock            clock.Clock
 }
 
-func NewPostgresStore(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger, clk clock.Clock) (*PostgresStore, error) {
+func New(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger, clk clock.Clock) (*Store, error) {
 	box, err := secretbox.New(cfg.EncryptionKey)
 	if err != nil {
 		return nil, err
@@ -28,19 +28,19 @@ func NewPostgresStore(ctx context.Context, cfg config.Config, accountProviders *
 	if err != nil {
 		return nil, err
 	}
-	store := &PostgresStore{pool: pool, box: box, accountProviders: accountProviders, logger: logger, clock: clk}
-	if err := store.applySchema(ctx); err != nil {
+	pg := &Store{pool: pool, box: box, accountProviders: accountProviders, logger: logger, clock: clk}
+	if err := pg.applySchema(ctx); err != nil {
 		pool.Close()
 		return nil, err
 	}
-	if err := store.seedFromConfig(ctx, cfg); err != nil {
+	if err := pg.seedFromConfig(ctx, cfg); err != nil {
 		pool.Close()
 		return nil, err
 	}
-	return store, nil
+	return pg, nil
 }
 
-func (s *PostgresStore) Close() {
+func (s *Store) Close() {
 	if s != nil && s.pool != nil {
 		s.pool.Close()
 	}

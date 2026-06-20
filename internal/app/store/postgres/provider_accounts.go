@@ -1,4 +1,4 @@
-package app
+package postgres
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
-func (s *PostgresStore) ListProviderAccounts(ctx context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error) {
+func (s *Store) ListProviderAccounts(ctx context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error) {
 	rows, err := s.pool.Query(ctx, `SELECT `+providerAccountColumns()+` FROM proxy_runtime_provider_accounts ORDER BY account_id`)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (s *PostgresStore) ListProviderAccounts(ctx context.Context) ([]*proxyrunti
 	return out, rows.Err()
 }
 
-func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.ProxyProviderAccount, error) {
+func (s *Store) UpsertProviderAccount(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.ProxyProviderAccount, error) {
 	accountID := store.NormalizeID(req.GetAccountId())
 	if accountID == "" {
 		generated, err := store.GeneratedID("dynacct")
@@ -132,12 +132,12 @@ RETURNING `+providerAccountColumns(), accountID, providerID, dynamicProviderID, 
 	return s.providerAccountToProto(ctx, record)
 }
 
-func (s *PostgresStore) DeleteProviderAccount(ctx context.Context, accountID string) error {
+func (s *Store) DeleteProviderAccount(ctx context.Context, accountID string) error {
 	_, err := s.pool.Exec(ctx, `DELETE FROM proxy_runtime_provider_accounts WHERE account_id=$1`, store.NormalizeID(accountID))
 	return err
 }
 
-func (s *PostgresStore) ProviderAccount(ctx context.Context, accountID string) (*proxyruntimev1.ProxyProviderAccount, error) {
+func (s *Store) ProviderAccount(ctx context.Context, accountID string) (*proxyruntimev1.ProxyProviderAccount, error) {
 	record, err := s.providerAccountRecord(ctx, accountID)
 	if err != nil {
 		return nil, err
@@ -145,7 +145,7 @@ func (s *PostgresStore) ProviderAccount(ctx context.Context, accountID string) (
 	return record.ToProto(s.box), nil
 }
 
-func (s *PostgresStore) ProviderConfig(ctx context.Context, accountID string) (accountproxy.Config, string, error) {
+func (s *Store) ProviderConfig(ctx context.Context, accountID string) (accountproxy.Config, string, error) {
 	record, err := s.providerAccountRecord(ctx, accountID)
 	if err != nil {
 		return accountproxy.Config{}, "", err
@@ -160,13 +160,13 @@ func (s *PostgresStore) ProviderConfig(ctx context.Context, accountID string) (a
 	return cfg, record.AccountID, s.accountProviders.Validate(cfg)
 }
 
-func (s *PostgresStore) DefaultProviderAccountID(ctx context.Context) (string, error) {
+func (s *Store) DefaultProviderAccountID(ctx context.Context) (string, error) {
 	var id string
 	err := s.pool.QueryRow(ctx, `SELECT account_id FROM proxy_runtime_provider_accounts WHERE enabled ORDER BY updated_at DESC, account_id LIMIT 1`).Scan(&id)
 	return id, err
 }
 
-func (s *PostgresStore) providerAccountRecord(ctx context.Context, accountID string) (*store.ProviderAccountRecord, error) {
+func (s *Store) providerAccountRecord(ctx context.Context, accountID string) (*store.ProviderAccountRecord, error) {
 	row := s.pool.QueryRow(ctx, `SELECT `+providerAccountColumns()+` FROM proxy_runtime_provider_accounts WHERE account_id=$1`, store.NormalizeID(accountID))
 	return scanProviderAccount(row)
 }
@@ -181,11 +181,11 @@ func scanProviderAccount(row pgx.Row) (*store.ProviderAccountRecord, error) {
 	return &record, err
 }
 
-func (s *PostgresStore) providerAccountToProto(ctx context.Context, record *store.ProviderAccountRecord) (*proxyruntimev1.ProxyProviderAccount, error) {
+func (s *Store) providerAccountToProto(ctx context.Context, record *store.ProviderAccountRecord) (*proxyruntimev1.ProxyProviderAccount, error) {
 	return store.ProviderAccountToProto(ctx, s, s.box, record)
 }
 
-func (s *PostgresStore) ProviderAccountMutationState(ctx context.Context, accountID string) (store.ProviderAccountMutationState, error) {
+func (s *Store) ProviderAccountMutationState(ctx context.Context, accountID string) (store.ProviderAccountMutationState, error) {
 	record, err := s.providerAccountRecord(ctx, accountID)
 	if err != nil {
 		return store.ProviderAccountMutationState{}, err

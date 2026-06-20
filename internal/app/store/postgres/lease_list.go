@@ -1,4 +1,4 @@
-package app
+package postgres
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
-func (s *PostgresStore) ListActiveLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ListActiveLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	rows, err := s.pool.Query(ctx, `
 SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
@@ -24,7 +24,7 @@ LIMIT $2
 	return scanLeaseFacts(rows)
 }
 
-func (s *PostgresStore) ListRecentLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ListRecentLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	rows, err := s.pool.Query(ctx, `
 SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
@@ -38,7 +38,7 @@ LIMIT $1
 	return scanLeaseFacts(rows)
 }
 
-func (s *PostgresStore) ListHistoryLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ListHistoryLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	rows, err := s.pool.Query(ctx, `
 SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
@@ -54,7 +54,7 @@ LIMIT $2
 	return scanLeaseFacts(rows)
 }
 
-func (s *PostgresStore) RecentLeaseFacts(ctx context.Context, since time.Time, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) RecentLeaseFacts(ctx context.Context, since time.Time, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	if limit <= 0 {
 		limit = 100
 	}

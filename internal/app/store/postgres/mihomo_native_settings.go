@@ -1,4 +1,4 @@
-package app
+package postgres
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
-func (s *PostgresStore) LoadMihomoNativeSettings(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+func (s *Store) LoadMihomoNativeSettings(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
 	raw, found, err := s.loadRuntimeSettingJSON(ctx, store.MihomoNativeSettingsKey)
 	if err != nil {
 		return nil, err
@@ -22,7 +22,7 @@ func (s *PostgresStore) LoadMihomoNativeSettings(ctx context.Context) (*proxyrun
 	return settingscore.DecodeMihomoNativeSettings(raw)
 }
 
-func (s *PostgresStore) SaveMihomoNativeSettings(ctx context.Context, settings *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) error {
+func (s *Store) SaveMihomoNativeSettings(ctx context.Context, settings *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) error {
 	data, err := protojsoncodec.Marshal(mihomonative.NormalizeSettings(settings))
 	if err != nil {
 		return err

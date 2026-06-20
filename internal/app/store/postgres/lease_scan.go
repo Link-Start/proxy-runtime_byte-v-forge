@@ -1,4 +1,4 @@
-package app
+package postgres
 
 import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"

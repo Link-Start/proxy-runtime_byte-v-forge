@@ -1,15 +1,16 @@
-package app
+package postgres
 
 import (
 	"context"
 
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
-func (s *PostgresStore) LoadRuntimeSettings(ctx context.Context) (*runtimeSettingsFile, error) {
+func (s *Store) LoadRuntimeSettings(ctx context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error) {
 	raw, found, err := s.loadRuntimeSettingJSON(ctx, store.RuntimeSettingsKey)
 	if err != nil {
 		return nil, err
@@ -20,7 +21,7 @@ func (s *PostgresStore) LoadRuntimeSettings(ctx context.Context) (*runtimeSettin
 	return settingscore.DecodeRuntimeSettings(raw)
 }
 
-func (s *PostgresStore) SaveRuntimeSettings(ctx context.Context, settings *runtimeSettingsFile) error {
+func (s *Store) SaveRuntimeSettings(ctx context.Context, settings *proxyruntimev1.ProxyRuntimePersistentSettings) error {
 	data, err := protojsoncodec.Marshal(settingscore.NormalizeRuntimeSettings(settings))
 	if err != nil {
 		return err

@@ -1,4 +1,4 @@
-package app
+package postgres
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 )
 
-func (s *PostgresStore) CleanupPendingLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) CleanupPendingLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	rows, err := s.pool.Query(ctx, `
 SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
@@ -21,7 +21,7 @@ ORDER BY acquired_at ASC NULLS LAST, updated_at ASC, lease_id
 	return scanLeaseFacts(rows)
 }
 
-func (s *PostgresStore) ListRestorableLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ListRestorableLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	rows, err := s.pool.Query(ctx, `
 SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
@@ -36,7 +36,7 @@ ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
 	return scanLeaseFacts(rows)
 }
 
-func (s *PostgresStore) ExpiredActiveLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ExpiredActiveLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	rows, err := s.pool.Query(ctx, `
 SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases

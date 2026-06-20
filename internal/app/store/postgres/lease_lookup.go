@@ -1,4 +1,4 @@
-package app
+package postgres
 
 import (
 	"context"
@@ -9,12 +9,12 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-func (s *PostgresStore) LeaseFactByID(ctx context.Context, leaseID string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) LeaseFactByID(ctx context.Context, leaseID string) (*proxyruntimev1.ProxyDynamicLease, error) {
 	row := s.pool.QueryRow(ctx, `SELECT lease_json::text FROM proxy_runtime_dynamic_leases WHERE lease_id=$1`, strings.TrimSpace(leaseID))
 	return scanLeaseFact(row)
 }
 
-func (s *PostgresStore) ActiveLeaseFact(ctx context.Context, accountID string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ActiveLeaseFact(ctx context.Context, accountID string) (*proxyruntimev1.ProxyDynamicLease, error) {
 	row := s.pool.QueryRow(ctx, `
 SELECT lease_json::text
 FROM proxy_runtime_dynamic_leases
@@ -27,7 +27,7 @@ LIMIT 1
 	return scanLeaseFact(row)
 }
 
-func (s *PostgresStore) ActiveLeaseFactBySession(ctx context.Context, accountID string, purpose string, sessionID string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ActiveLeaseFactBySession(ctx context.Context, accountID string, purpose string, sessionID string) (*proxyruntimev1.ProxyDynamicLease, error) {
 	sessionID = strings.TrimSpace(sessionID)
 	if sessionID == "" {
 		return nil, pgx.ErrNoRows
@@ -48,15 +48,15 @@ LIMIT 1
 	return scanLeaseFact(row)
 }
 
-func (s *PostgresStore) ActiveLeaseFactByAccount(ctx context.Context, accountID string, purpose string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ActiveLeaseFactByAccount(ctx context.Context, accountID string, purpose string) (*proxyruntimev1.ProxyDynamicLease, error) {
 	return s.leaseFactByAccount(ctx, accountID, purpose, true)
 }
 
-func (s *PostgresStore) LatestLeaseFactByAccount(ctx context.Context, accountID string, purpose string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) LatestLeaseFactByAccount(ctx context.Context, accountID string, purpose string) (*proxyruntimev1.ProxyDynamicLease, error) {
 	return s.leaseFactByAccount(ctx, accountID, purpose, false)
 }
 
-func (s *PostgresStore) leaseFactByAccount(ctx context.Context, accountID string, purpose string, activeOnly bool) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) leaseFactByAccount(ctx context.Context, accountID string, purpose string, activeOnly bool) (*proxyruntimev1.ProxyDynamicLease, error) {
 	args := []any{strings.TrimSpace(accountID)}
 	conditions := []string{`account_id=$1`}
 	if trimmed := strings.TrimSpace(purpose); trimmed != "" {

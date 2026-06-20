@@ -1,4 +1,4 @@
-package app
+package postgres
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 //go:embed schema.sql
 var schemaSQL string
 
-func (s *PostgresStore) applySchema(ctx context.Context) error {
+func (s *Store) applySchema(ctx context.Context) error {
 	if _, err := s.pool.Exec(ctx, schemaSQL); err != nil {
 		return fmt.Errorf("apply proxy-runtime schema: %w", err)
 	}

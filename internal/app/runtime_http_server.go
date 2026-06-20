@@ -210,7 +210,7 @@ func runtimeProviderDependencies(runtime *Runtime) providerapp.Dependencies {
 	}
 	var locks leaseapp.LockManager
 	if runtime.leaseLocks != nil {
-		locks = leaseRuntimeLockManager{locks: runtime.leaseLocks}
+		locks = runtime.leaseLocks
 	}
 	var providerDescriptors providerapp.DescriptorsFunc
 	if runtime.accountProviders != nil {
@@ -248,14 +248,13 @@ func runtimeSettingsDependencies(runtime *Runtime) runtimeSettingsApplicationDep
 		return runtimeSettingsApplicationDependencies{}
 	}
 	settingsApply := newRuntimeSettingsApplyScheduler(runtime)
-	providerViews := newRuntimeSettingsProviderViewAdapter(runtime)
 	mihomoNative := newRuntimeSettingsMihomoNativeAdapter(runtime)
 	return runtimeSettingsApplicationDependencies{
 		Logger:                     runtime.logger,
 		Settings:                   runtime.settings,
 		ProxyUsers:                 runtime.cfg.ProxyUsers,
-		IPFraudProviderViews:       providerViews.IPFraudProviderViews,
-		IPGeoProviderViews:         providerViews.IPGeoProviderViews,
+		IPFraudProviderViews:       runtime.ipFraudProviders.ProviderDescriptors,
+		IPGeoProviderViews:         runtime.ipGeoProviders.ProviderDescriptors,
 		LoadMihomoNativeSettings:   mihomoNative.Load,
 		UpdateMihomoNativeSettings: mihomoNative.Update,
 		ScheduleApply:              settingsApply.Schedule,

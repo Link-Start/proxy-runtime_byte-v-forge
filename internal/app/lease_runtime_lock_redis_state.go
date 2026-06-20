@@ -5,6 +5,7 @@ import (
 	"errors"
 	"sync/atomic"
 
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -32,7 +33,7 @@ func (l *redisLeaseRuntimeLock) Unlock(ctx context.Context) error {
 	return redisLeaseRuntimeUnlockScript.Run(ctx, l.client, []string{l.key}, l.token).Err()
 }
 
-func (l *redisLeaseRuntimeLock) run(fn leaseRuntimeLockFunc) error {
+func (l *redisLeaseRuntimeLock) run(fn leaseapp.LockFunc) error {
 	if fn == nil {
 		return errors.New("lease runtime lock function is required")
 	}

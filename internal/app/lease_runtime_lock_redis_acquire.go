@@ -5,10 +5,11 @@ import (
 	"errors"
 	"time"
 
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/redisclient"
 )
 
-func (s *redisLeaseRuntimeLocks) withLock(ctx context.Context, key string, fn leaseRuntimeLockFunc) error {
+func (s *redisLeaseRuntimeLocks) withLock(ctx context.Context, key string, fn leaseapp.LockFunc) error {
 	lock, err := s.lock(ctx, key)
 	if err != nil {
 		return err

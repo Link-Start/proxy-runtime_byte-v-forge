@@ -25,37 +25,6 @@ func (g randomLeaseIDGenerator) NewLeaseID() (string, error) {
 	return random.Hex(g.byteLength)
 }
 
-type leaseRuntimeLockManager struct {
-	locks leaseRuntimeLocks
-}
-
-func (m leaseRuntimeLockManager) WithAccountLock(ctx context.Context, accountID string, fn leaseapp.LockFunc) error {
-	if m.locks == nil {
-		return errors.New("lease runtime locks are required")
-	}
-	return m.locks.WithAccountLock(ctx, accountID, func(ctx context.Context) error {
-		return fn(ctx)
-	})
-}
-
-func (m leaseRuntimeLockManager) WithProviderAccountLock(ctx context.Context, providerAccountID string, fn leaseapp.LockFunc) error {
-	if m.locks == nil {
-		return errors.New("lease runtime locks are required")
-	}
-	return m.locks.WithProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
-		return fn(ctx)
-	})
-}
-
-func (m leaseRuntimeLockManager) WithSessionListenerAllocationLock(ctx context.Context, fn leaseapp.LockFunc) error {
-	if m.locks == nil {
-		return errors.New("lease runtime locks are required")
-	}
-	return m.locks.WithSessionListenerAllocationLock(ctx, func(ctx context.Context) error {
-		return fn(ctx)
-	})
-}
-
 type leaseRegistrySessionProviderFactory struct {
 	registry *providerregistry.Registry
 	client   *http.Client

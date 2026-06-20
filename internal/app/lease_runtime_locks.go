@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
@@ -14,13 +15,11 @@ const (
 	leaseRuntimeUnlockWait = 5 * time.Second
 )
 
-type leaseRuntimeLockFunc func(context.Context) error
-
 type leaseRuntimeLocks interface {
 	Close() error
-	WithAccountLock(ctx context.Context, accountID string, fn leaseRuntimeLockFunc) error
-	WithProviderAccountLock(ctx context.Context, providerAccountID string, fn leaseRuntimeLockFunc) error
-	WithSessionListenerAllocationLock(ctx context.Context, fn leaseRuntimeLockFunc) error
+	WithAccountLock(ctx context.Context, accountID string, fn leaseapp.LockFunc) error
+	WithProviderAccountLock(ctx context.Context, providerAccountID string, fn leaseapp.LockFunc) error
+	WithSessionListenerAllocationLock(ctx context.Context, fn leaseapp.LockFunc) error
 }
 
 func NewLeaseRuntimeLocks(ctx context.Context, cfg config.Config) (leaseRuntimeLocks, error) {

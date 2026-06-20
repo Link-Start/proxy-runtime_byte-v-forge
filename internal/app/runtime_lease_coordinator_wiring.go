@@ -12,7 +12,7 @@ func runtimeLeaseCoordinatorDependencies(runtime *Runtime) leaseCoordinatorDepen
 	}
 	var locks leaseapp.LockManager
 	if runtime.leaseLocks != nil {
-		locks = leaseRuntimeLockManager{locks: runtime.leaseLocks}
+		locks = runtime.leaseLocks
 	}
 	return leaseCoordinatorDependencies{
 		cfg:                     runtime.cfg,

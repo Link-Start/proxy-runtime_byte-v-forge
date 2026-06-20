@@ -1,4 +1,4 @@
-package app
+package sqlite
 
 import (
 	"context"
@@ -14,7 +14,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
-func (s *SQLiteStore) WriteSecret(ctx context.Context, req secretref.WriteRequest) (*commonv1.SecretRef, error) {
+func (s *Store) WriteSecret(ctx context.Context, req secretref.WriteRequest) (*commonv1.SecretRef, error) {
 	if s == nil {
 		return nil, errors.New("secret store is not configured")
 	}
@@ -50,7 +50,7 @@ ON CONFLICT(secret_id) DO UPDATE SET provider=excluded.provider, purpose=exclude
 	return secretref.New(provider, purpose, secretID, req.ExpiresAt), nil
 }
 
-func (s *SQLiteStore) ResolveSecret(ctx context.Context, ref *commonv1.SecretRef) (string, error) {
+func (s *Store) ResolveSecret(ctx context.Context, ref *commonv1.SecretRef) (string, error) {
 	if s == nil {
 		return "", errors.New("secret store is not configured")
 	}

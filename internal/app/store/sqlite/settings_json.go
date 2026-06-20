@@ -1,4 +1,4 @@
-package app
+package sqlite
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"errors"
 )
 
-func (s *SQLiteStore) loadRuntimeSettingJSON(ctx context.Context, key string) (string, bool, error) {
+func (s *Store) loadRuntimeSettingJSON(ctx context.Context, key string) (string, bool, error) {
 	var raw string
 	err := s.db.QueryRowContext(ctx, `SELECT setting_json FROM proxy_runtime_settings WHERE setting_key=?`, key).Scan(&raw)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -18,7 +18,7 @@ func (s *SQLiteStore) loadRuntimeSettingJSON(ctx context.Context, key string) (s
 	return raw, true, nil
 }
 
-func (s *SQLiteStore) saveRuntimeSettingJSON(ctx context.Context, key string, data []byte) error {
+func (s *Store) saveRuntimeSettingJSON(ctx context.Context, key string, data []byte) error {
 	now := sqliteTime(s.clock.Now().UTC())
 	_, err := s.db.ExecContext(ctx, `INSERT INTO proxy_runtime_settings (setting_key, setting_json, updated_at) VALUES (?,?,?) ON CONFLICT(setting_key) DO UPDATE SET setting_json=excluded.setting_json, updated_at=excluded.updated_at`, key, string(data), now)
 	return err

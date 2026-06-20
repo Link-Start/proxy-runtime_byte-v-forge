@@ -1,4 +1,4 @@
-package app
+package sqlite
 
 import (
 	"context"
@@ -19,7 +19,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
-type SQLiteStore struct {
+type Store struct {
 	db               *sql.DB
 	box              secretbox.Box
 	accountProviders *providerregistry.Registry
@@ -27,7 +27,7 @@ type SQLiteStore struct {
 	clock            clock.Clock
 }
 
-func NewSQLiteStore(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger, clk clock.Clock) (*SQLiteStore, error) {
+func New(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger, clk clock.Clock) (*Store, error) {
 	box, err := secretbox.New(cfg.EncryptionKey)
 	if err != nil {
 		return nil, err
@@ -41,7 +41,7 @@ func NewSQLiteStore(ctx context.Context, cfg config.Config, accountProviders *pr
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
-	lite := &SQLiteStore{db: db, box: box, accountProviders: accountProviders, logger: logger, clock: clk}
+	lite := &Store{db: db, box: box, accountProviders: accountProviders, logger: logger, clock: clk}
 	if err := lite.applySchema(ctx); err != nil {
 		_ = db.Close()
 		return nil, err
@@ -71,7 +71,7 @@ func sqliteDSN(dataDir string) (string, error) {
 	return uri.String(), nil
 }
 
-func (s *SQLiteStore) Close() {
+func (s *Store) Close() {
 	if s != nil && s.db != nil {
 		_ = s.db.Close()
 	}

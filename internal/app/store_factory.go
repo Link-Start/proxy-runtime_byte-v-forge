@@ -11,6 +11,7 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store/postgres"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store/sqlite"
 )
 
 func NewControlStore(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger, clk clock.Clock) (*store.RuntimeStores, error) {
@@ -21,7 +22,7 @@ func NewControlStore(ctx context.Context, cfg config.Config, accountProviders *p
 		}
 		return store.NewRuntimeStores(backend), nil
 	}
-	backend, err := NewSQLiteStore(ctx, cfg, accountProviders, logger, clk)
+	backend, err := sqlite.New(ctx, cfg, accountProviders, logger, clk)
 	if err != nil {
 		return nil, err
 	}

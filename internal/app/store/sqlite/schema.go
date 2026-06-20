@@ -1,4 +1,4 @@
-package app
+package sqlite
 
 import (
 	"context"
@@ -66,7 +66,7 @@ CREATE TABLE IF NOT EXISTS proxy_runtime_settings (
 );
 `
 
-func (s *SQLiteStore) applySchema(ctx context.Context) error {
+func (s *Store) applySchema(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, sqliteSchemaSQL); err != nil {
 		return fmt.Errorf("apply proxy-runtime sqlite schema: %w", err)
 	}

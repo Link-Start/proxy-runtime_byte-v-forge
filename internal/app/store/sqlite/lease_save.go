@@ -1,4 +1,4 @@
-package app
+package sqlite
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
-func (s *SQLiteStore) SaveLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+func (s *Store) SaveLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
 	fact, err := store.PrepareDynamicLeaseFactSave(lease)
 	if err != nil {
 		return err

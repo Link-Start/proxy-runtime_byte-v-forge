@@ -1,4 +1,4 @@
-package app
+package sqlite
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
-func (s *SQLiteStore) ProviderAccountHasBlockingLease(ctx context.Context, providerAccountID string) (bool, error) {
+func (s *Store) ProviderAccountHasBlockingLease(ctx context.Context, providerAccountID string) (bool, error) {
 	providerAccountID = strings.TrimSpace(providerAccountID)
 	if providerAccountID == "" {
 		return false, nil
@@ -29,7 +29,7 @@ SELECT EXISTS (
 	return exists, err
 }
 
-func (s *SQLiteStore) BlockingLeaseFactsByProviderAccount(ctx context.Context, providerAccountID string, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) BlockingLeaseFactsByProviderAccount(ctx context.Context, providerAccountID string, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	providerAccountID = strings.TrimSpace(providerAccountID)
 	if providerAccountID == "" {
 		return nil, nil

@@ -1,4 +1,4 @@
-package app
+package sqlite
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 )
 
-func (s *SQLiteStore) ListActiveLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ListActiveLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	return s.leaseFactsByQuery(ctx, `
 SELECT lease_json
 FROM proxy_runtime_dynamic_leases
@@ -18,7 +18,7 @@ LIMIT ?
 `, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(s.clock.Now().UTC()), leaseapp.NormalizeListLimit(limit))
 }
 
-func (s *SQLiteStore) ListRecentLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ListRecentLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	return s.leaseFactsByQuery(ctx, `
 SELECT lease_json
 FROM proxy_runtime_dynamic_leases
@@ -27,7 +27,7 @@ LIMIT ?
 `, leaseapp.NormalizeListLimit(limit))
 }
 
-func (s *SQLiteStore) ListHistoryLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ListHistoryLeaseFacts(ctx context.Context, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	return s.leaseFactsByQuery(ctx, `
 SELECT lease_json
 FROM proxy_runtime_dynamic_leases
@@ -37,7 +37,7 @@ LIMIT ?
 `, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(s.clock.Now().UTC()), leaseapp.NormalizeListLimit(limit))
 }
 
-func (s *SQLiteStore) RecentLeaseFacts(ctx context.Context, since time.Time, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) RecentLeaseFacts(ctx context.Context, since time.Time, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	if limit <= 0 {
 		limit = 100
 	}

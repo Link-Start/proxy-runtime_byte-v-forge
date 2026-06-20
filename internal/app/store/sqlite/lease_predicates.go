@@ -1,4 +1,4 @@
-package app
+package sqlite
 
 const (
 	sqliteLeaseActiveUntilPredicate    = `(expires_at='' OR expires_at>?)`

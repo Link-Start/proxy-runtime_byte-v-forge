@@ -1,4 +1,4 @@
-package app
+package sqlite
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
-func (s *SQLiteStore) leaseFactsByQuery(ctx context.Context, query string, args ...any) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) leaseFactsByQuery(ctx context.Context, query string, args ...any) ([]*proxyruntimev1.ProxyDynamicLease, error) {
 	rows, err := s.db.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err

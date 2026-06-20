@@ -1,4 +1,4 @@
-package app
+package sqlite
 
 import (
 	"context"
@@ -16,7 +16,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
-func (s *SQLiteStore) ListProviderAccounts(ctx context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error) {
+func (s *Store) ListProviderAccounts(ctx context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error) {
 	rows, err := s.db.QueryContext(ctx, `SELECT account_id, provider_id, dynamic_provider_id, display_name, enabled, credential_secret, created_at, updated_at FROM proxy_runtime_provider_accounts ORDER BY account_id`)
 	if err != nil {
 		return nil, err
@@ -37,7 +37,7 @@ func (s *SQLiteStore) ListProviderAccounts(ctx context.Context) ([]*proxyruntime
 	return out, rows.Err()
 }
 
-func (s *SQLiteStore) UpsertProviderAccount(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.ProxyProviderAccount, error) {
+func (s *Store) UpsertProviderAccount(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.ProxyProviderAccount, error) {
 	accountID := store.NormalizeID(req.GetAccountId())
 	if accountID == "" {
 		generated, err := store.GeneratedID("dynacct")
@@ -47,7 +47,7 @@ func (s *SQLiteStore) UpsertProviderAccount(ctx context.Context, req *proxyrunti
 		accountID = generated
 	}
 	existing, err := s.providerAccountRecord(ctx, accountID)
-	if err != nil && !isStoreNotFound(err) {
+	if err != nil && !errors.Is(err, sql.ErrNoRows) {
 		return nil, err
 	}
 	providerID := appcore.FirstNonEmpty(strings.TrimSpace(req.GetProviderId()), existingProviderID(existing), s.accountProviders.DefaultProviderID())
@@ -122,12 +122,12 @@ ON CONFLICT(account_id) DO UPDATE SET provider_id=excluded.provider_id, dynamic_
 	return store.ProviderAccountToProto(ctx, s, s.box, record)
 }
 
-func (s *SQLiteStore) DeleteProviderAccount(ctx context.Context, accountID string) error {
+func (s *Store) DeleteProviderAccount(ctx context.Context, accountID string) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM proxy_runtime_provider_accounts WHERE account_id=?`, store.NormalizeID(accountID))
 	return err
 }
 
-func (s *SQLiteStore) ProviderAccount(ctx context.Context, accountID string) (*proxyruntimev1.ProxyProviderAccount, error) {
+func (s *Store) ProviderAccount(ctx context.Context, accountID string) (*proxyruntimev1.ProxyProviderAccount, error) {
 	record, err := s.providerAccountRecord(ctx, accountID)
 	if err != nil {
 		return nil, err
@@ -135,7 +135,7 @@ func (s *SQLiteStore) ProviderAccount(ctx context.Context, accountID string) (*p
 	return store.ProviderAccountToProto(ctx, s, s.box, record)
 }
 
-func (s *SQLiteStore) ProviderAccountMutationState(ctx context.Context, accountID string) (store.ProviderAccountMutationState, error) {
+func (s *Store) ProviderAccountMutationState(ctx context.Context, accountID string) (store.ProviderAccountMutationState, error) {
 	record, err := s.providerAccountRecord(ctx, accountID)
 	if err != nil {
 		return store.ProviderAccountMutationState{}, err
@@ -149,7 +149,7 @@ func (s *SQLiteStore) ProviderAccountMutationState(ctx context.Context, accountI
 	return state, nil
 }
 
-func (s *SQLiteStore) ProviderConfig(ctx context.Context, accountID string) (accountproxy.Config, string, error) {
+func (s *Store) ProviderConfig(ctx context.Context, accountID string) (accountproxy.Config, string, error) {
 	record, err := s.providerAccountRecord(ctx, accountID)
 	if err != nil {
 		return accountproxy.Config{}, "", err
@@ -164,7 +164,7 @@ func (s *SQLiteStore) ProviderConfig(ctx context.Context, accountID string) (acc
 	return cfg, record.AccountID, s.accountProviders.Validate(cfg)
 }
 
-func (s *SQLiteStore) DefaultProviderAccountID(ctx context.Context) (string, error) {
+func (s *Store) DefaultProviderAccountID(ctx context.Context) (string, error) {
 	var id string
 	err := s.db.QueryRowContext(ctx, `SELECT account_id FROM proxy_runtime_provider_accounts WHERE enabled=1 ORDER BY updated_at DESC, account_id LIMIT 1`).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -173,7 +173,7 @@ func (s *SQLiteStore) DefaultProviderAccountID(ctx context.Context) (string, err
 	return id, err
 }
 
-func (s *SQLiteStore) providerAccountRecord(ctx context.Context, accountID string) (*store.ProviderAccountRecord, error) {
+func (s *Store) providerAccountRecord(ctx context.Context, accountID string) (*store.ProviderAccountRecord, error) {
 	row := s.db.QueryRowContext(ctx, `SELECT account_id, provider_id, dynamic_provider_id, display_name, enabled, credential_secret, created_at, updated_at FROM proxy_runtime_provider_accounts WHERE account_id=?`, store.NormalizeID(accountID))
 	return scanSQLiteProviderAccount(row)
 }

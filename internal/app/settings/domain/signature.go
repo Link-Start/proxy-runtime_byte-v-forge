@@ -1,4 +1,4 @@
-package settingscore
+package domain
 
 import (
 	"crypto/sha256"

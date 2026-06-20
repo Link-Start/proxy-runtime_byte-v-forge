@@ -8,7 +8,8 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	settingssecret "github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/secret"
+	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
 type ipFraudCheckerCache struct {
@@ -18,7 +19,7 @@ type ipFraudCheckerCache struct {
 }
 
 func (r *Runtime) checkIPFraud(ctx context.Context, ip string, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyIPFraudCheck, error) {
-	providers, err := settingscore.IPFraudProviders(ctx, r.store, settings, r.ipFraudProviders)
+	providers, err := settingssecret.IPFraudProviders(ctx, r.store, settings, r.ipFraudProviders)
 	if err != nil {
 		return unsupportedIPFraudCheck(ip), nil
 	}
@@ -30,7 +31,7 @@ func (r *Runtime) checkIPFraud(ctx context.Context, ip string, settings *runtime
 }
 
 func (r *Runtime) ipFraudChecker(settings *runtimeSettingsFile, providers []ipfraud.ProviderConfig) ipFraudChecker {
-	signature := settingscore.RuntimeSettingsSignature(settings, r.ipFraudProviders, r.ipGeoProviders)
+	signature := settingsdomain.RuntimeSettingsSignature(settings, r.ipFraudProviders, r.ipGeoProviders)
 	return r.fraudChecker.get(signature, func() ipFraudChecker {
 		return newIPFraudChecker(r.ipFraudProviders, r.cfg.IPFraud, providers, r.logger, r.clock)
 	})

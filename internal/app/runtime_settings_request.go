@@ -12,7 +12,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	settingssecret "github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/secret"
 )
 
 func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, current *runtimeSettingsFile, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry, nativeResourceIDs map[string]struct{}) (*runtimeSettingsFile, error) {
@@ -33,11 +33,11 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 	if edgeCanaryEnabled(settings.GetEdgeCanary()) && strings.TrimSpace(settings.GetEdgeCanary().GetUrl()) == "" {
 		return nil, errors.New("edge canary url is required when enabled")
 	}
-	settings.IpFraudProviders, err = settingscore.IPFraudProvidersFromRequest(ctx, writer, req.GetIpFraudProviders(), current, ipFraudProviders)
+	settings.IpFraudProviders, err = settingssecret.IPFraudProvidersFromRequest(ctx, writer, req.GetIpFraudProviders(), current, ipFraudProviders)
 	if err != nil {
 		return nil, err
 	}
-	settings.IpGeoProviders, err = settingscore.IPGeoProvidersFromRequest(ctx, writer, req.GetIpGeoProviders(), current, ipGeoProviders)
+	settings.IpGeoProviders, err = settingssecret.IPGeoProvidersFromRequest(ctx, writer, req.GetIpGeoProviders(), current, ipGeoProviders)
 	if err != nil {
 		return nil, err
 	}

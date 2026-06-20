@@ -1,4 +1,4 @@
-package settingscore
+package secret
 
 import (
 	"context"

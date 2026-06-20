@@ -10,7 +10,7 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	settingssecret "github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/secret"
 )
 
 func (r *Runtime) lookupIPGeo(ctx context.Context, ip string) (proxycheck.ExitGeo, error) {
@@ -34,7 +34,7 @@ func (r *Runtime) loadIPGeo(ctx context.Context, ip string) (proxycheck.ExitGeo,
 	if err != nil {
 		return proxycheck.ExitGeo{}, err
 	}
-	providers, err := settingscore.IPGeoProviders(ctx, r.store, settings, r.ipGeoProviders)
+	providers, err := settingssecret.IPGeoProviders(ctx, r.store, settings, r.ipGeoProviders)
 	if err != nil {
 		return proxycheck.ExitGeo{}, err
 	}

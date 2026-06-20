@@ -8,7 +8,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	settingssecret "github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/secret"
 )
 
 func edgeCanaryFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.ProxyEdgeCanarySettings, current *proxyruntimev1.ProxyEdgeCanarySettings) (*proxyruntimev1.ProxyEdgeCanarySettings, error) {
@@ -24,7 +24,7 @@ func edgeCanaryFromRequest(ctx context.Context, writer secretref.Writer, req *pr
 		return settings, nil
 	}
 	if rawToken := strings.TrimSpace(req.GetTokenValue()); rawToken != "" {
-		ref, err := settingscore.WriteRuntimeSecret(ctx, writer, rawToken, secretref.StableID("proxy-runtime-edge-canary-token", "default"), "edge_canary_token")
+		ref, err := settingssecret.WriteRuntimeSecret(ctx, writer, rawToken, secretref.StableID("proxy-runtime-edge-canary-token", "default"), "edge_canary_token")
 		if err != nil {
 			return nil, err
 		}

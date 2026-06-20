@@ -7,6 +7,7 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 func writeLeaseHTTPError(w http.ResponseWriter, err error, fallbackStatus int) {
@@ -14,7 +15,7 @@ func writeLeaseHTTPError(w http.ResponseWriter, err error, fallbackStatus int) {
 		writeHTTPError(w, appcore.InvalidArgument(err.Error(), err), http.StatusBadRequest)
 		return
 	}
-	if isStoreNotFound(err) {
+	if store.IsNotFound(err) {
 		writeHTTPError(w, errors.New("lease not found"), http.StatusNotFound)
 		return
 	}

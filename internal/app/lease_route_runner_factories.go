@@ -7,6 +7,7 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 type leaseRouteRetirerFactory struct {
@@ -51,7 +52,7 @@ func (f leaseReleaseRunnerFactory) New() leaseapp.ReleaseRunner {
 	return leaseapp.ReleaseRunner{
 		Store:      f.deps.store,
 		Locks:      f.deps.locks,
-		IsNotFound: isStoreNotFound,
+		IsNotFound: store.IsNotFound,
 		Retire:     f.retire.Retire,
 	}
 }

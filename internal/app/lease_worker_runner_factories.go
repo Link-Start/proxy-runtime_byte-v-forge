@@ -7,6 +7,7 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 type leaseWorkerProcessorFactory struct {
@@ -99,7 +100,7 @@ func (f leaseExpireRunnerFactory) New() leaseapp.ExpireLeaseRunner {
 		Factory:                           f.deps.sessionProviders,
 		Clock:                             f.deps.clock,
 		LocalProtocol:                     f.deps.cfg.LocalProtocol,
-		IsNotFound:                        isStoreNotFound,
+		IsNotFound:                        store.IsNotFound,
 		ResolveGatewaysForLease:           f.settings.ProviderGatewaysResolver,
 		ObserveProviderReleaseFailure:     warnLeaseProviderSessionReleaseFailed(f.deps.logger),
 		ObserveFinalConcurrencyReleaseErr: warnFinalLeaseConcurrencyReleaseFailed(f.deps.logger),
@@ -119,7 +120,7 @@ func (f leaseCleanupPendingRunnerFactory) New() leaseapp.CleanupPendingLeaseRunn
 		DataPlane:                         f.deps.dataPlane,
 		Factory:                           f.deps.sessionProviders,
 		LocalProtocol:                     f.deps.cfg.LocalProtocol,
-		IsNotFound:                        isStoreNotFound,
+		IsNotFound:                        store.IsNotFound,
 		ResolveGatewaysForLease:           f.settings.ProviderGatewaysResolver,
 		ObserveProviderReleaseFailure:     warnLeaseProviderSessionReleaseFailed(f.deps.logger),
 		ObserveFinalConcurrencyReleaseErr: warnFinalLeaseConcurrencyReleaseFailed(f.deps.logger),

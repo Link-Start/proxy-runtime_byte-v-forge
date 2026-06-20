@@ -174,7 +174,7 @@ func (a runtimeProviderApplication) DeleteProxyProviderAccount(ctx context.Conte
 }
 
 func (a runtimeProviderApplication) rejectActiveProviderAccountRuntimeMutation(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) error {
-	store, err := a.requireStore()
+	repo, err := a.requireStore()
 	if err != nil {
 		return err
 	}
@@ -182,16 +182,16 @@ func (a runtimeProviderApplication) rejectActiveProviderAccountRuntimeMutation(c
 	if providerAccountID == "" {
 		return nil
 	}
-	active, err := store.ProviderAccountHasBlockingLease(ctx, providerAccountID)
+	active, err := repo.ProviderAccountHasBlockingLease(ctx, providerAccountID)
 	if err != nil {
 		return err
 	}
 	if !active {
 		return nil
 	}
-	state, err := store.ProviderAccountMutationState(ctx, providerAccountID)
+	state, err := repo.ProviderAccountMutationState(ctx, providerAccountID)
 	if err != nil {
-		if isStoreNotFound(err) {
+		if store.IsNotFound(err) {
 			return nil
 		}
 		return err

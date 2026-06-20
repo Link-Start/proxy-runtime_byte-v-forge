@@ -10,7 +10,7 @@ import (
 )
 
 func validateDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderSettings, index int, accountProviders *providerregistry.Registry) error {
-	if dynamicIPProviderID(provider) == "" {
+	if settingscore.DynamicIPProviderID(provider) == "" {
 		return fmt.Errorf("dynamic_ip_providers[%d].dynamic_provider_id is required", index)
 	}
 	if accountProviders == nil || !accountProviders.IsSupported(provider.GetProviderId()) {

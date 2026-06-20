@@ -75,7 +75,7 @@ func dynamicIPProviderInstances(settings *runtimeSettingsFile) []dynamicIPProvid
 	out := []dynamicIPProviderInstance{}
 	for _, provider := range settingscore.NormalizeRuntimeSettings(settings).GetDynamicIpProviders() {
 		out = append(out, dynamicIPProviderInstance{
-			dynamicProviderID:        dynamicIPProviderID(provider),
+			dynamicProviderID:        settingscore.DynamicIPProviderID(provider),
 			providerID:               strings.TrimSpace(provider.GetProviderId()),
 			displayName:              strings.TrimSpace(provider.GetDisplayName()),
 			rotatingConcurrencyLimit: settingscore.NormalizeDynamicProviderRotatingConcurrencyLimit(provider.GetRotatingConcurrencyLimit()),

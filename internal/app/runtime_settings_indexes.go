@@ -10,7 +10,7 @@ import (
 func enabledDynamicProviderIDs(settings *runtimeSettingsFile) map[string]struct{} {
 	out := map[string]struct{}{}
 	for _, provider := range settingscore.NormalizeRuntimeSettings(settings).GetDynamicIpProviders() {
-		if id := dynamicIPProviderID(provider); id != "" {
+		if id := settingscore.DynamicIPProviderID(provider); id != "" {
 			out[id] = struct{}{}
 		}
 	}
@@ -20,7 +20,7 @@ func enabledDynamicProviderIDs(settings *runtimeSettingsFile) map[string]struct{
 func enabledDynamicProviderEndpointIDs(settings *runtimeSettingsFile) map[string]map[string]struct{} {
 	out := map[string]map[string]struct{}{}
 	for _, provider := range settingscore.NormalizeRuntimeSettings(settings).GetDynamicIpProviders() {
-		dynamicProviderID := dynamicIPProviderID(provider)
+		dynamicProviderID := settingscore.DynamicIPProviderID(provider)
 		if dynamicProviderID == "" {
 			continue
 		}

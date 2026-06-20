@@ -18,3 +18,14 @@ func NormalizeCheckSettings(settings *proxyruntimev1.ProxyRuntimeCheckSettings) 
 	}
 	return settings
 }
+
+func ProxyExitIPTimeout(settings *proxyruntimev1.ProxyRuntimePersistentSettings) time.Duration {
+	if settings == nil {
+		return DefaultProxyExitIPTimeout
+	}
+	duration := NormalizeCheckSettings(settings.GetCheckSettings()).GetProxyExitIpTimeout().AsDuration()
+	if duration <= 0 {
+		return DefaultProxyExitIPTimeout
+	}
+	return duration
+}

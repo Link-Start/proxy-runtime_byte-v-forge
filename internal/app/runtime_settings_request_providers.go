@@ -9,6 +9,8 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func ipFraudProvidersFromRequest(ctx context.Context, writer secretref.Writer, req []*proxyruntimev1.ProxyIPFraudProviderSettings, current *runtimeSettingsFile, registry *ipfraud.Registry) ([]*proxyruntimev1.ProxyIPFraudProviderSettings, error) {
@@ -63,7 +65,7 @@ func dynamicIPProvidersFromRequest(req []*proxyruntimev1.ProxyDynamicIPProviderS
 		if err := validateDynamicIPProvider(item, index, registry); err != nil {
 			return nil, err
 		}
-		id := dynamicIPProviderID(item)
+		id := settingscore.DynamicIPProviderID(item)
 		if _, exists := seenProviders[id]; exists {
 			return nil, fmt.Errorf("dynamic_ip_providers[%d] duplicates dynamic provider %q", index, id)
 		}

@@ -57,3 +57,7 @@ func NormalizeDynamicProviderStickyConcurrencyLimit(value uint32) uint32 {
 	}
 	return value
 }
+
+func DynamicIPProviderID(provider *proxyruntimev1.ProxyDynamicIPProviderSettings) string {
+	return appcore.RuntimeSafeID(provider.GetDynamicProviderId())
+}

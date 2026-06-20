@@ -49,7 +49,3 @@ func cloneDynamicIPEndpoints(in []*proxyruntimev1.ProxyDynamicIPEndpointSettings
 	}
 	return out
 }
-
-func dynamicIPProviderID(provider *proxyruntimev1.ProxyDynamicIPProviderSettings) string {
-	return appcore.RuntimeSafeID(provider.GetDynamicProviderId())
-}

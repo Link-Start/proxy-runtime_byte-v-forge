@@ -15,6 +15,7 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 type runtimeCheckApplication struct {
@@ -102,7 +103,7 @@ func (a runtimeCheckApplication) GetProxyExitIP(ctx context.Context, req *proxyr
 	if err != nil {
 		return nil, err
 	}
-	timeout := proxyExitIPTimeout(settings)
+	timeout := settingscore.ProxyExitIPTimeout(settings)
 	client, err := a.newCheckClient(ctx, req.GetListenerId(), timeout)
 	if err != nil {
 		return nil, err
@@ -158,7 +159,7 @@ func (a runtimeCheckApplication) CheckProxyEdgeAccess(ctx context.Context, req *
 	if err != nil {
 		return nil, err
 	}
-	timeout := proxyExitIPTimeout(settings)
+	timeout := settingscore.ProxyExitIPTimeout(settings)
 	client, err := a.newCheckClient(ctx, req.GetListenerId(), timeout)
 	if err != nil {
 		return nil, err
@@ -192,7 +193,7 @@ func (a runtimeCheckApplication) CheckProxyTargetConnectivity(ctx context.Contex
 	if err != nil {
 		return nil, err
 	}
-	client, err := a.newCheckClient(ctx, req.GetListenerId(), proxyExitIPTimeout(settings))
+	client, err := a.newCheckClient(ctx, req.GetListenerId(), settingscore.ProxyExitIPTimeout(settings))
 	if err != nil {
 		return nil, err
 	}

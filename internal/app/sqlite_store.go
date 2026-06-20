@@ -15,6 +15,8 @@ import (
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretbox"
 	_ "modernc.org/sqlite"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 type SQLiteStore struct {
@@ -39,16 +41,16 @@ func NewSQLiteStore(ctx context.Context, cfg config.Config, accountProviders *pr
 		return nil, err
 	}
 	db.SetMaxOpenConns(1)
-	store := &SQLiteStore{db: db, box: box, accountProviders: accountProviders, logger: logger, clock: clk}
-	if err := store.applySchema(ctx); err != nil {
+	lite := &SQLiteStore{db: db, box: box, accountProviders: accountProviders, logger: logger, clock: clk}
+	if err := lite.applySchema(ctx); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
-	if err := seedStoreFromConfig(ctx, store, accountProviders.DefaultProviderID(), cfg); err != nil {
+	if err := store.SeedStoreFromConfig(ctx, lite, accountProviders.DefaultProviderID(), cfg); err != nil {
 		_ = db.Close()
 		return nil, err
 	}
-	return store, nil
+	return lite, nil
 }
 
 func sqliteDSN(dataDir string) (string, error) {

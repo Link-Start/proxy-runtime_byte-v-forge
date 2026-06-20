@@ -11,6 +11,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 func (s *SQLiteStore) WriteSecret(ctx context.Context, req secretref.WriteRequest) (*commonv1.SecretRef, error) {
@@ -27,7 +28,7 @@ func (s *SQLiteStore) WriteSecret(ctx context.Context, req secretref.WriteReques
 	}
 	secretID := strings.TrimSpace(req.SecretID)
 	if secretID == "" {
-		generated, err := generatedSecretID(provider, purpose)
+		generated, err := store.GeneratedSecretID(provider, purpose)
 		if err != nil {
 			return nil, err
 		}

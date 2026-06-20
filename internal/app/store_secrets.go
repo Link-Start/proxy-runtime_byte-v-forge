@@ -8,12 +8,12 @@ import (
 	"time"
 
 	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/random"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 func (s *PostgresStore) WriteSecret(ctx context.Context, req secretref.WriteRequest) (*commonv1.SecretRef, error) {
@@ -30,7 +30,7 @@ func (s *PostgresStore) WriteSecret(ctx context.Context, req secretref.WriteRequ
 	}
 	secretID := strings.TrimSpace(req.SecretID)
 	if secretID == "" {
-		generated, err := generatedSecretID(provider, purpose)
+		generated, err := store.GeneratedSecretID(provider, purpose)
 		if err != nil {
 			return nil, err
 		}
@@ -92,12 +92,4 @@ WHERE secret_id=$1
 		return "", errors.New("secret payload is empty")
 	}
 	return string(plain), nil
-}
-
-func generatedSecretID(provider string, purpose string) (string, error) {
-	suffix, err := random.Hex(12)
-	if err != nil {
-		return "", err
-	}
-	return secretref.StableID("proxy-runtime-secret", provider, purpose, suffix), nil
 }

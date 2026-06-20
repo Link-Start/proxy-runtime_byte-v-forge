@@ -57,3 +57,29 @@ func (api *runtimeHTTPAPI) handleUpdateRuntimeSettings(ctx *gin.Context, update 
 	}
 	api.writeProto(ctx, response)
 }
+
+func (api *runtimeHTTPAPI) handleIPFraudProviders(ctx *gin.Context) {
+	response, err := api.settings.ListIPFraudProviders(ctx.Request.Context())
+	if err != nil {
+		writeSettingsLoadHTTPError(ctx, err)
+		return
+	}
+	api.writeProto(ctx, response)
+}
+
+func (api *runtimeHTTPAPI) handleIPGeoProviders(ctx *gin.Context) {
+	response, err := api.settings.ListIPGeoProviders(ctx.Request.Context())
+	if err != nil {
+		writeSettingsLoadHTTPError(ctx, err)
+		return
+	}
+	api.writeProto(ctx, response)
+}
+
+func writeSettingsLoadHTTPError(ctx *gin.Context, err error) {
+	writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
+}
+
+func writeSettingsUpdateHTTPError(ctx *gin.Context, err error) {
+	writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
+}

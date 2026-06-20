@@ -1,15 +1,46 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"net/http"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	mihomoapp "github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative/application"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings/application"
 	"github.com/gin-gonic/gin"
-
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
+
+type runtimeMihomoNativeApplyScheduler struct {
+	exitCheckCache   *proxycheck.ExitCheckCache
+	markApplyPending func()
+	requestReconcile func()
+}
+
+func newRuntimeMihomoNativeApplyScheduler(runtime *Runtime) runtimeMihomoNativeApplyScheduler {
+	if runtime == nil {
+		return runtimeMihomoNativeApplyScheduler{}
+	}
+	return runtimeMihomoNativeApplyScheduler{
+		exitCheckCache:   runtime.exitCheckCache,
+		markApplyPending: runtime.markSettingsApplyPending,
+		requestReconcile: runtime.requestReconcile,
+	}
+}
+
+func (s runtimeMihomoNativeApplyScheduler) Schedule() {
+	if s.exitCheckCache != nil {
+		s.exitCheckCache.Clear()
+	}
+	if s.markApplyPending != nil {
+		s.markApplyPending()
+	}
+	if s.requestReconcile != nil {
+		s.requestReconcile()
+	}
+}
 
 func (api *runtimeHTTPAPI) handleMihomoNativeConfig(ctx *gin.Context) {
 	switch ctx.Request.Method {
@@ -43,4 +74,15 @@ func (api *runtimeHTTPAPI) handleUpdateMihomoNativeConfig(ctx *gin.Context) {
 		return
 	}
 	api.writeProto(ctx, response)
+}
+
+func (r *Runtime) projectMihomoNativeSettings(ctx context.Context) error {
+	if r == nil || r.settings == nil {
+		return nil
+	}
+	return mihomoapp.Project(ctx, mihomoapp.ProjectionDependencies{
+		ConfigDir:    r.cfg.Mihomo.ConfigDir,
+		LoadSettings: r.settings.LoadMihomoNative,
+		SaveSettings: r.settings.SaveMihomoNative,
+	})
 }

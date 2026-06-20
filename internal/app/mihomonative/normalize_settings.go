@@ -1,13 +1,16 @@
 package mihomonative
 
-import proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+import (
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+)
 
 func normalizeFixedProxySettings(items []*proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy) []*proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy {
 	out := make([]*proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy, 0, len(items))
 	seen := map[string]struct{}{}
 	for _, item := range items {
 		normalized := NormalizeFixedProxy(FixedProxyFromProto(item), nil)
-		key := firstNonEmpty(normalized.ID, normalized.Name)
+		key := appcore.FirstNonEmpty(normalized.ID, normalized.Name)
 		if key == "" {
 			continue
 		}
@@ -25,7 +28,7 @@ func normalizeSubscriptionSettings(items []*proxyruntimev1.ProxyRuntimeMihomoNat
 	seen := map[string]struct{}{}
 	for _, item := range items {
 		normalized := NormalizeSubscription(SubscriptionFromProto(item), nil)
-		key := firstNonEmpty(normalized.ID, normalized.Name)
+		key := appcore.FirstNonEmpty(normalized.ID, normalized.Name)
 		if key == "" {
 			continue
 		}

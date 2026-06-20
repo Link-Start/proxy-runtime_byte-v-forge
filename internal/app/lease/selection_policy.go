@@ -6,6 +6,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/geox"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 const maxDynamicIPSelectionAttempts = 20
@@ -20,10 +22,10 @@ func NormalizeDynamicIPSelectionPolicy(req *proxyruntimev1.AcquireProxyLeaseRequ
 		policy.MaxAttempts = in.GetMaxAttempts()
 	}
 	if policy.CountryCode == "" {
-		policy.CountryCode = firstNonEmpty(req.GetPolicy().GetLabels()["country_code"], req.GetPolicy().GetRegion())
+		policy.CountryCode = appcore.FirstNonEmpty(req.GetPolicy().GetLabels()["country_code"], req.GetPolicy().GetRegion())
 	}
 	if policy.Region == "" {
-		policy.Region = firstNonEmpty(req.GetPolicy().GetLabels()["region"], req.GetPolicy().GetRegion())
+		policy.Region = appcore.FirstNonEmpty(req.GetPolicy().GetLabels()["region"], req.GetPolicy().GetRegion())
 	}
 	if policy.Purpose == "" {
 		policy.Purpose = strings.TrimSpace(req.GetPurpose())
@@ -70,7 +72,7 @@ func DynamicIPSelectionKey(req *proxyruntimev1.AcquireProxyLeaseRequest) string 
 		return ""
 	}
 	labels := req.GetPolicy().GetLabels()
-	return firstNonEmpty(
+	return appcore.FirstNonEmpty(
 		labels["selection_seed"],
 		labels["proxy_selection_seed"],
 		labels["job_id"],

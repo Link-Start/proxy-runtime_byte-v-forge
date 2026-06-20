@@ -6,10 +6,12 @@ import (
 	"net/url"
 	"path/filepath"
 	"strings"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func SubscriptionProvider(item Subscription) (Provider, Subscription, error) {
-	id := safeID(item.ID)
+	id := appcore.RuntimeSafeID(item.ID)
 	name := strings.TrimSpace(item.Name)
 	rawURL := strings.TrimSpace(item.URL)
 	if id == "" {

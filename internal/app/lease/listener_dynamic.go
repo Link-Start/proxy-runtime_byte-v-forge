@@ -1,6 +1,9 @@
 package lease
 
-import proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+import (
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+)
 
 type DynamicListenerInput struct {
 	ID                  string
@@ -43,7 +46,7 @@ func dynamicListenerPassword(input DynamicListenerInput) string {
 	password := ListenerPassword(input.IngressRules, input.AccountID, input.FallbackPassword)
 	if input.AccountID == input.PlaygroundAccountID {
 		if rule := PlaygroundIngressRule(input.IngressRules, input.PlaygroundRuleID, input.PlaygroundUsername); rule != nil {
-			return firstNonEmpty(rule.GetPasswordValue(), password)
+			return appcore.FirstNonEmpty(rule.GetPasswordValue(), password)
 		}
 	}
 	return password

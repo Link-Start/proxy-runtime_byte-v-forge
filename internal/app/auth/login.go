@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 type LoginRequest struct {
@@ -42,7 +44,7 @@ func ParseLoginRequest(req *http.Request, body []byte) (LoginRequest, error) {
 		if err != nil {
 			return LoginRequest{Next: next, FormSubmit: true}, errors.New("invalid login form")
 		}
-		return LoginRequest{Token: strings.TrimSpace(values.Get("token")), Next: firstNonEmpty(values.Get("next"), next), FormSubmit: true}, nil
+		return LoginRequest{Token: strings.TrimSpace(values.Get("token")), Next: appcore.FirstNonEmpty(values.Get("next"), next), FormSubmit: true}, nil
 	}
 	var payload loginJSONRequest
 	if len(strings.TrimSpace(string(body))) > 0 {
@@ -51,13 +53,4 @@ func ParseLoginRequest(req *http.Request, body []byte) (LoginRequest, error) {
 		}
 	}
 	return LoginRequest{Token: strings.TrimSpace(payload.Token), Next: next}, nil
-}
-
-func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if strings.TrimSpace(value) != "" {
-			return value
-		}
-	}
-	return ""
 }

@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func proxyFromURI(name string, rawURI string) (map[string]any, error) {
@@ -31,7 +33,7 @@ func proxyFromURI(name string, rawURI string) (map[string]any, error) {
 	}
 	query := parsed.Query()
 	security := strings.ToLower(strings.TrimSpace(query.Get("security")))
-	network := strings.ToLower(firstNonEmpty(query.Get("type"), query.Get("network"), "tcp"))
+	network := strings.ToLower(appcore.FirstNonEmpty(query.Get("type"), query.Get("network"), "tcp"))
 	config := map[string]any{
 		"name":       name,
 		"type":       "vless",
@@ -40,12 +42,12 @@ func proxyFromURI(name string, rawURI string) (map[string]any, error) {
 		"uuid":       parsed.User.Username(),
 		"udp":        true,
 		"network":    network,
-		"encryption": firstNonEmpty(query.Get("encryption"), "none"),
+		"encryption": appcore.FirstNonEmpty(query.Get("encryption"), "none"),
 	}
 	if flow := strings.TrimSpace(query.Get("flow")); flow != "" {
 		config["flow"] = flow
 	}
-	if fingerprint := firstNonEmpty(query.Get("fp"), query.Get("client-fingerprint")); fingerprint != "" {
+	if fingerprint := appcore.FirstNonEmpty(query.Get("fp"), query.Get("client-fingerprint")); fingerprint != "" {
 		config["client-fingerprint"] = fingerprint
 	}
 	applyVLESSSecurityOptions(config, query, security)

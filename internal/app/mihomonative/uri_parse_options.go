@@ -4,23 +4,25 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func applyVLESSSecurityOptions(config map[string]any, query url.Values, security string) {
 	if security == "tls" || security == "reality" {
 		config["tls"] = true
 	}
-	if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername")); serverName != "" {
+	if serverName := appcore.FirstNonEmpty(query.Get("sni"), query.Get("servername")); serverName != "" {
 		config["servername"] = serverName
 	}
 	if security != "reality" {
 		return
 	}
 	reality := map[string]any{}
-	if value := firstNonEmpty(query.Get("pbk"), query.Get("public-key")); value != "" {
+	if value := appcore.FirstNonEmpty(query.Get("pbk"), query.Get("public-key")); value != "" {
 		reality["public-key"] = value
 	}
-	if value := firstNonEmpty(query.Get("sid"), query.Get("short-id")); value != "" {
+	if value := appcore.FirstNonEmpty(query.Get("sid"), query.Get("short-id")); value != "" {
 		reality["short-id"] = value
 	}
 	if len(reality) > 0 {
@@ -44,7 +46,7 @@ func applyVLESSNetworkOptions(config map[string]any, query url.Values, network s
 		}
 	case "grpc":
 		opts := map[string]any{}
-		if value := firstNonEmpty(query.Get("serviceName"), query.Get("service-name")); value != "" {
+		if value := appcore.FirstNonEmpty(query.Get("serviceName"), query.Get("service-name")); value != "" {
 			opts["grpc-service-name"] = value
 		}
 		if len(opts) > 0 {

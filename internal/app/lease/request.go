@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 var (
@@ -65,7 +67,7 @@ func ValidateReleaseLeaseMatch(lookup ReleaseLookup, lease *proxyruntimev1.Proxy
 
 func RequestedSessionID(req *proxyruntimev1.AcquireProxyLeaseRequest) string {
 	labels := req.GetPolicy().GetLabels()
-	return firstNonEmpty(
+	return appcore.FirstNonEmpty(
 		labels["session_id"],
 		labels["sticky_session_id"],
 		labels["sticky_id"],
@@ -108,13 +110,4 @@ func ApplyProviderSessionRequestLabels(req *proxyruntimev1.AcquireProxyLeaseRequ
 	req.Policy.Labels[LabelSelectionID] = selectionPlan.GetSelectionId()
 	req.Policy.Labels[LabelDynamicIPEndpointID] = selectionPlan.GetSelectedEndpoint().GetEndpointId()
 	req.Policy.Labels[LabelProviderAccountConcurrencyHolder] = concurrencyHolder
-}
-
-func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if trimmed := strings.TrimSpace(value); trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
 }

@@ -114,7 +114,7 @@ func (r *Runtime) mihomoProxyGroup(ctx context.Context, groupName string) (mihom
 	if err != nil {
 		return mihomoProxyGroupState{}, err
 	}
-	applyMihomoControllerAuth(req, r.cfg.ControlAuthToken)
+	dashboardapp.ApplyControllerAuthorization(req, r.cfg.ControlAuthToken)
 	resp, err := runtimehttp.New(r.cfg.RequestTimeout).Do(req)
 	if err != nil {
 		return mihomoProxyGroupState{}, err

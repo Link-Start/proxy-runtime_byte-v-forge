@@ -22,7 +22,7 @@ func (f leasePreparedAcquireRunnerFactory) New() leaseapp.PreparedAcquireRunner 
 		reuse:          f.reuse,
 	}
 	action := leaseapp.SettingsPreparedAcquireAction[*runtimeSettingsFile]{
-		Load:           f.deps.settings.load,
+		Load:           f.deps.settings.Load,
 		Request:        f.request,
 		EgressProfiles: leaseSettingsEgressProfiles,
 		IngressRules:   leaseSettingsIngressRules,

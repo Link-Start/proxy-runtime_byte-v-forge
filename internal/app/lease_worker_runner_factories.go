@@ -75,7 +75,7 @@ func (f leaseRestoreRunnerFactory) New() leaseapp.RestoreLeaseRouteRunner {
 }
 
 func (f leaseRestoreRunnerFactory) resolveRestorer(ctx context.Context, _ *proxyruntimev1.ProxyDynamicLease) (leaseapp.LeaseRouteRestorer, error) {
-	settings, err := f.deps.settings.load(ctx)
+	settings, err := f.deps.settings.Load(ctx)
 	if err != nil {
 		return leaseapp.LeaseRouteRestorer{}, err
 	}

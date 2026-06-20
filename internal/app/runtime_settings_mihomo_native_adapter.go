@@ -31,7 +31,7 @@ func (a runtimeSettingsMihomoNativeAdapter) Load(ctx context.Context) (*proxyrun
 	if a.repository == nil {
 		return mihomonative.NormalizeSettings(nil), nil
 	}
-	return a.repository.loadMihomoNative(ctx)
+	return a.repository.LoadMihomoNative(ctx)
 }
 
 func (a runtimeSettingsMihomoNativeAdapter) Update(ctx context.Context, config *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
@@ -40,9 +40,9 @@ func (a runtimeSettingsMihomoNativeAdapter) Update(ctx context.Context, config *
 	}
 	return mihomoapp.Update(ctx, mihomoapp.UpdateDependencies{
 		ConfigDir:    a.configDir,
-		LoadSettings: a.repository.loadMihomoNative,
-		SaveSettings: a.repository.saveMihomoNative,
-		ReplaceRefs:  a.repository.replaceMihomoResourceRefs,
+		LoadSettings: a.repository.LoadMihomoNative,
+		SaveSettings: a.repository.SaveMihomoNative,
+		ReplaceRefs:  a.repository.ReplaceMihomoResourceRefs,
 		AfterApply:   a.apply.Schedule,
 	}, config)
 }

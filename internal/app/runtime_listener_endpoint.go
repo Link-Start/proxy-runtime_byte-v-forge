@@ -56,7 +56,7 @@ func (r *Runtime) inUserCheckListener(ctx context.Context, username string) (con
 	if username == "" {
 		return config.EgressListener{}, errors.New("in-user listener username is required")
 	}
-	settings, err := r.settings.load(ctx)
+	settings, err := r.settings.Load(ctx)
 	if err != nil {
 		return config.EgressListener{}, err
 	}

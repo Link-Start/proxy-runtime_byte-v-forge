@@ -30,7 +30,7 @@ func (r *Runtime) lookupIPGeo(ctx context.Context, ip string) (proxycheck.ExitGe
 }
 
 func (r *Runtime) loadIPGeo(ctx context.Context, ip string) (proxycheck.ExitGeo, error) {
-	settings, err := r.settings.load(ctx)
+	settings, err := r.settings.Load(ctx)
 	if err != nil {
 		return proxycheck.ExitGeo{}, err
 	}

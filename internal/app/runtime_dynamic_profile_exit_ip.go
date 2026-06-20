@@ -16,7 +16,7 @@ import (
 )
 
 func (r *Runtime) refreshDynamicProfileSelectionMetadata(ctx context.Context) {
-	settings, err := r.settings.load(ctx)
+	settings, err := r.settings.Load(ctx)
 	if err != nil {
 		return
 	}

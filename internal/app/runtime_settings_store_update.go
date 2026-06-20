@@ -9,7 +9,7 @@ import (
 	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
-func (s *runtimeSettingsStore) update(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+func (s *runtimeSettingsStore) Update(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.ProxyRuntimeSettings, error) {
 	return s.mutateRuntimeSettings(ctx, func(current *runtimeSettingsFile) (*runtimeSettingsFile, error) {
 		nativeResourceIDs, err := s.enabledMihomoResourceIDs(ctx)
 		if err != nil {
@@ -19,7 +19,7 @@ func (s *runtimeSettingsStore) update(ctx context.Context, req *proxyruntimev1.U
 	})
 }
 
-func (s *runtimeSettingsStore) updateDynamicIPProviders(ctx context.Context, providers []*proxyruntimev1.ProxyDynamicIPProviderSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+func (s *runtimeSettingsStore) UpdateDynamicIPProviders(ctx context.Context, providers []*proxyruntimev1.ProxyDynamicIPProviderSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
 	return s.mutateRuntimeSettings(ctx, func(settings *runtimeSettingsFile) (*runtimeSettingsFile, error) {
 		nextProviders, err := settingsdomain.DynamicIPProvidersFromRequest(providers, s.accountProviders)
 		if err != nil {

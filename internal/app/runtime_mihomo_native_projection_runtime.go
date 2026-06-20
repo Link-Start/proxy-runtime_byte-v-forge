@@ -12,7 +12,7 @@ func (r *Runtime) projectMihomoNativeSettings(ctx context.Context) error {
 	}
 	return mihomoapp.Project(ctx, mihomoapp.ProjectionDependencies{
 		ConfigDir:    r.cfg.Mihomo.ConfigDir,
-		LoadSettings: r.settings.loadMihomoNative,
-		SaveSettings: r.settings.saveMihomoNative,
+		LoadSettings: r.settings.LoadMihomoNative,
+		SaveSettings: r.settings.SaveMihomoNative,
 	})
 }

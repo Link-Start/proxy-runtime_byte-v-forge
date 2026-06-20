@@ -15,7 +15,7 @@ type leaseSettingsAdapterFactory struct {
 
 func (f leaseSettingsAdapterFactory) New() leaseapp.SettingsAdapter[*runtimeSettingsFile] {
 	return leaseapp.SettingsAdapter[*runtimeSettingsFile]{
-		Load:                    f.deps.settings.load,
+		Load:                    f.deps.settings.Load,
 		ResolveProviderGateways: leaseProviderGateways,
 		ResolveLineBinding:      f.resolveLineBinding,
 	}

@@ -7,7 +7,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 )
 
-func (s *runtimeSettingsStore) loadMihomoNative(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+func (s *runtimeSettingsStore) LoadMihomoNative(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.loadMihomoNativeLocked(ctx)
@@ -24,7 +24,7 @@ func (s *runtimeSettingsStore) loadMihomoNativeLocked(ctx context.Context) (*pro
 	return mihomonative.NormalizeSettings(settings), nil
 }
 
-func (s *runtimeSettingsStore) saveMihomoNative(ctx context.Context, settings *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) error {
+func (s *runtimeSettingsStore) SaveMihomoNative(ctx context.Context, settings *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.saveMihomoNativeLocked(ctx, settings)

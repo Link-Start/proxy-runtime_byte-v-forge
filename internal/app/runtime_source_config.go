@@ -7,7 +7,7 @@ import (
 )
 
 func (r *Runtime) dataPlaneConfig(ctx context.Context) (dataplane.Config, error) {
-	settings, err := r.settings.load(ctx)
+	settings, err := r.settings.Load(ctx)
 	if err != nil {
 		return dataplane.Config{}, err
 	}

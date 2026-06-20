@@ -8,7 +8,7 @@ func runtimeDynamicIPSelectorDependencies(runtime *Runtime) dynamic.IPSelectorDe
 	}
 	return dynamic.IPSelectorDependencies{
 		Store:            runtime.store,
-		LoadSettings:     runtime.settings.load,
+		LoadSettings:     runtime.settings.Load,
 		AccountProviders: runtime.accountProviders,
 		Concurrency:      runtime.providerConcurrency,
 		Logger:           runtime.logger,

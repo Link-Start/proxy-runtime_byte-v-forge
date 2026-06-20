@@ -12,7 +12,7 @@ import (
 )
 
 type leaseCoordinatorSettings interface {
-	load(context.Context) (*runtimeSettingsFile, error)
+	Load(context.Context) (*runtimeSettingsFile, error)
 }
 
 type leaseListenerFunc func(context.Context, *runtimeSettingsFile, string, string) (leaseapp.Listener, error)

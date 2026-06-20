@@ -24,7 +24,7 @@ func (f leaseConcurrencySlotRefreshRunnerFactory) New() leaseapp.RefreshConcurre
 }
 
 func (f leaseConcurrencySlotRefreshRunnerFactory) limit(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, policy *proxyruntimev1.ProxySessionPolicy) (uint32, error) {
-	settings, err := f.deps.settings.load(ctx)
+	settings, err := f.deps.settings.Load(ctx)
 	if err != nil {
 		return 0, err
 	}

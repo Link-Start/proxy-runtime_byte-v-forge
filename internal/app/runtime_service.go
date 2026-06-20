@@ -60,7 +60,7 @@ func runtimeProviderDependencies(runtime *Runtime) providerapp.Dependencies {
 	}
 	return providerapp.Dependencies{
 		Store:               runtime.store,
-		LoadSettings:        runtime.settings.load,
+		LoadSettings:        runtime.settings.Load,
 		ProviderDescriptors: providerDescriptors,
 		Locks:               locks,
 		LeaseOperations: func() providerapp.LeaseOperations {
@@ -87,7 +87,7 @@ func runtimeCheckDependencies(runtime *Runtime) checkapp.Dependencies {
 		return checkapp.Dependencies{}
 	}
 	return checkapp.Dependencies{
-		LoadSettings:   runtime.settings.load,
+		LoadSettings:   runtime.settings.Load,
 		CheckClient:    runtime.checkProxyHTTPClient,
 		ProbeExitIP:    runtime.probeExitIP,
 		LookupGeo:      runtime.lookupIPGeo,

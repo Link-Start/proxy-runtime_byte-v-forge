@@ -8,8 +8,8 @@ import (
 	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
-func (s *runtimeSettingsStore) view(ctx context.Context) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-	settings, err := s.load(ctx)
+func (s *runtimeSettingsStore) View(ctx context.Context) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+	settings, err := s.Load(ctx)
 	if err != nil {
 		return nil, err
 	}

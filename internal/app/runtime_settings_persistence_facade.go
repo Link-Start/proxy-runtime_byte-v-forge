@@ -6,7 +6,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
-func (s *runtimeSettingsStore) load(ctx context.Context) (*runtimeSettingsFile, error) {
+func (s *runtimeSettingsStore) Load(ctx context.Context) (*runtimeSettingsFile, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.loadLocked(ctx)

@@ -14,7 +14,7 @@ import (
 
 type runtimeSettingsApplicationDependencies struct {
 	Logger                     *slog.Logger
-	Settings                   runtimeSettingsRepository
+	Settings                   *runtimeSettingsStore
 	ProxyUsers                 []config.ProxyUserRoute
 	IPFraudProviderViews       func() []*proxyruntimev1.ProxyIPFraudProviderDescriptor
 	IPGeoProviderViews         func() []*proxyruntimev1.ProxyIPGeoProviderDescriptor
@@ -25,7 +25,7 @@ type runtimeSettingsApplicationDependencies struct {
 
 func newRuntimeSettingsApplication(deps runtimeSettingsApplicationDependencies) settingsapp.Application {
 	return settingsapp.NewApplication(settingsapp.Dependencies{
-		Repository:                  runtimeSettingsRepositoryAdapter{repository: deps.Settings},
+		Repository:                  deps.Settings,
 		ScheduleApply:               deps.ScheduleApply,
 		Logger:                      deps.Logger,
 		ProxyUsers:                  append([]config.ProxyUserRoute(nil), deps.ProxyUsers...),

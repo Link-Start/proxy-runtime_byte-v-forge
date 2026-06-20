@@ -3,12 +3,13 @@ package app
 import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	providerapp "github.com/byte-v-forge/proxy-runtime/internal/app/provider/application"
 	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings"
 )
 
 type RuntimeService struct {
 	proxyruntimev1.UnimplementedProxyRuntimeServiceServer
-	providers runtimeProviderApplication
+	providers providerapp.Service
 	leases    runtimeLeaseApplication
 	checks    runtimeCheckApplication
 	settings  settingsapp.Application
@@ -21,7 +22,7 @@ var _ proxyruntimev1.ProxyRuntimeServiceServer = (*RuntimeService)(nil)
 
 func NewRuntimeService(runtime *Runtime) *RuntimeService {
 	return &RuntimeService{
-		providers: newRuntimeProviderApplication(runtimeProviderDependencies(runtime)),
+		providers: providerapp.New(runtimeProviderDependencies(runtime)),
 		leases:    newRuntimeLeaseApplication(runtimeLeaseDependencies(runtime)),
 		checks:    newRuntimeCheckApplication(runtimeCheckDependencies(runtime)),
 		settings:  newRuntimeSettingsApplication(runtimeSettingsDependencies(runtime)),
@@ -44,24 +45,24 @@ func runtimeMetricsDependencies(runtime *Runtime) runtimeMetricsApplicationDepen
 	}
 }
 
-func runtimeProviderDependencies(runtime *Runtime) runtimeProviderApplicationDependencies {
+func runtimeProviderDependencies(runtime *Runtime) providerapp.Dependencies {
 	if runtime == nil {
-		return runtimeProviderApplicationDependencies{}
+		return providerapp.Dependencies{}
 	}
 	var locks leaseapp.LockManager
 	if runtime.leaseLocks != nil {
 		locks = leaseRuntimeLockManager{locks: runtime.leaseLocks}
 	}
-	var providerDescriptors runtimeProviderDescriptorsFunc
+	var providerDescriptors providerapp.DescriptorsFunc
 	if runtime.accountProviders != nil {
 		providerDescriptors = runtime.accountProviders.Descriptors
 	}
-	return runtimeProviderApplicationDependencies{
+	return providerapp.Dependencies{
 		Store:               runtime.store,
-		Settings:            runtime.settings,
+		LoadSettings:        runtime.settings.load,
 		ProviderDescriptors: providerDescriptors,
 		Locks:               locks,
-		LeaseOperations: func() runtimeProviderLeaseOperations {
+		LeaseOperations: func() providerapp.LeaseOperations {
 			return runtime.service().leases
 		},
 		Logger: runtime.logger,

@@ -1,4 +1,4 @@
-package app
+package application
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 
 const providerAccountDeleteTimeout = 2 * time.Minute
 
-type runtimeProviderRepository interface {
+type Repository interface {
 	ListProviderAccounts(context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error)
 	UpsertProviderAccount(context.Context, *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.ProxyProviderAccount, error)
 	DeleteProviderAccount(context.Context, string) error
@@ -28,39 +28,35 @@ type runtimeProviderRepository interface {
 	ProviderAccountMutationState(context.Context, string) (store.ProviderAccountMutationState, error)
 }
 
-type runtimeProviderSettings interface {
-	load(context.Context) (*runtimeSettingsFile, error)
-}
-
-type runtimeProviderLeaseOperations interface {
+type LeaseOperations interface {
 	CleanupPendingLeaseFact(context.Context, *proxyruntimev1.ProxyDynamicLease) error
 	ReleaseProxyLease(context.Context, *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ReleaseProxyLeaseResponse, error)
 }
 
-type runtimeProviderDescriptorsFunc func(map[string][]accountproxy.Gateway) []*proxyruntimev1.ProxyProviderDescriptor
+type DescriptorsFunc func(map[string][]accountproxy.Gateway) []*proxyruntimev1.ProxyProviderDescriptor
 
-type runtimeProviderApplicationDependencies struct {
-	Store               runtimeProviderRepository
-	Settings            runtimeProviderSettings
-	ProviderDescriptors runtimeProviderDescriptorsFunc
+type Dependencies struct {
+	Store               Repository
+	LoadSettings        func(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
+	ProviderDescriptors DescriptorsFunc
 	Locks               leaseapp.LockManager
-	LeaseOperations     func() runtimeProviderLeaseOperations
+	LeaseOperations     func() LeaseOperations
 	Logger              leaseapp.Logger
 }
 
-type runtimeProviderApplication struct {
-	store               runtimeProviderRepository
-	settings            runtimeProviderSettings
-	providerDescriptors runtimeProviderDescriptorsFunc
+type Service struct {
+	store               Repository
+	loadSettings        func(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
+	providerDescriptors DescriptorsFunc
 	locks               leaseapp.LockManager
-	leases              func() runtimeProviderLeaseOperations
+	leases              func() LeaseOperations
 	logger              leaseapp.Logger
 }
 
-func newRuntimeProviderApplication(deps runtimeProviderApplicationDependencies) runtimeProviderApplication {
-	return runtimeProviderApplication{
+func New(deps Dependencies) Service {
+	return Service{
 		store:               deps.Store,
-		settings:            deps.Settings,
+		loadSettings:        deps.LoadSettings,
 		providerDescriptors: deps.ProviderDescriptors,
 		locks:               deps.Locks,
 		leases:              deps.LeaseOperations,
@@ -68,24 +64,8 @@ func newRuntimeProviderApplication(deps runtimeProviderApplicationDependencies) 
 	}
 }
 
-func (s *RuntimeService) ListProxyProviders(ctx context.Context, _ *proxyruntimev1.ListProxyProvidersRequest) (*proxyruntimev1.ListProxyProvidersResponse, error) {
-	return s.providers.ListProxyProviders(ctx)
-}
-
-func (s *RuntimeService) ListProxyProviderAccounts(ctx context.Context, _ *proxyruntimev1.ListProxyProviderAccountsRequest) (*proxyruntimev1.ListProxyProviderAccountsResponse, error) {
-	return s.providers.ListProxyProviderAccounts(ctx)
-}
-
-func (s *RuntimeService) UpsertProxyProviderAccount(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.UpsertProxyProviderAccountResponse, error) {
-	return s.providers.UpsertProxyProviderAccount(ctx, req)
-}
-
-func (s *RuntimeService) DeleteProxyProviderAccount(ctx context.Context, req *proxyruntimev1.DeleteProxyProviderAccountRequest) (*proxyruntimev1.DeleteProxyProviderAccountResponse, error) {
-	return s.providers.DeleteProxyProviderAccount(ctx, req)
-}
-
-func (a runtimeProviderApplication) ListProxyProviders(ctx context.Context) (*proxyruntimev1.ListProxyProvidersResponse, error) {
-	settingsStore, err := a.requireSettings()
+func (a Service) ListProxyProviders(ctx context.Context) (*proxyruntimev1.ListProxyProvidersResponse, error) {
+	loadSettings, err := a.requireSettings()
 	if err != nil {
 		return nil, err
 	}
@@ -93,27 +73,27 @@ func (a runtimeProviderApplication) ListProxyProviders(ctx context.Context) (*pr
 	if err != nil {
 		return nil, err
 	}
-	settings, err := settingsStore.load(ctx)
+	settings, err := loadSettings(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &proxyruntimev1.ListProxyProvidersResponse{Providers: descriptors(dynamic.EndpointMap(settings))}, nil
 }
 
-func (a runtimeProviderApplication) ListProxyProviderAccounts(ctx context.Context) (*proxyruntimev1.ListProxyProviderAccountsResponse, error) {
-	store, err := a.requireStore()
+func (a Service) ListProxyProviderAccounts(ctx context.Context) (*proxyruntimev1.ListProxyProviderAccountsResponse, error) {
+	repo, err := a.requireStore()
 	if err != nil {
 		return nil, err
 	}
-	accounts, err := store.ListProviderAccounts(ctx)
+	accounts, err := repo.ListProviderAccounts(ctx)
 	if err != nil {
 		return nil, err
 	}
 	return &proxyruntimev1.ListProxyProviderAccountsResponse{Accounts: accounts}, nil
 }
 
-func (a runtimeProviderApplication) UpsertProxyProviderAccount(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.UpsertProxyProviderAccountResponse, error) {
-	store, err := a.requireStore()
+func (a Service) UpsertProxyProviderAccount(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.UpsertProxyProviderAccountResponse, error) {
+	repo, err := a.requireStore()
 	if err != nil {
 		return nil, err
 	}
@@ -123,23 +103,23 @@ func (a runtimeProviderApplication) UpsertProxyProviderAccount(ctx context.Conte
 	if err := a.normalizeProviderAccountDynamicProvider(ctx, req); err != nil {
 		return nil, appcore.InvalidArgument("", err)
 	}
-	account, err := store.UpsertProviderAccount(ctx, req)
+	account, err := repo.UpsertProviderAccount(ctx, req)
 	if err != nil {
 		return nil, appcore.InvalidArgument("", err)
 	}
 	return &proxyruntimev1.UpsertProxyProviderAccountResponse{Account: account}, nil
 }
 
-func (a runtimeProviderApplication) normalizeProviderAccountDynamicProvider(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) error {
+func (a Service) normalizeProviderAccountDynamicProvider(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) error {
 	dynamicProviderID := appcore.RuntimeSafeID(req.GetDynamicProviderId())
 	if dynamicProviderID == "" {
 		return nil
 	}
-	settingsStore, err := a.requireSettings()
+	loadSettings, err := a.requireSettings()
 	if err != nil {
 		return err
 	}
-	settings, err := settingsStore.load(ctx)
+	settings, err := loadSettings(ctx)
 	if err != nil {
 		return err
 	}
@@ -157,23 +137,23 @@ func (a runtimeProviderApplication) normalizeProviderAccountDynamicProvider(ctx 
 	return fmt.Errorf("dynamic provider %q is not enabled", dynamicProviderID)
 }
 
-func (a runtimeProviderApplication) DeleteProxyProviderAccount(ctx context.Context, req *proxyruntimev1.DeleteProxyProviderAccountRequest) (*proxyruntimev1.DeleteProxyProviderAccountResponse, error) {
+func (a Service) DeleteProxyProviderAccount(ctx context.Context, req *proxyruntimev1.DeleteProxyProviderAccountRequest) (*proxyruntimev1.DeleteProxyProviderAccountResponse, error) {
 	providerAccountID := strings.TrimSpace(req.GetAccountId())
 	if providerAccountID == "" {
 		return nil, appcore.InvalidArgument("provider account_id is required", nil)
 	}
-	store, err := a.requireStore()
+	repo, err := a.requireStore()
 	if err != nil {
 		return nil, err
 	}
-	if _, err := store.ProviderAccount(ctx, providerAccountID); err != nil {
+	if _, err := repo.ProviderAccount(ctx, providerAccountID); err != nil {
 		return nil, appcore.InvalidArgument("provider account is not configured", err)
 	}
 	a.deleteProviderAccountInBackground(providerAccountID)
 	return &proxyruntimev1.DeleteProxyProviderAccountResponse{}, nil
 }
 
-func (a runtimeProviderApplication) rejectActiveProviderAccountRuntimeMutation(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) error {
+func (a Service) rejectActiveProviderAccountRuntimeMutation(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) error {
 	repo, err := a.requireStore()
 	if err != nil {
 		return err
@@ -211,12 +191,12 @@ func (a runtimeProviderApplication) rejectActiveProviderAccountRuntimeMutation(c
 	return nil
 }
 
-func (a runtimeProviderApplication) deleteProviderAccount(ctx context.Context, providerAccountID string) error {
+func (a Service) deleteProviderAccount(ctx context.Context, providerAccountID string) error {
 	providerAccountID = strings.TrimSpace(providerAccountID)
 	if providerAccountID == "" {
 		return appcore.InvalidArgument("provider account_id is required", nil)
 	}
-	store, err := a.requireStore()
+	repo, err := a.requireStore()
 	if err != nil {
 		return err
 	}
@@ -232,13 +212,13 @@ func (a runtimeProviderApplication) deleteProviderAccount(ctx context.Context, p
 		deleted := false
 		err := a.withProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
 			var err error
-			leases, err = store.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID, settingscore.DefaultBlockingLeaseFactLimit)
+			leases, err = repo.BlockingLeaseFactsByProviderAccount(ctx, providerAccountID, settingscore.DefaultBlockingLeaseFactLimit)
 			if err != nil {
 				return fmt.Errorf("list blocking proxy leases for provider account %q: %w", providerAccountID, err)
 			}
 			if len(leases) == 0 {
 				deleted = true
-				return store.DeleteProviderAccount(ctx, providerAccountID)
+				return repo.DeleteProviderAccount(ctx, providerAccountID)
 			}
 			return nil
 		})
@@ -259,28 +239,28 @@ func (a runtimeProviderApplication) deleteProviderAccount(ctx context.Context, p
 	}
 }
 
-func (a runtimeProviderApplication) requireStore() (runtimeProviderRepository, error) {
+func (a Service) requireStore() (Repository, error) {
 	if a.store == nil {
 		return nil, appcore.InternalError("provider account repository is not configured", nil)
 	}
 	return a.store, nil
 }
 
-func (a runtimeProviderApplication) requireSettings() (runtimeProviderSettings, error) {
-	if a.settings == nil {
+func (a Service) requireSettings() (func(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error), error) {
+	if a.loadSettings == nil {
 		return nil, appcore.InternalError("provider settings repository is not configured", nil)
 	}
-	return a.settings, nil
+	return a.loadSettings, nil
 }
 
-func (a runtimeProviderApplication) requireProviderDescriptors() (runtimeProviderDescriptorsFunc, error) {
+func (a Service) requireProviderDescriptors() (DescriptorsFunc, error) {
 	if a.providerDescriptors == nil {
 		return nil, appcore.InternalError("provider descriptor registry is not configured", nil)
 	}
 	return a.providerDescriptors, nil
 }
 
-func (a runtimeProviderApplication) requireLeaseOperations() (runtimeProviderLeaseOperations, error) {
+func (a Service) requireLeaseOperations() (LeaseOperations, error) {
 	if a.leases == nil {
 		return nil, appcore.InternalError("lease application is not configured", nil)
 	}
@@ -291,26 +271,26 @@ func (a runtimeProviderApplication) requireLeaseOperations() (runtimeProviderLea
 	return operations, nil
 }
 
-func (a runtimeProviderApplication) withProviderAccountLock(ctx context.Context, providerAccountID string, fn leaseapp.LockFunc) error {
+func (a Service) withProviderAccountLock(ctx context.Context, providerAccountID string, fn leaseapp.LockFunc) error {
 	if a.locks == nil {
 		return fn(ctx)
 	}
 	return a.locks.WithProviderAccountLock(ctx, providerAccountID, fn)
 }
 
-func (a runtimeProviderApplication) warn(message string, args ...any) {
+func (a Service) warn(message string, args ...any) {
 	if a.logger != nil {
 		a.logger.Warn(message, args...)
 	}
 }
 
-func (a runtimeProviderApplication) info(message string, args ...any) {
+func (a Service) info(message string, args ...any) {
 	if a.logger != nil {
 		a.logger.Info(message, args...)
 	}
 }
 
-func (a runtimeProviderApplication) deleteProviderAccountInBackground(providerAccountID string) {
+func (a Service) deleteProviderAccountInBackground(providerAccountID string) {
 	go func() {
 		startedAt := time.Now()
 		ctx, cancel := context.WithTimeout(context.Background(), providerAccountDeleteTimeout)

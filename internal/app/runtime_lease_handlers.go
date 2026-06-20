@@ -7,6 +7,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/gin-gonic/gin"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (api *runtimeHTTPAPI) handleLeases(ctx *gin.Context) {
@@ -49,7 +51,7 @@ func (api *runtimeHTTPAPI) handleAcquireLease(ctx *gin.Context) {
 func parseLeaseListOptions(ctx *gin.Context) (leaseapp.ListOptions, error) {
 	options, err := leaseapp.ParseListOptions(ctx.Request.URL.Query())
 	if err != nil {
-		return leaseapp.ListOptions{}, invalidArgument(err.Error(), err)
+		return leaseapp.ListOptions{}, appcore.InvalidArgument(err.Error(), err)
 	}
 	return options, nil
 }

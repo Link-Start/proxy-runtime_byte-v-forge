@@ -12,6 +12,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 type runtimeCheckApplication struct {
@@ -141,8 +143,7 @@ func (a runtimeCheckApplication) CheckProxyIPFraud(ctx context.Context, req *pro
 	}
 	check, err := a.checkIPFraud(ctx, ip, settings)
 	if err != nil {
-		var appErr *appError
-		if errors.As(err, &appErr) {
+		if appcore.IsAppError(err) {
 			return nil, err
 		}
 		return nil, errors.New("check IP fraud")
@@ -224,21 +225,21 @@ func (a runtimeCheckApplication) CheckProxyTargetConnectivity(ctx context.Contex
 
 func (a runtimeCheckApplication) loadSettings(ctx context.Context) (*runtimeSettingsFile, error) {
 	if a.settings == nil {
-		return nil, internalError("runtime check settings repository is not configured", nil)
+		return nil, appcore.InternalError("runtime check settings repository is not configured", nil)
 	}
 	return a.settings.load(ctx)
 }
 
 func (a runtimeCheckApplication) newCheckClient(ctx context.Context, listenerID string, timeout time.Duration) (*http.Client, error) {
 	if a.checkClient == nil {
-		return nil, internalError("runtime check HTTP client factory is not configured", nil)
+		return nil, appcore.InternalError("runtime check HTTP client factory is not configured", nil)
 	}
 	return a.checkClient(ctx, listenerID, timeout)
 }
 
 func (a runtimeCheckApplication) checkExitIP(ctx context.Context, client *http.Client) (string, error) {
 	if a.probeExitIP == nil {
-		return "", internalError("runtime check exit IP probe is not configured", nil)
+		return "", appcore.InternalError("runtime check exit IP probe is not configured", nil)
 	}
 	return a.probeExitIP(ctx, client)
 }
@@ -258,21 +259,21 @@ func (a runtimeCheckApplication) checkExitIPDedup(ctx context.Context, listenerI
 
 func (a runtimeCheckApplication) lookupExitGeo(ctx context.Context, ip string) (proxyExitGeo, error) {
 	if a.lookupGeo == nil {
-		return proxyExitGeo{}, internalError("runtime check geo lookup is not configured", nil)
+		return proxyExitGeo{}, appcore.InternalError("runtime check geo lookup is not configured", nil)
 	}
 	return a.lookupGeo(ctx, ip)
 }
 
 func (a runtimeCheckApplication) checkIPFraud(ctx context.Context, ip string, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyIPFraudCheck, error) {
 	if a.checkFraud == nil {
-		return nil, internalError("runtime check IP fraud service is not configured", nil)
+		return nil, appcore.InternalError("runtime check IP fraud service is not configured", nil)
 	}
 	return a.checkFraud(ctx, ip, settings)
 }
 
 func (a runtimeCheckApplication) checkEdgeAccess(ctx context.Context, client *http.Client, settings *runtimeSettingsFile) (edgeCanaryOutcome, error) {
 	if a.runEdgeCanary == nil {
-		return edgeCanaryOutcome{}, internalError("runtime check edge canary is not configured", nil)
+		return edgeCanaryOutcome{}, appcore.InternalError("runtime check edge canary is not configured", nil)
 	}
 	return a.runEdgeCanary(ctx, client, settings), nil
 }

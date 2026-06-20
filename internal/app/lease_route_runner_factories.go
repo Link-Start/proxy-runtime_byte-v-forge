@@ -5,6 +5,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 type leaseRouteRetirerFactory struct {
@@ -90,6 +92,6 @@ func warnLeaseProviderSessionReleaseFailed(logger leaseapp.Logger) leaseapp.Leas
 		if logger == nil || lease == nil {
 			return
 		}
-		logger.Warn("provider session release failed", leaseapp.LabelAccountID, lease.GetAccountId(), leaseapp.LabelProviderAccountID, lease.GetProviderAccountId(), "error_type", errorLogType(err))
+		logger.Warn("provider session release failed", leaseapp.LabelAccountID, lease.GetAccountId(), leaseapp.LabelProviderAccountID, lease.GetProviderAccountId(), "error_type", appcore.ErrorLogType(err))
 	}
 }

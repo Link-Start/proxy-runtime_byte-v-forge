@@ -5,6 +5,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 type leaseWorkerProcessorFactory struct {
@@ -25,14 +27,14 @@ func (f leaseWorkerProcessorFactory) New() leaseapp.WorkerProcessor {
 		CleanupPendingOne: f.cleanup.Cleanup,
 		ObserveRestore:    f.observeRestore,
 		ObserveRestoreList: func(err error) {
-			f.warn("list proxy leases for restore failed", "error_type", errorLogType(err))
+			f.warn("list proxy leases for restore failed", "error_type", appcore.ErrorLogType(err))
 		},
 		ObserveExpire: f.observeExpire,
 		ObserveCleanup: func(lease *proxyruntimev1.ProxyDynamicLease, err error) {
 			f.warn("cleanup proxy lease fact failed", leaseWorkerObserverFields(lease, err)...)
 		},
 		ObserveCleanupList: func(err error) {
-			f.warn("list proxy lease cleanup facts failed", "error_type", errorLogType(err))
+			f.warn("list proxy lease cleanup facts failed", "error_type", appcore.ErrorLogType(err))
 		},
 	}
 }
@@ -53,13 +55,13 @@ func (f leaseWorkerProcessorFactory) warn(message string, args ...any) {
 
 func leaseWorkerObserverFields(lease *proxyruntimev1.ProxyDynamicLease, err error) []any {
 	if lease == nil {
-		return []any{"error_type", errorLogType(err)}
+		return []any{"error_type", appcore.ErrorLogType(err)}
 	}
 	return []any{
 		leaseapp.LabelLeaseID, lease.GetLeaseId(),
 		leaseapp.LabelAccountID, lease.GetAccountId(),
 		leaseapp.LabelProviderAccountID, lease.GetProviderAccountId(),
-		"error_type", errorLogType(err),
+		"error_type", appcore.ErrorLogType(err),
 	}
 }
 

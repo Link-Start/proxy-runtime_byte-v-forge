@@ -11,6 +11,8 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 type scoredDynamicIPEndpointCandidate struct {
@@ -100,7 +102,7 @@ func (p *dynamicIPSelector) selectDynamicIPEndpoint(ctx context.Context, req *pr
 
 func (p *dynamicIPSelector) loadSettings(ctx context.Context) (*runtimeSettingsFile, error) {
 	if p == nil || p.settings == nil {
-		return nil, internalError("dynamic IP selection settings repository is not configured", nil)
+		return nil, appcore.InternalError("dynamic IP selection settings repository is not configured", nil)
 	}
 	return p.settings.load(ctx)
 }

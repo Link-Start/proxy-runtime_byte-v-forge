@@ -7,6 +7,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func ingressRuleFromProto(in *proxyruntimev1.ProxyIngressRuleSettings, index int) *proxyruntimev1.ProxyIngressRuleSettings {
@@ -105,7 +107,7 @@ func rejectMissingIngressRuleProfiles(rules []*proxyruntimev1.ProxyIngressRuleSe
 			continue
 		}
 		if _, exists := enabled[item.GetProfileId()]; !exists {
-			return failedPrecondition(fmt.Sprintf("ingress rule %q profile %q is not enabled", item.GetRuleId(), item.GetProfileId()), nil)
+			return appcore.FailedPrecondition(fmt.Sprintf("ingress rule %q profile %q is not enabled", item.GetRuleId(), item.GetProfileId()), nil)
 		}
 	}
 	return nil

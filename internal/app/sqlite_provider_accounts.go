@@ -11,6 +11,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (s *SQLiteStore) ListProviderAccounts(ctx context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error) {
@@ -49,7 +51,7 @@ func (s *SQLiteStore) UpsertProviderAccount(ctx context.Context, req *proxyrunti
 	}
 	providerID := firstNonEmpty(strings.TrimSpace(req.GetProviderId()), existingProviderID(existing), s.accountProviders.DefaultProviderID())
 	if providerID == "" {
-		return nil, failedPrecondition("provider_id is required", nil)
+		return nil, appcore.FailedPrecondition("provider_id is required", nil)
 	}
 	if !s.accountProviders.IsSupported(providerID) {
 		return nil, fmt.Errorf("unsupported provider_id %q", providerID)

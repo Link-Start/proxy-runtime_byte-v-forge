@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 const (
@@ -25,7 +27,7 @@ func (r *Runtime) restoreActiveLeasesInBackground(ctx context.Context) {
 			r.logger.Info("background proxy lease restore stopped", "duration_ms", time.Since(startedAt).Milliseconds())
 			return
 		}
-		r.logger.Warn("background proxy lease restore failed", "error_type", errorLogType(err), "duration_ms", time.Since(startedAt).Milliseconds())
+		r.logger.Warn("background proxy lease restore failed", "error_type", appcore.ErrorLogType(err), "duration_ms", time.Since(startedAt).Milliseconds())
 		return
 	}
 	r.logger.Info("background proxy lease restore finished", "duration_ms", time.Since(startedAt).Milliseconds())

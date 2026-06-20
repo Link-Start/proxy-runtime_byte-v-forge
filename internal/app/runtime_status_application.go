@@ -5,6 +5,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 type runtimeStatusApplication struct {
@@ -25,7 +27,7 @@ func (s *RuntimeService) GetProxyRuntimeStatus(ctx context.Context, _ *proxyrunt
 
 func (a runtimeStatusApplication) GetProxyRuntimeStatus(context.Context) (*proxyruntimev1.GetProxyRuntimeStatusResponse, error) {
 	if a.runtimeStatus == nil {
-		return nil, internalError("runtime status provider is not configured", nil)
+		return nil, appcore.InternalError("runtime status provider is not configured", nil)
 	}
 	return &proxyruntimev1.GetProxyRuntimeStatusResponse{Status: a.runtimeStatus()}, nil
 }

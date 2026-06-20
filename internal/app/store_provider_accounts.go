@@ -14,6 +14,8 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 	"github.com/jackc/pgx/v5"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (s *PostgresStore) ListProviderAccounts(ctx context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error) {
@@ -59,7 +61,7 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 	}
 	providerID = firstNonEmpty(providerID, s.accountProviders.DefaultProviderID())
 	if providerID == "" {
-		return nil, failedPrecondition("provider_id is required", nil)
+		return nil, appcore.FailedPrecondition("provider_id is required", nil)
 	}
 	if !s.accountProviders.IsSupported(providerID) {
 		return nil, fmt.Errorf("unsupported provider_id %q", providerID)

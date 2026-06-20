@@ -7,11 +7,13 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (p *dynamicIPSelector) dynamicIPEndpointCandidates(ctx context.Context, settings *runtimeSettingsFile, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxyruntimev1.ProxySessionPolicy) ([]scoredDynamicIPEndpointCandidate, error) {
 	if p == nil || p.store == nil {
-		return nil, internalError("dynamic IP selection store is not configured", nil)
+		return nil, appcore.InternalError("dynamic IP selection store is not configured", nil)
 	}
 	accounts, err := p.store.ListProviderAccounts(ctx)
 	if err != nil {

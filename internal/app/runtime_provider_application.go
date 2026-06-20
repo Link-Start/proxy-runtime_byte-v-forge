@@ -9,6 +9,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 const providerAccountDeleteTimeout = 2 * time.Minute
@@ -116,11 +118,11 @@ func (a runtimeProviderApplication) UpsertProxyProviderAccount(ctx context.Conte
 		return nil, err
 	}
 	if err := a.normalizeProviderAccountDynamicProvider(ctx, req); err != nil {
-		return nil, invalidArgument("", err)
+		return nil, appcore.InvalidArgument("", err)
 	}
 	account, err := store.UpsertProviderAccount(ctx, req)
 	if err != nil {
-		return nil, invalidArgument("", err)
+		return nil, appcore.InvalidArgument("", err)
 	}
 	return &proxyruntimev1.UpsertProxyProviderAccountResponse{Account: account}, nil
 }
@@ -155,14 +157,14 @@ func (a runtimeProviderApplication) normalizeProviderAccountDynamicProvider(ctx 
 func (a runtimeProviderApplication) DeleteProxyProviderAccount(ctx context.Context, req *proxyruntimev1.DeleteProxyProviderAccountRequest) (*proxyruntimev1.DeleteProxyProviderAccountResponse, error) {
 	providerAccountID := strings.TrimSpace(req.GetAccountId())
 	if providerAccountID == "" {
-		return nil, invalidArgument("provider account_id is required", nil)
+		return nil, appcore.InvalidArgument("provider account_id is required", nil)
 	}
 	store, err := a.requireStore()
 	if err != nil {
 		return nil, err
 	}
 	if _, err := store.ProviderAccount(ctx, providerAccountID); err != nil {
-		return nil, invalidArgument("provider account is not configured", err)
+		return nil, appcore.InvalidArgument("provider account is not configured", err)
 	}
 	a.deleteProviderAccountInBackground(providerAccountID)
 	return &proxyruntimev1.DeleteProxyProviderAccountResponse{}, nil
@@ -192,16 +194,16 @@ func (a runtimeProviderApplication) rejectActiveProviderAccountRuntimeMutation(c
 		return err
 	}
 	if providerID := strings.TrimSpace(req.GetProviderId()); providerID != "" && providerID != state.ProviderID {
-		return failedPrecondition("provider account has active leases", nil)
+		return appcore.FailedPrecondition("provider account has active leases", nil)
 	}
 	if dynamicProviderID := runtimeSafeID(req.GetDynamicProviderId()); dynamicProviderID != "" && dynamicProviderID != state.DynamicProviderID {
-		return failedPrecondition("provider account has active leases", nil)
+		return appcore.FailedPrecondition("provider account has active leases", nil)
 	}
 	if username := strings.TrimSpace(req.GetUsername()); username != "" && username != state.Username {
-		return failedPrecondition("provider account has active leases", nil)
+		return appcore.FailedPrecondition("provider account has active leases", nil)
 	}
 	if req.GetClearPassword() || secretRefConfigured(req.GetPasswordSecretRef()) || strings.TrimSpace(req.GetPasswordValue()) != "" {
-		return failedPrecondition("provider account has active leases", nil)
+		return appcore.FailedPrecondition("provider account has active leases", nil)
 	}
 	return nil
 }
@@ -209,7 +211,7 @@ func (a runtimeProviderApplication) rejectActiveProviderAccountRuntimeMutation(c
 func (a runtimeProviderApplication) deleteProviderAccount(ctx context.Context, providerAccountID string) error {
 	providerAccountID = strings.TrimSpace(providerAccountID)
 	if providerAccountID == "" {
-		return invalidArgument("provider account_id is required", nil)
+		return appcore.InvalidArgument("provider account_id is required", nil)
 	}
 	store, err := a.requireStore()
 	if err != nil {
@@ -256,32 +258,32 @@ func (a runtimeProviderApplication) deleteProviderAccount(ctx context.Context, p
 
 func (a runtimeProviderApplication) requireStore() (runtimeProviderRepository, error) {
 	if a.store == nil {
-		return nil, internalError("provider account repository is not configured", nil)
+		return nil, appcore.InternalError("provider account repository is not configured", nil)
 	}
 	return a.store, nil
 }
 
 func (a runtimeProviderApplication) requireSettings() (runtimeProviderSettings, error) {
 	if a.settings == nil {
-		return nil, internalError("provider settings repository is not configured", nil)
+		return nil, appcore.InternalError("provider settings repository is not configured", nil)
 	}
 	return a.settings, nil
 }
 
 func (a runtimeProviderApplication) requireProviderDescriptors() (runtimeProviderDescriptorsFunc, error) {
 	if a.providerDescriptors == nil {
-		return nil, internalError("provider descriptor registry is not configured", nil)
+		return nil, appcore.InternalError("provider descriptor registry is not configured", nil)
 	}
 	return a.providerDescriptors, nil
 }
 
 func (a runtimeProviderApplication) requireLeaseOperations() (runtimeProviderLeaseOperations, error) {
 	if a.leases == nil {
-		return nil, internalError("lease application is not configured", nil)
+		return nil, appcore.InternalError("lease application is not configured", nil)
 	}
 	operations := a.leases()
 	if operations == nil {
-		return nil, internalError("lease application is not configured", nil)
+		return nil, appcore.InternalError("lease application is not configured", nil)
 	}
 	return operations, nil
 }
@@ -311,7 +313,7 @@ func (a runtimeProviderApplication) deleteProviderAccountInBackground(providerAc
 		ctx, cancel := context.WithTimeout(context.Background(), providerAccountDeleteTimeout)
 		defer cancel()
 		if err := a.deleteProviderAccount(ctx, providerAccountID); err != nil {
-			a.warn("delete provider account failed", "provider_account_id", providerAccountID, "duration_ms", time.Since(startedAt).Milliseconds(), "error_type", errorLogType(err))
+			a.warn("delete provider account failed", "provider_account_id", providerAccountID, "duration_ms", time.Since(startedAt).Milliseconds(), "error_type", appcore.ErrorLogType(err))
 			return
 		}
 		a.info("delete provider account finished", "provider_account_id", providerAccountID, "duration_ms", time.Since(startedAt).Milliseconds())

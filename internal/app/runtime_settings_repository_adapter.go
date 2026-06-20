@@ -4,6 +4,8 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 type runtimeSettingsRepositoryAdapter struct {
@@ -12,7 +14,7 @@ type runtimeSettingsRepositoryAdapter struct {
 
 func (r runtimeSettingsRepositoryAdapter) repositoryOrError() (runtimeSettingsRepository, error) {
 	if r.repository == nil {
-		return nil, internalError("runtime settings repository is not configured", nil)
+		return nil, appcore.InternalError("runtime settings repository is not configured", nil)
 	}
 	return r.repository, nil
 }

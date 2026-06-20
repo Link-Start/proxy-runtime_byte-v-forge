@@ -5,6 +5,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 type leaseAccountLockedAcquireRunnerFactory struct {
@@ -52,5 +54,5 @@ func (f leaseAccountLockedAcquireRunnerFactory) observeAttemptFailure(attempt in
 	if f.deps.logger == nil {
 		return
 	}
-	f.deps.logger.Warn("dynamic IP lease attempt failed", leaseapp.LabelAccountID, f.request.GetAccountId(), leaseapp.LabelPurpose, f.request.GetPurpose(), "attempt", attempt, "error_type", errorLogType(err))
+	f.deps.logger.Warn("dynamic IP lease attempt failed", leaseapp.LabelAccountID, f.request.GetAccountId(), leaseapp.LabelPurpose, f.request.GetPurpose(), "attempt", attempt, "error_type", appcore.ErrorLogType(err))
 }

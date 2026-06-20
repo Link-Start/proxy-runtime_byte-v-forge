@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 const (
@@ -48,6 +50,6 @@ func (r *Runtime) runLeaseWorkerTask(ctx context.Context, operation string, name
 	if err == nil || errors.Is(err, context.Canceled) {
 		return nil
 	}
-	r.logger.Warn(name+" failed", "error_type", errorLogType(err), "duration_ms", time.Since(startedAt).Milliseconds())
+	r.logger.Warn(name+" failed", "error_type", appcore.ErrorLogType(err), "duration_ms", time.Since(startedAt).Milliseconds())
 	return err
 }

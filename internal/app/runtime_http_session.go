@@ -5,6 +5,8 @@ import (
 
 	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
 	"github.com/gin-gonic/gin"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (api *runtimeHTTPAPI) handleAuthSession(ctx *gin.Context) {
@@ -39,7 +41,7 @@ func (api *runtimeHTTPAPI) handleAuthLogout(ctx *gin.Context) {
 
 func (api *runtimeHTTPAPI) handleAuthLoginPage(ctx *gin.Context) {
 	if err := api.auth.WriteLoginPageResponse(ctx.Writer, ctx.Request, api.sessionAuthenticated(ctx.Request)); err != nil {
-		api.logger.Warn("render login page failed", "error_type", errorLogType(err))
+		api.logger.Warn("render login page failed", "error_type", appcore.ErrorLogType(err))
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 	}
 }

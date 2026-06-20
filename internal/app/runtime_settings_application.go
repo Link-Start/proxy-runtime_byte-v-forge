@@ -8,6 +8,8 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 type runtimeSettingsApplicationDependencies struct {
@@ -27,7 +29,7 @@ func newRuntimeSettingsApplication(deps runtimeSettingsApplicationDependencies) 
 		ScheduleApply:               deps.ScheduleApply,
 		Logger:                      deps.Logger,
 		ProxyUsers:                  append([]config.ProxyUserRoute(nil), deps.ProxyUsers...),
-		ProfileValidationError:      func(message string) error { return failedPrecondition(message, nil) },
+		ProfileValidationError:      func(message string) error { return appcore.FailedPrecondition(message, nil) },
 		IPFraudProviderViews:        deps.IPFraudProviderViews,
 		IPGeoProviderViews:          deps.IPGeoProviderViews,
 		LoadMihomoNativeSettings:    deps.LoadMihomoNativeSettings,

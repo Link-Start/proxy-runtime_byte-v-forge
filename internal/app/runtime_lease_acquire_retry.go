@@ -1,13 +1,9 @@
 package app
 
 import (
-	"errors"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func retryLeaseAcquireAttempt(err error) bool {
-	var appErr *appError
-	if !errors.As(err, &appErr) {
-		return false
-	}
-	return appErr.code == errCodeUnavailable || appErr.code == errCodeFailedPrecondition
+	return appcore.IsUnavailable(err) || appcore.IsFailedPrecondition(err)
 }

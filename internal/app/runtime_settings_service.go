@@ -6,6 +6,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (s *RuntimeService) ListProxyIPFraudProviders(ctx context.Context, _ *proxyruntimev1.ListProxyIPFraudProvidersRequest) (*proxyruntimev1.ListProxyIPFraudProvidersResponse, error) {
@@ -43,7 +45,7 @@ func (s *RuntimeService) UpdateProxyInUserRules(ctx context.Context, req *proxyr
 func (s *RuntimeService) GetProxyRuntimeMihomoNativeConfig(ctx context.Context, req *proxyruntimev1.GetProxyRuntimeMihomoNativeConfigRequest) (*proxyruntimev1.GetProxyRuntimeMihomoNativeConfigResponse, error) {
 	response, err := s.settings.GetMihomoNative(ctx, req)
 	if err != nil {
-		return nil, internalError("load mihomo native config", err)
+		return nil, appcore.InternalError("load mihomo native config", err)
 	}
 	return response, nil
 }
@@ -52,7 +54,7 @@ func (s *RuntimeService) UpdateProxyRuntimeMihomoNativeConfig(ctx context.Contex
 	response, err := s.settings.UpdateMihomoNative(ctx, req)
 	if err != nil {
 		if errors.Is(err, settingsapp.ErrMihomoNativeUpdateUnavailable) {
-			return nil, internalError("mihomo native settings update unavailable", err)
+			return nil, appcore.InternalError("mihomo native settings update unavailable", err)
 		}
 		return nil, err
 	}

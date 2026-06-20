@@ -17,6 +17,8 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	"golang.org/x/sync/singleflight"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 type Runtime struct {
@@ -174,13 +176,13 @@ func (r *Runtime) reconcileLoop(ctx context.Context) {
 
 func (r *Runtime) reconcile(ctx context.Context) {
 	if err := r.runReconcile(ctx); err != nil {
-		r.logger.Warn("proxy runtime reconcile failed", "error_type", errorLogType(err))
+		r.logger.Warn("proxy runtime reconcile failed", "error_type", appcore.ErrorLogType(err))
 	}
 	for {
 		select {
 		case <-r.reconcileCh:
 			if err := r.runReconcile(ctx); err != nil {
-				r.logger.Warn("proxy runtime reconcile failed", "error_type", errorLogType(err))
+				r.logger.Warn("proxy runtime reconcile failed", "error_type", appcore.ErrorLogType(err))
 			}
 		default:
 			return
@@ -211,7 +213,7 @@ func (r *Runtime) refresh(ctx context.Context) error {
 	nodes, err := r.provider.Fetch(ctx)
 	r.observeRuntimeOperation(runtimeMetricProviderFetchBase, providerStartedAt, err)
 	if err != nil && r.cfg.Provider != config.ProviderNone {
-		r.logger.Warn("base provider fetch failed", "error_type", errorLogType(err))
+		r.logger.Warn("base provider fetch failed", "error_type", appcore.ErrorLogType(err))
 		nodes = nil
 	}
 	sourceCfg, err := r.dataPlaneConfig(ctx)

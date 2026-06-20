@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (s *runtimeSettingsStore) updateInUserRules(ctx context.Context, profiles []*proxyruntimev1.EgressProfileSettings, rules []*proxyruntimev1.ProxyIngressRuleSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
@@ -71,7 +73,7 @@ func rejectOmittedIngressRules(current []*proxyruntimev1.ProxyIngressRuleSetting
 		ids = append(ids, id)
 	}
 	sort.Strings(ids)
-	return failedPrecondition("in-user update omitted existing ingress rules: "+strings.Join(ids, ", "), nil)
+	return appcore.FailedPrecondition("in-user update omitted existing ingress rules: "+strings.Join(ids, ", "), nil)
 }
 
 func existingIngressRuleIDs(rules []*proxyruntimev1.ProxyIngressRuleSettings) map[string]struct{} {

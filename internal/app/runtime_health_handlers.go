@@ -5,6 +5,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/gin-gonic/gin"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (api *runtimeHTTPAPI) handleHealth(ctx *gin.Context) {
@@ -19,7 +21,7 @@ func (api *runtimeHTTPAPI) handleReady(ctx *gin.Context) {
 			return
 		}
 		msg = firstNonEmpty(msg, "route runtime is not running")
-		writeHTTPError(ctx.Writer, unavailable(msg, nil), http.StatusServiceUnavailable)
+		writeHTTPError(ctx.Writer, appcore.Unavailable(msg, nil), http.StatusServiceUnavailable)
 		return
 	}
 	ctx.Status(http.StatusNoContent)

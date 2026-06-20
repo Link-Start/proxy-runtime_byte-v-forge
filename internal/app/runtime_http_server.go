@@ -13,6 +13,8 @@ import (
 	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/gin-gonic/gin"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (r *Runtime) serveHTTP(ctx context.Context, errCh chan<- error) {
@@ -127,7 +129,7 @@ func (api *runtimeHTTPAPI) ginMiddleware() gin.HandlerFunc {
 		Logger:    api.logger,
 		Authorize: api.authorize,
 		WritePanicError: func(w http.ResponseWriter) {
-			writeHTTPError(w, internalError("", nil), http.StatusInternalServerError)
+			writeHTTPError(w, appcore.InternalError("", nil), http.StatusInternalServerError)
 		},
 	})
 }

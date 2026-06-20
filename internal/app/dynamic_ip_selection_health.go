@@ -6,6 +6,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 const dynamicIPEndpointHealthWindow = 6 * time.Hour
@@ -23,7 +25,7 @@ func (p *dynamicIPSelector) dynamicIPEndpointHealthScores(ctx context.Context) m
 	}
 	leases, err := p.store.RecentLeaseFacts(ctx, p.clock.Now().UTC().Add(-dynamicIPEndpointHealthWindow), dynamicIPEndpointHealthLimit)
 	if err != nil {
-		p.warn("load dynamic IP endpoint health facts failed", "error_type", errorLogType(err))
+		p.warn("load dynamic IP endpoint health facts failed", "error_type", appcore.ErrorLogType(err))
 		return nil
 	}
 	return dynamicIPEndpointHealthScoresFromLeases(leases)

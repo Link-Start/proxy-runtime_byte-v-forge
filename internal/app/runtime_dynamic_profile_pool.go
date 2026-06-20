@@ -8,6 +8,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (r *Runtime) dynamicProfilePool(ctx context.Context, settings *runtimeSettingsFile) ([]provider.Node, error) {
@@ -61,7 +63,7 @@ func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http
 		accountID := strings.TrimSpace(account.GetAccountId())
 		cfg, storedAccountID, err := r.store.ProviderConfig(ctx, accountID)
 		if err != nil {
-			r.logger.Warn("dynamic profile provider account skipped", "account_id", accountID, "provider_id", account.GetProviderId(), "error_type", errorLogType(err))
+			r.logger.Warn("dynamic profile provider account skipped", "account_id", accountID, "provider_id", account.GetProviderId(), "error_type", appcore.ErrorLogType(err))
 			continue
 		}
 		accountID = firstNonEmpty(storedAccountID, accountID)

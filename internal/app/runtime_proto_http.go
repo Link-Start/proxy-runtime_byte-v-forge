@@ -7,13 +7,15 @@ import (
 	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 const maxRuntimeHTTPRequestBodyBytes = 1 << 20
 
 func (api *runtimeHTTPAPI) readProto(ctx *gin.Context, message proto.Message) bool {
 	if ctx.Request.Body == nil {
-		writeHTTPError(ctx.Writer, invalidArgument("request body is required", nil), http.StatusBadRequest)
+		writeHTTPError(ctx.Writer, appcore.InvalidArgument("request body is required", nil), http.StatusBadRequest)
 		return false
 	}
 	body, err := readRequestBody(ctx.Request)
@@ -63,12 +65,12 @@ func (api *runtimeHTTPAPI) writeProto(ctx *gin.Context, message proto.Message) {
 func readRequestBody(req *http.Request) ([]byte, error) {
 	data, err := httpapi.ReadRequestBody(req, maxRuntimeHTTPRequestBodyBytes)
 	if errors.Is(err, httpapi.ErrRequestBodyTooLarge) {
-		return nil, resourceExhausted("request body exceeds 1MiB", nil)
+		return nil, appcore.ResourceExhausted("request body exceeds 1MiB", nil)
 	}
 	return data, err
 }
 
 func writeHTTPError(w http.ResponseWriter, err error, fallbackStatus int) {
-	httpStatus, code, message := httpErrorDetails(err, fallbackStatus)
+	httpStatus, code, message := appcore.HTTPErrorDetails(err, fallbackStatus)
 	httpapi.WriteError(w, httpStatus, code, message)
 }

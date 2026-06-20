@@ -7,11 +7,13 @@ import (
 
 	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
 	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (r *Runtime) closeMihomoInUserConnections(ctx context.Context, usernames []string) {
 	if err := r.closeMihomoConnections(ctx, mihomoConnectionSelector{inboundUsers: usernames}); err != nil {
-		r.logger.Warn("mihomo in-user connection cleanup failed", "error_type", errorLogType(err))
+		r.logger.Warn("mihomo in-user connection cleanup failed", "error_type", appcore.ErrorLogType(err))
 	}
 }
 

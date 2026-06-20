@@ -5,6 +5,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/gin-gonic/gin"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (api *runtimeHTTPAPI) handleMetrics(ctx *gin.Context) {
@@ -14,7 +16,7 @@ func (api *runtimeHTTPAPI) handleMetrics(ctx *gin.Context) {
 		return
 	}
 	if err := api.service.metrics.WritePrometheus(ctx.Writer); err != nil {
-		writeHTTPError(ctx.Writer, internalError("write metrics", err), http.StatusInternalServerError)
+		writeHTTPError(ctx.Writer, appcore.InternalError("write metrics", err), http.StatusInternalServerError)
 		return
 	}
 }

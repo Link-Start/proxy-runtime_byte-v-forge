@@ -19,6 +19,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
@@ -51,7 +52,7 @@ type Runtime struct {
 	settingsApplyMu sync.RWMutex
 	settingsApply   runtimeSettingsApplyState
 	fraudChecker    ipFraudCheckerCache
-	geoCache        ipGeoCache
+	geoCache        *proxycheck.IPGeoCache
 	geoLookupSF     singleflight.Group
 	exitCheckCache  proxyExitCheckCache
 
@@ -107,9 +108,9 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 		metrics:             newRuntimeMetrics(),
 		logger:              logger,
 		clock:               clk,
+		geoCache:            proxycheck.NewIPGeoCache(clk),
 		reconcileCh:         make(chan struct{}, 1),
 	}
-	runtime.geoCache.clock = clk
 	runtime.exitCheckCache.clock = clk
 	runtime.dynamicIPSelector = newDynamicIPSelector(runtimeDynamicIPSelectorDependencies(runtime))
 	runtime.leaseCoordinator = newLeaseCoordinator(runtimeLeaseCoordinatorDependencies(runtime))

@@ -6,60 +6,50 @@ import (
 	"log/slog"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 )
 
-func (r *Runtime) lookupIPGeo(ctx context.Context, ip string) (proxyExitGeo, error) {
-	if geo, ok := r.geoCache.get(ip); ok {
+func (r *Runtime) lookupIPGeo(ctx context.Context, ip string) (proxycheck.ExitGeo, error) {
+	if geo, ok := r.geoCache.Get(ip); ok {
 		return geo, nil
 	}
 	out, err, _ := r.geoLookupSF.Do(ip, func() (any, error) {
-		if geo, ok := r.geoCache.get(ip); ok {
+		if geo, ok := r.geoCache.Get(ip); ok {
 			return geo, nil
 		}
 		return r.loadIPGeo(ctx, ip)
 	})
 	if err != nil {
-		return proxyExitGeo{}, err
+		return proxycheck.ExitGeo{}, err
 	}
-	return out.(proxyExitGeo), nil
+	return out.(proxycheck.ExitGeo), nil
 }
 
-func (r *Runtime) loadIPGeo(ctx context.Context, ip string) (proxyExitGeo, error) {
+func (r *Runtime) loadIPGeo(ctx context.Context, ip string) (proxycheck.ExitGeo, error) {
 	settings, err := r.settings.load(ctx)
 	if err != nil {
-		return proxyExitGeo{}, err
+		return proxycheck.ExitGeo{}, err
 	}
 	providers, err := ipGeoProviders(ctx, r.store, settings, r.ipGeoProviders)
 	if err != nil {
-		return proxyExitGeo{}, err
+		return proxycheck.ExitGeo{}, err
 	}
 	if len(providers) == 0 {
-		return proxyExitGeo{}, errors.New("IP geo provider is not configured")
+		return proxycheck.ExitGeo{}, errors.New("IP geo provider is not configured")
 	}
 	lookupCtx, cancel := context.WithTimeout(ctx, proxyExitIPTimeout(settings))
 	defer cancel()
 	geo, err := newIPGeoLookup(r.ipGeoProviders, proxyExitIPTimeout(settings), providers, r.logger).Lookup(lookupCtx, ip)
 	if err != nil {
-		return proxyExitGeo{}, err
+		return proxycheck.ExitGeo{}, err
 	}
-	out := proxyExitGeoFromProto(ip, geo)
-	r.geoCache.put(ip, out)
+	out := proxycheck.ExitGeoFromProto(ip, geo)
+	r.geoCache.Put(ip, out)
 	return out, nil
 }
 
 func newIPGeoLookup(registry *ipgeo.Registry, timeout time.Duration, providers []ipgeo.ProviderConfig, logger *slog.Logger) *ipgeo.Service {
 	return ipgeo.NewService(registry, ipgeo.Config{Providers: providers, Timeout: timeout}, logger)
-}
-
-func proxyExitGeoFromProto(ip string, geo *proxyruntimev1.ProxyExitGeo) proxyExitGeo {
-	return proxyExitGeo{
-		IP:          appcore.FirstNonEmpty(geo.GetIp(), ip),
-		CountryCode: geo.GetCountryCode(),
-		Region:      geo.GetRegion(),
-		City:        geo.GetCity(),
-	}
 }

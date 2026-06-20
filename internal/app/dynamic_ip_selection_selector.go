@@ -13,6 +13,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 )
 
 type scoredDynamicIPEndpointCandidate struct {
@@ -27,7 +28,7 @@ type dynamicIPSelector struct {
 	accountProviders dynamicIPSelectionProviderRegistry
 	concurrency      leaseapp.ProviderAccountConcurrencyLimiter
 	logger           dynamicIPSelectionLogger
-	lookupIPGeo      func(context.Context, string) (proxyExitGeo, error)
+	lookupIPGeo      func(context.Context, string) (proxycheck.ExitGeo, error)
 	clock            clock.Clock
 }
 
@@ -37,7 +38,7 @@ type dynamicIPSelectorDependencies struct {
 	AccountProviders dynamicIPSelectionProviderRegistry
 	Concurrency      leaseapp.ProviderAccountConcurrencyLimiter
 	Logger           dynamicIPSelectionLogger
-	LookupIPGeo      func(context.Context, string) (proxyExitGeo, error)
+	LookupIPGeo      func(context.Context, string) (proxycheck.ExitGeo, error)
 	Clock            clock.Clock
 }
 

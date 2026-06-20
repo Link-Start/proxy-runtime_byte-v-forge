@@ -1,4 +1,4 @@
-package app
+package proxycheck
 
 import (
 	"context"
@@ -7,47 +7,46 @@ import (
 	"io"
 	"net"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
-func requestIPInfo(ctx context.Context, client *http.Client, endpoint string, requireIP bool) (proxyExitGeo, error) {
+func RequestIPInfo(ctx context.Context, client *http.Client, endpoint string, requireIP bool) (ExitGeo, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, endpoint, nil)
 	if err != nil {
-		return proxyExitGeo{}, err
+		return ExitGeo{}, err
 	}
 	req.Close = true
 	req.Header.Set("Accept", "application/json, text/plain;q=0.8")
 	req.Header.Set("Connection", "close")
 	resp, err := client.Do(req)
 	if err != nil {
-		return proxyExitGeo{}, err
+		return ExitGeo{}, err
 	}
 	defer resp.Body.Close()
 	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
 	if err != nil {
-		return proxyExitGeo{}, err
+		return ExitGeo{}, err
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return proxyExitGeo{}, errors.New("ip info endpoint unavailable")
+		return ExitGeo{}, errors.New("ip info endpoint unavailable")
 	}
 	geo := parseIPInfo(body)
 	if requireIP && net.ParseIP(geo.IP) == nil {
-		return proxyExitGeo{}, errors.New("ip info endpoint returned invalid IP")
+		return ExitGeo{}, errors.New("ip info endpoint returned invalid IP")
 	}
 	return geo, nil
 }
 
-func parseIPInfo(body []byte) proxyExitGeo {
+func parseIPInfo(body []byte) ExitGeo {
 	var payload map[string]any
 	if json.Unmarshal(body, &payload) == nil {
 		ip := jsonString(payload, "ip", "query", "origin")
 		if strings.Contains(ip, ",") {
 			ip = strings.TrimSpace(strings.Split(ip, ",")[0])
 		}
-		return proxyExitGeo{
+		return ExitGeo{
 			IP:          ip,
 			CountryCode: jsonString(payload, "country_code", "countryCode", "country", "loc"),
 			Region:      jsonString(payload, "region", "region_code", "region_name", "state"),
@@ -63,22 +62,14 @@ func parseIPInfo(body []byte) proxyExitGeo {
 		values[strings.TrimSpace(key)] = strings.TrimSpace(value)
 	}
 	if ip := values["ip"]; ip != "" {
-		return proxyExitGeo{
+		return ExitGeo{
 			IP:          ip,
 			CountryCode: values["loc"],
 			Region:      appcore.FirstNonEmpty(values["region"], values["region_name"], values["state"]),
 			City:        values["city"],
 		}
 	}
-	return proxyExitGeo{IP: strings.TrimSpace(string(body))}
-}
-
-func ipGeoLookupEndpoints(ip string) []string {
-	escaped := url.PathEscape(ip)
-	return []string{
-		"https://ipwho.is/" + escaped,
-		"https://ipapi.co/" + escaped + "/json/",
-	}
+	return ExitGeo{IP: strings.TrimSpace(string(body))}
 }
 
 func jsonString(payload map[string]any, keys ...string) string {

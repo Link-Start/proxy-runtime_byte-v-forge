@@ -3,13 +3,15 @@ package app
 import (
 	"context"
 	"time"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 )
 
 const runtimeSettingsConnectionCleanupTimeout = 10 * time.Second
 
 type runtimeSettingsApplyScheduler struct {
 	resetIPFraudChecker   func()
-	geoCache              *ipGeoCache
+	geoCache              *proxycheck.IPGeoCache
 	exitCheckCache        *proxyExitCheckCache
 	markApplyPending      func()
 	requestReconcile      func()
@@ -22,7 +24,7 @@ func newRuntimeSettingsApplyScheduler(runtime *Runtime) runtimeSettingsApplySche
 	}
 	return runtimeSettingsApplyScheduler{
 		resetIPFraudChecker:   runtime.resetIPFraudChecker,
-		geoCache:              &runtime.geoCache,
+		geoCache:              runtime.geoCache,
 		exitCheckCache:        &runtime.exitCheckCache,
 		markApplyPending:      runtime.markSettingsApplyPending,
 		requestReconcile:      runtime.requestReconcile,
@@ -48,7 +50,7 @@ func (s runtimeSettingsApplyScheduler) clearDerivedState() {
 		s.resetIPFraudChecker()
 	}
 	if s.geoCache != nil {
-		s.geoCache.clear()
+		s.geoCache.Clear()
 	}
 	if s.exitCheckCache != nil {
 		s.exitCheckCache.clear()

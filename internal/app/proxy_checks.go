@@ -3,7 +3,6 @@ package app
 import (
 	"context"
 	"log/slog"
-	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/clock"
@@ -14,20 +13,6 @@ import (
 type ipFraudChecker interface {
 	Check(ctx context.Context, ip string) (*proxyruntimev1.ProxyIPFraudCheck, error)
 }
-
-type proxyExitGeo struct {
-	IP          string
-	CountryCode string
-	Region      string
-	City        string
-}
-
-type cachedIPGeo struct {
-	geo       proxyExitGeo
-	expiresAt time.Time
-}
-
-const ipGeoCacheTTL = 24 * time.Hour
 
 func newIPFraudChecker(registry *ipfraud.Registry, cfg config.IPFraudConfig, providers []ipfraud.ProviderConfig, logger *slog.Logger, clk clock.Clock) ipFraudChecker {
 	return ipfraud.NewService(registry, ipfraud.Config{

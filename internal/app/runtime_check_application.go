@@ -14,6 +14,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 )
 
 type runtimeCheckApplication struct {
@@ -45,7 +46,7 @@ type runtimeCheckHTTPClientFactory func(context.Context, string, time.Duration) 
 
 type runtimeCheckExitIPProbe func(context.Context, *http.Client) (string, error)
 
-type runtimeCheckGeoLookup func(context.Context, string) (proxyExitGeo, error)
+type runtimeCheckGeoLookup func(context.Context, string) (proxycheck.ExitGeo, error)
 
 type runtimeCheckFraudChecker func(context.Context, string, *runtimeSettingsFile) (*proxyruntimev1.ProxyIPFraudCheck, error)
 
@@ -257,9 +258,9 @@ func (a runtimeCheckApplication) checkExitIPDedup(ctx context.Context, listenerI
 	return ip.(string), nil
 }
 
-func (a runtimeCheckApplication) lookupExitGeo(ctx context.Context, ip string) (proxyExitGeo, error) {
+func (a runtimeCheckApplication) lookupExitGeo(ctx context.Context, ip string) (proxycheck.ExitGeo, error) {
 	if a.lookupGeo == nil {
-		return proxyExitGeo{}, appcore.InternalError("runtime check geo lookup is not configured", nil)
+		return proxycheck.ExitGeo{}, appcore.InternalError("runtime check geo lookup is not configured", nil)
 	}
 	return a.lookupGeo(ctx, ip)
 }

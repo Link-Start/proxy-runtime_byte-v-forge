@@ -7,6 +7,8 @@ import (
 	"net"
 	"net/http"
 	"strings"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 )
 
 func (r *Runtime) probeExitIP(ctx context.Context, client *http.Client) (string, error) {
@@ -28,7 +30,7 @@ func (r *Runtime) probeExitIP(ctx context.Context, client *http.Client) (string,
 			continue
 		}
 		go func() {
-			geo, err := requestIPInfo(probeCtx, client, endpoint, true)
+			geo, err := proxycheck.RequestIPInfo(probeCtx, client, endpoint, true)
 			if err != nil {
 				results <- probeResult{err: err}
 				return

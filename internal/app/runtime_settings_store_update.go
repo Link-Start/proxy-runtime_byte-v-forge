@@ -5,6 +5,7 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 
+	settingssecret "github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/secret"
 	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
@@ -14,7 +15,7 @@ func (s *runtimeSettingsStore) update(ctx context.Context, req *proxyruntimev1.U
 		if err != nil {
 			return nil, err
 		}
-		return settingsFromRequest(ctx, s.secretWriter, req, current, s.accountProviders, s.ipFraudProviders, s.ipGeoProviders, nativeResourceIDs)
+		return settingssecret.SettingsFromRequest(ctx, s.secretWriter, req, current, s.accountProviders, s.ipFraudProviders, s.ipGeoProviders, nativeResourceIDs)
 	})
 }
 

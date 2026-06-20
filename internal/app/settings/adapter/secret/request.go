@@ -1,4 +1,4 @@
-package app
+package secret
 
 import (
 	"context"
@@ -12,11 +12,13 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
-	settingssecret "github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/secret"
 	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
-func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, current *runtimeSettingsFile, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry, nativeResourceIDs map[string]struct{}) (*runtimeSettingsFile, error) {
+// SettingsFromRequest builds the persisted runtime settings from an update
+// request, writing inline secrets through writer and validating against the
+// provider registries.
+func SettingsFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, current *proxyruntimev1.ProxyRuntimePersistentSettings, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry, nativeResourceIDs map[string]struct{}) (*proxyruntimev1.ProxyRuntimePersistentSettings, error) {
 	current = kernel.NormalizeRuntimeSettingsWithProviders(current, ipFraudProviders, ipGeoProviders)
 	edgeCanary, err := edgeCanaryFromRequest(ctx, writer, req.GetEdgeCanary(), current.GetEdgeCanary())
 	if err != nil {
@@ -34,11 +36,11 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 	if settingsdomain.EdgeCanaryEnabled(settings.GetEdgeCanary()) && strings.TrimSpace(settings.GetEdgeCanary().GetUrl()) == "" {
 		return nil, errors.New("edge canary url is required when enabled")
 	}
-	settings.IpFraudProviders, err = settingssecret.IPFraudProvidersFromRequest(ctx, writer, req.GetIpFraudProviders(), current, ipFraudProviders)
+	settings.IpFraudProviders, err = IPFraudProvidersFromRequest(ctx, writer, req.GetIpFraudProviders(), current, ipFraudProviders)
 	if err != nil {
 		return nil, err
 	}
-	settings.IpGeoProviders, err = settingssecret.IPGeoProvidersFromRequest(ctx, writer, req.GetIpGeoProviders(), current, ipGeoProviders)
+	settings.IpGeoProviders, err = IPGeoProvidersFromRequest(ctx, writer, req.GetIpGeoProviders(), current, ipGeoProviders)
 	if err != nil {
 		return nil, err
 	}

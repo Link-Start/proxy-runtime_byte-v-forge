@@ -19,6 +19,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 type Runtime struct {
@@ -28,7 +29,7 @@ type Runtime struct {
 	ipFraudProviders    *ipfraud.Registry
 	ipGeoProviders      *ipgeo.Registry
 	dataPlane           dataplane.Driver
-	store               *RuntimeStores
+	store               *store.RuntimeStores
 	leaseLocks          leaseRuntimeLocks
 	providerConcurrency leaseapp.ProviderAccountConcurrencyLimiter
 	leaseCoordinator    leaseCoordinator
@@ -68,7 +69,7 @@ type RuntimeDeps struct {
 	IPFraudProviders    *ipfraud.Registry
 	IPGeoProviders      *ipgeo.Registry
 	DataPlane           dataplane.Driver
-	Store               *RuntimeStores
+	Store               *store.RuntimeStores
 	LeaseLocks          leaseRuntimeLocks
 	ProviderConcurrency leaseapp.ProviderAccountConcurrencyLimiter
 	ProviderHTTPClient  *http.Client

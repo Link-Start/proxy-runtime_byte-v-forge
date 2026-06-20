@@ -8,12 +8,14 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 type runtimeSettingsFile = proxyruntimev1.ProxyRuntimePersistentSettings
 
 type runtimeSettingsStore struct {
-	store            runtimeSettingsPersistence
+	store            store.RuntimeSettingsPersistence
 	secretWriter     secretref.Writer
 	accountProviders *providerregistry.Registry
 	ipFraudProviders *ipfraud.Registry
@@ -21,12 +23,12 @@ type runtimeSettingsStore struct {
 	mu               sync.Mutex
 }
 
-func newRuntimeSettingsStore(stores *RuntimeStores, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry) *runtimeSettingsStore {
-	var store runtimeSettingsPersistence
+func newRuntimeSettingsStore(stores *store.RuntimeStores, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry) *runtimeSettingsStore {
+	var persistence store.RuntimeSettingsPersistence
 	var secretWriter secretref.Writer
 	if stores != nil {
-		store = stores.runtimeSettingsPersistence
-		secretWriter = stores.secretStore
+		persistence = stores.RuntimeSettingsPersistence
+		secretWriter = stores.SecretStore
 	}
-	return &runtimeSettingsStore{store: store, secretWriter: secretWriter, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, ipGeoProviders: ipGeoProviders}
+	return &runtimeSettingsStore{store: persistence, secretWriter: secretWriter, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, ipGeoProviders: ipGeoProviders}
 }

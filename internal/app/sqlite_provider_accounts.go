@@ -13,6 +13,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 func (s *SQLiteStore) ListProviderAccounts(ctx context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error) {
@@ -134,13 +135,13 @@ func (s *SQLiteStore) ProviderAccount(ctx context.Context, accountID string) (*p
 	return providerAccountToProto(ctx, s, s.box, record)
 }
 
-func (s *SQLiteStore) ProviderAccountMutationState(ctx context.Context, accountID string) (providerAccountMutationState, error) {
+func (s *SQLiteStore) ProviderAccountMutationState(ctx context.Context, accountID string) (store.ProviderAccountMutationState, error) {
 	record, err := s.providerAccountRecord(ctx, accountID)
 	if err != nil {
-		return providerAccountMutationState{}, err
+		return store.ProviderAccountMutationState{}, err
 	}
 	credential := credentialFromSecret(s.box, record.CredentialSecret)
-	state := providerAccountMutationState{ProviderID: record.ProviderID, DynamicProviderID: record.DynamicProviderID, PasswordConfigured: record.CredentialSecret != ""}
+	state := store.ProviderAccountMutationState{ProviderID: record.ProviderID, DynamicProviderID: record.DynamicProviderID, PasswordConfigured: record.CredentialSecret != ""}
 	if credential != nil {
 		state.Username = credential.Username
 		state.PasswordSecretRef = appcore.CloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password")

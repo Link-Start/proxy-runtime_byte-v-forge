@@ -1,4 +1,4 @@
-package app
+package store
 
 import (
 	"context"
@@ -10,33 +10,33 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 )
 
-type storeCloser interface {
+type StoreCloser interface {
 	Close()
 }
 
-type secretStore interface {
+type SecretStore interface {
 	secretref.Writer
 	secretref.Resolver
 }
 
-type runtimeSettingsPersistence interface {
-	LoadRuntimeSettings(context.Context) (*runtimeSettingsFile, error)
-	SaveRuntimeSettings(context.Context, *runtimeSettingsFile) error
+type RuntimeSettingsPersistence interface {
+	LoadRuntimeSettings(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
+	SaveRuntimeSettings(context.Context, *proxyruntimev1.ProxyRuntimePersistentSettings) error
 	LoadMihomoNativeSettings(context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
 	SaveMihomoNativeSettings(context.Context, *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) error
 }
 
-type providerAccountStore interface {
+type ProviderAccountStore interface {
 	ListProviderAccounts(context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error)
 	UpsertProviderAccount(context.Context, *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.ProxyProviderAccount, error)
 	DeleteProviderAccount(context.Context, string) error
 	ProviderAccount(context.Context, string) (*proxyruntimev1.ProxyProviderAccount, error)
-	ProviderAccountMutationState(context.Context, string) (providerAccountMutationState, error)
+	ProviderAccountMutationState(context.Context, string) (ProviderAccountMutationState, error)
 	ProviderConfig(context.Context, string) (accountproxy.Config, string, error)
 	DefaultProviderAccountID(context.Context) (string, error)
 }
 
-type leaseFactStore interface {
+type LeaseFactStore interface {
 	SaveLeaseFact(context.Context, *proxyruntimev1.ProxyDynamicLease) error
 	ListActiveLeaseFacts(context.Context, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 	ListRecentLeaseFacts(context.Context, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
@@ -55,33 +55,33 @@ type leaseFactStore interface {
 }
 
 type RuntimeStores struct {
-	runtimeSettingsPersistence
-	providerAccountStore
-	leaseFactStore
-	secretStore
-	storeCloser
+	RuntimeSettingsPersistence
+	ProviderAccountStore
+	LeaseFactStore
+	SecretStore
+	StoreCloser
 }
 
-func newRuntimeStores(store interface {
-	runtimeSettingsPersistence
-	providerAccountStore
-	leaseFactStore
-	secretStore
-	storeCloser
+func NewRuntimeStores(backend interface {
+	RuntimeSettingsPersistence
+	ProviderAccountStore
+	LeaseFactStore
+	SecretStore
+	StoreCloser
 }) *RuntimeStores {
-	if store == nil {
+	if backend == nil {
 		return nil
 	}
 	return &RuntimeStores{
-		runtimeSettingsPersistence: store,
-		providerAccountStore:       store,
-		leaseFactStore:             store,
-		secretStore:                store,
-		storeCloser:                store,
+		RuntimeSettingsPersistence: backend,
+		ProviderAccountStore:       backend,
+		LeaseFactStore:             backend,
+		SecretStore:                backend,
+		StoreCloser:                backend,
 	}
 }
 
-type providerAccountMutationState struct {
+type ProviderAccountMutationState struct {
 	ProviderID         string
 	DynamicProviderID  string
 	Username           string

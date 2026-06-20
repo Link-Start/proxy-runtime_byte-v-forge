@@ -12,6 +12,7 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 const providerAccountDeleteTimeout = 2 * time.Minute
@@ -23,7 +24,7 @@ type runtimeProviderRepository interface {
 	ProviderAccount(context.Context, string) (*proxyruntimev1.ProxyProviderAccount, error)
 	ProviderAccountHasBlockingLease(context.Context, string) (bool, error)
 	BlockingLeaseFactsByProviderAccount(context.Context, string, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
-	ProviderAccountMutationState(context.Context, string) (providerAccountMutationState, error)
+	ProviderAccountMutationState(context.Context, string) (store.ProviderAccountMutationState, error)
 }
 
 type runtimeProviderSettings interface {

@@ -16,6 +16,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 func (s *PostgresStore) ListProviderAccounts(ctx context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error) {
@@ -207,13 +208,13 @@ func (s *PostgresStore) providerAccountToProto(ctx context.Context, record *prov
 	return providerAccountToProto(ctx, s, s.box, record)
 }
 
-func (s *PostgresStore) ProviderAccountMutationState(ctx context.Context, accountID string) (providerAccountMutationState, error) {
+func (s *PostgresStore) ProviderAccountMutationState(ctx context.Context, accountID string) (store.ProviderAccountMutationState, error) {
 	record, err := s.providerAccountRecord(ctx, accountID)
 	if err != nil {
-		return providerAccountMutationState{}, err
+		return store.ProviderAccountMutationState{}, err
 	}
 	credential := credentialFromSecret(s.box, record.CredentialSecret)
-	state := providerAccountMutationState{
+	state := store.ProviderAccountMutationState{
 		ProviderID:         record.ProviderID,
 		DynamicProviderID:  record.DynamicProviderID,
 		PasswordConfigured: record.CredentialSecret != "",

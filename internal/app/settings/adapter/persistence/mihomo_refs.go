@@ -1,4 +1,4 @@
-package app
+package persistence
 
 import (
 	"context"
@@ -8,11 +8,11 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 )
 
-func (s *runtimeSettingsStore) ReplaceMihomoResourceRefs(ctx context.Context, replacements map[string]mihomonative.ResourceReplacement) (bool, error) {
+func (s *Store) ReplaceMihomoResourceRefs(ctx context.Context, replacements map[string]mihomonative.ResourceReplacement) (bool, error) {
 	if len(replacements) == 0 {
 		return false, nil
 	}
-	return s.mutateRuntimeSettingsIfChanged(ctx, func(settings *runtimeSettingsFile) (bool, error) {
+	return s.mutateRuntimeSettingsIfChanged(ctx, func(settings *proxyruntimev1.ProxyRuntimePersistentSettings) (bool, error) {
 		changed := false
 		for _, profile := range settings.GetEgressProfiles() {
 			if replaceMihomoNodeRef(profile.GetLine().GetMihomoNode(), replacements) {
@@ -52,7 +52,7 @@ func replaceMihomoNodeRef(ref *proxyruntimev1.EgressProfileMihomoNodeRef, replac
 	return current != nextResourceID
 }
 
-func (s *runtimeSettingsStore) enabledMihomoResourceIDs(ctx context.Context) (map[string]struct{}, error) {
+func (s *Store) enabledMihomoResourceIDs(ctx context.Context) (map[string]struct{}, error) {
 	view, err := s.loadMihomoNativeLocked(ctx)
 	if err != nil {
 		return nil, err

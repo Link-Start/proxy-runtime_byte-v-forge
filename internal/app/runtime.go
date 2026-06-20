@@ -21,6 +21,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/persistence"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
@@ -36,7 +37,7 @@ type Runtime struct {
 	providerConcurrency leaseapp.ProviderAccountConcurrencyLimiter
 	leaseCoordinator    leaseCoordinator
 	dynamicIPSelector   *dynamic.IPSelector
-	settings            *runtimeSettingsStore
+	settings            *persistence.Store
 	metrics             *runtimeMetrics
 	appService          *RuntimeService
 	logger              *slog.Logger
@@ -105,7 +106,7 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 		leaseLocks:          deps.LeaseLocks,
 		providerConcurrency: deps.ProviderConcurrency,
 		providerHTTPClient:  deps.ProviderHTTPClient,
-		settings:            newRuntimeSettingsStore(deps.Store, deps.AccountProviders, deps.IPFraudProviders, deps.IPGeoProviders),
+		settings:            persistence.NewStore(deps.Store, deps.AccountProviders, deps.IPFraudProviders, deps.IPGeoProviders),
 		metrics:             newRuntimeMetrics(),
 		logger:              logger,
 		clock:               clk,

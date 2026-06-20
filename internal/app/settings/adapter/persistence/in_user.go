@@ -1,4 +1,4 @@
-package app
+package persistence
 
 import (
 	"context"
@@ -8,8 +8,8 @@ import (
 	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
-func (s *runtimeSettingsStore) UpdateInUserRules(ctx context.Context, profiles []*proxyruntimev1.EgressProfileSettings, rules []*proxyruntimev1.ProxyIngressRuleSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-	return s.mutateRuntimeSettings(ctx, func(settings *runtimeSettingsFile) (*runtimeSettingsFile, error) {
+func (s *Store) UpdateInUserRules(ctx context.Context, profiles []*proxyruntimev1.EgressProfileSettings, rules []*proxyruntimev1.ProxyIngressRuleSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+	return s.mutateRuntimeSettings(ctx, func(settings *proxyruntimev1.ProxyRuntimePersistentSettings) (*proxyruntimev1.ProxyRuntimePersistentSettings, error) {
 		nativeResourceIDs, err := s.enabledMihomoResourceIDs(ctx)
 		if err != nil {
 			return nil, err

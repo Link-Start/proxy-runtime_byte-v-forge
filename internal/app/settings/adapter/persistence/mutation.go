@@ -1,4 +1,4 @@
-package app
+package persistence
 
 import (
 	"context"
@@ -9,10 +9,10 @@ import (
 	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
-type runtimeSettingsMutation func(*runtimeSettingsFile) (*runtimeSettingsFile, error)
-type runtimeSettingsChangeMutation func(*runtimeSettingsFile) (bool, error)
-type runtimeSettingsLoadFunc func(context.Context) (*runtimeSettingsFile, error)
-type runtimeSettingsSaveFunc func(context.Context, *runtimeSettingsFile) error
+type runtimeSettingsMutation func(*proxyruntimev1.ProxyRuntimePersistentSettings) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
+type runtimeSettingsChangeMutation func(*proxyruntimev1.ProxyRuntimePersistentSettings) (bool, error)
+type runtimeSettingsLoadFunc func(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
+type runtimeSettingsSaveFunc func(context.Context, *proxyruntimev1.ProxyRuntimePersistentSettings) error
 
 type runtimeSettingsMutationExecutor struct {
 	mu   *sync.Mutex
@@ -20,15 +20,15 @@ type runtimeSettingsMutationExecutor struct {
 	save runtimeSettingsSaveFunc
 }
 
-func (s *runtimeSettingsStore) mutateRuntimeSettings(ctx context.Context, mutation runtimeSettingsMutation) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+func (s *Store) mutateRuntimeSettings(ctx context.Context, mutation runtimeSettingsMutation) (*proxyruntimev1.ProxyRuntimeSettings, error) {
 	return s.mutationExecutor().mutate(ctx, mutation)
 }
 
-func (s *runtimeSettingsStore) mutateRuntimeSettingsIfChanged(ctx context.Context, mutation runtimeSettingsChangeMutation) (bool, error) {
+func (s *Store) mutateRuntimeSettingsIfChanged(ctx context.Context, mutation runtimeSettingsChangeMutation) (bool, error) {
 	return s.mutationExecutor().mutateIfChanged(ctx, mutation)
 }
 
-func (s *runtimeSettingsStore) mutationExecutor() runtimeSettingsMutationExecutor {
+func (s *Store) mutationExecutor() runtimeSettingsMutationExecutor {
 	return runtimeSettingsMutationExecutor{mu: &s.mu, load: s.loadLocked, save: s.saveLocked}
 }
 

@@ -1,4 +1,4 @@
-package app
+package persistence
 
 import (
 	"context"
@@ -8,7 +8,7 @@ import (
 	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
-func (s *runtimeSettingsStore) View(ctx context.Context) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+func (s *Store) View(ctx context.Context) (*proxyruntimev1.ProxyRuntimeSettings, error) {
 	settings, err := s.Load(ctx)
 	if err != nil {
 		return nil, err

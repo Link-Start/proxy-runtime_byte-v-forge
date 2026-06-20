@@ -8,10 +8,11 @@ import (
 	mihomoapp "github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative/application"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/persistence"
 )
 
 type runtimeSettingsMihomoNativeAdapter struct {
-	repository *runtimeSettingsStore
+	repository *persistence.Store
 	configDir  string
 	apply      runtimeMihomoNativeApplyScheduler
 }

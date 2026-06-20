@@ -1,4 +1,4 @@
-package app
+package persistence
 
 import (
 	"context"
@@ -9,8 +9,8 @@ import (
 	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
-func (s *runtimeSettingsStore) Update(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-	return s.mutateRuntimeSettings(ctx, func(current *runtimeSettingsFile) (*runtimeSettingsFile, error) {
+func (s *Store) Update(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+	return s.mutateRuntimeSettings(ctx, func(current *proxyruntimev1.ProxyRuntimePersistentSettings) (*proxyruntimev1.ProxyRuntimePersistentSettings, error) {
 		nativeResourceIDs, err := s.enabledMihomoResourceIDs(ctx)
 		if err != nil {
 			return nil, err
@@ -19,8 +19,8 @@ func (s *runtimeSettingsStore) Update(ctx context.Context, req *proxyruntimev1.U
 	})
 }
 
-func (s *runtimeSettingsStore) UpdateDynamicIPProviders(ctx context.Context, providers []*proxyruntimev1.ProxyDynamicIPProviderSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
-	return s.mutateRuntimeSettings(ctx, func(settings *runtimeSettingsFile) (*runtimeSettingsFile, error) {
+func (s *Store) UpdateDynamicIPProviders(ctx context.Context, providers []*proxyruntimev1.ProxyDynamicIPProviderSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+	return s.mutateRuntimeSettings(ctx, func(settings *proxyruntimev1.ProxyRuntimePersistentSettings) (*proxyruntimev1.ProxyRuntimePersistentSettings, error) {
 		nextProviders, err := settingsdomain.DynamicIPProvidersFromRequest(providers, s.accountProviders)
 		if err != nil {
 			return nil, err

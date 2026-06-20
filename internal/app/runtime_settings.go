@@ -1,34 +1,8 @@
 package app
 
-import (
-	"sync"
+import proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
-	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
-	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
-
-	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
-)
-
+// runtimeSettingsFile aliases the persisted runtime-settings proto for the many
+// composition-root sites that pass it around; the settings persistence adapter
+// lives in internal/app/settings/adapter/persistence.
 type runtimeSettingsFile = proxyruntimev1.ProxyRuntimePersistentSettings
-
-type runtimeSettingsStore struct {
-	store            store.RuntimeSettingsPersistence
-	secretWriter     secretref.Writer
-	accountProviders *providerregistry.Registry
-	ipFraudProviders *ipfraud.Registry
-	ipGeoProviders   *ipgeo.Registry
-	mu               sync.Mutex
-}
-
-func newRuntimeSettingsStore(stores *store.RuntimeStores, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry) *runtimeSettingsStore {
-	var persistence store.RuntimeSettingsPersistence
-	var secretWriter secretref.Writer
-	if stores != nil {
-		persistence = stores.RuntimeSettingsPersistence
-		secretWriter = stores.SecretStore
-	}
-	return &runtimeSettingsStore{store: persistence, secretWriter: secretWriter, accountProviders: accountProviders, ipFraudProviders: ipFraudProviders, ipGeoProviders: ipGeoProviders}
-}

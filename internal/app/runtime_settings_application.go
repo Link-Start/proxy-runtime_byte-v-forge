@@ -7,6 +7,7 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
 	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/persistence"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
@@ -14,7 +15,7 @@ import (
 
 type runtimeSettingsApplicationDependencies struct {
 	Logger                     *slog.Logger
-	Settings                   *runtimeSettingsStore
+	Settings                   *persistence.Store
 	ProxyUsers                 []config.ProxyUserRoute
 	IPFraudProviderViews       func() []*proxyruntimev1.ProxyIPFraudProviderDescriptor
 	IPGeoProviderViews         func() []*proxyruntimev1.ProxyIPGeoProviderDescriptor

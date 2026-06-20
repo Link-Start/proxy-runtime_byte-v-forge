@@ -1,4 +1,4 @@
-package app
+package concurrency
 
 import (
 	"context"
@@ -26,7 +26,7 @@ type redisProviderAccountConcurrencyLimiter struct {
 	clock  clock.Clock
 }
 
-type providerAccountConcurrencyRuntime interface {
+type Limiter interface {
 	leaseapp.ProviderAccountConcurrencyLimiter
 	Close() error
 }
@@ -38,7 +38,7 @@ type redisProviderAccountConcurrencySlot struct {
 	holder    string
 }
 
-func NewProviderAccountConcurrencyLimiter(ctx context.Context, cfg config.Config, clk clock.Clock) (providerAccountConcurrencyRuntime, error) {
+func New(ctx context.Context, cfg config.Config, clk clock.Clock) (Limiter, error) {
 	client, err := redisclient.New(ctx, cfg.RedisURL)
 	if err != nil {
 		return nil, err

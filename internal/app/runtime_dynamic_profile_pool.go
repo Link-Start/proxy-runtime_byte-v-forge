@@ -29,7 +29,7 @@ func (r *Runtime) dynamicProfilePool(ctx context.Context, settings *runtimeSetti
 		return nil, err
 	}
 	client := r.providerHTTPClient
-	endpointHealthScores := r.dynamicIPSelector.dynamicIPEndpointHealthScores(ctx)
+	endpointHealthScores := r.dynamicIPSelector.DynamicIPEndpointHealthScores(ctx)
 	out := []provider.Node{}
 	for _, profile := range settings.GetEgressProfiles() {
 		if !profile.GetEnabled() || appcore.RuntimeSafeID(profile.GetProfileId()) == playgroundProfileID || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
@@ -54,7 +54,7 @@ func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http
 	endpointID := dynamicProfileEndpointID(exit)
 	policy := dynamicProfileSelectionPolicy(profileID, exit.GetDynamicIpPolicy())
 	concurrencyHolder := dynamicProfileConcurrencyHolder(profileID)
-	candidates := []scoredDynamicIPEndpointCandidate{}
+	candidates := []dynamic.ScoredEndpointCandidate{}
 	selections := map[string]dynamicProfileEndpointSelection{}
 	for accountIndex, account := range accounts {
 		if account.GetStatus() != proxyruntimev1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED || !account.GetCredentialConfigured() {
@@ -75,10 +75,10 @@ func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http
 		if len(matchedInstances) == 0 {
 			continue
 		}
-		accountCandidates := r.dynamicIPSelector.dynamicIPEndpointCandidatesForAccount(ctx, account, accountIndex, matchedInstances, policy, exit.GetDynamicIpPolicy(), dynamicIPCandidateFilter{concurrencyHolder: concurrencyHolder})
+		accountCandidates := r.dynamicIPSelector.DynamicIPEndpointCandidatesForAccount(ctx, account, accountIndex, matchedInstances, policy, exit.GetDynamicIpPolicy(), dynamic.IPCandidateFilter{ConcurrencyHolder: concurrencyHolder})
 		accountCandidates = dynamicProfileEndpointCandidates(accountCandidates, endpointID)
 		for _, candidate := range accountCandidates {
-			if candidate.proto == nil {
+			if candidate.Proto == nil {
 				continue
 			}
 			key := dynamicProfileEndpointCandidateKey(candidate)
@@ -86,26 +86,26 @@ func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http
 			selections[key] = dynamicProfileEndpointSelection{account: account, accountID: accountID, config: cfg}
 		}
 	}
-	applyDynamicIPEndpointHealthScores(candidates, endpointHealthScores)
-	selected := chooseDynamicIPEndpointCandidate(candidates, policy, dynamicProfileSelectionKey(profileID, "", endpointID, exit.GetDynamicIpPolicy()), 1)
+	dynamic.ApplyEndpointHealthScores(candidates, endpointHealthScores)
+	selected := dynamic.ChooseEndpointCandidate(candidates, policy, dynamicProfileSelectionKey(profileID, "", endpointID, exit.GetDynamicIpPolicy()), 1)
 	selection, ok := selections[dynamicProfileEndpointCandidateKey(selected)]
-	if selected.proto == nil || !ok {
+	if selected.Proto == nil || !ok {
 		return nil
 	}
-	limit := dynamicProviderConcurrencyLimit(settings, selected.proto.GetDynamicProviderId(), exit.GetDynamicIpPolicy())
+	limit := dynamicProviderConcurrencyLimit(settings, selected.Proto.GetDynamicProviderId(), exit.GetDynamicIpPolicy())
 	return r.dynamicProfileNodesForSelection(ctx, client, profile, selection, selected, limit, concurrencyHolder)
 }
 
-func dynamicProfileEndpointCandidateKey(candidate scoredDynamicIPEndpointCandidate) string {
-	if candidate.proto == nil {
+func dynamicProfileEndpointCandidateKey(candidate dynamic.ScoredEndpointCandidate) string {
+	if candidate.Proto == nil {
 		return ""
 	}
 	return strings.Join([]string{
-		candidate.proto.GetProviderAccountId(),
-		candidate.proto.GetProviderId(),
-		candidate.proto.GetDynamicProviderId(),
-		candidate.proto.GetEndpointId(),
-		candidate.proto.GetEndpointUrl(),
+		candidate.Proto.GetProviderAccountId(),
+		candidate.Proto.GetProviderId(),
+		candidate.Proto.GetDynamicProviderId(),
+		candidate.Proto.GetEndpointId(),
+		candidate.Proto.GetEndpointUrl(),
 	}, "/")
 }
 

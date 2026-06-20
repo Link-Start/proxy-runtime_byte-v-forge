@@ -4,6 +4,7 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
@@ -27,7 +28,7 @@ type leaseCoordinatorDependencies struct {
 	ids                     leaseapp.IDGenerator
 	locks                   leaseapp.LockManager
 	dataPlane               leaseapp.DataPlaneApplier
-	dynamicIPSelector       *dynamicIPSelector
+	dynamicIPSelector       *dynamic.IPSelector
 	sessionProviders        leaseapp.SessionProviderFactory
 	providerConcurrency     leaseapp.ProviderAccountConcurrencyLimiter
 	logger                  leaseapp.Logger

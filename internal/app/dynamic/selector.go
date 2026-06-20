@@ -1,4 +1,4 @@
-package app
+package dynamic
 
 import (
 	"context"
@@ -16,15 +16,15 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 )
 
-type scoredDynamicIPEndpointCandidate struct {
-	proto    *proxyruntimev1.ProxyDynamicIPEndpointCandidate
-	endpoint accountproxy.Gateway
+type ScoredEndpointCandidate struct {
+	Proto    *proxyruntimev1.ProxyDynamicIPEndpointCandidate
+	Endpoint accountproxy.Gateway
 	score    int
 }
 
-type dynamicIPSelector struct {
+type IPSelector struct {
 	store            dynamicIPSelectionStore
-	settings         dynamicIPSelectionSettings
+	loadSettingsFn   func(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
 	accountProviders dynamicIPSelectionProviderRegistry
 	concurrency      leaseapp.ProviderAccountConcurrencyLimiter
 	logger           dynamicIPSelectionLogger
@@ -32,9 +32,9 @@ type dynamicIPSelector struct {
 	clock            clock.Clock
 }
 
-type dynamicIPSelectorDependencies struct {
+type IPSelectorDependencies struct {
 	Store            dynamicIPSelectionStore
-	Settings         dynamicIPSelectionSettings
+	LoadSettings     func(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
 	AccountProviders dynamicIPSelectionProviderRegistry
 	Concurrency      leaseapp.ProviderAccountConcurrencyLimiter
 	Logger           dynamicIPSelectionLogger
@@ -47,10 +47,6 @@ type dynamicIPSelectionStore interface {
 	RecentLeaseFacts(context.Context, time.Time, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
 }
 
-type dynamicIPSelectionSettings interface {
-	load(context.Context) (*runtimeSettingsFile, error)
-}
-
 type dynamicIPSelectionProviderRegistry interface {
 	IsSupported(string) bool
 	GatewayProtocolForProvider(string, accountproxy.Gateway) (string, bool)
@@ -60,10 +56,10 @@ type dynamicIPSelectionLogger interface {
 	Warn(string, ...any)
 }
 
-func newDynamicIPSelector(deps dynamicIPSelectorDependencies) *dynamicIPSelector {
-	return &dynamicIPSelector{
+func NewIPSelector(deps IPSelectorDependencies) *IPSelector {
+	return &IPSelector{
 		store:            deps.Store,
-		settings:         deps.Settings,
+		loadSettingsFn:   deps.LoadSettings,
 		accountProviders: deps.AccountProviders,
 		concurrency:      deps.Concurrency,
 		logger:           deps.Logger,
@@ -72,7 +68,7 @@ func newDynamicIPSelector(deps dynamicIPSelectorDependencies) *dynamicIPSelector
 	}
 }
 
-func (p *dynamicIPSelector) selectDynamicIPEndpoint(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (leaseapp.DynamicIPSelection, error) {
+func (p *IPSelector) SelectDynamicIPEndpoint(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (leaseapp.DynamicIPSelection, error) {
 	settings, err := p.loadSettings(ctx)
 	if err != nil {
 		return leaseapp.DynamicIPSelection{}, err
@@ -86,33 +82,33 @@ func (p *dynamicIPSelector) selectDynamicIPEndpoint(ctx context.Context, req *pr
 		return leaseapp.DynamicIPSelection{}, errors.New("no dynamic IP endpoint candidate")
 	}
 	attempt := leaseapp.DynamicIPSelectionAttempt(req)
-	selectedEndpoint := chooseDynamicIPEndpointCandidate(endpoints, policy, leaseapp.DynamicIPSelectionKey(req), attempt)
+	selectedEndpoint := ChooseEndpointCandidate(endpoints, policy, leaseapp.DynamicIPSelectionKey(req), attempt)
 	reasons := []string{
-		fmt.Sprintf("dynamic_ip_endpoint=%s/%s/%s/%s", selectedEndpoint.proto.GetProviderAccountId(), selectedEndpoint.proto.GetProviderId(), selectedEndpoint.proto.GetDynamicProviderId(), selectedEndpoint.proto.GetEndpointId()),
+		fmt.Sprintf("dynamic_ip_endpoint=%s/%s/%s/%s", selectedEndpoint.Proto.GetProviderAccountId(), selectedEndpoint.Proto.GetProviderId(), selectedEndpoint.Proto.GetDynamicProviderId(), selectedEndpoint.Proto.GetEndpointId()),
 	}
 	selectionID := "selection-" + appcore.ShortHash(req.GetAccountId()+":"+policy.GetPurpose())
 	plan := &proxyruntimev1.ProxyDynamicIPSelectionPlan{
 		SelectionId:      selectionID,
 		Policy:           dynamicIPSelectionPlanPolicy(policy),
-		SelectedEndpoint: selectedEndpoint.proto,
+		SelectedEndpoint: selectedEndpoint.Proto,
 		SelectionReasons: reasons,
 		SelectedAt:       timestamppb.New(p.clock.Now().UTC()),
 	}
-	return leaseapp.DynamicIPSelection{Plan: plan, Endpoint: selectedEndpoint.endpoint}, nil
+	return leaseapp.DynamicIPSelection{Plan: plan, Endpoint: selectedEndpoint.Endpoint}, nil
 }
 
-func (p *dynamicIPSelector) loadSettings(ctx context.Context) (*runtimeSettingsFile, error) {
-	if p == nil || p.settings == nil {
+func (p *IPSelector) loadSettings(ctx context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error) {
+	if p == nil || p.loadSettingsFn == nil {
 		return nil, appcore.InternalError("dynamic IP selection settings repository is not configured", nil)
 	}
-	return p.settings.load(ctx)
+	return p.loadSettingsFn(ctx)
 }
 
-func (p *dynamicIPSelector) providerSupported(providerID string) bool {
+func (p *IPSelector) providerSupported(providerID string) bool {
 	return p != nil && p.accountProviders != nil && p.accountProviders.IsSupported(providerID)
 }
 
-func (p *dynamicIPSelector) warn(message string, args ...any) {
+func (p *IPSelector) warn(message string, args ...any) {
 	if p != nil && p.logger != nil {
 		p.logger.Warn(message, args...)
 	}

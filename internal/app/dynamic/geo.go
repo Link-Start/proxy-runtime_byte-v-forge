@@ -1,4 +1,4 @@
-package app
+package dynamic
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 )
 
-func (p *dynamicIPSelector) endpointRegionCodes(ctx context.Context, endpoint accountproxy.Gateway, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) []string {
+func (p *IPSelector) endpointRegionCodes(ctx context.Context, endpoint accountproxy.Gateway, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) []string {
 	if !hasRequestedRegion(policy) {
 		return nil
 	}
@@ -39,7 +39,7 @@ func (p *dynamicIPSelector) endpointRegionCodes(ctx context.Context, endpoint ac
 	return cleanRegionCodes(out)
 }
 
-func (p *dynamicIPSelector) endpointRegionCodesFromIP(ctx context.Context, base []string, ip net.IP) []string {
+func (p *IPSelector) endpointRegionCodesFromIP(ctx context.Context, base []string, ip net.IP) []string {
 	if ip == nil || !publicIP(ip) {
 		return cleanRegionCodes(base)
 	}

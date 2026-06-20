@@ -1,12 +1,14 @@
 package app
 
-func runtimeDynamicIPSelectorDependencies(runtime *Runtime) dynamicIPSelectorDependencies {
+import "github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
+
+func runtimeDynamicIPSelectorDependencies(runtime *Runtime) dynamic.IPSelectorDependencies {
 	if runtime == nil {
-		return dynamicIPSelectorDependencies{}
+		return dynamic.IPSelectorDependencies{}
 	}
-	return dynamicIPSelectorDependencies{
+	return dynamic.IPSelectorDependencies{
 		Store:            runtime.store,
-		Settings:         runtime.settings,
+		LoadSettings:     runtime.settings.load,
 		AccountProviders: runtime.accountProviders,
 		Concurrency:      runtime.providerConcurrency,
 		Logger:           runtime.logger,

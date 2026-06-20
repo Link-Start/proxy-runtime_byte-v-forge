@@ -1,4 +1,4 @@
-package app
+package dynamic
 
 import (
 	"strings"
@@ -78,6 +78,23 @@ func appendRegionCode(values []string, value string) []string {
 		}
 	}
 	return append(values, value)
+}
+
+func cleanRegionCodes(values []string) []string {
+	out := make([]string, 0, len(values))
+	seen := map[string]struct{}{}
+	for _, value := range values {
+		value = strings.ToUpper(strings.TrimSpace(value))
+		if value == "" {
+			continue
+		}
+		if _, exists := seen[value]; exists {
+			continue
+		}
+		seen[value] = struct{}{}
+		out = append(out, value)
+	}
+	return out
 }
 
 func max(left int, right int) int {

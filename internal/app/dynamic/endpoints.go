@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
@@ -107,4 +108,11 @@ func EndpointIDFromURL(value string) string {
 		return ""
 	}
 	return "endpoint-" + appcore.ShortHash(value)
+}
+
+func ProviderInstanceConcurrencyLimit(provider ProviderInstance, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
+	if leaseapp.ConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
+		return settingscore.NormalizeDynamicProviderRotatingConcurrencyLimit(provider.RotatingConcurrencyLimit)
+	}
+	return settingscore.NormalizeDynamicProviderStickyConcurrencyLimit(provider.StickyConcurrencyLimit)
 }

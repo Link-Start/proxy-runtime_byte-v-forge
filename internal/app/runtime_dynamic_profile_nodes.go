@@ -12,20 +12,21 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 )
 
 const dynamicProfileSlotReleaseTimeout = 5 * time.Second
 
-func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *http.Client, profile *proxyruntimev1.EgressProfileSettings, selection dynamicProfileEndpointSelection, selected scoredDynamicIPEndpointCandidate, concurrencyLimit uint32, concurrencyHolder string) []provider.Node {
+func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *http.Client, profile *proxyruntimev1.EgressProfileSettings, selection dynamicProfileEndpointSelection, selected dynamic.ScoredEndpointCandidate, concurrencyLimit uint32, concurrencyHolder string) []provider.Node {
 	profileID := appcore.RuntimeSafeID(profile.GetProfileId())
 	cfg := selection.config
-	cfg.Gateways = []accountproxy.Gateway{selected.endpoint}
+	cfg.Gateways = []accountproxy.Gateway{selected.Endpoint}
 	providerClient, err := r.accountProviders.NewSessionProvider(cfg, client, r.clock)
 	if err != nil {
 		r.logger.Warn("dynamic profile provider account skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error_type", appcore.ErrorLogType(err))
 		return nil
 	}
-	session := dynamicProfileSession(profileID, selection.accountID, cfg.ProviderID, selected.proto.GetEndpointId(), profile.GetExit().GetDynamicIpPolicy())
+	session := dynamicProfileSession(profileID, selection.accountID, cfg.ProviderID, selected.Proto.GetEndpointId(), profile.GetExit().GetDynamicIpPolicy())
 	slot, err := leaseapp.AcquireProviderAccountConcurrencySlot(ctx, r.providerConcurrency, selection.account.GetAccountId(), concurrencyLimit, session.GetPolicy(), concurrencyHolder, leaseapp.ConcurrencySlotTTL(session.GetPolicy(), leaseapp.DefaultDynamicIPStickyTTL, providerAccountConcurrencyTTLBuffer))
 	if err != nil {
 		r.logger.Warn("dynamic profile provider account skipped", "account_id", selection.accountID, "provider_id", cfg.ProviderID, "error_type", appcore.ErrorLogType(err))
@@ -49,10 +50,10 @@ func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *h
 	return nodes
 }
 
-func dynamicProfileLabelNode(node provider.Node, index int, profile *proxyruntimev1.EgressProfileSettings, selection dynamicProfileEndpointSelection, selected scoredDynamicIPEndpointCandidate) provider.Node {
+func dynamicProfileLabelNode(node provider.Node, index int, profile *proxyruntimev1.EgressProfileSettings, selection dynamicProfileEndpointSelection, selected dynamic.ScoredEndpointCandidate) provider.Node {
 	profileID := appcore.RuntimeSafeID(profile.GetProfileId())
-	policy := dynamicProfileSessionPolicy(profile.GetExit().GetDynamicIpPolicy(), selected.proto.GetEndpointId())
-	node.ID = dynamicProfileNodeID(profileID, selection.accountID, node.SessionID, selected.proto.GetEndpointId(), index)
+	policy := dynamicProfileSessionPolicy(profile.GetExit().GetDynamicIpPolicy(), selected.Proto.GetEndpointId())
+	node.ID = dynamicProfileNodeID(profileID, selection.accountID, node.SessionID, selected.Proto.GetEndpointId(), index)
 	node.ProviderID = selection.config.ProviderID
 	node.Labels = cloneLabels(node.Labels)
 	node.Labels["egress_profile_id"] = profileID
@@ -64,9 +65,9 @@ func dynamicProfileLabelNode(node provider.Node, index int, profile *proxyruntim
 	node.Labels["provider_account_display_name"] = strings.TrimSpace(selection.account.GetDisplayName())
 	node.Labels["provider_id"] = selection.config.ProviderID
 	node.Labels["session_id"] = strings.TrimSpace(node.SessionID)
-	node.Labels["dynamic_provider_id"] = selected.proto.GetDynamicProviderId()
-	node.Labels["dynamic_provider_ids"] = selected.proto.GetDynamicProviderId()
-	node.Labels["dynamic_ip_endpoint_id"] = selected.proto.GetEndpointId()
+	node.Labels["dynamic_provider_id"] = selected.Proto.GetDynamicProviderId()
+	node.Labels["dynamic_provider_ids"] = selected.Proto.GetDynamicProviderId()
+	node.Labels["dynamic_ip_endpoint_id"] = selected.Proto.GetEndpointId()
 	node.Labels["session_mode"] = policy.GetMode().String()
 	node.Labels["rotation_mode"] = policy.GetRotationMode().String()
 	node.Labels["region"] = strings.TrimSpace(policy.GetRegion())

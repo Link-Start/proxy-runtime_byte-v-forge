@@ -7,20 +7,21 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 )
 
 func dynamicProfileEndpointID(exit *proxyruntimev1.EgressProfileExitSettings) string {
 	return strings.TrimSpace(exit.GetDynamicIpPolicy().GetLabels()["dynamic_ip_endpoint_id"])
 }
 
-func dynamicProfileEndpointCandidates(candidates []scoredDynamicIPEndpointCandidate, endpointID string) []scoredDynamicIPEndpointCandidate {
+func dynamicProfileEndpointCandidates(candidates []dynamic.ScoredEndpointCandidate, endpointID string) []dynamic.ScoredEndpointCandidate {
 	endpointID = strings.TrimSpace(endpointID)
 	if endpointID == "" {
 		return candidates
 	}
-	out := []scoredDynamicIPEndpointCandidate{}
+	out := []dynamic.ScoredEndpointCandidate{}
 	for _, candidate := range candidates {
-		if candidate.proto.GetEndpointId() == endpointID {
+		if candidate.Proto.GetEndpointId() == endpointID {
 			out = append(out, candidate)
 		}
 	}

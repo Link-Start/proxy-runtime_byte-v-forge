@@ -1,4 +1,4 @@
-package app
+package dynamic
 
 import (
 	"context"
@@ -19,7 +19,7 @@ type dynamicIPEndpointHealth struct {
 	failure int
 }
 
-func (p *dynamicIPSelector) dynamicIPEndpointHealthScores(ctx context.Context) map[string]int {
+func (p *IPSelector) DynamicIPEndpointHealthScores(ctx context.Context) map[string]int {
 	if p == nil || p.store == nil {
 		return nil
 	}
@@ -31,12 +31,12 @@ func (p *dynamicIPSelector) dynamicIPEndpointHealthScores(ctx context.Context) m
 	return dynamicIPEndpointHealthScoresFromLeases(leases)
 }
 
-func applyDynamicIPEndpointHealthScores(candidates []scoredDynamicIPEndpointCandidate, scores map[string]int) {
+func ApplyEndpointHealthScores(candidates []ScoredEndpointCandidate, scores map[string]int) {
 	if len(scores) == 0 {
 		return
 	}
 	for index := range candidates {
-		endpointID := candidates[index].proto.GetEndpointId()
+		endpointID := candidates[index].Proto.GetEndpointId()
 		candidates[index].score += scores[endpointID]
 	}
 }

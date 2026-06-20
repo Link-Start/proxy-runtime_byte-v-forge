@@ -7,17 +7,18 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 )
 
 type leaseDynamicIPSelectionAdapter struct {
-	selector *dynamicIPSelector
+	selector *dynamic.IPSelector
 }
 
 func (a leaseDynamicIPSelectionAdapter) Select(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (leaseapp.DynamicIPSelection, error) {
 	if a.selector == nil {
 		return leaseapp.DynamicIPSelection{}, appcore.InternalError("dynamic IP selector is not configured", nil)
 	}
-	return a.selector.selectDynamicIPEndpoint(ctx, req)
+	return a.selector.SelectDynamicIPEndpoint(ctx, req)
 }
 
 func mapDynamicIPSelectionError(err error) error {

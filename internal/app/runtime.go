@@ -19,6 +19,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
@@ -34,7 +35,7 @@ type Runtime struct {
 	leaseLocks          leaseRuntimeLocks
 	providerConcurrency leaseapp.ProviderAccountConcurrencyLimiter
 	leaseCoordinator    leaseCoordinator
-	dynamicIPSelector   *dynamicIPSelector
+	dynamicIPSelector   *dynamic.IPSelector
 	settings            *runtimeSettingsStore
 	metrics             *runtimeMetrics
 	appService          *RuntimeService
@@ -112,7 +113,7 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 		reconcileCh:         make(chan struct{}, 1),
 	}
 	runtime.exitCheckCache.clock = clk
-	runtime.dynamicIPSelector = newDynamicIPSelector(runtimeDynamicIPSelectorDependencies(runtime))
+	runtime.dynamicIPSelector = dynamic.NewIPSelector(runtimeDynamicIPSelectorDependencies(runtime))
 	runtime.leaseCoordinator = newLeaseCoordinator(runtimeLeaseCoordinatorDependencies(runtime))
 	runtime.appService = NewRuntimeService(runtime)
 	return runtime, nil

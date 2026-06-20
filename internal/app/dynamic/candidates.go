@@ -1,4 +1,4 @@
-package app
+package dynamic
 
 import (
 	"context"
@@ -9,10 +9,9 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 )
 
-func (p *dynamicIPSelector) dynamicIPEndpointCandidates(ctx context.Context, settings *runtimeSettingsFile, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxyruntimev1.ProxySessionPolicy) ([]scoredDynamicIPEndpointCandidate, error) {
+func (p *IPSelector) dynamicIPEndpointCandidates(ctx context.Context, settings *proxyruntimev1.ProxyRuntimePersistentSettings, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxyruntimev1.ProxySessionPolicy) ([]ScoredEndpointCandidate, error) {
 	if p == nil || p.store == nil {
 		return nil, appcore.InternalError("dynamic IP selection store is not configured", nil)
 	}
@@ -20,9 +19,9 @@ func (p *dynamicIPSelector) dynamicIPEndpointCandidates(ctx context.Context, set
 	if err != nil {
 		return nil, err
 	}
-	providerInstances := dynamic.ProviderInstances(settings)
+	providerInstances := ProviderInstances(settings)
 	filter := dynamicIPCandidateFilterFromPolicy(sessionPolicy)
-	out := make([]scoredDynamicIPEndpointCandidate, 0)
+	out := make([]ScoredEndpointCandidate, 0)
 	for accountIndex, account := range accounts {
 		if account.GetStatus() != proxyruntimev1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED || !account.GetCredentialConfigured() {
 			continue
@@ -30,36 +29,36 @@ func (p *dynamicIPSelector) dynamicIPEndpointCandidates(ctx context.Context, set
 		if !p.providerSupported(account.GetProviderId()) {
 			continue
 		}
-		out = append(out, p.dynamicIPEndpointCandidatesForAccount(ctx, account, accountIndex, providerInstances, policy, sessionPolicy, filter)...)
+		out = append(out, p.DynamicIPEndpointCandidatesForAccount(ctx, account, accountIndex, providerInstances, policy, sessionPolicy, filter)...)
 	}
-	applyDynamicIPEndpointHealthScores(out, p.dynamicIPEndpointHealthScores(ctx))
+	ApplyEndpointHealthScores(out, p.DynamicIPEndpointHealthScores(ctx))
 	return out, nil
 }
 
-type dynamicIPCandidateFilter struct {
+type IPCandidateFilter struct {
 	dynamicProviderID string
 	endpointID        string
-	concurrencyHolder string
+	ConcurrencyHolder string
 }
 
-func dynamicIPCandidateFilterFromPolicy(policy *proxyruntimev1.ProxySessionPolicy) dynamicIPCandidateFilter {
+func dynamicIPCandidateFilterFromPolicy(policy *proxyruntimev1.ProxySessionPolicy) IPCandidateFilter {
 	labels := policy.GetLabels()
-	return dynamicIPCandidateFilter{
+	return IPCandidateFilter{
 		dynamicProviderID: appcore.RuntimeSafeID(labels["dynamic_provider_id"]),
 		endpointID:        strings.TrimSpace(labels["dynamic_ip_endpoint_id"]),
 	}
 }
 
-func (p *dynamicIPSelector) providerAccountConcurrencyAvailable(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, provider dynamic.ProviderInstance, policy *proxyruntimev1.ProxySessionPolicy, holder string) (bool, error) {
+func (p *IPSelector) providerAccountConcurrencyAvailable(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, provider ProviderInstance, policy *proxyruntimev1.ProxySessionPolicy, holder string) (bool, error) {
 	if p.concurrency == nil {
 		return true, nil
 	}
-	return p.concurrency.Available(ctx, account.GetAccountId(), policy, dynamicProviderInstanceConcurrencyLimit(provider, policy), holder)
+	return p.concurrency.Available(ctx, account.GetAccountId(), policy, ProviderInstanceConcurrencyLimit(provider, policy), holder)
 }
 
-func (p *dynamicIPSelector) dynamicIPEndpointCandidatesForAccount(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, accountIndex int, providerInstances []dynamic.ProviderInstance, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxyruntimev1.ProxySessionPolicy, filter dynamicIPCandidateFilter) []scoredDynamicIPEndpointCandidate {
+func (p *IPSelector) DynamicIPEndpointCandidatesForAccount(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, accountIndex int, providerInstances []ProviderInstance, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxyruntimev1.ProxySessionPolicy, filter IPCandidateFilter) []ScoredEndpointCandidate {
 	accountDynamicProviderID := appcore.RuntimeSafeID(account.GetDynamicProviderId())
-	out := []scoredDynamicIPEndpointCandidate{}
+	out := []ScoredEndpointCandidate{}
 	for providerIndex, providerInstance := range providerInstances {
 		if providerInstance.ProviderID != account.GetProviderId() {
 			continue
@@ -70,14 +69,14 @@ func (p *dynamicIPSelector) dynamicIPEndpointCandidatesForAccount(ctx context.Co
 		if filter.dynamicProviderID != "" && filter.dynamicProviderID != providerInstance.DynamicProviderID {
 			continue
 		}
-		if ok, err := p.providerAccountConcurrencyAvailable(ctx, account, providerInstance, sessionPolicy, filter.concurrencyHolder); err != nil || !ok {
+		if ok, err := p.providerAccountConcurrencyAvailable(ctx, account, providerInstance, sessionPolicy, filter.ConcurrencyHolder); err != nil || !ok {
 			continue
 		}
 		for endpointIndex, endpoint := range providerInstance.Endpoints {
 			if strings.TrimSpace(endpoint.EndpointURL) == "" {
 				continue
 			}
-			endpointID := appcore.FirstNonEmpty(endpoint.ID, dynamic.EndpointIDFromURL(endpoint.EndpointURL))
+			endpointID := appcore.FirstNonEmpty(endpoint.ID, EndpointIDFromURL(endpoint.EndpointURL))
 			if filter.endpointID != "" && filter.endpointID != endpointID {
 				continue
 			}
@@ -94,13 +93,13 @@ func (p *dynamicIPSelector) dynamicIPEndpointCandidatesForAccount(ctx context.Co
 			}
 			scoredEndpoint := endpoint
 			scoredEndpoint.ID = endpointID
-			out = append(out, scoredDynamicIPEndpointCandidate{proto: candidate, endpoint: scoredEndpoint, score: endpointScore(regions, policy)})
+			out = append(out, ScoredEndpointCandidate{Proto: candidate, Endpoint: scoredEndpoint, score: endpointScore(regions, policy)})
 		}
 	}
 	return out
 }
 
-func (p *dynamicIPSelector) endpointProtocolForProvider(providerID string, endpoint accountproxy.Gateway) string {
+func (p *IPSelector) endpointProtocolForProvider(providerID string, endpoint accountproxy.Gateway) string {
 	if p != nil && p.accountProviders != nil {
 		protocol, ok := p.accountProviders.GatewayProtocolForProvider(providerID, endpoint)
 		if ok {
@@ -110,11 +109,11 @@ func (p *dynamicIPSelector) endpointProtocolForProvider(providerID string, endpo
 	return accountproxy.GatewayProtocol(endpoint, "socks5")
 }
 
-func chooseDynamicIPEndpointCandidate(candidates []scoredDynamicIPEndpointCandidate, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, key string, attempt int) scoredDynamicIPEndpointCandidate {
+func ChooseEndpointCandidate(candidates []ScoredEndpointCandidate, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, key string, attempt int) ScoredEndpointCandidate {
 	candidates = regionScopedDynamicIPEndpointCandidates(candidates, policy)
 	groups := dynamicIPEndpointCandidateGroups(candidates, key)
 	if len(groups) == 0 {
-		return scoredDynamicIPEndpointCandidate{}
+		return ScoredEndpointCandidate{}
 	}
 	groupIndex := 0
 	if len(groups) > 1 {
@@ -131,27 +130,27 @@ type dynamicIPEndpointCandidateGroup struct {
 	providerAccountID string
 	priority          uint32
 	order             uint32
-	candidates        []scoredDynamicIPEndpointCandidate
+	candidates        []ScoredEndpointCandidate
 }
 
-func dynamicIPEndpointCandidateGroups(candidates []scoredDynamicIPEndpointCandidate, key string) []dynamicIPEndpointCandidateGroup {
+func dynamicIPEndpointCandidateGroups(candidates []ScoredEndpointCandidate, key string) []dynamicIPEndpointCandidateGroup {
 	byAccount := map[string]*dynamicIPEndpointCandidateGroup{}
 	for _, candidate := range candidates {
-		accountID := candidate.proto.GetProviderAccountId()
+		accountID := candidate.Proto.GetProviderAccountId()
 		if strings.TrimSpace(accountID) == "" {
-			accountID = candidate.proto.GetProviderId()
+			accountID = candidate.Proto.GetProviderId()
 		}
 		group := byAccount[accountID]
 		if group == nil {
 			group = &dynamicIPEndpointCandidateGroup{
 				providerAccountID: accountID,
-				priority:          candidate.proto.GetPriority(),
+				priority:          candidate.Proto.GetPriority(),
 				order:             appcore.HashModulo(appcore.FirstNonEmpty(key, "proxy-runtime")+":"+accountID, 0),
 			}
 			byAccount[accountID] = group
 		}
-		if candidate.proto.GetPriority() < group.priority {
-			group.priority = candidate.proto.GetPriority()
+		if candidate.Proto.GetPriority() < group.priority {
+			group.priority = candidate.Proto.GetPriority()
 		}
 		group.candidates = append(group.candidates, candidate)
 	}
@@ -171,15 +170,15 @@ func dynamicIPEndpointCandidateGroups(candidates []scoredDynamicIPEndpointCandid
 	return out
 }
 
-func chooseDynamicIPEndpointWithinAccount(candidates []scoredDynamicIPEndpointCandidate, key string, attempt int) scoredDynamicIPEndpointCandidate {
+func chooseDynamicIPEndpointWithinAccount(candidates []ScoredEndpointCandidate, key string, attempt int) ScoredEndpointCandidate {
 	if len(candidates) == 0 {
-		return scoredDynamicIPEndpointCandidate{}
+		return ScoredEndpointCandidate{}
 	}
 	sort.SliceStable(candidates, func(i, j int) bool {
 		if candidates[i].score != candidates[j].score {
 			return candidates[i].score > candidates[j].score
 		}
-		return candidates[i].proto.GetPriority() < candidates[j].proto.GetPriority()
+		return candidates[i].Proto.GetPriority() < candidates[j].Proto.GetPriority()
 	})
 	if len(candidates) > 1 {
 		best := candidates[0].score
@@ -197,13 +196,13 @@ func chooseDynamicIPEndpointWithinAccount(candidates []scoredDynamicIPEndpointCa
 	return candidates[0]
 }
 
-func regionScopedDynamicIPEndpointCandidates(candidates []scoredDynamicIPEndpointCandidate, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) []scoredDynamicIPEndpointCandidate {
+func regionScopedDynamicIPEndpointCandidates(candidates []ScoredEndpointCandidate, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) []ScoredEndpointCandidate {
 	if !hasRequestedRegion(policy) {
 		return candidates
 	}
-	matched := make([]scoredDynamicIPEndpointCandidate, 0, len(candidates))
+	matched := make([]ScoredEndpointCandidate, 0, len(candidates))
 	for _, candidate := range candidates {
-		if regionSpecificScore(candidate.proto.GetGeoCodes(), policy) > 0 {
+		if regionSpecificScore(candidate.Proto.GetGeoCodes(), policy) > 0 {
 			matched = append(matched, candidate)
 		}
 	}

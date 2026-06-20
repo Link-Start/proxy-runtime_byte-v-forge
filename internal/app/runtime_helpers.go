@@ -51,23 +51,6 @@ func NewProviderHTTPClient(cfg config.Config) (*http.Client, error) {
 	return client, nil
 }
 
-func cleanRegionCodes(values []string) []string {
-	out := make([]string, 0, len(values))
-	seen := map[string]struct{}{}
-	for _, value := range values {
-		value = strings.ToUpper(strings.TrimSpace(value))
-		if value == "" {
-			continue
-		}
-		if _, exists := seen[value]; exists {
-			continue
-		}
-		seen[value] = struct{}{}
-		out = append(out, value)
-	}
-	return out
-}
-
 func cloneStringMap(values map[string]string) map[string]string {
 	if len(values) == 0 {
 		return nil

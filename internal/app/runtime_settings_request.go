@@ -36,7 +36,7 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 	if err != nil {
 		return nil, err
 	}
-	settings.IpGeoProviders, err = ipGeoProvidersFromRequest(ctx, writer, req.GetIpGeoProviders(), current, ipGeoProviders)
+	settings.IpGeoProviders, err = settingscore.IPGeoProvidersFromRequest(ctx, writer, req.GetIpGeoProviders(), current, ipGeoProviders)
 	if err != nil {
 		return nil, err
 	}

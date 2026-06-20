@@ -33,7 +33,7 @@ func (r *Runtime) loadIPGeo(ctx context.Context, ip string) (proxycheck.ExitGeo,
 	if err != nil {
 		return proxycheck.ExitGeo{}, err
 	}
-	providers, err := ipGeoProviders(ctx, r.store, settings, r.ipGeoProviders)
+	providers, err := settingscore.IPGeoProviders(ctx, r.store, settings, r.ipGeoProviders)
 	if err != nil {
 		return proxycheck.ExitGeo{}, err
 	}

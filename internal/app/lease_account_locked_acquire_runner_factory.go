@@ -7,6 +7,7 @@ import (
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 type leaseAccountLockedAcquireRunnerFactory struct {
@@ -22,8 +23,8 @@ func (f leaseAccountLockedAcquireRunnerFactory) New(ctx context.Context, setting
 	return leaseapp.AccountLockedAcquireRunner{
 		Store:               f.deps.store,
 		Clock:               f.deps.clock,
-		PlaygroundAccountID: playgroundProfileID,
-		PlaygroundUsername:  playgroundUsername,
+		PlaygroundAccountID: kernel.PlaygroundProfileID,
+		PlaygroundUsername:  kernel.PlaygroundUsername,
 		Reuse:               f.reuse.Refresh,
 		Replace:             f.retire.Retire,
 		RunAttempt: func(int) (*proxyruntimev1.ProxyDynamicLease, error) {

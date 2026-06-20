@@ -32,7 +32,7 @@ func (r *Runtime) dynamicProfilePool(ctx context.Context, settings *runtimeSetti
 	endpointHealthScores := r.dynamicIPSelector.DynamicIPEndpointHealthScores(ctx)
 	out := []provider.Node{}
 	for _, profile := range settings.GetEgressProfiles() {
-		if !profile.GetEnabled() || appcore.RuntimeSafeID(profile.GetProfileId()) == playgroundProfileID || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
+		if !profile.GetEnabled() || appcore.RuntimeSafeID(profile.GetProfileId()) == kernel.PlaygroundProfileID || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
 			continue
 		}
 		nodes := r.dynamicProfilePoolForProfile(ctx, client, settings, accounts, instances, endpointHealthScores, profile)

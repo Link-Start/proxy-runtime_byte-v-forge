@@ -13,6 +13,7 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 	settingssecret "github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/secret"
+	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
 func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest, current *runtimeSettingsFile, accountProviders *providerregistry.Registry, ipFraudProviders *ipfraud.Registry, ipGeoProviders *ipgeo.Registry, nativeResourceIDs map[string]struct{}) (*runtimeSettingsFile, error) {
@@ -30,7 +31,7 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 		IngressRules:       make([]*proxyruntimev1.ProxyIngressRuleSettings, 0, len(req.GetIngressRules())),
 		CheckSettings:      kernel.CheckSettingsFromRequest(req.GetCheckSettings(), current.GetCheckSettings()),
 	}
-	if edgeCanaryEnabled(settings.GetEdgeCanary()) && strings.TrimSpace(settings.GetEdgeCanary().GetUrl()) == "" {
+	if settingsdomain.EdgeCanaryEnabled(settings.GetEdgeCanary()) && strings.TrimSpace(settings.GetEdgeCanary().GetUrl()) == "" {
 		return nil, errors.New("edge canary url is required when enabled")
 	}
 	settings.IpFraudProviders, err = settingssecret.IPFraudProvidersFromRequest(ctx, writer, req.GetIpFraudProviders(), current, ipFraudProviders)
@@ -41,16 +42,16 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 	if err != nil {
 		return nil, err
 	}
-	settings.DynamicIpProviders, err = dynamicIPProvidersFromRequest(req.GetDynamicIpProviders(), accountProviders)
+	settings.DynamicIpProviders, err = settingsdomain.DynamicIPProvidersFromRequest(req.GetDynamicIpProviders(), accountProviders)
 	if err != nil {
 		return nil, err
 	}
 	dynamicProviderEndpoints := enabledDynamicProviderEndpointIDs(settings)
-	settings.EgressProfiles, err = egressProfilesFromRequest(req.GetEgressProfiles(), nativeResourceIDs, dynamicProviderEndpoints)
+	settings.EgressProfiles, err = settingsdomain.EgressProfilesFromRequest(req.GetEgressProfiles(), nativeResourceIDs, dynamicProviderEndpoints)
 	if err != nil {
 		return nil, err
 	}
-	settings.IngressRules, err = ingressRulesFromRequest(req.GetIngressRules(), settings.GetEgressProfiles())
+	settings.IngressRules, err = settingsdomain.IngressRulesFromRequest(req.GetIngressRules(), settings.GetEgressProfiles())
 	if err != nil {
 		return nil, err
 	}

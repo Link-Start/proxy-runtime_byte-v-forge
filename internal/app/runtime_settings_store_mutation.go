@@ -5,6 +5,8 @@ import (
 	"sync"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
 type runtimeSettingsMutation func(*runtimeSettingsFile) (*runtimeSettingsFile, error)
@@ -44,7 +46,7 @@ func (e runtimeSettingsMutationExecutor) mutate(ctx context.Context, mutation ru
 	if err := e.save(ctx, next); err != nil {
 		return nil, err
 	}
-	return runtimeSettingsView(next), nil
+	return settingsdomain.RuntimeSettingsView(next), nil
 }
 
 func (e runtimeSettingsMutationExecutor) mutateIfChanged(ctx context.Context, mutation runtimeSettingsChangeMutation) (bool, error) {

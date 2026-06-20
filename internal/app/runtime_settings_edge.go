@@ -39,10 +39,6 @@ func edgeCanaryFromRequest(ctx context.Context, writer secretref.Writer, req *pr
 	return settings, nil
 }
 
-func edgeCanaryEnabled(settings *proxyruntimev1.ProxyEdgeCanarySettings) bool {
-	return settings != nil && settings.GetEnabled()
-}
-
 func cloneEdgeCanary(in *proxyruntimev1.ProxyEdgeCanarySettings) *proxyruntimev1.ProxyEdgeCanarySettings {
 	if in == nil {
 		return nil

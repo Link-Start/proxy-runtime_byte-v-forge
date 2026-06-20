@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 )
 
@@ -13,7 +14,7 @@ type leaseRouteSideEffects struct {
 
 func (e leaseRouteSideEffects) afterRouteChange(ctx context.Context, accountID string) {
 	e.clearExitCheckCache()
-	if accountID == playgroundProfileID {
+	if accountID == kernel.PlaygroundProfileID {
 		e.closePlaygroundConnections(ctx)
 	}
 }
@@ -26,6 +27,6 @@ func (e leaseRouteSideEffects) clearExitCheckCache() {
 
 func (e leaseRouteSideEffects) closePlaygroundConnections(ctx context.Context) {
 	if e.closeInUserConnections != nil {
-		e.closeInUserConnections(ctx, []string{playgroundUsername})
+		e.closeInUserConnections(ctx, []string{kernel.PlaygroundUsername})
 	}
 }

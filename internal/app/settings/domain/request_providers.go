@@ -1,4 +1,4 @@
-package app
+package domain
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
-func dynamicIPProvidersFromRequest(req []*proxyruntimev1.ProxyDynamicIPProviderSettings, registry *providerregistry.Registry) ([]*proxyruntimev1.ProxyDynamicIPProviderSettings, error) {
+func DynamicIPProvidersFromRequest(req []*proxyruntimev1.ProxyDynamicIPProviderSettings, registry *providerregistry.Registry) ([]*proxyruntimev1.ProxyDynamicIPProviderSettings, error) {
 	seenProviders := map[string]struct{}{}
 	out := make([]*proxyruntimev1.ProxyDynamicIPProviderSettings, 0, len(req))
 	for index, provider := range req {

@@ -1,4 +1,4 @@
-package app
+package domain
 
 import (
 	"fmt"
@@ -85,7 +85,7 @@ func cloneEgressProfile(in *proxyruntimev1.EgressProfileSettings) *proxyruntimev
 	return egressProfileFromProto(in)
 }
 
-func egressProfilesFromRequest(in []*proxyruntimev1.EgressProfileSettings, nativeResourceIDs map[string]struct{}, dynamicProviderEndpointIDs map[string]map[string]struct{}) ([]*proxyruntimev1.EgressProfileSettings, error) {
+func EgressProfilesFromRequest(in []*proxyruntimev1.EgressProfileSettings, nativeResourceIDs map[string]struct{}, dynamicProviderEndpointIDs map[string]map[string]struct{}) ([]*proxyruntimev1.EgressProfileSettings, error) {
 	out := make([]*proxyruntimev1.EgressProfileSettings, 0, len(in))
 	seen := map[string]struct{}{}
 	for index, profile := range in {

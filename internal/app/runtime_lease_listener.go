@@ -8,6 +8,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
 func (r *Runtime) leaseListener(ctx context.Context, settings *runtimeSettingsFile, accountID string, leaseID string) (leaseapp.Listener, error) {
@@ -23,9 +24,9 @@ func (r *Runtime) leaseListener(ctx context.Context, settings *runtimeSettingsFi
 		DefaultUsername:     proxyRouteUsername(leaseID),
 		FallbackPassword:    r.cfg.LocalPassword,
 		IngressRules:        settings.GetIngressRules(),
-		PlaygroundAccountID: playgroundProfileID,
-		PlaygroundRuleID:    playgroundRuleID,
-		PlaygroundUsername:  playgroundUsername,
+		PlaygroundAccountID: kernel.PlaygroundProfileID,
+		PlaygroundRuleID:    kernel.PlaygroundRuleID,
+		PlaygroundUsername:  kernel.PlaygroundUsername,
 	})
 	if errors.Is(err, leaseapp.ErrListenerPasswordRequired) {
 		return leaseapp.Listener{}, appcore.FailedPrecondition(err.Error(), nil)

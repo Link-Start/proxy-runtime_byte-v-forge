@@ -10,6 +10,7 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
+	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
 func (r *Runtime) runEdgeCanary(ctx context.Context, client *http.Client, settings *runtimeSettingsFile) proxycheck.EdgeCanaryOutcome {
@@ -22,7 +23,7 @@ func (r *Runtime) runEdgeCanary(ctx context.Context, client *http.Client, settin
 			token = strings.TrimSpace(resolved)
 		}
 	}
-	if !edgeCanaryEnabled(edgeCanary) || target == "" || token == "" {
+	if !settingsdomain.EdgeCanaryEnabled(edgeCanary) || target == "" || token == "" {
 		return proxycheck.EdgeCanaryOutcome{
 			Level:        proxyruntimev1.ProxyEdgeAccessRiskLevel_PROXY_EDGE_ACCESS_RISK_LEVEL_UNSUPPORTED,
 			Signal:       proxyruntimev1.ProxyEdgeAccessRiskSignal_PROXY_EDGE_ACCESS_RISK_SIGNAL_EDGE_ACCESS_UNSUPPORTED,

@@ -1,4 +1,4 @@
-package app
+package domain
 
 import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
@@ -8,14 +8,14 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
 )
 
-func runtimeSettingsView(settings *runtimeSettingsFile) *proxyruntimev1.ProxyRuntimeSettings {
+func RuntimeSettingsView(settings *proxyruntimev1.ProxyRuntimePersistentSettings) *proxyruntimev1.ProxyRuntimeSettings {
 	settings = kernel.NormalizeRuntimeSettings(settings)
 	edge := settings.GetEdgeCanary()
 	out := &proxyruntimev1.ProxyRuntimeSettings{
 		EdgeCanary: &proxyruntimev1.ProxyEdgeCanarySettingsView{
 			Url:             edge.GetUrl(),
 			TokenConfigured: appcore.SecretRefConfigured(edge.GetTokenSecretRef()),
-			Enabled:         edgeCanaryEnabled(edge),
+			Enabled:         EdgeCanaryEnabled(edge),
 		},
 		CheckSettings: kernel.CloneCheckSettings(settings.GetCheckSettings()),
 	}

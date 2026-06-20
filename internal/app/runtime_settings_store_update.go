@@ -4,6 +4,8 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
 )
 
 func (s *runtimeSettingsStore) update(ctx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.ProxyRuntimeSettings, error) {
@@ -18,7 +20,7 @@ func (s *runtimeSettingsStore) update(ctx context.Context, req *proxyruntimev1.U
 
 func (s *runtimeSettingsStore) updateDynamicIPProviders(ctx context.Context, providers []*proxyruntimev1.ProxyDynamicIPProviderSettings) (*proxyruntimev1.ProxyRuntimeSettings, error) {
 	return s.mutateRuntimeSettings(ctx, func(settings *runtimeSettingsFile) (*runtimeSettingsFile, error) {
-		nextProviders, err := dynamicIPProvidersFromRequest(providers, s.accountProviders)
+		nextProviders, err := settingsdomain.DynamicIPProvidersFromRequest(providers, s.accountProviders)
 		if err != nil {
 			return nil, err
 		}

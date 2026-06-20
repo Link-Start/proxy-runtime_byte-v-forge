@@ -12,7 +12,7 @@ func (api *runtimeHTTPAPI) handleGetProxyExitIP(ctx *gin.Context) {
 	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
-	response, err := api.service.GetProxyExitIP(ctx.Request.Context(), &checkReq)
+	response, err := api.checks.GetProxyExitIP(ctx.Request.Context(), &checkReq)
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
@@ -25,7 +25,7 @@ func (api *runtimeHTTPAPI) handleGetProxyExitGeo(ctx *gin.Context) {
 	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
-	response, err := api.service.GetProxyExitGeo(ctx.Request.Context(), &checkReq)
+	response, err := api.checks.GetProxyExitGeo(ctx.Request.Context(), &checkReq)
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
@@ -38,7 +38,7 @@ func (api *runtimeHTTPAPI) handleCheckIPFraud(ctx *gin.Context) {
 	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
-	response, err := api.service.CheckProxyIPFraud(ctx.Request.Context(), &checkReq)
+	response, err := api.checks.CheckProxyIPFraud(ctx.Request.Context(), &checkReq)
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
@@ -51,7 +51,7 @@ func (api *runtimeHTTPAPI) handleCheckEdgeAccessRisk(ctx *gin.Context) {
 	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
-	response, err := api.service.CheckProxyEdgeAccess(ctx.Request.Context(), &checkReq)
+	response, err := api.checks.CheckProxyEdgeAccess(ctx.Request.Context(), &checkReq)
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
@@ -64,7 +64,7 @@ func (api *runtimeHTTPAPI) handleCheckTargetConnectivity(ctx *gin.Context) {
 	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
-	response, err := api.service.CheckProxyTargetConnectivity(ctx.Request.Context(), &checkReq)
+	response, err := api.checks.CheckProxyTargetConnectivity(ctx.Request.Context(), &checkReq)
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
@@ -82,7 +82,7 @@ func (api *runtimeHTTPAPI) handleGetProxyExitCheckSnapshot(ctx *gin.Context) {
 			return
 		}
 	}
-	response, err := api.service.GetProxyExitCheckSnapshot(ctx.Request.Context(), &checkReq)
+	response, err := api.checks.GetProxyExitCheckSnapshot(ctx.Request.Context(), &checkReq)
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return

@@ -19,7 +19,7 @@ func (api *runtimeHTTPAPI) handleProviderAccounts(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleListProviderAccounts(ctx *gin.Context) {
-	response, err := api.service.ListProxyProviderAccounts(ctx.Request.Context(), &proxyruntimev1.ListProxyProviderAccountsRequest{})
+	response, err := api.providers.ListProxyProviderAccounts(ctx.Request.Context())
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
@@ -32,7 +32,7 @@ func (api *runtimeHTTPAPI) handleUpsertProviderAccount(ctx *gin.Context) {
 	if !api.readProto(ctx, &body) {
 		return
 	}
-	response, err := api.service.UpsertProxyProviderAccount(ctx.Request.Context(), &body)
+	response, err := api.providers.UpsertProxyProviderAccount(ctx.Request.Context(), &body)
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return
@@ -45,7 +45,7 @@ func (api *runtimeHTTPAPI) handleDeleteProviderAccount(ctx *gin.Context) {
 	if !api.readProto(ctx, &body) {
 		return
 	}
-	response, err := api.service.DeleteProxyProviderAccount(ctx.Request.Context(), &body)
+	response, err := api.providers.DeleteProxyProviderAccount(ctx.Request.Context(), &body)
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return

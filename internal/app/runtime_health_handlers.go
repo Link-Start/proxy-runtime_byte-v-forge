@@ -3,7 +3,6 @@ package app
 import (
 	"net/http"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/gin-gonic/gin"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
@@ -28,7 +27,7 @@ func (api *runtimeHTTPAPI) handleReady(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleRuntimeStatus(ctx *gin.Context) {
-	response, err := api.service.GetProxyRuntimeStatus(ctx.Request.Context(), &proxyruntimev1.GetProxyRuntimeStatusRequest{})
+	response, err := api.status.GetProxyRuntimeStatus(ctx.Request.Context())
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
@@ -37,7 +36,7 @@ func (api *runtimeHTTPAPI) handleRuntimeStatus(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleProviders(ctx *gin.Context) {
-	response, err := api.service.ListProxyProviders(ctx.Request.Context(), &proxyruntimev1.ListProxyProvidersRequest{})
+	response, err := api.providers.ListProxyProviders(ctx.Request.Context())
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return

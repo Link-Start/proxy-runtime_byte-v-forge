@@ -1,12 +1,11 @@
 package app
 
 import (
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/gin-gonic/gin"
 )
 
 func (api *runtimeHTTPAPI) handleIPFraudProviders(ctx *gin.Context) {
-	response, err := api.service.ListProxyIPFraudProviders(ctx.Request.Context(), &proxyruntimev1.ListProxyIPFraudProvidersRequest{})
+	response, err := api.settings.ListIPFraudProviders(ctx.Request.Context())
 	if err != nil {
 		writeSettingsLoadHTTPError(ctx, err)
 		return
@@ -15,7 +14,7 @@ func (api *runtimeHTTPAPI) handleIPFraudProviders(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleIPGeoProviders(ctx *gin.Context) {
-	response, err := api.service.ListProxyIPGeoProviders(ctx.Request.Context(), &proxyruntimev1.ListProxyIPGeoProvidersRequest{})
+	response, err := api.settings.ListIPGeoProviders(ctx.Request.Context())
 	if err != nil {
 		writeSettingsLoadHTTPError(ctx, err)
 		return

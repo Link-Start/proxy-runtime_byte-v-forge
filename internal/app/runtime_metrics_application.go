@@ -26,10 +26,6 @@ func newRuntimeMetricsApplication(deps runtimeMetricsApplicationDependencies) ru
 	return runtimeMetricsApplication{metrics: deps.Metrics, now: now}
 }
 
-func (s *RuntimeService) GetProxyRuntimeMetricsSummary(ctx context.Context, _ *proxyruntimev1.GetProxyRuntimeMetricsSummaryRequest) (*proxyruntimev1.GetProxyRuntimeMetricsSummaryResponse, error) {
-	return s.metricsUI.GetProxyRuntimeMetricsSummary(ctx)
-}
-
 func (a runtimeMetricsApplication) GetProxyRuntimeMetricsSummary(context.Context) (*proxyruntimev1.GetProxyRuntimeMetricsSummaryResponse, error) {
 	return &proxyruntimev1.GetProxyRuntimeMetricsSummaryResponse{
 		Summary: a.metrics.Summary(a.now()),

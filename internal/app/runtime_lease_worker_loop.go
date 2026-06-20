@@ -32,8 +32,8 @@ func (r *Runtime) leaseExpiryLoop(ctx context.Context) {
 func (r *Runtime) runLeaseExpirySweep(ctx context.Context) {
 	r.markLeaseWorkerStarted()
 	err := errors.Join(
-		r.runLeaseWorkerTask(ctx, runtimeMetricLeaseWorkerExpireDue, "expire proxy leases", leaseCleanupAttemptTimeout, r.service().leases.ExpireDueLeaseFacts),
-		r.runLeaseWorkerTask(ctx, runtimeMetricLeaseWorkerCleanupPending, "cleanup pending proxy leases", leaseCleanupAttemptTimeout, r.service().leases.CleanupPendingLeaseFacts),
+		r.runLeaseWorkerTask(ctx, runtimeMetricLeaseWorkerExpireDue, "expire proxy leases", leaseCleanupAttemptTimeout, r.leases.ExpireDueLeaseFacts),
+		r.runLeaseWorkerTask(ctx, runtimeMetricLeaseWorkerCleanupPending, "cleanup pending proxy leases", leaseCleanupAttemptTimeout, r.leases.CleanupPendingLeaseFacts),
 	)
 	r.markLeaseWorkerFinished(err)
 }

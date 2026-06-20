@@ -14,15 +14,17 @@ type runtimeSettingsUpdateHandler func(
 ) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error)
 
 func (api *runtimeHTTPAPI) handleRuntimeSettings(ctx *gin.Context) {
-	api.handleRuntimeSettingsViewOrUpdate(ctx, api.service.UpdateProxyRuntimeSettings)
+	api.handleRuntimeSettingsViewOrUpdate(ctx, api.settings.UpdateRuntimeSettings)
 }
 
 func (api *runtimeHTTPAPI) handleDynamicIPProviders(ctx *gin.Context) {
-	api.handleRuntimeSettingsViewOrUpdate(ctx, api.service.UpdateProxyDynamicIPProviders)
+	api.handleRuntimeSettingsViewOrUpdate(ctx, func(reqCtx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
+		return api.settings.UpdateDynamicIPProviders(reqCtx, req.GetDynamicIpProviders())
+	})
 }
 
 func (api *runtimeHTTPAPI) handleInUserRules(ctx *gin.Context) {
-	api.handleRuntimeSettingsViewOrUpdate(ctx, api.service.UpdateProxyInUserRules)
+	api.handleRuntimeSettingsViewOrUpdate(ctx, api.settings.UpdateInUserRules)
 }
 
 func (api *runtimeHTTPAPI) handleRuntimeSettingsViewOrUpdate(ctx *gin.Context, update runtimeSettingsUpdateHandler) {
@@ -35,7 +37,7 @@ func (api *runtimeHTTPAPI) handleRuntimeSettingsViewOrUpdate(ctx *gin.Context, u
 }
 
 func (api *runtimeHTTPAPI) handleGetRuntimeSettings(ctx *gin.Context) {
-	response, err := api.service.GetProxyRuntimeSettings(ctx.Request.Context(), &proxyruntimev1.GetProxyRuntimeSettingsRequest{})
+	response, err := api.settings.Get(ctx.Request.Context())
 	if err != nil {
 		writeSettingsLoadHTTPError(ctx, err)
 		return

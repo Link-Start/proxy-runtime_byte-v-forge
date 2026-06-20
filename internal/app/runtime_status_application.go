@@ -21,10 +21,6 @@ func newRuntimeStatusApplication(deps runtimeStatusApplicationDependencies) runt
 	return runtimeStatusApplication{runtimeStatus: deps.RuntimeStatus}
 }
 
-func (s *RuntimeService) GetProxyRuntimeStatus(ctx context.Context, _ *proxyruntimev1.GetProxyRuntimeStatusRequest) (*proxyruntimev1.GetProxyRuntimeStatusResponse, error) {
-	return s.status.GetProxyRuntimeStatus(ctx)
-}
-
 func (a runtimeStatusApplication) GetProxyRuntimeStatus(context.Context) (*proxyruntimev1.GetProxyRuntimeStatusResponse, error) {
 	if a.runtimeStatus == nil {
 		return nil, appcore.InternalError("runtime status provider is not configured", nil)

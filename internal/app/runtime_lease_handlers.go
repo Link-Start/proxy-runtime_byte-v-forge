@@ -3,6 +3,7 @@ package app
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
@@ -17,7 +18,9 @@ func (api *runtimeHTTPAPI) handleLeases(ctx *gin.Context) {
 		writeHTTPError(ctx.Writer, err, http.StatusBadRequest)
 		return
 	}
-	response, err := api.service.listProxyDynamicLeases(ctx.Request.Context(), options)
+	startedAt := time.Now()
+	response, err := api.leases.ListProxyDynamicLeaseFacts(ctx.Request.Context(), options)
+	api.observe(runtimeMetricLeaseList, startedAt, err)
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
@@ -27,7 +30,7 @@ func (api *runtimeHTTPAPI) handleLeases(ctx *gin.Context) {
 
 func (api *runtimeHTTPAPI) handleLease(ctx *gin.Context) {
 	leaseID := strings.TrimSpace(ctx.Param("lease_id"))
-	lease, err := api.service.getProxyDynamicLease(ctx.Request.Context(), leaseID)
+	lease, err := api.leases.GetProxyDynamicLeaseFact(ctx.Request.Context(), leaseID)
 	if err != nil {
 		writeLeaseHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return
@@ -40,7 +43,9 @@ func (api *runtimeHTTPAPI) handleAcquireLease(ctx *gin.Context) {
 	if !api.readProto(ctx, &body) {
 		return
 	}
-	response, err := api.service.acquireProxyLease(ctx.Request.Context(), ctx.Request, &body)
+	startedAt := time.Now()
+	response, err := api.leases.AcquireProxyLease(ctx.Request.Context(), advertisedProxyHost(ctx.Request), &body)
+	api.observe(runtimeMetricLeaseAcquire, startedAt, err)
 	if err != nil {
 		writeLeaseHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return
@@ -61,7 +66,9 @@ func (api *runtimeHTTPAPI) handleReleaseLease(ctx *gin.Context) {
 	if !api.readProto(ctx, &body) {
 		return
 	}
-	response, err := api.service.ReleaseProxyLease(ctx.Request.Context(), &body)
+	startedAt := time.Now()
+	response, err := api.leases.ReleaseProxyLease(ctx.Request.Context(), &body)
+	api.observe(runtimeMetricLeaseRelease, startedAt, err)
 	if err != nil {
 		writeLeaseHTTPError(ctx.Writer, err, http.StatusBadGateway)
 		return

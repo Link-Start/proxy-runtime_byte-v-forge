@@ -11,6 +11,10 @@ import (
 
 	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
 	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	providerapp "github.com/byte-v-forge/proxy-runtime/internal/app/provider/application"
+	checkapp "github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck/application"
+	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings/application"
 	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/gin-gonic/gin"
 
@@ -40,7 +44,25 @@ func (r *Runtime) serveHTTP(ctx context.Context, errCh chan<- error) {
 }
 
 func (r *Runtime) httpHandler() http.Handler {
-	return newRuntimeHTTPAPI(r.service(), r.cfg.Mihomo.APIAddr, r.cfg.ControlAuthToken, r.cfg.ServiceAuthToken, func() (bool, string) {
+	return newRuntimeHTTPAPI(runtimeHTTPAPIDependencies{
+		Leases:           r.leases,
+		Settings:         newRuntimeSettingsApplication(runtimeSettingsDependencies(r)),
+		Checks:           checkapp.New(runtimeCheckDependencies(r)),
+		Providers:        providerapp.New(runtimeProviderDependencies(r)),
+		Status:           newRuntimeStatusApplication(runtimeStatusDependencies(r)),
+		MetricsUI:        newRuntimeMetricsApplication(runtimeMetricsDependencies(r)),
+		Metrics:          r.metrics,
+		MihomoAPIAddr:    r.cfg.Mihomo.APIAddr,
+		ControlAuthToken: r.cfg.ControlAuthToken,
+		ServiceAuthToken: r.cfg.ServiceAuthToken,
+		Ready:            r.dataPlaneReadyFunc(),
+		Logger:           r.logger,
+		Clock:            r.clock,
+	}).handler()
+}
+
+func (r *Runtime) dataPlaneReadyFunc() runtimeReadyFunc {
+	return func() (bool, string) {
 		reconcile := r.currentReconcileState()
 		if reconcile.running {
 			return false, "data plane reconcile running"
@@ -59,13 +81,35 @@ func (r *Runtime) httpHandler() http.Handler {
 			return false, "data plane config projection is stale"
 		}
 		return true, ""
-	}, r.logger, r.clock).handler()
+	}
 }
 
 type runtimeReadyFunc func() (bool, string)
 
+type runtimeHTTPAPIDependencies struct {
+	Leases           runtimeLeaseApplication
+	Settings         settingsapp.Application
+	Checks           checkapp.Service
+	Providers        providerapp.Service
+	Status           runtimeStatusApplication
+	MetricsUI        runtimeMetricsApplication
+	Metrics          *runtimeMetrics
+	MihomoAPIAddr    string
+	ControlAuthToken string
+	ServiceAuthToken string
+	Ready            runtimeReadyFunc
+	Logger           *slog.Logger
+	Clock            clock.Clock
+}
+
 type runtimeHTTPAPI struct {
-	service          *RuntimeService
+	leases           runtimeLeaseApplication
+	settings         settingsapp.Application
+	checks           checkapp.Service
+	providers        providerapp.Service
+	status           runtimeStatusApplication
+	metricsUI        runtimeMetricsApplication
+	metrics          *runtimeMetrics
 	auth             authapp.Application
 	ready            runtimeReadyFunc
 	logger           *slog.Logger
@@ -73,20 +117,33 @@ type runtimeHTTPAPI struct {
 	dashboardProxies dashboardProxyHandlers
 }
 
-func newRuntimeHTTPAPI(service *RuntimeService, mihomoAPIAddr string, authToken string, serviceAuthToken string, ready runtimeReadyFunc, logger *slog.Logger, clk clock.Clock) *runtimeHTTPAPI {
+func newRuntimeHTTPAPI(deps runtimeHTTPAPIDependencies) *runtimeHTTPAPI {
+	logger := deps.Logger
 	if logger == nil {
 		logger = slog.Default()
 	}
-	trimmedAuthToken := strings.TrimSpace(authToken)
+	trimmedAuthToken := strings.TrimSpace(deps.ControlAuthToken)
 	api := &runtimeHTTPAPI{
-		service: service,
-		auth:    authapp.NewApplication(trimmedAuthToken, serviceAuthToken),
-		ready:   ready,
-		logger:  logger,
-		clock:   clk,
+		leases:    deps.Leases,
+		settings:  deps.Settings,
+		checks:    deps.Checks,
+		providers: deps.Providers,
+		status:    deps.Status,
+		metricsUI: deps.MetricsUI,
+		metrics:   deps.Metrics,
+		auth:      authapp.NewApplication(trimmedAuthToken, deps.ServiceAuthToken),
+		ready:     deps.Ready,
+		logger:    logger,
+		clock:     deps.Clock,
 	}
-	api.dashboardProxies = newDashboardProxyHandlers(mihomoAPIAddr, trimmedAuthToken)
+	api.dashboardProxies = newDashboardProxyHandlers(deps.MihomoAPIAddr, trimmedAuthToken)
 	return api
+}
+
+func (api *runtimeHTTPAPI) observe(operation string, startedAt time.Time, err error) {
+	if api != nil && api.metrics != nil {
+		api.metrics.Observe(operation, startedAt, err)
+	}
 }
 
 func (api *runtimeHTTPAPI) handler() http.Handler {
@@ -132,4 +189,84 @@ func (api *runtimeHTTPAPI) ginMiddleware() gin.HandlerFunc {
 			writeHTTPError(w, appcore.InternalError("", nil), http.StatusInternalServerError)
 		},
 	})
+}
+
+func runtimeMetricsFromRuntime(runtime *Runtime) *runtimeMetrics {
+	if runtime == nil {
+		return nil
+	}
+	return runtime.metrics
+}
+
+func runtimeMetricsDependencies(runtime *Runtime) runtimeMetricsApplicationDependencies {
+	return runtimeMetricsApplicationDependencies{
+		Metrics: runtimeMetricsFromRuntime(runtime),
+	}
+}
+
+func runtimeProviderDependencies(runtime *Runtime) providerapp.Dependencies {
+	if runtime == nil {
+		return providerapp.Dependencies{}
+	}
+	var locks leaseapp.LockManager
+	if runtime.leaseLocks != nil {
+		locks = leaseRuntimeLockManager{locks: runtime.leaseLocks}
+	}
+	var providerDescriptors providerapp.DescriptorsFunc
+	if runtime.accountProviders != nil {
+		providerDescriptors = runtime.accountProviders.Descriptors
+	}
+	return providerapp.Dependencies{
+		Store:               runtime.store,
+		LoadSettings:        runtime.settings.Load,
+		ProviderDescriptors: providerDescriptors,
+		Locks:               locks,
+		LeaseOperations: func() providerapp.LeaseOperations {
+			return runtime.leases
+		},
+		Logger: runtime.logger,
+	}
+}
+
+func runtimeCheckDependencies(runtime *Runtime) checkapp.Dependencies {
+	if runtime == nil {
+		return checkapp.Dependencies{}
+	}
+	return checkapp.Dependencies{
+		LoadSettings:   runtime.settings.Load,
+		CheckClient:    runtime.checkProxyHTTPClient,
+		ProbeExitIP:    runtime.probeExitIP,
+		LookupGeo:      runtime.lookupIPGeo,
+		CheckFraud:     runtime.checkIPFraud,
+		RunEdgeCanary:  runtime.runEdgeCanary,
+		ExitCheckCache: runtime.exitCheckCache,
+	}
+}
+
+func runtimeSettingsDependencies(runtime *Runtime) runtimeSettingsApplicationDependencies {
+	if runtime == nil {
+		return runtimeSettingsApplicationDependencies{}
+	}
+	settingsApply := newRuntimeSettingsApplyScheduler(runtime)
+	providerViews := newRuntimeSettingsProviderViewAdapter(runtime)
+	mihomoNative := newRuntimeSettingsMihomoNativeAdapter(runtime)
+	return runtimeSettingsApplicationDependencies{
+		Logger:                     runtime.logger,
+		Settings:                   runtime.settings,
+		ProxyUsers:                 runtime.cfg.ProxyUsers,
+		IPFraudProviderViews:       providerViews.IPFraudProviderViews,
+		IPGeoProviderViews:         providerViews.IPGeoProviderViews,
+		LoadMihomoNativeSettings:   mihomoNative.Load,
+		UpdateMihomoNativeSettings: mihomoNative.Update,
+		ScheduleApply:              settingsApply.Schedule,
+	}
+}
+
+func runtimeStatusDependencies(runtime *Runtime) runtimeStatusApplicationDependencies {
+	if runtime == nil {
+		return runtimeStatusApplicationDependencies{}
+	}
+	return runtimeStatusApplicationDependencies{
+		RuntimeStatus: runtime.runtimeStatus,
+	}
 }

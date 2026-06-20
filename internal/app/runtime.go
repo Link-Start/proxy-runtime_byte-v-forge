@@ -39,7 +39,7 @@ type Runtime struct {
 	dynamicIPSelector   *dynamic.IPSelector
 	settings            *persistence.Store
 	metrics             *runtimeMetrics
-	appService          *RuntimeService
+	leases              runtimeLeaseApplication
 	logger              *slog.Logger
 	providerHTTPClient  *http.Client
 	clock               clock.Clock
@@ -116,7 +116,7 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 	runtime.exitCheckCache = proxycheck.NewExitCheckCache(clk)
 	runtime.dynamicIPSelector = dynamic.NewIPSelector(runtimeDynamicIPSelectorDependencies(runtime))
 	runtime.leaseCoordinator = newLeaseCoordinator(runtimeLeaseCoordinatorDependencies(runtime))
-	runtime.appService = NewRuntimeService(runtime)
+	runtime.leases = newRuntimeLeaseApplication(runtimeLeaseDependencies(runtime))
 	return runtime, nil
 }
 

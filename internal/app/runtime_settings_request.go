@@ -27,7 +27,7 @@ func settingsFromRequest(ctx context.Context, writer secretref.Writer, req *prox
 		DynamicIpProviders: make([]*proxyruntimev1.ProxyDynamicIPProviderSettings, 0, len(req.GetDynamicIpProviders())),
 		EgressProfiles:     make([]*proxyruntimev1.EgressProfileSettings, 0, len(req.GetEgressProfiles())),
 		IngressRules:       make([]*proxyruntimev1.ProxyIngressRuleSettings, 0, len(req.GetIngressRules())),
-		CheckSettings:      checkSettingsFromRequest(req.GetCheckSettings(), current.GetCheckSettings()),
+		CheckSettings:      settingscore.CheckSettingsFromRequest(req.GetCheckSettings(), current.GetCheckSettings()),
 	}
 	if edgeCanaryEnabled(settings.GetEdgeCanary()) && strings.TrimSpace(settings.GetEdgeCanary().GetUrl()) == "" {
 		return nil, errors.New("edge canary url is required when enabled")

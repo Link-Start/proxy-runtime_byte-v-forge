@@ -17,7 +17,7 @@ func runtimeSettingsView(settings *runtimeSettingsFile) *proxyruntimev1.ProxyRun
 			TokenConfigured: appcore.SecretRefConfigured(edge.GetTokenSecretRef()),
 			Enabled:         edgeCanaryEnabled(edge),
 		},
-		CheckSettings: cloneCheckSettings(settings.GetCheckSettings()),
+		CheckSettings: settingscore.CloneCheckSettings(settings.GetCheckSettings()),
 	}
 	for _, provider := range settings.GetIpFraudProviders() {
 		out.IpFraudProviders = append(out.IpFraudProviders, &proxyruntimev1.ProxyIPFraudProviderSettingsView{

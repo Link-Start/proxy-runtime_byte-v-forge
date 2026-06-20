@@ -29,3 +29,15 @@ func ProxyExitIPTimeout(settings *proxyruntimev1.ProxyRuntimePersistentSettings)
 	}
 	return duration
 }
+
+func CheckSettingsFromRequest(req *proxyruntimev1.ProxyRuntimeCheckSettings, current *proxyruntimev1.ProxyRuntimeCheckSettings) *proxyruntimev1.ProxyRuntimeCheckSettings {
+	if req == nil {
+		return CloneCheckSettings(current)
+	}
+	return NormalizeCheckSettings(&proxyruntimev1.ProxyRuntimeCheckSettings{ProxyExitIpTimeout: req.GetProxyExitIpTimeout()})
+}
+
+func CloneCheckSettings(in *proxyruntimev1.ProxyRuntimeCheckSettings) *proxyruntimev1.ProxyRuntimeCheckSettings {
+	in = NormalizeCheckSettings(in)
+	return &proxyruntimev1.ProxyRuntimeCheckSettings{ProxyExitIpTimeout: durationpb.New(in.GetProxyExitIpTimeout().AsDuration())}
+}

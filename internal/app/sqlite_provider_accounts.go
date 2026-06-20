@@ -28,7 +28,7 @@ func (s *SQLiteStore) ListProviderAccounts(ctx context.Context) ([]*proxyruntime
 		if err != nil {
 			return nil, err
 		}
-		account, err := providerAccountToProto(ctx, s, s.box, record)
+		account, err := store.ProviderAccountToProto(ctx, s, s.box, record)
 		if err != nil {
 			return nil, err
 		}
@@ -40,7 +40,7 @@ func (s *SQLiteStore) ListProviderAccounts(ctx context.Context) ([]*proxyruntime
 func (s *SQLiteStore) UpsertProviderAccount(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.ProxyProviderAccount, error) {
 	accountID := normalizeID(req.GetAccountId())
 	if accountID == "" {
-		generated, err := generatedID("dynacct")
+		generated, err := store.GeneratedID("dynacct")
 		if err != nil {
 			return nil, err
 		}
@@ -59,8 +59,8 @@ func (s *SQLiteStore) UpsertProviderAccount(ctx context.Context, req *proxyrunti
 	}
 	dynamicProviderID := appcore.FirstNonEmpty(appcore.RuntimeSafeID(req.GetDynamicProviderId()), existingDynamicProviderID(existing))
 	secret := existingCredentialSecret(existing)
-	credential := providerCredential{}
-	if current := credentialFromSecret(s.box, secret); current != nil {
+	credential := store.ProviderCredential{}
+	if current := store.CredentialFromSecret(s.box, secret); current != nil {
 		credential = *current
 	}
 	if req.GetClearPassword() {
@@ -94,7 +94,7 @@ func (s *SQLiteStore) UpsertProviderAccount(ctx context.Context, req *proxyrunti
 	enabled := req.GetEnabled()
 	displayName := appcore.FirstNonEmpty(req.GetDisplayName(), accountID)
 	if enabled {
-		cfg, err := providerConfigFromCredentialSecret(ctx, s, s.box, providerID, secret)
+		cfg, err := store.ProviderConfigFromCredentialSecret(ctx, s, s.box, providerID, secret)
 		if err != nil {
 			return nil, fmt.Errorf("enabled provider account invalid: %w", err)
 		}
@@ -119,7 +119,7 @@ ON CONFLICT(account_id) DO UPDATE SET provider_id=excluded.provider_id, dynamic_
 	if err != nil {
 		return nil, err
 	}
-	return providerAccountToProto(ctx, s, s.box, record)
+	return store.ProviderAccountToProto(ctx, s, s.box, record)
 }
 
 func (s *SQLiteStore) DeleteProviderAccount(ctx context.Context, accountID string) error {
@@ -132,7 +132,7 @@ func (s *SQLiteStore) ProviderAccount(ctx context.Context, accountID string) (*p
 	if err != nil {
 		return nil, err
 	}
-	return providerAccountToProto(ctx, s, s.box, record)
+	return store.ProviderAccountToProto(ctx, s, s.box, record)
 }
 
 func (s *SQLiteStore) ProviderAccountMutationState(ctx context.Context, accountID string) (store.ProviderAccountMutationState, error) {
@@ -140,7 +140,7 @@ func (s *SQLiteStore) ProviderAccountMutationState(ctx context.Context, accountI
 	if err != nil {
 		return store.ProviderAccountMutationState{}, err
 	}
-	credential := credentialFromSecret(s.box, record.CredentialSecret)
+	credential := store.CredentialFromSecret(s.box, record.CredentialSecret)
 	state := store.ProviderAccountMutationState{ProviderID: record.ProviderID, DynamicProviderID: record.DynamicProviderID, PasswordConfigured: record.CredentialSecret != ""}
 	if credential != nil {
 		state.Username = credential.Username
@@ -157,7 +157,7 @@ func (s *SQLiteStore) ProviderConfig(ctx context.Context, accountID string) (acc
 	if !record.Enabled {
 		return accountproxy.Config{}, "", errors.New("provider account is disabled")
 	}
-	cfg, err := providerConfigFromCredentialSecret(ctx, s, s.box, record.ProviderID, record.CredentialSecret)
+	cfg, err := store.ProviderConfigFromCredentialSecret(ctx, s, s.box, record.ProviderID, record.CredentialSecret)
 	if err != nil {
 		return accountproxy.Config{}, "", err
 	}
@@ -173,13 +173,13 @@ func (s *SQLiteStore) DefaultProviderAccountID(ctx context.Context) (string, err
 	return id, err
 }
 
-func (s *SQLiteStore) providerAccountRecord(ctx context.Context, accountID string) (*providerAccountRecord, error) {
+func (s *SQLiteStore) providerAccountRecord(ctx context.Context, accountID string) (*store.ProviderAccountRecord, error) {
 	row := s.db.QueryRowContext(ctx, `SELECT account_id, provider_id, dynamic_provider_id, display_name, enabled, credential_secret, created_at, updated_at FROM proxy_runtime_provider_accounts WHERE account_id=?`, normalizeID(accountID))
 	return scanSQLiteProviderAccount(row)
 }
 
-func scanSQLiteProviderAccount(row interface{ Scan(...any) error }) (*providerAccountRecord, error) {
-	var record providerAccountRecord
+func scanSQLiteProviderAccount(row interface{ Scan(...any) error }) (*store.ProviderAccountRecord, error) {
+	var record store.ProviderAccountRecord
 	var enabled int
 	var createdAt, updatedAt string
 	err := row.Scan(&record.AccountID, &record.ProviderID, &record.DynamicProviderID, &record.DisplayName, &enabled, &record.CredentialSecret, &createdAt, &updatedAt)
@@ -192,21 +192,21 @@ func scanSQLiteProviderAccount(row interface{ Scan(...any) error }) (*providerAc
 	return &record, err
 }
 
-func existingProviderID(record *providerAccountRecord) string {
+func existingProviderID(record *store.ProviderAccountRecord) string {
 	if record == nil {
 		return ""
 	}
 	return record.ProviderID
 }
 
-func existingDynamicProviderID(record *providerAccountRecord) string {
+func existingDynamicProviderID(record *store.ProviderAccountRecord) string {
 	if record == nil {
 		return ""
 	}
 	return record.DynamicProviderID
 }
 
-func existingCredentialSecret(record *providerAccountRecord) string {
+func existingCredentialSecret(record *store.ProviderAccountRecord) string {
 	if record == nil {
 		return ""
 	}

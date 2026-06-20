@@ -3,9 +3,7 @@ package app
 import (
 	"context"
 	"log/slog"
-	"time"
 
-	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
@@ -19,24 +17,6 @@ type PostgresStore struct {
 	accountProviders *providerregistry.Registry
 	logger           *slog.Logger
 	clock            clock.Clock
-}
-
-type providerCredential struct {
-	Username          string              `json:"username"`
-	Password          string              `json:"password,omitempty"`
-	PasswordValue     string              `json:"password_value,omitempty"`
-	PasswordSecretRef *commonv1.SecretRef `json:"password_secret_ref,omitempty"`
-}
-
-type providerAccountRecord struct {
-	AccountID         string
-	ProviderID        string
-	DynamicProviderID string
-	DisplayName       string
-	Enabled           bool
-	CredentialSecret  string
-	CreatedAt         time.Time
-	UpdatedAt         time.Time
 }
 
 func NewPostgresStore(ctx context.Context, cfg config.Config, accountProviders *providerregistry.Registry, logger *slog.Logger, clk clock.Clock) (*PostgresStore, error) {

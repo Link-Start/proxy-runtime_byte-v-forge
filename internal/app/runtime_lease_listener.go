@@ -12,9 +12,9 @@ import (
 
 func (r *Runtime) leaseListener(ctx context.Context, settings *runtimeSettingsFile, accountID string, leaseID string) (leaseapp.Listener, error) {
 	_ = ctx
-	leaseID = firstNonEmpty(leaseID, accountID)
+	leaseID = appcore.FirstNonEmpty(leaseID, accountID)
 	listener, err := leaseapp.NewDynamicListener(leaseapp.DynamicListenerInput{
-		ID:                  "lease-" + shortHash(leaseID),
+		ID:                  "lease-" + appcore.ShortHash(leaseID),
 		Addr:                r.cfg.LocalAddr,
 		Protocol:            r.cfg.LocalProtocol,
 		Route:               config.ListenerRouteProvider,

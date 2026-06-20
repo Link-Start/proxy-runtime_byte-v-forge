@@ -9,6 +9,8 @@ import (
 
 	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (s *SQLiteStore) WriteSecret(ctx context.Context, req secretref.WriteRequest) (*commonv1.SecretRef, error) {
@@ -18,7 +20,7 @@ func (s *SQLiteStore) WriteSecret(ctx context.Context, req secretref.WriteReques
 	if strings.TrimSpace(req.Value) == "" {
 		return nil, errors.New("secret value is required")
 	}
-	provider := firstNonEmpty(req.Provider, "proxy-runtime")
+	provider := appcore.FirstNonEmpty(req.Provider, "proxy-runtime")
 	purpose := strings.TrimSpace(req.Purpose)
 	if purpose == "" {
 		return nil, errors.New("secret purpose is required")

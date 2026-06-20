@@ -89,7 +89,7 @@ func (p *dynamicIPSelector) selectDynamicIPEndpoint(ctx context.Context, req *pr
 	reasons := []string{
 		fmt.Sprintf("dynamic_ip_endpoint=%s/%s/%s/%s", selectedEndpoint.proto.GetProviderAccountId(), selectedEndpoint.proto.GetProviderId(), selectedEndpoint.proto.GetDynamicProviderId(), selectedEndpoint.proto.GetEndpointId()),
 	}
-	selectionID := "selection-" + shortHash(req.GetAccountId()+":"+policy.GetPurpose())
+	selectionID := "selection-" + appcore.ShortHash(req.GetAccountId()+":"+policy.GetPurpose())
 	plan := &proxyruntimev1.ProxyDynamicIPSelectionPlan{
 		SelectionId:      selectionID,
 		Policy:           dynamicIPSelectionPlanPolicy(policy),

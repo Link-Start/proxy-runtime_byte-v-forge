@@ -1,9 +1,12 @@
 package app
 
-import proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+import (
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+)
 
 func dynamicLeaseLineProfiles(settings *runtimeSettingsFile, profileID string) []*proxyruntimev1.EgressProfileSettings {
-	profileID = runtimeSafeID(profileID)
+	profileID = appcore.RuntimeSafeID(profileID)
 	if profileID == "" {
 		return nil
 	}
@@ -11,7 +14,7 @@ func dynamicLeaseLineProfiles(settings *runtimeSettingsFile, profileID string) [
 		if !profile.GetEnabled() {
 			continue
 		}
-		if runtimeSafeID(profile.GetProfileId()) != profileID {
+		if appcore.RuntimeSafeID(profile.GetProfileId()) != profileID {
 			continue
 		}
 		if profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {

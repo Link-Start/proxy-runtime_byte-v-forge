@@ -15,9 +15,9 @@ func ingressRuleFromProto(in *proxyruntimev1.ProxyIngressRuleSettings, index int
 	if in == nil {
 		return &proxyruntimev1.ProxyIngressRuleSettings{RuleId: fmt.Sprintf("ingress-%d", index+1)}
 	}
-	ruleID := runtimeSafeID(in.GetRuleId())
+	ruleID := appcore.RuntimeSafeID(in.GetRuleId())
 	if ruleID == "" {
-		ruleID = runtimeSafeID(firstNonEmpty(in.GetUsername(), in.GetDisplayName()))
+		ruleID = appcore.RuntimeSafeID(appcore.FirstNonEmpty(in.GetUsername(), in.GetDisplayName()))
 	}
 	if ruleID == "" {
 		ruleID = fmt.Sprintf("ingress-%d", index+1)
@@ -28,7 +28,7 @@ func ingressRuleFromProto(in *proxyruntimev1.ProxyIngressRuleSettings, index int
 		Enabled:       in.GetEnabled(),
 		Username:      strings.TrimSpace(in.GetUsername()),
 		PasswordValue: in.GetPasswordValue(),
-		ProfileId:     runtimeSafeID(in.GetProfileId()),
+		ProfileId:     appcore.RuntimeSafeID(in.GetProfileId()),
 	}
 }
 

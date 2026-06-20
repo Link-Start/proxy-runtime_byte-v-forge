@@ -1,6 +1,10 @@
 package app
 
-import "strings"
+import (
+	"strings"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+)
 
 func mihomoNodeResourcePrefix(nodeID string) string {
 	resource, _, ok := strings.Cut(strings.TrimSpace(nodeID), "/")
@@ -11,7 +15,7 @@ func mihomoNodeResourcePrefix(nodeID string) string {
 }
 
 func dynamicLeaseProfileLineGroupName(profileID string) string {
-	id := runtimeSafeID(profileID)
+	id := appcore.RuntimeSafeID(profileID)
 	if id == "" {
 		id = "profile"
 	}

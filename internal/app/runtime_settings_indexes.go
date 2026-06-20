@@ -1,6 +1,9 @@
 package app
 
-import proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+import (
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+)
 
 func enabledDynamicProviderIDs(settings *runtimeSettingsFile) map[string]struct{} {
 	out := map[string]struct{}{}
@@ -35,7 +38,7 @@ func enabledDynamicProviderEndpointIDs(settings *runtimeSettingsFile) map[string
 func enabledEgressProfileIDsFromProfiles(profiles []*proxyruntimev1.EgressProfileSettings) map[string]struct{} {
 	out := map[string]struct{}{}
 	for _, profile := range profiles {
-		if id := runtimeSafeID(profile.GetProfileId()); id != "" && profile.GetEnabled() {
+		if id := appcore.RuntimeSafeID(profile.GetProfileId()); id != "" && profile.GetEnabled() {
 			out[id] = struct{}{}
 		}
 	}

@@ -50,7 +50,7 @@ func (r *Runtime) httpHandler() http.Handler {
 		}
 		status := r.dataPlane.Status()
 		if !status.Running {
-			return false, firstNonEmpty(status.LastError, "data plane is not running")
+			return false, appcore.FirstNonEmpty(status.LastError, "data plane is not running")
 		}
 		if status.LastError != "" {
 			return false, "data plane reconcile failed"

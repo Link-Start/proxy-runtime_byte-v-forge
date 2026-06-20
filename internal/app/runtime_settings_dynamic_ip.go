@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func dynamicIPProviderFromProto(in *proxyruntimev1.ProxyDynamicIPProviderSettings) *proxyruntimev1.ProxyDynamicIPProviderSettings {
@@ -12,7 +14,7 @@ func dynamicIPProviderFromProto(in *proxyruntimev1.ProxyDynamicIPProviderSetting
 	}
 	out := &proxyruntimev1.ProxyDynamicIPProviderSettings{
 		ProviderId:               strings.TrimSpace(in.GetProviderId()),
-		DynamicProviderId:        runtimeSafeID(in.GetDynamicProviderId()),
+		DynamicProviderId:        appcore.RuntimeSafeID(in.GetDynamicProviderId()),
 		DisplayName:              strings.TrimSpace(in.GetDisplayName()),
 		RotatingConcurrencyLimit: normalizeDynamicProviderRotatingConcurrencyLimit(in.GetRotatingConcurrencyLimit()),
 		StickyConcurrencyLimit:   normalizeDynamicProviderStickyConcurrencyLimit(in.GetStickyConcurrencyLimit()),
@@ -40,9 +42,9 @@ func normalizeDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderS
 		return
 	}
 	provider.ProviderId = strings.TrimSpace(provider.GetProviderId())
-	provider.DynamicProviderId = runtimeSafeID(provider.GetDynamicProviderId())
+	provider.DynamicProviderId = appcore.RuntimeSafeID(provider.GetDynamicProviderId())
 	if provider.DynamicProviderId == "" {
-		provider.DynamicProviderId = runtimeSafeID(provider.GetProviderId())
+		provider.DynamicProviderId = appcore.RuntimeSafeID(provider.GetProviderId())
 	}
 	provider.DisplayName = strings.TrimSpace(provider.GetDisplayName())
 	if provider.DisplayName == "" {
@@ -75,5 +77,5 @@ func cloneDynamicIPEndpoints(in []*proxyruntimev1.ProxyDynamicIPEndpointSettings
 }
 
 func dynamicIPProviderID(provider *proxyruntimev1.ProxyDynamicIPProviderSettings) string {
-	return runtimeSafeID(provider.GetDynamicProviderId())
+	return appcore.RuntimeSafeID(provider.GetDynamicProviderId())
 }

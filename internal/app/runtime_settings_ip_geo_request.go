@@ -9,6 +9,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func ipGeoProviderFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPGeoProviderSettings, current map[string][]*commonv1.SecretRef, index int, registry *ipgeo.Registry) (*proxyruntimev1.ProxyIPGeoProviderSettings, error) {
@@ -44,7 +46,7 @@ func ipGeoSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, in
 	if refs := cleanIPGeoSecretRefs(in.GetApiKeySecretRefs()); len(refs) > 0 {
 		return refs, nil
 	}
-	rawValues := cleanList(in.GetApiKeyValues())
+	rawValues := appcore.CleanList(in.GetApiKeyValues())
 	if len(rawValues) == 0 {
 		return nil, nil
 	}

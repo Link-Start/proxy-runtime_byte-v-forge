@@ -38,14 +38,14 @@ func (s *runtimeSettingsStore) updateInUserRules(ctx context.Context, profiles [
 func applyInUserSessionLabels(profiles []*proxyruntimev1.EgressProfileSettings, rules []*proxyruntimev1.ProxyIngressRuleSettings) {
 	profilesByID := map[string]*proxyruntimev1.EgressProfileSettings{}
 	for _, profile := range profiles {
-		profilesByID[runtimeSafeID(profile.GetProfileId())] = profile
+		profilesByID[appcore.RuntimeSafeID(profile.GetProfileId())] = profile
 	}
 	for _, rule := range rules {
 		sessionID := inUserSessionID(rule.GetUsername())
 		if sessionID == "" {
 			continue
 		}
-		profile := profilesByID[runtimeSafeID(rule.GetProfileId())]
+		profile := profilesByID[appcore.RuntimeSafeID(rule.GetProfileId())]
 		if profile == nil || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
 			continue
 		}
@@ -63,7 +63,7 @@ func applyInUserSessionLabels(profiles []*proxyruntimev1.EgressProfileSettings, 
 func rejectOmittedIngressRules(current []*proxyruntimev1.ProxyIngressRuleSettings, next []*proxyruntimev1.ProxyIngressRuleSettings) error {
 	missing := existingIngressRuleIDs(current)
 	for _, rule := range next {
-		delete(missing, runtimeSafeID(rule.GetRuleId()))
+		delete(missing, appcore.RuntimeSafeID(rule.GetRuleId()))
 	}
 	if len(missing) == 0 {
 		return nil
@@ -79,7 +79,7 @@ func rejectOmittedIngressRules(current []*proxyruntimev1.ProxyIngressRuleSetting
 func existingIngressRuleIDs(rules []*proxyruntimev1.ProxyIngressRuleSettings) map[string]struct{} {
 	out := map[string]struct{}{}
 	for _, rule := range rules {
-		if id := runtimeSafeID(rule.GetRuleId()); id != "" {
+		if id := appcore.RuntimeSafeID(rule.GetRuleId()); id != "" {
 			out[id] = struct{}{}
 		}
 	}
@@ -91,5 +91,5 @@ func inUserSessionID(username string) string {
 	if !ok {
 		return ""
 	}
-	return runtimeSafeID(session)
+	return appcore.RuntimeSafeID(session)
 }

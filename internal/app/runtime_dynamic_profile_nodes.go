@@ -17,7 +17,7 @@ import (
 const dynamicProfileSlotReleaseTimeout = 5 * time.Second
 
 func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *http.Client, profile *proxyruntimev1.EgressProfileSettings, selection dynamicProfileEndpointSelection, selected scoredDynamicIPEndpointCandidate, concurrencyLimit uint32, concurrencyHolder string) []provider.Node {
-	profileID := runtimeSafeID(profile.GetProfileId())
+	profileID := appcore.RuntimeSafeID(profile.GetProfileId())
 	cfg := selection.config
 	cfg.Gateways = []accountproxy.Gateway{selected.endpoint}
 	providerClient, err := r.accountProviders.NewSessionProvider(cfg, client, r.clock)
@@ -50,7 +50,7 @@ func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *h
 }
 
 func dynamicProfileLabelNode(node provider.Node, index int, profile *proxyruntimev1.EgressProfileSettings, selection dynamicProfileEndpointSelection, selected scoredDynamicIPEndpointCandidate) provider.Node {
-	profileID := runtimeSafeID(profile.GetProfileId())
+	profileID := appcore.RuntimeSafeID(profile.GetProfileId())
 	policy := dynamicProfileSessionPolicy(profile.GetExit().GetDynamicIpPolicy(), selected.proto.GetEndpointId())
 	node.ID = dynamicProfileNodeID(profileID, selection.accountID, node.SessionID, selected.proto.GetEndpointId(), index)
 	node.ProviderID = selection.config.ProviderID

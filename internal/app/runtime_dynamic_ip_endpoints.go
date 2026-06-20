@@ -5,10 +5,12 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func dynamicIPEndpoints(settings *runtimeSettingsFile, dynamicProviderID string, providerID string) []accountproxy.Gateway {
-	dynamicProviderID = runtimeSafeID(dynamicProviderID)
+	dynamicProviderID = appcore.RuntimeSafeID(dynamicProviderID)
 	providerID = strings.TrimSpace(providerID)
 	out := []accountproxy.Gateway{}
 	seen := map[string]struct{}{}
@@ -20,7 +22,7 @@ func dynamicIPEndpoints(settings *runtimeSettingsFile, dynamicProviderID string,
 			continue
 		}
 		for _, endpoint := range provider.endpoints {
-			key := firstNonEmpty(endpoint.ID, endpointIDFromURL(endpoint.EndpointURL), endpoint.EndpointURL)
+			key := appcore.FirstNonEmpty(endpoint.ID, endpointIDFromURL(endpoint.EndpointURL), endpoint.EndpointURL)
 			if key == "" {
 				continue
 			}
@@ -45,7 +47,7 @@ func dynamicIPEndpointMap(settings *runtimeSettingsFile) map[string][]accountpro
 			seen[provider.providerID] = map[string]struct{}{}
 		}
 		for _, endpoint := range provider.endpoints {
-			key := firstNonEmpty(endpoint.ID, endpointIDFromURL(endpoint.EndpointURL), endpoint.EndpointURL)
+			key := appcore.FirstNonEmpty(endpoint.ID, endpointIDFromURL(endpoint.EndpointURL), endpoint.EndpointURL)
 			if key == "" {
 				continue
 			}
@@ -107,5 +109,5 @@ func endpointIDFromURL(value string) string {
 	if value == "" {
 		return ""
 	}
-	return "endpoint-" + shortHash(value)
+	return "endpoint-" + appcore.ShortHash(value)
 }

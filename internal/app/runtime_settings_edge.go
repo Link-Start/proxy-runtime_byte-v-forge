@@ -8,6 +8,8 @@ import (
 	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func edgeCanaryFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.ProxyEdgeCanarySettings, current *proxyruntimev1.ProxyEdgeCanarySettings) (*proxyruntimev1.ProxyEdgeCanarySettings, error) {
@@ -16,7 +18,7 @@ func edgeCanaryFromRequest(ctx context.Context, writer secretref.Writer, req *pr
 	}
 	settings := &proxyruntimev1.ProxyEdgeCanarySettings{
 		Enabled: req.GetEnabled(),
-		Url:     firstNonEmpty(req.GetUrl(), current.GetUrl()),
+		Url:     appcore.FirstNonEmpty(req.GetUrl(), current.GetUrl()),
 	}
 	if ref := cloneSecretRef(req.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token"); ref != nil {
 		settings.TokenSecretRef = ref

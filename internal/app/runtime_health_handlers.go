@@ -20,7 +20,7 @@ func (api *runtimeHTTPAPI) handleReady(ctx *gin.Context) {
 			ctx.Status(http.StatusNoContent)
 			return
 		}
-		msg = firstNonEmpty(msg, "route runtime is not running")
+		msg = appcore.FirstNonEmpty(msg, "route runtime is not running")
 		writeHTTPError(ctx.Writer, appcore.Unavailable(msg, nil), http.StatusServiceUnavailable)
 		return
 	}

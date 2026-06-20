@@ -4,6 +4,8 @@ import (
 	"strings"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 const (
@@ -102,7 +104,7 @@ func playgroundDirectProfile() *proxyruntimev1.EgressProfileSettings {
 }
 
 func playgroundProfileByID(settings *runtimeSettingsFile, profileID string) *proxyruntimev1.EgressProfileSettings {
-	profileID = runtimeSafeID(profileID)
+	profileID = appcore.RuntimeSafeID(profileID)
 	for _, profile := range settings.GetEgressProfiles() {
 		if profile.GetProfileId() == profileID {
 			return profile

@@ -59,14 +59,14 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 	if providerID == "" && existing != nil {
 		providerID = existing.ProviderID
 	}
-	providerID = firstNonEmpty(providerID, s.accountProviders.DefaultProviderID())
+	providerID = appcore.FirstNonEmpty(providerID, s.accountProviders.DefaultProviderID())
 	if providerID == "" {
 		return nil, appcore.FailedPrecondition("provider_id is required", nil)
 	}
 	if !s.accountProviders.IsSupported(providerID) {
 		return nil, fmt.Errorf("unsupported provider_id %q", providerID)
 	}
-	dynamicProviderID := runtimeSafeID(req.GetDynamicProviderId())
+	dynamicProviderID := appcore.RuntimeSafeID(req.GetDynamicProviderId())
 	if dynamicProviderID == "" && existing != nil {
 		dynamicProviderID = existing.DynamicProviderID
 	}
@@ -112,7 +112,7 @@ func (s *PostgresStore) UpsertProviderAccount(ctx context.Context, req *proxyrun
 		secret = ""
 	}
 	enabled := req.GetEnabled()
-	displayName := firstNonEmpty(req.GetDisplayName(), accountID)
+	displayName := appcore.FirstNonEmpty(req.GetDisplayName(), accountID)
 	if enabled {
 		cfg, err := providerConfigFromCredentialSecret(ctx, s, s.box, providerID, secret)
 		if err != nil {
@@ -272,7 +272,7 @@ func credentialRawPassword(credential *providerCredential) string {
 	if credential == nil {
 		return ""
 	}
-	return firstNonEmpty(credential.PasswordValue, credential.Password)
+	return appcore.FirstNonEmpty(credential.PasswordValue, credential.Password)
 }
 
 func (r providerAccountRecord) toProto(box secretbox.Box) *proxyruntimev1.ProxyProviderAccount {

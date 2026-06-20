@@ -13,23 +13,6 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
-func shortHash(value string) string {
-	h := hashModulo(value, 0xffffffff)
-	return fmt.Sprintf("%08x", h)
-}
-
-func hashModulo(value string, modulo uint32) uint32 {
-	var h uint32 = 2166136261
-	for _, ch := range []byte(value) {
-		h ^= uint32(ch)
-		h *= 16777619
-	}
-	if modulo > 0 {
-		return h % modulo
-	}
-	return h
-}
-
 func cloneLabels(labels map[string]string) map[string]string {
 	cloned := map[string]string{}
 	for k, v := range labels {
@@ -101,22 +84,6 @@ func cloneStringMap(values map[string]string) map[string]string {
 		return nil
 	}
 	return out
-}
-
-func runtimeSafeID(value string) string {
-	value = strings.TrimSpace(value)
-	if value == "" {
-		return ""
-	}
-	var out strings.Builder
-	for _, r := range value {
-		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '-' || r == '_' {
-			out.WriteRune(r)
-			continue
-		}
-		out.WriteByte('-')
-	}
-	return strings.Trim(out.String(), "-")
 }
 
 func protoDuration(value *durationpb.Duration, fallback time.Duration) time.Duration {

@@ -44,7 +44,7 @@ type dynamicIPCandidateFilter struct {
 func dynamicIPCandidateFilterFromPolicy(policy *proxyruntimev1.ProxySessionPolicy) dynamicIPCandidateFilter {
 	labels := policy.GetLabels()
 	return dynamicIPCandidateFilter{
-		dynamicProviderID: runtimeSafeID(labels["dynamic_provider_id"]),
+		dynamicProviderID: appcore.RuntimeSafeID(labels["dynamic_provider_id"]),
 		endpointID:        strings.TrimSpace(labels["dynamic_ip_endpoint_id"]),
 	}
 }
@@ -57,7 +57,7 @@ func (p *dynamicIPSelector) providerAccountConcurrencyAvailable(ctx context.Cont
 }
 
 func (p *dynamicIPSelector) dynamicIPEndpointCandidatesForAccount(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, accountIndex int, providerInstances []dynamicIPProviderInstance, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxyruntimev1.ProxySessionPolicy, filter dynamicIPCandidateFilter) []scoredDynamicIPEndpointCandidate {
-	accountDynamicProviderID := runtimeSafeID(account.GetDynamicProviderId())
+	accountDynamicProviderID := appcore.RuntimeSafeID(account.GetDynamicProviderId())
 	out := []scoredDynamicIPEndpointCandidate{}
 	for providerIndex, providerInstance := range providerInstances {
 		if providerInstance.providerID != account.GetProviderId() {
@@ -76,7 +76,7 @@ func (p *dynamicIPSelector) dynamicIPEndpointCandidatesForAccount(ctx context.Co
 			if strings.TrimSpace(endpoint.EndpointURL) == "" {
 				continue
 			}
-			endpointID := firstNonEmpty(endpoint.ID, endpointIDFromURL(endpoint.EndpointURL))
+			endpointID := appcore.FirstNonEmpty(endpoint.ID, endpointIDFromURL(endpoint.EndpointURL))
 			if filter.endpointID != "" && filter.endpointID != endpointID {
 				continue
 			}
@@ -120,7 +120,7 @@ func chooseDynamicIPEndpointCandidate(candidates []scoredDynamicIPEndpointCandid
 		if attempt > 1 {
 			groupIndex = (attempt - 1) % len(groups)
 		} else {
-			groupIndex = int(hashModulo(key, uint32(len(groups))))
+			groupIndex = int(appcore.HashModulo(key, uint32(len(groups))))
 		}
 	}
 	return chooseDynamicIPEndpointWithinAccount(groups[groupIndex].candidates, key, attempt)
@@ -145,7 +145,7 @@ func dynamicIPEndpointCandidateGroups(candidates []scoredDynamicIPEndpointCandid
 			group = &dynamicIPEndpointCandidateGroup{
 				providerAccountID: accountID,
 				priority:          candidate.proto.GetPriority(),
-				order:             hashModulo(firstNonEmpty(key, "proxy-runtime")+":"+accountID, 0),
+				order:             appcore.HashModulo(appcore.FirstNonEmpty(key, "proxy-runtime")+":"+accountID, 0),
 			}
 			byAccount[accountID] = group
 		}
@@ -190,7 +190,7 @@ func chooseDynamicIPEndpointWithinAccount(candidates []scoredDynamicIPEndpointCa
 			return candidates[(attempt-1)%count]
 		}
 		if count > 1 {
-			return candidates[int(hashModulo(key, uint32(count)))]
+			return candidates[int(appcore.HashModulo(key, uint32(count)))]
 		}
 	}
 	return candidates[0]

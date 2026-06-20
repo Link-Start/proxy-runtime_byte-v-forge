@@ -5,6 +5,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 const (
@@ -35,7 +37,7 @@ func dynamicProviderInstanceConcurrencyLimit(provider dynamicIPProviderInstance,
 }
 
 func dynamicProviderConcurrencyLimit(settings *runtimeSettingsFile, dynamicProviderID string, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
-	dynamicProviderID = runtimeSafeID(dynamicProviderID)
+	dynamicProviderID = appcore.RuntimeSafeID(dynamicProviderID)
 	for _, provider := range dynamicIPProviderInstances(settings) {
 		if provider.dynamicProviderID == dynamicProviderID {
 			return dynamicProviderInstanceConcurrencyLimit(provider, policy)

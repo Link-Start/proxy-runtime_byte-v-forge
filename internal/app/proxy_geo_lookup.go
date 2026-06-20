@@ -8,6 +8,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (r *Runtime) lookupIPGeo(ctx context.Context, ip string) (proxyExitGeo, error) {
@@ -55,7 +57,7 @@ func newIPGeoLookup(registry *ipgeo.Registry, timeout time.Duration, providers [
 
 func proxyExitGeoFromProto(ip string, geo *proxyruntimev1.ProxyExitGeo) proxyExitGeo {
 	return proxyExitGeo{
-		IP:          firstNonEmpty(geo.GetIp(), ip),
+		IP:          appcore.FirstNonEmpty(geo.GetIp(), ip),
 		CountryCode: geo.GetCountryCode(),
 		Region:      geo.GetRegion(),
 		City:        geo.GetCity(),

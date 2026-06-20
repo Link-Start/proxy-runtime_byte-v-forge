@@ -29,7 +29,7 @@ func (r *Runtime) dynamicProfilePool(ctx context.Context, settings *runtimeSetti
 	endpointHealthScores := r.dynamicIPSelector.dynamicIPEndpointHealthScores(ctx)
 	out := []provider.Node{}
 	for _, profile := range settings.GetEgressProfiles() {
-		if !profile.GetEnabled() || runtimeSafeID(profile.GetProfileId()) == playgroundProfileID || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
+		if !profile.GetEnabled() || appcore.RuntimeSafeID(profile.GetProfileId()) == playgroundProfileID || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
 			continue
 		}
 		nodes := r.dynamicProfilePoolForProfile(ctx, client, settings, accounts, instances, endpointHealthScores, profile)
@@ -45,9 +45,9 @@ type dynamicProfileEndpointSelection struct {
 }
 
 func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http.Client, settings *runtimeSettingsFile, accounts []*proxyruntimev1.ProxyProviderAccount, instances []dynamicIPProviderInstance, endpointHealthScores map[string]int, profile *proxyruntimev1.EgressProfileSettings) []provider.Node {
-	profileID := runtimeSafeID(profile.GetProfileId())
+	profileID := appcore.RuntimeSafeID(profile.GetProfileId())
 	exit := profile.GetExit()
-	profileDynamicProviderID := runtimeSafeID(exit.GetDynamicProviderId())
+	profileDynamicProviderID := appcore.RuntimeSafeID(exit.GetDynamicProviderId())
 	endpointID := dynamicProfileEndpointID(exit)
 	policy := dynamicProfileSelectionPolicy(profileID, exit.GetDynamicIpPolicy())
 	concurrencyHolder := dynamicProfileConcurrencyHolder(profileID)
@@ -66,8 +66,8 @@ func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http
 			r.logger.Warn("dynamic profile provider account skipped", "account_id", accountID, "provider_id", account.GetProviderId(), "error_type", appcore.ErrorLogType(err))
 			continue
 		}
-		accountID = firstNonEmpty(storedAccountID, accountID)
-		accountDynamicProviderID := runtimeSafeID(account.GetDynamicProviderId())
+		accountID = appcore.FirstNonEmpty(storedAccountID, accountID)
+		accountDynamicProviderID := appcore.RuntimeSafeID(account.GetDynamicProviderId())
 		matchedInstances := dynamicProfileProviderInstancesForAccount(instances, account.GetProviderId(), accountDynamicProviderID, profileDynamicProviderID)
 		if len(matchedInstances) == 0 {
 			continue
@@ -108,8 +108,8 @@ func dynamicProfileEndpointCandidateKey(candidate scoredDynamicIPEndpointCandida
 
 func dynamicProfileProviderInstancesForAccount(instances []dynamicIPProviderInstance, providerID string, accountDynamicProviderID string, profileDynamicProviderID string) []dynamicIPProviderInstance {
 	providerID = strings.TrimSpace(providerID)
-	accountDynamicProviderID = runtimeSafeID(accountDynamicProviderID)
-	profileDynamicProviderID = runtimeSafeID(profileDynamicProviderID)
+	accountDynamicProviderID = appcore.RuntimeSafeID(accountDynamicProviderID)
+	profileDynamicProviderID = appcore.RuntimeSafeID(profileDynamicProviderID)
 	out := []dynamicIPProviderInstance{}
 	for _, instance := range instances {
 		if strings.TrimSpace(instance.providerID) != providerID {

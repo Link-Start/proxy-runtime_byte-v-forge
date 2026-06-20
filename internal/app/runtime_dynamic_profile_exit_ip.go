@@ -11,6 +11,8 @@ import (
 	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider"
 	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (r *Runtime) refreshDynamicProfileSelectionMetadata(ctx context.Context) {
@@ -42,7 +44,7 @@ func (r *Runtime) applyDynamicProfileSelectionMetadata(ctx context.Context, node
 }
 
 func clearDynamicProfileExitIP(nodes []provider.Node, profileID string) {
-	profileID = runtimeSafeID(profileID)
+	profileID = appcore.RuntimeSafeID(profileID)
 	for index := range nodes {
 		if strings.TrimSpace(nodes[index].Labels["egress_profile_id"]) != profileID {
 			continue
@@ -65,7 +67,7 @@ func markDynamicProfileSelection(nodes []provider.Node, profileID string, select
 }
 
 func dynamicProfileNodeIndex(nodes []provider.Node, profileID string, selectedProxy string) int {
-	profileID = runtimeSafeID(profileID)
+	profileID = appcore.RuntimeSafeID(profileID)
 	for index, node := range nodes {
 		if strings.TrimSpace(node.Labels["egress_profile_id"]) != profileID {
 			continue

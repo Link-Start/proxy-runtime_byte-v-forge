@@ -11,6 +11,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func (r *Runtime) checkIPListener(ctx context.Context, listenerID string) (config.EgressListener, error) {
@@ -63,7 +65,7 @@ func (r *Runtime) inUserCheckListener(ctx context.Context, username string) (con
 			continue
 		}
 		return config.EgressListener{
-			ID:       inUserCheckListenerPrefix + runtimeSafeID(username),
+			ID:       inUserCheckListenerPrefix + appcore.RuntimeSafeID(username),
 			Addr:     r.cfg.LocalAddr,
 			Protocol: r.cfg.LocalProtocol,
 			Route:    config.ListenerRouteProvider,

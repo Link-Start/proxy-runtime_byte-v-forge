@@ -5,6 +5,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func protocolEnum(value string) proxyruntimev1.ProxyProtocol {
@@ -26,7 +28,7 @@ func endpointsForDynamicIPSelection(settings *runtimeSettingsFile, plan *proxyru
 		return endpoints
 	}
 	for _, endpoint := range endpoints {
-		if firstNonEmpty(endpoint.ID, endpointIDFromURL(endpoint.EndpointURL)) == endpointID {
+		if appcore.FirstNonEmpty(endpoint.ID, endpointIDFromURL(endpoint.EndpointURL)) == endpointID {
 			return []accountproxy.Gateway{endpoint}
 		}
 	}

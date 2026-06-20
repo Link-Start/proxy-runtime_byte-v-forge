@@ -1,6 +1,9 @@
 package app
 
-import "github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+import (
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+)
 
 type runtimeReconcileState struct {
 	pending   bool
@@ -54,7 +57,7 @@ func (r *Runtime) dataPlaneStatus() string {
 
 func statusString(status dataplane.Status) string {
 	if !status.Running {
-		return firstNonEmpty(status.LastError, "stopped")
+		return appcore.FirstNonEmpty(status.LastError, "stopped")
 	}
 	if status.DesiredConfigHash != "" && status.DesiredConfigHash != status.AppliedConfigHash {
 		return "running; config projection stale"

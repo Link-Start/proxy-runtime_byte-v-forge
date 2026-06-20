@@ -128,7 +128,7 @@ func (a runtimeProviderApplication) UpsertProxyProviderAccount(ctx context.Conte
 }
 
 func (a runtimeProviderApplication) normalizeProviderAccountDynamicProvider(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) error {
-	dynamicProviderID := runtimeSafeID(req.GetDynamicProviderId())
+	dynamicProviderID := appcore.RuntimeSafeID(req.GetDynamicProviderId())
 	if dynamicProviderID == "" {
 		return nil
 	}
@@ -196,7 +196,7 @@ func (a runtimeProviderApplication) rejectActiveProviderAccountRuntimeMutation(c
 	if providerID := strings.TrimSpace(req.GetProviderId()); providerID != "" && providerID != state.ProviderID {
 		return appcore.FailedPrecondition("provider account has active leases", nil)
 	}
-	if dynamicProviderID := runtimeSafeID(req.GetDynamicProviderId()); dynamicProviderID != "" && dynamicProviderID != state.DynamicProviderID {
+	if dynamicProviderID := appcore.RuntimeSafeID(req.GetDynamicProviderId()); dynamicProviderID != "" && dynamicProviderID != state.DynamicProviderID {
 		return appcore.FailedPrecondition("provider account has active leases", nil)
 	}
 	if username := strings.TrimSpace(req.GetUsername()); username != "" && username != state.Username {

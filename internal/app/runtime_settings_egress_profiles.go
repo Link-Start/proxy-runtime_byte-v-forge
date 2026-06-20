@@ -6,6 +6,8 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
 	"google.golang.org/protobuf/types/known/durationpb"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func egressProfileFromProto(in *proxyruntimev1.EgressProfileSettings) *proxyruntimev1.EgressProfileSettings {
@@ -13,7 +15,7 @@ func egressProfileFromProto(in *proxyruntimev1.EgressProfileSettings) *proxyrunt
 		return &proxyruntimev1.EgressProfileSettings{}
 	}
 	out := &proxyruntimev1.EgressProfileSettings{
-		ProfileId:   runtimeSafeID(in.GetProfileId()),
+		ProfileId:   appcore.RuntimeSafeID(in.GetProfileId()),
 		DisplayName: strings.TrimSpace(in.GetDisplayName()),
 		Enabled:     in.GetEnabled(),
 		Line:        egressProfileLineFromProto(in.GetLine()),
@@ -79,7 +81,7 @@ func normalizeEgressProfile(profile *proxyruntimev1.EgressProfileSettings) {
 	if profile == nil {
 		return
 	}
-	profile.ProfileId = runtimeSafeID(profile.GetProfileId())
+	profile.ProfileId = appcore.RuntimeSafeID(profile.GetProfileId())
 	profile.DisplayName = strings.TrimSpace(profile.GetDisplayName())
 	profile.Line = egressProfileLineFromProto(profile.GetLine())
 	profile.Exit = egressProfileExitFromProto(profile.GetExit())

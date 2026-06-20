@@ -6,10 +6,12 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func dynamicProfileConcurrencyHolder(profileID string) string {
-	profileID = runtimeSafeID(profileID)
+	profileID = appcore.RuntimeSafeID(profileID)
 	if profileID == "" {
 		profileID = "default"
 	}
@@ -34,7 +36,7 @@ func dynamicProfileSession(profileID string, accountID string, providerID string
 
 func dynamicProfileRequestedSessionID(policy *proxyruntimev1.ProxySessionPolicy) string {
 	labels := policy.GetLabels()
-	return runtimeSafeID(firstNonEmpty(
+	return appcore.RuntimeSafeID(appcore.FirstNonEmpty(
 		labels["session_id"],
 		labels["sticky_session_id"],
 		labels["sticky_id"],
@@ -66,9 +68,9 @@ func dynamicProfilePolicySignature(policy *proxyruntimev1.ProxySessionPolicy) st
 }
 
 func dynamicProfileSessionID(seed string) string {
-	return fmt.Sprintf("%08d", hashModulo(seed, 100000000))
+	return fmt.Sprintf("%08d", appcore.HashModulo(seed, 100000000))
 }
 
 func dynamicProfileNodeID(profileID string, accountID string, sessionID string, endpointID string, index int) string {
-	return runtimeSafeID(fmt.Sprintf("dynamic-%s-%s-%s-%s-%d", profileID, accountID, sessionID, endpointID, index))
+	return appcore.RuntimeSafeID(fmt.Sprintf("dynamic-%s-%s-%s-%s-%d", profileID, accountID, sessionID, endpointID, index))
 }

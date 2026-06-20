@@ -5,6 +5,8 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func dynamicProfileEndpointID(exit *proxyruntimev1.EgressProfileExitSettings) string {
@@ -36,7 +38,7 @@ func dynamicProfileSelectionPolicy(profileID string, policy *proxyruntimev1.Prox
 func dynamicProfileSelectionKey(profileID string, accountID string, endpointID string, policy *proxyruntimev1.ProxySessionPolicy) string {
 	labels := policy.GetLabels()
 	return strings.Join([]string{
-		firstNonEmpty(labels["selection_seed"], labels["proxy_selection_seed"], profileID),
+		appcore.FirstNonEmpty(labels["selection_seed"], labels["proxy_selection_seed"], profileID),
 		strings.TrimSpace(accountID),
 		strings.TrimSpace(endpointID),
 		dynamicProfilePolicySignature(dynamicProfileSessionPolicy(policy, endpointID)),

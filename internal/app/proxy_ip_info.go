@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 )
 
 func requestIPInfo(ctx context.Context, client *http.Client, endpoint string, requireIP bool) (proxyExitGeo, error) {
@@ -64,7 +66,7 @@ func parseIPInfo(body []byte) proxyExitGeo {
 		return proxyExitGeo{
 			IP:          ip,
 			CountryCode: values["loc"],
-			Region:      firstNonEmpty(values["region"], values["region_name"], values["state"]),
+			Region:      appcore.FirstNonEmpty(values["region"], values["region_name"], values["state"]),
 			City:        values["city"],
 		}
 	}
@@ -85,15 +87,6 @@ func jsonString(payload map[string]any, keys ...string) string {
 			if text, ok := value.(string); ok {
 				return strings.TrimSpace(text)
 			}
-		}
-	}
-	return ""
-}
-
-func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if value = strings.TrimSpace(value); value != "" {
-			return value
 		}
 	}
 	return ""

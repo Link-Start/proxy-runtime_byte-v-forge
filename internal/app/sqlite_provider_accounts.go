@@ -49,14 +49,14 @@ func (s *SQLiteStore) UpsertProviderAccount(ctx context.Context, req *proxyrunti
 	if err != nil && !isStoreNotFound(err) {
 		return nil, err
 	}
-	providerID := firstNonEmpty(strings.TrimSpace(req.GetProviderId()), existingProviderID(existing), s.accountProviders.DefaultProviderID())
+	providerID := appcore.FirstNonEmpty(strings.TrimSpace(req.GetProviderId()), existingProviderID(existing), s.accountProviders.DefaultProviderID())
 	if providerID == "" {
 		return nil, appcore.FailedPrecondition("provider_id is required", nil)
 	}
 	if !s.accountProviders.IsSupported(providerID) {
 		return nil, fmt.Errorf("unsupported provider_id %q", providerID)
 	}
-	dynamicProviderID := firstNonEmpty(runtimeSafeID(req.GetDynamicProviderId()), existingDynamicProviderID(existing))
+	dynamicProviderID := appcore.FirstNonEmpty(appcore.RuntimeSafeID(req.GetDynamicProviderId()), existingDynamicProviderID(existing))
 	secret := existingCredentialSecret(existing)
 	credential := providerCredential{}
 	if current := credentialFromSecret(s.box, secret); current != nil {
@@ -91,7 +91,7 @@ func (s *SQLiteStore) UpsertProviderAccount(ctx context.Context, req *proxyrunti
 		secret = ""
 	}
 	enabled := req.GetEnabled()
-	displayName := firstNonEmpty(req.GetDisplayName(), accountID)
+	displayName := appcore.FirstNonEmpty(req.GetDisplayName(), accountID)
 	if enabled {
 		cfg, err := providerConfigFromCredentialSecret(ctx, s, s.box, providerID, secret)
 		if err != nil {

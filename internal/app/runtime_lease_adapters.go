@@ -3,9 +3,12 @@ package app
 import (
 	"context"
 	"errors"
+	"net/http"
 	"time"
 
+	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
 )
 
@@ -62,5 +65,28 @@ func dataPlaneLocalService(service leaseapp.LocalService) dataplane.LocalService
 		Username: service.Username,
 		Password: service.Password,
 		Route:    service.Route,
+	}
+}
+
+func writeLeaseHTTPError(w http.ResponseWriter, err error, fallbackStatus int) {
+	if errors.Is(err, leaseapp.ErrLeaseIDRequired) {
+		writeHTTPError(w, appcore.InvalidArgument(err.Error(), err), http.StatusBadRequest)
+		return
+	}
+	if store.IsNotFound(err) {
+		writeHTTPError(w, errors.New("lease not found"), http.StatusNotFound)
+		return
+	}
+	writeHTTPError(w, err, fallbackStatus)
+}
+
+func leaseProfilePolicyError(err error) error {
+	switch {
+	case errors.Is(err, leaseapp.ErrProfileDynamicIPNotConfigured), errors.Is(err, leaseapp.ErrProfileLeaseRequiresSticky):
+		return appcore.FailedPrecondition(err.Error(), err)
+	case errors.Is(err, leaseapp.ErrRequestRequiresStickyDynamicIP):
+		return appcore.InvalidArgument(err.Error(), err)
+	default:
+		return err
 	}
 }

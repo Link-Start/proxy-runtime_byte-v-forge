@@ -4,10 +4,10 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
@@ -95,5 +95,29 @@ func warnLeaseProviderSessionReleaseFailed(logger leaseapp.Logger) leaseapp.Leas
 			return
 		}
 		logger.Warn("provider session release failed", leaseapp.LabelAccountID, lease.GetAccountId(), leaseapp.LabelProviderAccountID, lease.GetProviderAccountId(), "error_type", appcore.ErrorLogType(err))
+	}
+}
+
+type leaseRouteSideEffects struct {
+	exitCheckCache         *proxycheck.ExitCheckCache
+	closeInUserConnections leaseConnectionCleanupFunc
+}
+
+func (e leaseRouteSideEffects) afterRouteChange(ctx context.Context, accountID string) {
+	e.clearExitCheckCache()
+	if accountID == kernel.PlaygroundProfileID {
+		e.closePlaygroundConnections(ctx)
+	}
+}
+
+func (e leaseRouteSideEffects) clearExitCheckCache() {
+	if e.exitCheckCache != nil {
+		e.exitCheckCache.Clear()
+	}
+}
+
+func (e leaseRouteSideEffects) closePlaygroundConnections(ctx context.Context) {
+	if e.closeInUserConnections != nil {
+		e.closeInUserConnections(ctx, []string{kernel.PlaygroundUsername})
 	}
 }

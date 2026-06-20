@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
-
+	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
 
 func (r *Runtime) leaseListener(ctx context.Context, settings *runtimeSettingsFile, accountID string, leaseID string) (leaseapp.Listener, error) {
@@ -32,4 +32,24 @@ func (r *Runtime) leaseListener(ctx context.Context, settings *runtimeSettingsFi
 		return leaseapp.Listener{}, appcore.FailedPrecondition(err.Error(), nil)
 	}
 	return listener, err
+}
+
+func proxyRouteUsername(accountID string) string {
+	username := appcore.RuntimeSafeID(accountID)
+	if username == "" {
+		username = appcore.ShortHash(accountID)
+	}
+	return "acct-" + username
+}
+
+func (r *Runtime) listenerReservedLeaseFacts(ctx context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+	active, err := r.store.ListActiveLeaseFacts(ctx, leaseapp.MaxListLimit)
+	if err != nil {
+		return nil, err
+	}
+	cleanupPending, err := r.store.CleanupPendingLeaseFacts(ctx)
+	if err != nil {
+		return nil, err
+	}
+	return leaseapp.ReservedListenerLeaseFacts(active, cleanupPending), nil
 }

@@ -6,10 +6,12 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 func (s *PostgresStore) SaveLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	fact, err := prepareDynamicLeaseFactSave(lease)
+	fact, err := store.PrepareDynamicLeaseFactSave(lease)
 	if err != nil {
 		return err
 	}

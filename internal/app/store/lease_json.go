@@ -1,4 +1,4 @@
-package app
+package store
 
 import (
 	"strings"
@@ -7,7 +7,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 )
 
-func decodeDynamicLeaseFactJSON(raw string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func DecodeDynamicLeaseFactJSON(raw string) (*proxyruntimev1.ProxyDynamicLease, error) {
 	lease := &proxyruntimev1.ProxyDynamicLease{}
 	if strings.TrimSpace(raw) == "" {
 		return lease, nil

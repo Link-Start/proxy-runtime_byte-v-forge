@@ -4,10 +4,12 @@ import (
 	"context"
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
 
 func (s *SQLiteStore) SaveLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
-	fact, err := prepareDynamicLeaseFactSave(lease)
+	fact, err := store.PrepareDynamicLeaseFactSave(lease)
 	if err != nil {
 		return err
 	}

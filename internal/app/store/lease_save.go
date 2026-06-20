@@ -1,4 +1,4 @@
-package app
+package store
 
 import (
 	"errors"
@@ -8,7 +8,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
 )
 
-type dynamicLeaseFactSave struct {
+type DynamicLeaseFactSave struct {
 	LeaseID           string
 	AccountID         string
 	Purpose           string
@@ -17,12 +17,12 @@ type dynamicLeaseFactSave struct {
 	JSON              string
 }
 
-func prepareDynamicLeaseFactSave(lease *proxyruntimev1.ProxyDynamicLease) (dynamicLeaseFactSave, error) {
+func PrepareDynamicLeaseFactSave(lease *proxyruntimev1.ProxyDynamicLease) (DynamicLeaseFactSave, error) {
 	if lease == nil || strings.TrimSpace(lease.GetLeaseId()) == "" {
-		return dynamicLeaseFactSave{}, errors.New("lease_id is required")
+		return DynamicLeaseFactSave{}, errors.New("lease_id is required")
 	}
 	if strings.TrimSpace(lease.GetAccountId()) == "" {
-		return dynamicLeaseFactSave{}, errors.New("lease account_id is required")
+		return DynamicLeaseFactSave{}, errors.New("lease account_id is required")
 	}
 	status := lease.GetStatus()
 	if status == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_UNSPECIFIED {
@@ -31,9 +31,9 @@ func prepareDynamicLeaseFactSave(lease *proxyruntimev1.ProxyDynamicLease) (dynam
 	}
 	data, err := protojsoncodec.Marshal(lease)
 	if err != nil {
-		return dynamicLeaseFactSave{}, err
+		return DynamicLeaseFactSave{}, err
 	}
-	return dynamicLeaseFactSave{
+	return DynamicLeaseFactSave{
 		LeaseID:           strings.TrimSpace(lease.GetLeaseId()),
 		AccountID:         strings.TrimSpace(lease.GetAccountId()),
 		Purpose:           strings.TrimSpace(lease.GetPurpose()),

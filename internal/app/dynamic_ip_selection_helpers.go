@@ -7,6 +7,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 )
 
 func protocolEnum(value string) proxyruntimev1.ProxyProtocol {
@@ -22,13 +23,13 @@ func protocolEnum(value string) proxyruntimev1.ProxyProtocol {
 
 func endpointsForDynamicIPSelection(settings *runtimeSettingsFile, plan *proxyruntimev1.ProxyDynamicIPSelectionPlan, providerID string) []accountproxy.Gateway {
 	selected := plan.GetSelectedEndpoint()
-	endpoints := dynamicIPEndpoints(settings, selected.GetDynamicProviderId(), providerID)
+	endpoints := dynamic.Endpoints(settings, selected.GetDynamicProviderId(), providerID)
 	endpointID := strings.TrimSpace(plan.GetSelectedEndpoint().GetEndpointId())
 	if endpointID == "" {
 		return endpoints
 	}
 	for _, endpoint := range endpoints {
-		if appcore.FirstNonEmpty(endpoint.ID, endpointIDFromURL(endpoint.EndpointURL)) == endpointID {
+		if appcore.FirstNonEmpty(endpoint.ID, dynamic.EndpointIDFromURL(endpoint.EndpointURL)) == endpointID {
 			return []accountproxy.Gateway{endpoint}
 		}
 	}

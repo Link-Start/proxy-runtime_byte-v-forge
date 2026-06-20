@@ -11,6 +11,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
 )
@@ -96,7 +97,7 @@ func (a runtimeProviderApplication) ListProxyProviders(ctx context.Context) (*pr
 	if err != nil {
 		return nil, err
 	}
-	return &proxyruntimev1.ListProxyProvidersResponse{Providers: descriptors(dynamicIPEndpointMap(settings))}, nil
+	return &proxyruntimev1.ListProxyProvidersResponse{Providers: descriptors(dynamic.EndpointMap(settings))}, nil
 }
 
 func (a runtimeProviderApplication) ListProxyProviderAccounts(ctx context.Context) (*proxyruntimev1.ListProxyProviderAccountsResponse, error) {
@@ -142,15 +143,15 @@ func (a runtimeProviderApplication) normalizeProviderAccountDynamicProvider(ctx 
 	if err != nil {
 		return err
 	}
-	for _, provider := range dynamicIPProviderInstances(settings) {
-		if provider.dynamicProviderID != dynamicProviderID {
+	for _, provider := range dynamic.ProviderInstances(settings) {
+		if provider.DynamicProviderID != dynamicProviderID {
 			continue
 		}
-		if providerID := strings.TrimSpace(req.GetProviderId()); providerID != "" && providerID != provider.providerID {
-			return fmt.Errorf("dynamic provider %q uses provider_id %q", dynamicProviderID, provider.providerID)
+		if providerID := strings.TrimSpace(req.GetProviderId()); providerID != "" && providerID != provider.ProviderID {
+			return fmt.Errorf("dynamic provider %q uses provider_id %q", dynamicProviderID, provider.ProviderID)
 		}
 		req.DynamicProviderId = dynamicProviderID
-		req.ProviderId = provider.providerID
+		req.ProviderId = provider.ProviderID
 		return nil
 	}
 	return fmt.Errorf("dynamic provider %q is not enabled", dynamicProviderID)

@@ -3,6 +3,7 @@ package app
 import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
@@ -28,7 +29,7 @@ func enabledDynamicProviderEndpointIDs(settings *runtimeSettingsFile) map[string
 			out[dynamicProviderID] = map[string]struct{}{}
 		}
 		for _, endpoint := range provider.GetEndpoints() {
-			endpointID := endpointIDFromURL(endpoint.GetEndpointUrl())
+			endpointID := dynamic.EndpointIDFromURL(endpoint.GetEndpointUrl())
 			if endpointID != "" {
 				out[dynamicProviderID][endpointID] = struct{}{}
 			}

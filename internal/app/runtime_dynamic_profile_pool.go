@@ -10,6 +10,7 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
@@ -19,7 +20,7 @@ func (r *Runtime) dynamicProfilePool(ctx context.Context, settings *runtimeSetti
 		return nil, nil
 	}
 	settings = settingscore.NormalizeRuntimeSettings(settings)
-	instances := dynamicIPProviderInstances(settings)
+	instances := dynamic.ProviderInstances(settings)
 	if len(instances) == 0 {
 		return nil, nil
 	}
@@ -46,7 +47,7 @@ type dynamicProfileEndpointSelection struct {
 	config    accountproxy.Config
 }
 
-func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http.Client, settings *runtimeSettingsFile, accounts []*proxyruntimev1.ProxyProviderAccount, instances []dynamicIPProviderInstance, endpointHealthScores map[string]int, profile *proxyruntimev1.EgressProfileSettings) []provider.Node {
+func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http.Client, settings *runtimeSettingsFile, accounts []*proxyruntimev1.ProxyProviderAccount, instances []dynamic.ProviderInstance, endpointHealthScores map[string]int, profile *proxyruntimev1.EgressProfileSettings) []provider.Node {
 	profileID := appcore.RuntimeSafeID(profile.GetProfileId())
 	exit := profile.GetExit()
 	profileDynamicProviderID := appcore.RuntimeSafeID(exit.GetDynamicProviderId())
@@ -108,19 +109,19 @@ func dynamicProfileEndpointCandidateKey(candidate scoredDynamicIPEndpointCandida
 	}, "/")
 }
 
-func dynamicProfileProviderInstancesForAccount(instances []dynamicIPProviderInstance, providerID string, accountDynamicProviderID string, profileDynamicProviderID string) []dynamicIPProviderInstance {
+func dynamicProfileProviderInstancesForAccount(instances []dynamic.ProviderInstance, providerID string, accountDynamicProviderID string, profileDynamicProviderID string) []dynamic.ProviderInstance {
 	providerID = strings.TrimSpace(providerID)
 	accountDynamicProviderID = appcore.RuntimeSafeID(accountDynamicProviderID)
 	profileDynamicProviderID = appcore.RuntimeSafeID(profileDynamicProviderID)
-	out := []dynamicIPProviderInstance{}
+	out := []dynamic.ProviderInstance{}
 	for _, instance := range instances {
-		if strings.TrimSpace(instance.providerID) != providerID {
+		if strings.TrimSpace(instance.ProviderID) != providerID {
 			continue
 		}
-		if accountDynamicProviderID != "" && accountDynamicProviderID != instance.dynamicProviderID {
+		if accountDynamicProviderID != "" && accountDynamicProviderID != instance.DynamicProviderID {
 			continue
 		}
-		if profileDynamicProviderID != "" && profileDynamicProviderID != instance.dynamicProviderID {
+		if profileDynamicProviderID != "" && profileDynamicProviderID != instance.DynamicProviderID {
 			continue
 		}
 		out = append(out, instance)

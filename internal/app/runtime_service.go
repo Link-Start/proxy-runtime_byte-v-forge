@@ -92,7 +92,7 @@ func runtimeCheckDependencies(runtime *Runtime) runtimeCheckApplicationDependenc
 		LookupGeo:      runtime.lookupIPGeo,
 		CheckFraud:     runtime.checkIPFraud,
 		RunEdgeCanary:  runtime.runEdgeCanary,
-		ExitCheckCache: &runtime.exitCheckCache,
+		ExitCheckCache: runtime.exitCheckCache,
 	}
 }
 

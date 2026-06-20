@@ -6,6 +6,7 @@ import (
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
 	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 )
@@ -32,7 +33,7 @@ type leaseCoordinatorDependencies struct {
 	sessionProviders        leaseapp.SessionProviderFactory
 	providerConcurrency     leaseapp.ProviderAccountConcurrencyLimiter
 	logger                  leaseapp.Logger
-	exitCheckCache          *proxyExitCheckCache
+	exitCheckCache          *proxycheck.ExitCheckCache
 	leaseListener           leaseListenerFunc
 	localListenerEndpoint   leaseEndpointFunc
 	sessionAdvertisedHost   leaseAdvertisedHostFunc

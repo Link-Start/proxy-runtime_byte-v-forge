@@ -1,9 +1,13 @@
 package app
 
-import "context"
+import (
+	"context"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
+)
 
 type leaseRouteSideEffects struct {
-	exitCheckCache         *proxyExitCheckCache
+	exitCheckCache         *proxycheck.ExitCheckCache
 	closeInUserConnections leaseConnectionCleanupFunc
 }
 
@@ -16,7 +20,7 @@ func (e leaseRouteSideEffects) afterRouteChange(ctx context.Context, accountID s
 
 func (e leaseRouteSideEffects) clearExitCheckCache() {
 	if e.exitCheckCache != nil {
-		e.exitCheckCache.clear()
+		e.exitCheckCache.Clear()
 	}
 }
 

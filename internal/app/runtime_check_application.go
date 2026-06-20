@@ -54,11 +54,11 @@ type runtimeCheckFraudChecker func(context.Context, string, *runtimeSettingsFile
 type runtimeCheckEdgeCanary func(context.Context, *http.Client, *runtimeSettingsFile) edgeCanaryOutcome
 
 type runtimeCheckCache interface {
-	putExitIP(string, *proxyruntimev1.ProxyExitIP)
-	putGeo(*proxyruntimev1.ProxyExitGeo)
-	putFraud(*proxyruntimev1.ProxyIPFraudCheck)
-	putEdge(string, *proxyruntimev1.ProxyEdgeAccessCheck)
-	snapshot(string) *proxyruntimev1.ProxyExitCheckSnapshot
+	PutExitIP(string, *proxyruntimev1.ProxyExitIP)
+	PutGeo(*proxyruntimev1.ProxyExitGeo)
+	PutFraud(*proxyruntimev1.ProxyIPFraudCheck)
+	PutEdge(string, *proxyruntimev1.ProxyEdgeAccessCheck)
+	Snapshot(string) *proxyruntimev1.ProxyExitCheckSnapshot
 }
 
 func newRuntimeCheckApplication(deps runtimeCheckApplicationDependencies) runtimeCheckApplication {
@@ -282,25 +282,25 @@ func (a runtimeCheckApplication) checkEdgeAccess(ctx context.Context, client *ht
 
 func (a runtimeCheckApplication) putExitIP(listenerID string, exitIP *proxyruntimev1.ProxyExitIP) {
 	if a.exitCheckCache != nil {
-		a.exitCheckCache.putExitIP(listenerID, exitIP)
+		a.exitCheckCache.PutExitIP(listenerID, exitIP)
 	}
 }
 
 func (a runtimeCheckApplication) putGeo(geo *proxyruntimev1.ProxyExitGeo) {
 	if a.exitCheckCache != nil {
-		a.exitCheckCache.putGeo(geo)
+		a.exitCheckCache.PutGeo(geo)
 	}
 }
 
 func (a runtimeCheckApplication) putFraud(check *proxyruntimev1.ProxyIPFraudCheck) {
 	if a.exitCheckCache != nil {
-		a.exitCheckCache.putFraud(check)
+		a.exitCheckCache.PutFraud(check)
 	}
 }
 
 func (a runtimeCheckApplication) putEdge(listenerID string, check *proxyruntimev1.ProxyEdgeAccessCheck) {
 	if a.exitCheckCache != nil {
-		a.exitCheckCache.putEdge(listenerID, check)
+		a.exitCheckCache.PutEdge(listenerID, check)
 	}
 }
 
@@ -308,5 +308,5 @@ func (a runtimeCheckApplication) snapshot(listenerID string) *proxyruntimev1.Pro
 	if a.exitCheckCache == nil {
 		return nil
 	}
-	return a.exitCheckCache.snapshot(listenerID)
+	return a.exitCheckCache.Snapshot(listenerID)
 }

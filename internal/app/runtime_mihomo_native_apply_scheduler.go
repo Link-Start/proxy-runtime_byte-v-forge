@@ -1,7 +1,9 @@
 package app
 
+import "github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
+
 type runtimeMihomoNativeApplyScheduler struct {
-	exitCheckCache   *proxyExitCheckCache
+	exitCheckCache   *proxycheck.ExitCheckCache
 	markApplyPending func()
 	requestReconcile func()
 }
@@ -11,7 +13,7 @@ func newRuntimeMihomoNativeApplyScheduler(runtime *Runtime) runtimeMihomoNativeA
 		return runtimeMihomoNativeApplyScheduler{}
 	}
 	return runtimeMihomoNativeApplyScheduler{
-		exitCheckCache:   &runtime.exitCheckCache,
+		exitCheckCache:   runtime.exitCheckCache,
 		markApplyPending: runtime.markSettingsApplyPending,
 		requestReconcile: runtime.requestReconcile,
 	}
@@ -19,7 +21,7 @@ func newRuntimeMihomoNativeApplyScheduler(runtime *Runtime) runtimeMihomoNativeA
 
 func (s runtimeMihomoNativeApplyScheduler) Schedule() {
 	if s.exitCheckCache != nil {
-		s.exitCheckCache.clear()
+		s.exitCheckCache.Clear()
 	}
 	if s.markApplyPending != nil {
 		s.markApplyPending()

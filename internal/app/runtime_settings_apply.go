@@ -12,7 +12,7 @@ const runtimeSettingsConnectionCleanupTimeout = 10 * time.Second
 type runtimeSettingsApplyScheduler struct {
 	resetIPFraudChecker   func()
 	geoCache              *proxycheck.IPGeoCache
-	exitCheckCache        *proxyExitCheckCache
+	exitCheckCache        *proxycheck.ExitCheckCache
 	markApplyPending      func()
 	requestReconcile      func()
 	closeInUserConnection leaseConnectionCleanupFunc
@@ -25,7 +25,7 @@ func newRuntimeSettingsApplyScheduler(runtime *Runtime) runtimeSettingsApplySche
 	return runtimeSettingsApplyScheduler{
 		resetIPFraudChecker:   runtime.resetIPFraudChecker,
 		geoCache:              runtime.geoCache,
-		exitCheckCache:        &runtime.exitCheckCache,
+		exitCheckCache:        runtime.exitCheckCache,
 		markApplyPending:      runtime.markSettingsApplyPending,
 		requestReconcile:      runtime.requestReconcile,
 		closeInUserConnection: runtime.closeMihomoInUserConnections,
@@ -53,7 +53,7 @@ func (s runtimeSettingsApplyScheduler) clearDerivedState() {
 		s.geoCache.Clear()
 	}
 	if s.exitCheckCache != nil {
-		s.exitCheckCache.clear()
+		s.exitCheckCache.Clear()
 	}
 }
 

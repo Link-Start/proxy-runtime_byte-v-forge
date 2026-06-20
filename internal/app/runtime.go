@@ -55,7 +55,7 @@ type Runtime struct {
 	fraudChecker    ipFraudCheckerCache
 	geoCache        *proxycheck.IPGeoCache
 	geoLookupSF     singleflight.Group
-	exitCheckCache  proxyExitCheckCache
+	exitCheckCache  *proxycheck.ExitCheckCache
 
 	dynamicProfileMu        sync.RWMutex
 	dynamicProfilePoolNodes []provider.Node
@@ -112,7 +112,7 @@ func NewRuntime(deps RuntimeDeps) (*Runtime, error) {
 		geoCache:            proxycheck.NewIPGeoCache(clk),
 		reconcileCh:         make(chan struct{}, 1),
 	}
-	runtime.exitCheckCache.clock = clk
+	runtime.exitCheckCache = proxycheck.NewExitCheckCache(clk)
 	runtime.dynamicIPSelector = dynamic.NewIPSelector(runtimeDynamicIPSelectorDependencies(runtime))
 	runtime.leaseCoordinator = newLeaseCoordinator(runtimeLeaseCoordinatorDependencies(runtime))
 	runtime.appService = NewRuntimeService(runtime)

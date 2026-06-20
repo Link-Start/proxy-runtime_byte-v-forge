@@ -1,4 +1,4 @@
-package app
+package proxycheck
 
 import (
 	"strings"
@@ -13,13 +13,17 @@ import (
 
 const proxyExitCheckCacheTTL = 24 * time.Hour
 
-type proxyExitCheckCache struct {
+type ExitCheckCache struct {
 	mu        sync.Mutex
 	exitIPs   map[string]cachedProxyExitIP
 	geos      map[string]cachedProxyExitGeo
 	frauds    map[string]cachedProxyIPFraudCheck
 	edgeRisks map[string]cachedProxyEdgeAccessCheck
 	clock     clock.Clock
+}
+
+func NewExitCheckCache(clk clock.Clock) *ExitCheckCache {
+	return &ExitCheckCache{clock: clk}
 }
 
 type cachedProxyExitIP struct {
@@ -46,7 +50,7 @@ type cachedProxyEdgeAccessCheck struct {
 	expiresAt time.Time
 }
 
-func (c *proxyExitCheckCache) snapshot(listenerID string) *proxyruntimev1.ProxyExitCheckSnapshot {
+func (c *ExitCheckCache) Snapshot(listenerID string) *proxyruntimev1.ProxyExitCheckSnapshot {
 	listenerID = normalizeProxyExitCheckCacheKey(listenerID)
 	if listenerID == "" {
 		return nil
@@ -83,7 +87,7 @@ func (c *proxyExitCheckCache) snapshot(listenerID string) *proxyruntimev1.ProxyE
 	return snapshot
 }
 
-func (c *proxyExitCheckCache) putExitIP(listenerID string, value *proxyruntimev1.ProxyExitIP) {
+func (c *ExitCheckCache) PutExitIP(listenerID string, value *proxyruntimev1.ProxyExitIP) {
 	listenerID = normalizeProxyExitCheckCacheKey(listenerID)
 	if listenerID == "" || value == nil || strings.TrimSpace(value.GetIp()) == "" {
 		return
@@ -97,7 +101,7 @@ func (c *proxyExitCheckCache) putExitIP(listenerID string, value *proxyruntimev1
 	c.exitIPs[listenerID] = cachedProxyExitIP{value: cloneProxyExitIP(value), updatedAt: now, expiresAt: now.Add(proxyExitCheckCacheTTL)}
 }
 
-func (c *proxyExitCheckCache) putGeo(value *proxyruntimev1.ProxyExitGeo) {
+func (c *ExitCheckCache) PutGeo(value *proxyruntimev1.ProxyExitGeo) {
 	if value == nil {
 		return
 	}
@@ -114,7 +118,7 @@ func (c *proxyExitCheckCache) putGeo(value *proxyruntimev1.ProxyExitGeo) {
 	c.geos[ip] = cachedProxyExitGeo{value: cloneProxyExitGeo(value), updatedAt: now, expiresAt: now.Add(proxyExitCheckCacheTTL)}
 }
 
-func (c *proxyExitCheckCache) putFraud(value *proxyruntimev1.ProxyIPFraudCheck) {
+func (c *ExitCheckCache) PutFraud(value *proxyruntimev1.ProxyIPFraudCheck) {
 	if value == nil {
 		return
 	}
@@ -131,7 +135,7 @@ func (c *proxyExitCheckCache) putFraud(value *proxyruntimev1.ProxyIPFraudCheck) 
 	c.frauds[ip] = cachedProxyIPFraudCheck{value: cloneProxyIPFraudCheck(value), updatedAt: now, expiresAt: now.Add(proxyExitCheckCacheTTL)}
 }
 
-func (c *proxyExitCheckCache) putEdge(listenerID string, value *proxyruntimev1.ProxyEdgeAccessCheck) {
+func (c *ExitCheckCache) PutEdge(listenerID string, value *proxyruntimev1.ProxyEdgeAccessCheck) {
 	listenerID = normalizeProxyExitCheckCacheKey(listenerID)
 	if listenerID == "" || value == nil {
 		return
@@ -145,7 +149,7 @@ func (c *proxyExitCheckCache) putEdge(listenerID string, value *proxyruntimev1.P
 	c.edgeRisks[listenerID] = cachedProxyEdgeAccessCheck{value: cloneProxyEdgeAccessCheck(value), updatedAt: now, expiresAt: now.Add(proxyExitCheckCacheTTL)}
 }
 
-func (c *proxyExitCheckCache) clear() {
+func (c *ExitCheckCache) Clear() {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.exitIPs = nil
@@ -154,7 +158,7 @@ func (c *proxyExitCheckCache) clear() {
 	c.edgeRisks = nil
 }
 
-func (c *proxyExitCheckCache) cachedExitIP(listenerID string, now time.Time) (cachedProxyExitIP, bool) {
+func (c *ExitCheckCache) cachedExitIP(listenerID string, now time.Time) (cachedProxyExitIP, bool) {
 	item, ok := c.exitIPs[listenerID]
 	if !ok || now.After(item.expiresAt) {
 		delete(c.exitIPs, listenerID)
@@ -163,7 +167,7 @@ func (c *proxyExitCheckCache) cachedExitIP(listenerID string, now time.Time) (ca
 	return item, true
 }
 
-func (c *proxyExitCheckCache) cachedGeo(ip string, now time.Time) (cachedProxyExitGeo, bool) {
+func (c *ExitCheckCache) cachedGeo(ip string, now time.Time) (cachedProxyExitGeo, bool) {
 	item, ok := c.geos[normalizeProxyExitCheckCacheKey(ip)]
 	if !ok || now.After(item.expiresAt) {
 		delete(c.geos, normalizeProxyExitCheckCacheKey(ip))
@@ -172,7 +176,7 @@ func (c *proxyExitCheckCache) cachedGeo(ip string, now time.Time) (cachedProxyEx
 	return item, true
 }
 
-func (c *proxyExitCheckCache) cachedFraud(ip string, now time.Time) (cachedProxyIPFraudCheck, bool) {
+func (c *ExitCheckCache) cachedFraud(ip string, now time.Time) (cachedProxyIPFraudCheck, bool) {
 	item, ok := c.frauds[normalizeProxyExitCheckCacheKey(ip)]
 	if !ok || now.After(item.expiresAt) {
 		delete(c.frauds, normalizeProxyExitCheckCacheKey(ip))
@@ -181,7 +185,7 @@ func (c *proxyExitCheckCache) cachedFraud(ip string, now time.Time) (cachedProxy
 	return item, true
 }
 
-func (c *proxyExitCheckCache) cachedEdge(listenerID string, now time.Time) (cachedProxyEdgeAccessCheck, bool) {
+func (c *ExitCheckCache) cachedEdge(listenerID string, now time.Time) (cachedProxyEdgeAccessCheck, bool) {
 	item, ok := c.edgeRisks[listenerID]
 	if !ok || now.After(item.expiresAt) {
 		delete(c.edgeRisks, listenerID)

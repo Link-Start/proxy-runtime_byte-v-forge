@@ -25,7 +25,7 @@ func runtimeLeaseCoordinatorDependencies(runtime *Runtime) leaseCoordinatorDepen
 		sessionProviders:        leaseRegistrySessionProviderFactory{registry: runtime.accountProviders, client: runtime.providerHTTPClient, metrics: runtime.metrics, clock: runtime.clock},
 		providerConcurrency:     runtime.providerConcurrency,
 		logger:                  runtime.logger,
-		exitCheckCache:          &runtime.exitCheckCache,
+		exitCheckCache:          runtime.exitCheckCache,
 		leaseListener:           runtime.leaseListener,
 		localListenerEndpoint:   runtime.localListenerEndpoint,
 		sessionAdvertisedHost:   runtime.sessionAdvertisedHost,

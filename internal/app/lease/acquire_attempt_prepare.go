@@ -50,33 +50,31 @@ type SelectedAcquireAttemptRunnerInput struct {
 	Policy        *proxyruntimev1.ProxySessionPolicy
 }
 
-type SelectedAcquireAttemptRunInput struct {
-	Store          OrchestrationStore
-	IDs            IDGenerator
-	Limiter        ProviderAccountConcurrencyLimiter
-	Locks          LockManager
-	SelectionPlan  *proxyruntimev1.ProxyDynamicIPSelectionPlan
-	Limit          uint32
-	Policy         *proxyruntimev1.ProxySessionPolicy
-	DefaultTTL     time.Duration
-	TTLBuffer      time.Duration
-	ReleaseTimeout time.Duration
-	Action         SelectedAcquireAttemptAction
-}
-
 func (r SelectedAcquireAttemptRunner) Run(ctx context.Context, input SelectedAcquireAttemptRunnerInput) (*proxyruntimev1.ProxyDynamicLease, error) {
-	return RunSelectedAcquireAttempt(ctx, SelectedAcquireAttemptRunInput{
-		Store:          r.Store,
-		IDs:            r.IDs,
-		Limiter:        r.Limiter,
-		Locks:          r.Locks,
-		SelectionPlan:  input.SelectionPlan,
-		Limit:          r.limit(input.SelectionPlan, input.Policy),
-		Policy:         input.Policy,
-		DefaultTTL:     r.DefaultTTL,
-		TTLBuffer:      r.TTLBuffer,
-		ReleaseTimeout: r.ReleaseTimeout,
-		Action:         r.Action,
+	attempt, err := PrepareSelectedAcquireAttempt(ctx, SelectedAcquireAttemptInput{
+		Store:         r.Store,
+		IDs:           r.IDs,
+		Limiter:       r.Limiter,
+		SelectionPlan: input.SelectionPlan,
+		Limit:         r.limit(input.SelectionPlan, input.Policy),
+		Policy:        input.Policy,
+		DefaultTTL:    r.DefaultTTL,
+		TTLBuffer:     r.TTLBuffer,
+	})
+	if err != nil {
+		return nil, err
+	}
+	if r.Action == nil {
+		return nil, ErrAcquireAttemptActionRequired
+	}
+	return RunLockedAcquireAttempt(ctx, LockedAcquireAttemptInput{
+		Locks:             r.Locks,
+		ProviderAccountID: attempt.ProviderAccountID,
+		ConcurrencySlot:   attempt.ConcurrencySlot,
+		ReleaseTimeout:    r.ReleaseTimeout,
+		Action: func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
+			return r.Action(ctx, attempt)
+		},
 	})
 }
 
@@ -85,34 +83,6 @@ func (r SelectedAcquireAttemptRunner) limit(selectionPlan *proxyruntimev1.ProxyD
 		return 0
 	}
 	return r.Limit(selectionPlan, policy)
-}
-
-func RunSelectedAcquireAttempt(ctx context.Context, input SelectedAcquireAttemptRunInput) (*proxyruntimev1.ProxyDynamicLease, error) {
-	attempt, err := PrepareSelectedAcquireAttempt(ctx, SelectedAcquireAttemptInput{
-		Store:         input.Store,
-		IDs:           input.IDs,
-		Limiter:       input.Limiter,
-		SelectionPlan: input.SelectionPlan,
-		Limit:         input.Limit,
-		Policy:        input.Policy,
-		DefaultTTL:    input.DefaultTTL,
-		TTLBuffer:     input.TTLBuffer,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if input.Action == nil {
-		return nil, ErrAcquireAttemptActionRequired
-	}
-	return RunLockedAcquireAttempt(ctx, LockedAcquireAttemptInput{
-		Locks:             input.Locks,
-		ProviderAccountID: attempt.ProviderAccountID,
-		ConcurrencySlot:   attempt.ConcurrencySlot,
-		ReleaseTimeout:    input.ReleaseTimeout,
-		Action: func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
-			return input.Action(ctx, attempt)
-		},
-	})
 }
 
 func PrepareSelectedAcquireAttempt(ctx context.Context, input SelectedAcquireAttemptInput) (SelectedAcquireAttempt, error) {

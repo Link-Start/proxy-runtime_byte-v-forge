@@ -12,23 +12,6 @@ import (
 
 var ErrProviderAccountAcquireApplyRequired = errors.New("provider account acquire apply action is required")
 
-type ProviderAccountAcquireInput struct {
-	Store              OrchestrationStore
-	IDs                IDGenerator
-	Clock              clock.Clock
-	DataPlane          DataPlaneApplier
-	Logger             Logger
-	Factory            SessionProviderFactory
-	Locks              LockManager
-	ProviderAccountID  string
-	Gateway            accountproxy.Gateway
-	Request            *proxyruntimev1.AcquireProxyLeaseRequest
-	SelectionPlan      *proxyruntimev1.ProxyDynamicIPSelectionPlan
-	ConcurrencyHolder  string
-	ResolveLineBinding RouteLineBindingResolver
-	Apply              ProviderAccountAcquireApply
-}
-
 type ProviderAccountAcquireRunner struct {
 	Store              OrchestrationStore
 	IDs                IDGenerator
@@ -62,28 +45,9 @@ type ProviderAccountAcquireApplyInput struct {
 type ProviderAccountAcquireApply func(context.Context, ProviderAccountAcquireApplyInput) (*proxyruntimev1.ProxyDynamicLease, error)
 
 func (r ProviderAccountAcquireRunner) Acquire(ctx context.Context, input ProviderAccountAcquireRunInput) (*proxyruntimev1.ProxyDynamicLease, error) {
-	return RunProviderAccountAcquire(ctx, ProviderAccountAcquireInput{
-		Store:              r.Store,
-		IDs:                r.IDs,
-		Clock:              r.Clock,
-		DataPlane:          r.DataPlane,
-		Logger:             r.Logger,
-		Factory:            r.Factory,
-		Locks:              r.Locks,
-		ProviderAccountID:  input.ProviderAccountID,
-		Gateway:            input.Gateway,
-		Request:            input.Request,
-		SelectionPlan:      input.SelectionPlan,
-		ConcurrencyHolder:  input.ConcurrencyHolder,
-		ResolveLineBinding: r.ResolveLineBinding,
-		Apply:              r.Apply,
-	})
-}
-
-func RunProviderAccountAcquire(ctx context.Context, input ProviderAccountAcquireInput) (*proxyruntimev1.ProxyDynamicLease, error) {
 	providerSession, err := AcquireProviderSession(ctx, ProviderSessionAcquireInput{
-		Store:             input.Store,
-		Factory:           input.Factory,
+		Store:             r.Store,
+		Factory:           r.Factory,
 		ProviderAccountID: input.ProviderAccountID,
 		Gateway:           input.Gateway,
 		Request:           input.Request,
@@ -92,22 +56,22 @@ func RunProviderAccountAcquire(ctx context.Context, input ProviderAccountAcquire
 	})
 	if err != nil {
 		if errors.Is(err, ErrProviderSessionFetch) {
-			failure := newProviderAccountAcquireFailure(input, providerSession)
+			failure := r.newFailure(input.Request, input.SelectionPlan, providerSession)
 			failure.BeforeRoute(ctx, "provider session fetch failed")
 		}
 		return nil, err
 	}
-	failure := newProviderAccountAcquireFailure(input, providerSession)
-	lineBinding, err := PrepareRouteLineBinding(ctx, providerSession.Nodes, input.Request.GetAccountId(), input.ResolveLineBinding)
+	failure := r.newFailure(input.Request, input.SelectionPlan, providerSession)
+	lineBinding, err := PrepareRouteLineBinding(ctx, providerSession.Nodes, input.Request.GetAccountId(), r.ResolveLineBinding)
 	if err != nil {
 		failure.BeforeRoute(ctx, "lease line resolution failed")
 		return nil, err
 	}
-	if input.Apply == nil {
+	if r.Apply == nil {
 		return nil, ErrProviderAccountAcquireApplyRequired
 	}
-	return RunSessionListenerAllocation(ctx, input.Locks, func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
-		return input.Apply(ctx, ProviderAccountAcquireApplyInput{
+	return RunSessionListenerAllocation(ctx, r.Locks, func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
+		return r.Apply(ctx, ProviderAccountAcquireApplyInput{
 			ProviderAccountID: providerSession.ProviderAccountID,
 			ProviderClient:    providerSession.ProviderClient,
 			Session:           providerSession.Session,
@@ -119,17 +83,17 @@ func RunProviderAccountAcquire(ctx context.Context, input ProviderAccountAcquire
 	})
 }
 
-func newProviderAccountAcquireFailure(input ProviderAccountAcquireInput, providerSession ProviderSessionAcquireResult) *FailedAcquireRecorder {
+func (r ProviderAccountAcquireRunner) newFailure(request *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, providerSession ProviderSessionAcquireResult) *FailedAcquireRecorder {
 	return NewFailedAcquireRecorder(FailedAcquireRecorderInput{
-		Store:             input.Store,
-		IDs:               input.IDs,
-		Clock:             input.Clock,
-		DataPlane:         input.DataPlane,
-		Logger:            input.Logger,
-		Request:           input.Request,
+		Store:             r.Store,
+		IDs:               r.IDs,
+		Clock:             r.Clock,
+		DataPlane:         r.DataPlane,
+		Logger:            r.Logger,
+		Request:           request,
 		ProviderAccountID: providerSession.ProviderAccountID,
 		ProviderClient:    providerSession.ProviderClient,
 		Session:           providerSession.Session,
-		SelectionPlan:     input.SelectionPlan,
+		SelectionPlan:     selectionPlan,
 	})
 }

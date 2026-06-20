@@ -9,20 +9,6 @@ import (
 	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 )
 
-type AccountLockedAcquireInput struct {
-	Store               OrchestrationStore
-	Request             *proxyruntimev1.AcquireProxyLeaseRequest
-	EgressProfiles      []*proxyruntimev1.EgressProfileSettings
-	Now                 time.Time
-	PlaygroundAccountID string
-	PlaygroundUsername  string
-	Reuse               ExistingActiveLeaseAction
-	Replace             ExistingActiveLeaseAction
-	RunAttempt          AcquireAttemptRunner
-	Retry               AcquireAttemptRetryPolicy
-	Observe             AcquireAttemptFailureObserver
-}
-
 type AccountLockedAcquireRunner struct {
 	Store               OrchestrationStore
 	Clock               clock.Clock
@@ -41,41 +27,18 @@ type AccountLockedAcquireRunnerInput struct {
 }
 
 func (r AccountLockedAcquireRunner) Run(ctx context.Context, input AccountLockedAcquireRunnerInput) (*proxyruntimev1.ProxyDynamicLease, error) {
-	return RunAccountLockedAcquire(ctx, AccountLockedAcquireInput{
-		Store:               r.Store,
-		Request:             input.Request,
-		EgressProfiles:      input.EgressProfiles,
-		Now:                 r.now().UTC(),
-		PlaygroundAccountID: r.PlaygroundAccountID,
-		PlaygroundUsername:  r.PlaygroundUsername,
-		Reuse:               r.Reuse,
-		Replace:             r.Replace,
-		RunAttempt:          r.RunAttempt,
-		Retry:               r.Retry,
-		Observe:             r.Observe,
-	})
-}
-
-func (r AccountLockedAcquireRunner) now() time.Time {
-	if r.Clock != nil {
-		return r.Clock.Now()
-	}
-	return time.Now()
-}
-
-func RunAccountLockedAcquire(ctx context.Context, input AccountLockedAcquireInput) (*proxyruntimev1.ProxyDynamicLease, error) {
 	selectionPolicy, err := ApplyAcquireRequestPolicies(input.Request, input.EgressProfiles)
 	if err != nil {
 		return nil, err
 	}
 	existing, handled, err := HandleExistingActiveLease(ctx, ExistingActiveLeaseInput{
-		Store:               input.Store,
+		Store:               r.Store,
 		Request:             input.Request,
-		Now:                 input.Now,
-		PlaygroundAccountID: input.PlaygroundAccountID,
-		PlaygroundUsername:  input.PlaygroundUsername,
-		Reuse:               input.Reuse,
-		Replace:             input.Replace,
+		Now:                 r.now().UTC(),
+		PlaygroundAccountID: r.PlaygroundAccountID,
+		PlaygroundUsername:  r.PlaygroundUsername,
+		Reuse:               r.Reuse,
+		Replace:             r.Replace,
 	})
 	if err != nil {
 		return nil, err
@@ -83,7 +46,14 @@ func RunAccountLockedAcquire(ctx context.Context, input AccountLockedAcquireInpu
 	if handled {
 		return existing, nil
 	}
-	return RunAcquireAttempts(ctx, input.Request, selectionPolicy, input.RunAttempt, input.Retry, input.Observe)
+	return RunAcquireAttempts(ctx, input.Request, selectionPolicy, r.RunAttempt, r.Retry, r.Observe)
+}
+
+func (r AccountLockedAcquireRunner) now() time.Time {
+	if r.Clock != nil {
+		return r.Clock.Now()
+	}
+	return time.Now()
 }
 
 func IsAcquirePolicyError(err error) bool {

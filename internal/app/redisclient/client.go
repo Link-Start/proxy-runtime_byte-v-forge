@@ -1,4 +1,4 @@
-package app
+package redisclient
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func newRedisClient(ctx context.Context, rawURL string) (*redis.Client, error) {
+func New(ctx context.Context, rawURL string) (*redis.Client, error) {
 	rawURL = strings.TrimSpace(rawURL)
 	if rawURL == "" {
 		return nil, fmt.Errorf("PROXY_RUNTIME_REDIS_URL is required")
@@ -26,7 +26,7 @@ func newRedisClient(ctx context.Context, rawURL string) (*redis.Client, error) {
 	return client, nil
 }
 
-func redisKey(prefix string, value string) (string, bool) {
+func Key(prefix string, value string) (string, bool) {
 	prefix = strings.Trim(strings.TrimSpace(prefix), ":")
 	value = strings.TrimSpace(value)
 	if value == "" {

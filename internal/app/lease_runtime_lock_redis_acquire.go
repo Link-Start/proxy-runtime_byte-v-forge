@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"time"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/redisclient"
 )
 
 func (s *redisLeaseRuntimeLocks) withLock(ctx context.Context, key string, fn leaseRuntimeLockFunc) error {
@@ -18,7 +20,7 @@ func (s *redisLeaseRuntimeLocks) lock(ctx context.Context, key string) (*redisLe
 	if s == nil || s.client == nil {
 		return nil, errors.New("redis lease lock client is not configured")
 	}
-	redisKeyValue, ok := redisKey(leaseRuntimeLockPrefix, key)
+	redisKeyValue, ok := redisclient.Key(leaseRuntimeLockPrefix, key)
 	if !ok {
 		return nil, errors.New("redis lease lock key is required")
 	}

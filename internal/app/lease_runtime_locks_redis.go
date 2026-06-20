@@ -5,6 +5,8 @@ import (
 
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/byte-v-forge/proxy-runtime/internal/app/redisclient"
 )
 
 type redisLeaseRuntimeLocks struct {
@@ -12,7 +14,7 @@ type redisLeaseRuntimeLocks struct {
 }
 
 func newRedisLeaseRuntimeLocks(ctx context.Context, cfg config.Config) (*redisLeaseRuntimeLocks, error) {
-	client, err := newRedisClient(ctx, cfg.RedisURL)
+	client, err := redisclient.New(ctx, cfg.RedisURL)
 	if err != nil {
 		return nil, err
 	}

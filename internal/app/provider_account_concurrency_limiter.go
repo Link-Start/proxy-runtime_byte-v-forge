@@ -10,6 +10,7 @@ import (
 
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/redisclient"
 	"github.com/byte-v-forge/proxy-runtime/internal/clock"
 	"github.com/byte-v-forge/proxy-runtime/internal/config"
 	"github.com/redis/go-redis/v9"
@@ -38,7 +39,7 @@ type redisProviderAccountConcurrencySlot struct {
 }
 
 func NewProviderAccountConcurrencyLimiter(ctx context.Context, cfg config.Config, clk clock.Clock) (providerAccountConcurrencyRuntime, error) {
-	client, err := newRedisClient(ctx, cfg.RedisURL)
+	client, err := redisclient.New(ctx, cfg.RedisURL)
 	if err != nil {
 		return nil, err
 	}
@@ -107,7 +108,7 @@ func (l *redisProviderAccountConcurrencyLimiter) key(accountID string, policy *p
 	if holder == "" {
 		holder = "_probe"
 	}
-	key, ok := redisKey(providerAccountConcurrencyKeyPrefix, accountID+":"+leaseapp.ConcurrencyModeText(policy))
+	key, ok := redisclient.Key(providerAccountConcurrencyKeyPrefix, accountID+":"+leaseapp.ConcurrencyModeText(policy))
 	if !ok {
 		return "", "", errors.New("provider account concurrency key is required")
 	}

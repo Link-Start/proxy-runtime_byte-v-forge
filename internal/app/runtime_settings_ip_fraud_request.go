@@ -55,7 +55,7 @@ func ipFraudSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, 
 	out := make([]*commonv1.SecretRef, 0, len(rawValues))
 	for index, raw := range rawValues {
 		secretID := secretref.StableID("proxy-runtime-ip-fraud-api-key", fmt.Sprintf("%d", in.GetKind()), providerID, fmt.Sprintf("%d", index))
-		saved, err := writeRuntimeSecret(ctx, writer, raw, secretID, settingscore.IPFraudAPIKeyPurpose)
+		saved, err := settingscore.WriteRuntimeSecret(ctx, writer, raw, secretID, settingscore.IPFraudAPIKeyPurpose)
 		if err != nil {
 			return nil, err
 		}

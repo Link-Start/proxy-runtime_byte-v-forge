@@ -55,7 +55,7 @@ func ipGeoSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, in
 	out := make([]*commonv1.SecretRef, 0, len(rawValues))
 	for index, raw := range rawValues {
 		secretID := secretref.StableID("proxy-runtime-ip-geo-api-key", fmt.Sprintf("%d", in.GetKind()), providerID, fmt.Sprintf("%d", index))
-		saved, err := writeRuntimeSecret(ctx, writer, raw, secretID, settingscore.IPGeoAPIKeyPurpose)
+		saved, err := settingscore.WriteRuntimeSecret(ctx, writer, raw, secretID, settingscore.IPGeoAPIKeyPurpose)
 		if err != nil {
 			return nil, err
 		}

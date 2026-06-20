@@ -2,14 +2,13 @@ package app
 
 import (
 	"context"
-	"errors"
 	"strings"
 
-	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
 	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
 	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
 
 	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-runtime/internal/app/settingscore"
 )
 
 func edgeCanaryFromRequest(ctx context.Context, writer secretref.Writer, req *proxyruntimev1.ProxyEdgeCanarySettings, current *proxyruntimev1.ProxyEdgeCanarySettings) (*proxyruntimev1.ProxyEdgeCanarySettings, error) {
@@ -25,7 +24,7 @@ func edgeCanaryFromRequest(ctx context.Context, writer secretref.Writer, req *pr
 		return settings, nil
 	}
 	if rawToken := strings.TrimSpace(req.GetTokenValue()); rawToken != "" {
-		ref, err := writeRuntimeSecret(ctx, writer, rawToken, secretref.StableID("proxy-runtime-edge-canary-token", "default"), "edge_canary_token")
+		ref, err := settingscore.WriteRuntimeSecret(ctx, writer, rawToken, secretref.StableID("proxy-runtime-edge-canary-token", "default"), "edge_canary_token")
 		if err != nil {
 			return nil, err
 		}
@@ -42,18 +41,6 @@ func edgeCanaryFromRequest(ctx context.Context, writer secretref.Writer, req *pr
 
 func edgeCanaryEnabled(settings *proxyruntimev1.ProxyEdgeCanarySettings) bool {
 	return settings != nil && settings.GetEnabled()
-}
-
-func writeRuntimeSecret(ctx context.Context, writer secretref.Writer, raw string, secretID string, purpose string) (*commonv1.SecretRef, error) {
-	if writer == nil {
-		return nil, errors.New("proxy-runtime secret store is required")
-	}
-	return writer.WriteSecret(ctx, secretref.WriteRequest{
-		SecretID: secretID,
-		Provider: "proxy-runtime",
-		Purpose:  purpose,
-		Value:    raw,
-	})
 }
 
 func cloneEdgeCanary(in *proxyruntimev1.ProxyEdgeCanarySettings) *proxyruntimev1.ProxyEdgeCanarySettings {

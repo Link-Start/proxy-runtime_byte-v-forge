@@ -7,12 +7,12 @@ import (
 	"math/rand/v2"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 var ErrAcquireAttemptRunnerRequired = errors.New("acquire attempt runner is required")
 
-type AcquireAttemptRunner func(attempt int) (*proxyruntimev1.ProxyDynamicLease, error)
+type AcquireAttemptRunner func(attempt int) (*proxygatewayv1.ProxyDynamicLease, error)
 
 type AcquireAttemptRetryPolicy func(error) bool
 
@@ -23,7 +23,7 @@ const (
 	acquireRetryMaxBackoff  = 2 * time.Second
 )
 
-func RunAcquireAttempts(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPolicy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, run AcquireAttemptRunner, retry AcquireAttemptRetryPolicy, observe AcquireAttemptFailureObserver) (*proxyruntimev1.ProxyDynamicLease, error) {
+func RunAcquireAttempts(ctx context.Context, req *proxygatewayv1.AcquireProxyLeaseRequest, selectionPolicy *proxygatewayv1.ProxyDynamicIPSelectionPolicy, run AcquireAttemptRunner, retry AcquireAttemptRetryPolicy, observe AcquireAttemptFailureObserver) (*proxygatewayv1.ProxyDynamicLease, error) {
 	if run == nil {
 		return nil, ErrAcquireAttemptRunnerRequired
 	}
@@ -82,9 +82,9 @@ type SelectedAcquireAttemptInput struct {
 	Store         OrchestrationStore
 	IDs           IDGenerator
 	Limiter       ProviderAccountConcurrencyLimiter
-	SelectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	SelectionPlan *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	Limit         uint32
-	Policy        *proxyruntimev1.ProxySessionPolicy
+	Policy        *proxygatewayv1.ProxySessionPolicy
 	DefaultTTL    time.Duration
 	TTLBuffer     time.Duration
 }
@@ -96,9 +96,9 @@ type SelectedAcquireAttempt struct {
 	ConcurrencyHolder string
 }
 
-type SelectedAcquireAttemptAction func(context.Context, SelectedAcquireAttempt) (*proxyruntimev1.ProxyDynamicLease, error)
+type SelectedAcquireAttemptAction func(context.Context, SelectedAcquireAttempt) (*proxygatewayv1.ProxyDynamicLease, error)
 
-type SelectedAcquireAttemptLimitFunc func(*proxyruntimev1.ProxyDynamicIPSelectionPlan, *proxyruntimev1.ProxySessionPolicy) uint32
+type SelectedAcquireAttemptLimitFunc func(*proxygatewayv1.ProxyDynamicIPSelectionPlan, *proxygatewayv1.ProxySessionPolicy) uint32
 
 type SelectedAcquireAttemptRunner struct {
 	Store          OrchestrationStore
@@ -113,11 +113,11 @@ type SelectedAcquireAttemptRunner struct {
 }
 
 type SelectedAcquireAttemptRunnerInput struct {
-	SelectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan
-	Policy        *proxyruntimev1.ProxySessionPolicy
+	SelectionPlan *proxygatewayv1.ProxyDynamicIPSelectionPlan
+	Policy        *proxygatewayv1.ProxySessionPolicy
 }
 
-func (r SelectedAcquireAttemptRunner) Run(ctx context.Context, input SelectedAcquireAttemptRunnerInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (r SelectedAcquireAttemptRunner) Run(ctx context.Context, input SelectedAcquireAttemptRunnerInput) (*proxygatewayv1.ProxyDynamicLease, error) {
 	attempt, err := PrepareSelectedAcquireAttempt(ctx, SelectedAcquireAttemptInput{
 		Store:         r.Store,
 		IDs:           r.IDs,
@@ -139,13 +139,13 @@ func (r SelectedAcquireAttemptRunner) Run(ctx context.Context, input SelectedAcq
 		ProviderAccountID: attempt.ProviderAccountID,
 		ConcurrencySlot:   attempt.ConcurrencySlot,
 		ReleaseTimeout:    r.ReleaseTimeout,
-		Action: func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
+		Action: func(ctx context.Context) (*proxygatewayv1.ProxyDynamicLease, error) {
 			return r.Action(ctx, attempt)
 		},
 	})
 }
 
-func (r SelectedAcquireAttemptRunner) limit(selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
+func (r SelectedAcquireAttemptRunner) limit(selectionPlan *proxygatewayv1.ProxyDynamicIPSelectionPlan, policy *proxygatewayv1.ProxySessionPolicy) uint32 {
 	if r.Limit == nil {
 		return 0
 	}
@@ -192,7 +192,7 @@ func newAttemptLeaseID(ids IDGenerator) (string, error) {
 
 var ErrAcquireAttemptActionRequired = errors.New("acquire attempt action is required")
 
-type AcquireAttemptAction func(context.Context) (*proxyruntimev1.ProxyDynamicLease, error)
+type AcquireAttemptAction func(context.Context) (*proxygatewayv1.ProxyDynamicLease, error)
 
 type LockedAcquireAttemptInput struct {
 	Locks             LockManager
@@ -202,7 +202,7 @@ type LockedAcquireAttemptInput struct {
 	Action            AcquireAttemptAction
 }
 
-func RunLockedAcquireAttempt(ctx context.Context, input LockedAcquireAttemptInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+func RunLockedAcquireAttempt(ctx context.Context, input LockedAcquireAttemptInput) (*proxygatewayv1.ProxyDynamicLease, error) {
 	if input.Action == nil {
 		return nil, ErrAcquireAttemptActionRequired
 	}
@@ -216,7 +216,7 @@ func RunLockedAcquireAttempt(ctx context.Context, input LockedAcquireAttemptInpu
 		}
 		_ = ReleaseConcurrencySlotUnlessKept(releaseCtx, input.ConcurrencySlot, keepConcurrencySlot)
 	}()
-	var lease *proxyruntimev1.ProxyDynamicLease
+	var lease *proxygatewayv1.ProxyDynamicLease
 	err := WithProviderAccountLock(ctx, input.Locks, input.ProviderAccountID, func(ctx context.Context) error {
 		var err error
 		lease, err = input.Action(ctx)
@@ -235,7 +235,7 @@ type AcquireAttemptSlotInput struct {
 	Limiter           ProviderAccountConcurrencyLimiter
 	ProviderAccountID string
 	Limit             uint32
-	Policy            *proxyruntimev1.ProxySessionPolicy
+	Policy            *proxygatewayv1.ProxySessionPolicy
 	LeaseID           string
 	DefaultTTL        time.Duration
 	TTLBuffer         time.Duration
@@ -270,7 +270,7 @@ type AcquireAttemptConcurrencyInput struct {
 	Limiter    ProviderAccountConcurrencyLimiter
 	AccountID  string
 	Limit      uint32
-	Policy     *proxyruntimev1.ProxySessionPolicy
+	Policy     *proxygatewayv1.ProxySessionPolicy
 	LeaseID    string
 	DefaultTTL time.Duration
 	TTLBuffer  time.Duration

@@ -3,12 +3,12 @@ package application
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-type updateOperation func(Repository) (*proxyruntimev1.ProxyRuntimeSettings, error)
+type updateOperation func(Repository) (*proxygatewayv1.ProxyGatewaySettings, error)
 
-func (a Application) updateWithConnectionCleanup(ctx context.Context, errorMessage string, operation updateOperation) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+func (a Application) updateWithConnectionCleanup(ctx context.Context, errorMessage string, operation updateOperation) (*proxygatewayv1.ProxyGatewaySettings, error) {
 	repository, err := a.repositoryOrError()
 	if err != nil {
 		return nil, err
@@ -25,7 +25,7 @@ func (a Application) updateWithConnectionCleanup(ctx context.Context, errorMessa
 	return settings, nil
 }
 
-func (a Application) updateAndSchedule(ctx context.Context, operation updateOperation) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+func (a Application) updateAndSchedule(ctx context.Context, operation updateOperation) (*proxygatewayv1.ProxyGatewaySettings, error) {
 	repository, err := a.repositoryOrError()
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func (a Application) updateAndSchedule(ctx context.Context, operation updateOper
 	return settings, nil
 }
 
-func (a Application) changedInUserConnectionUsernamesAfterUpdate(ctx context.Context, repository Repository, before *proxyruntimev1.ProxyRuntimePersistentSettings, errorMessage string) []string {
+func (a Application) changedInUserConnectionUsernamesAfterUpdate(ctx context.Context, repository Repository, before *proxygatewayv1.ProxyGatewayPersistentSettings, errorMessage string) []string {
 	if repository == nil {
 		a.warn(errorMessage, "error_type", errorType(ErrRepositoryRequired))
 		return nil

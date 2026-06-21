@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
 )
 
 var ErrProviderAccountAcquireApplyRequired = errors.New("provider account acquire apply action is required")
@@ -30,24 +30,24 @@ type ProviderAccountAcquireRunner struct {
 type ProviderAccountAcquireRunInput struct {
 	ProviderAccountID string
 	Gateway           accountproxy.Gateway
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	ConcurrencyHolder string
 }
 
 type ProviderAccountAcquireApplyInput struct {
 	ProviderAccountID string
 	ProviderClient    SessionProvider
-	Session           *proxyruntimev1.ProxySession
+	Session           *proxygatewayv1.ProxySession
 	Nodes             []provider.Node
 	DialerProxy       string
 	LineLabels        map[string]string
 	Failure           *FailedAcquireRecorder
 }
 
-type ProviderAccountAcquireApply func(context.Context, ProviderAccountAcquireApplyInput) (*proxyruntimev1.ProxyDynamicLease, error)
+type ProviderAccountAcquireApply func(context.Context, ProviderAccountAcquireApplyInput) (*proxygatewayv1.ProxyDynamicLease, error)
 
-func (r ProviderAccountAcquireRunner) Acquire(ctx context.Context, input ProviderAccountAcquireRunInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (r ProviderAccountAcquireRunner) Acquire(ctx context.Context, input ProviderAccountAcquireRunInput) (*proxygatewayv1.ProxyDynamicLease, error) {
 	providerSession, err := AcquireProviderSession(ctx, ProviderSessionAcquireInput{
 		Store:             r.Store,
 		Factory:           r.Factory,
@@ -73,7 +73,7 @@ func (r ProviderAccountAcquireRunner) Acquire(ctx context.Context, input Provide
 	if r.Apply == nil {
 		return nil, ErrProviderAccountAcquireApplyRequired
 	}
-	return RunSessionListenerAllocation(ctx, r.Locks, func(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
+	return RunSessionListenerAllocation(ctx, r.Locks, func(ctx context.Context) (*proxygatewayv1.ProxyDynamicLease, error) {
 		return r.Apply(ctx, ProviderAccountAcquireApplyInput{
 			ProviderAccountID: providerSession.ProviderAccountID,
 			ProviderClient:    providerSession.ProviderClient,
@@ -86,7 +86,7 @@ func (r ProviderAccountAcquireRunner) Acquire(ctx context.Context, input Provide
 	})
 }
 
-func (r ProviderAccountAcquireRunner) newFailure(request *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, providerSession ProviderSessionAcquireResult) *FailedAcquireRecorder {
+func (r ProviderAccountAcquireRunner) newFailure(request *proxygatewayv1.AcquireProxyLeaseRequest, selectionPlan *proxygatewayv1.ProxyDynamicIPSelectionPlan, providerSession ProviderSessionAcquireResult) *FailedAcquireRecorder {
 	return NewFailedAcquireRecorder(FailedAcquireRecorderInput{
 		Store:             r.Store,
 		IDs:               r.IDs,
@@ -106,13 +106,13 @@ type ProviderAccountAcquireApplyErrorMapper func(error) error
 type ProviderAccountAcquiredRouteApplier struct {
 	Applier           AcquiredRouteApplier
 	LeaseID           string
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	ConcurrencyHolder string
 	MapError          ProviderAccountAcquireApplyErrorMapper
 }
 
-func (a ProviderAccountAcquiredRouteApplier) Apply(ctx context.Context, acquired ProviderAccountAcquireApplyInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (a ProviderAccountAcquiredRouteApplier) Apply(ctx context.Context, acquired ProviderAccountAcquireApplyInput) (*proxygatewayv1.ProxyDynamicLease, error) {
 	lease, err := a.Applier.Apply(ctx, AcquiredRouteApplierInput{
 		Failure:           acquired.Failure,
 		LeaseID:           a.LeaseID,
@@ -140,12 +140,12 @@ func (a ProviderAccountAcquiredRouteApplier) mapError(err error) error {
 }
 
 type ProviderAccountConcurrencyLimiter interface {
-	Acquire(context.Context, string, *proxyruntimev1.ProxySessionPolicy, uint32, string, time.Duration) (ProviderAccountConcurrencySlot, error)
-	Available(context.Context, string, *proxyruntimev1.ProxySessionPolicy, uint32, string) (bool, error)
-	Release(context.Context, string, *proxyruntimev1.ProxySessionPolicy, string) error
+	Acquire(context.Context, string, *proxygatewayv1.ProxySessionPolicy, uint32, string, time.Duration) (ProviderAccountConcurrencySlot, error)
+	Available(context.Context, string, *proxygatewayv1.ProxySessionPolicy, uint32, string) (bool, error)
+	Release(context.Context, string, *proxygatewayv1.ProxySessionPolicy, string) error
 }
 
-func AcquireProviderAccountConcurrencySlot(ctx context.Context, limiter ProviderAccountConcurrencyLimiter, accountID string, limit uint32, policy *proxyruntimev1.ProxySessionPolicy, holder string, ttl time.Duration) (ProviderAccountConcurrencySlot, error) {
+func AcquireProviderAccountConcurrencySlot(ctx context.Context, limiter ProviderAccountConcurrencyLimiter, accountID string, limit uint32, policy *proxygatewayv1.ProxySessionPolicy, holder string, ttl time.Duration) (ProviderAccountConcurrencySlot, error) {
 	accountID = strings.TrimSpace(accountID)
 	if limiter == nil {
 		return NoopProviderAccountConcurrencySlot{}, nil
@@ -167,7 +167,7 @@ func (NoopProviderAccountConcurrencySlot) Release(context.Context) error {
 	return nil
 }
 
-func ReleaseProviderAccountConcurrencySlot(ctx context.Context, limiter ProviderAccountConcurrencyLimiter, accountID string, policy *proxyruntimev1.ProxySessionPolicy, holder string) error {
+func ReleaseProviderAccountConcurrencySlot(ctx context.Context, limiter ProviderAccountConcurrencyLimiter, accountID string, policy *proxygatewayv1.ProxySessionPolicy, holder string) error {
 	accountID = strings.TrimSpace(accountID)
 	holder = strings.TrimSpace(holder)
 	if accountID == "" || holder == "" || limiter == nil {
@@ -176,7 +176,7 @@ func ReleaseProviderAccountConcurrencySlot(ctx context.Context, limiter Provider
 	return limiter.Release(ctx, accountID, policy, holder)
 }
 
-func ReleaseLeaseConcurrencySlot(ctx context.Context, limiter ProviderAccountConcurrencyLimiter, lease *proxyruntimev1.ProxyDynamicLease) error {
+func ReleaseLeaseConcurrencySlot(ctx context.Context, limiter ProviderAccountConcurrencyLimiter, lease *proxygatewayv1.ProxyDynamicLease) error {
 	if lease == nil {
 		return nil
 	}

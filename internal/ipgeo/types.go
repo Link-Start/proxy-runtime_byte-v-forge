@@ -4,13 +4,13 @@ import (
 	"context"
 	"net/http"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/lookup"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/lookup"
 )
 
 type ProviderConfig struct {
 	ID     string
-	Kind   proxyruntimev1.ProxyIPGeoProviderKind
+	Kind   proxygatewayv1.ProxyIPGeoProviderKind
 	Weight int
 	Auth   AuthConfig
 }
@@ -29,11 +29,11 @@ type AuthConfig struct {
 }
 
 type Plugin interface {
-	lookup.PluginMeta[proxyruntimev1.ProxyIPGeoProviderKind]
+	lookup.PluginMeta[proxygatewayv1.ProxyIPGeoProviderKind]
 	Auth(apiKeys []string, anonymous bool) AuthConfig
 	New(client *http.Client, cfg ProviderConfig) provider
 }
 
 type provider interface {
-	Lookup(ctx context.Context, ip string) (*proxyruntimev1.ProxyExitGeo, error)
+	Lookup(ctx context.Context, ip string) (*proxygatewayv1.ProxyExitGeo, error)
 }

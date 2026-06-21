@@ -3,7 +3,7 @@ package application
 import (
 	"errors"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
 )
 
 var ErrRepositoryRequired = errors.New("runtime settings repository is not configured")

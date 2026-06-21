@@ -3,10 +3,10 @@ package lease
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-func ListenerPassword(rules []*proxyruntimev1.ProxyIngressRuleSettings, profileID string, fallback string) string {
+func ListenerPassword(rules []*proxygatewayv1.ProxyIngressRuleSettings, profileID string, fallback string) string {
 	if password := strings.TrimSpace(fallback); password != "" {
 		return password
 	}
@@ -16,7 +16,7 @@ func ListenerPassword(rules []*proxyruntimev1.ProxyIngressRuleSettings, profileI
 	return ""
 }
 
-func IngressRuleByUsername(rules []*proxyruntimev1.ProxyIngressRuleSettings, username string) *proxyruntimev1.ProxyIngressRuleSettings {
+func IngressRuleByUsername(rules []*proxygatewayv1.ProxyIngressRuleSettings, username string) *proxygatewayv1.ProxyIngressRuleSettings {
 	username = strings.TrimSpace(username)
 	if username == "" {
 		return nil
@@ -30,7 +30,7 @@ func IngressRuleByUsername(rules []*proxyruntimev1.ProxyIngressRuleSettings, use
 	return nil
 }
 
-func IngressRuleForProfile(rules []*proxyruntimev1.ProxyIngressRuleSettings, profileID string) *proxyruntimev1.ProxyIngressRuleSettings {
+func IngressRuleForProfile(rules []*proxygatewayv1.ProxyIngressRuleSettings, profileID string) *proxygatewayv1.ProxyIngressRuleSettings {
 	profileID = strings.TrimSpace(profileID)
 	if profileID == "" {
 		return nil
@@ -44,7 +44,7 @@ func IngressRuleForProfile(rules []*proxyruntimev1.ProxyIngressRuleSettings, pro
 	return nil
 }
 
-func PlaygroundIngressRule(rules []*proxyruntimev1.ProxyIngressRuleSettings, ruleID string, username string) *proxyruntimev1.ProxyIngressRuleSettings {
+func PlaygroundIngressRule(rules []*proxygatewayv1.ProxyIngressRuleSettings, ruleID string, username string) *proxygatewayv1.ProxyIngressRuleSettings {
 	ruleID = strings.TrimSpace(ruleID)
 	username = strings.TrimSpace(username)
 	for _, rule := range rules {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 const (
@@ -13,62 +13,62 @@ const (
 	CleanupFinalStatusLabel     = "cleanup_final_status"
 )
 
-func HasLeaseID(lease *proxyruntimev1.ProxyDynamicLease) bool {
+func HasLeaseID(lease *proxygatewayv1.ProxyDynamicLease) bool {
 	return lease != nil && strings.TrimSpace(lease.GetLeaseId()) != ""
 }
 
-func ActiveAt(lease *proxyruntimev1.ProxyDynamicLease, now time.Time) bool {
+func ActiveAt(lease *proxygatewayv1.ProxyDynamicLease, now time.Time) bool {
 	if !HasActiveStatus(lease) {
 		return false
 	}
 	return lease.GetExpiresAt() == nil || now.Before(lease.GetExpiresAt().AsTime())
 }
 
-func NeedsExpiryCleanup(lease *proxyruntimev1.ProxyDynamicLease, now time.Time) bool {
+func NeedsExpiryCleanup(lease *proxygatewayv1.ProxyDynamicLease, now time.Time) bool {
 	return HasActiveStatus(lease) && !ActiveAt(lease, now)
 }
 
-func HasActiveStatus(lease *proxyruntimev1.ProxyDynamicLease) bool {
-	return hasStatus(lease, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE)
+func HasActiveStatus(lease *proxygatewayv1.ProxyDynamicLease) bool {
+	return hasStatus(lease, proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE)
 }
 
-func HasReleasedStatus(lease *proxyruntimev1.ProxyDynamicLease) bool {
-	return hasStatus(lease, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_RELEASED)
+func HasReleasedStatus(lease *proxygatewayv1.ProxyDynamicLease) bool {
+	return hasStatus(lease, proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_RELEASED)
 }
 
-func HasExpiredStatus(lease *proxyruntimev1.ProxyDynamicLease) bool {
-	return hasStatus(lease, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_EXPIRED)
+func HasExpiredStatus(lease *proxygatewayv1.ProxyDynamicLease) bool {
+	return hasStatus(lease, proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_EXPIRED)
 }
 
-func HasFailedStatus(lease *proxyruntimev1.ProxyDynamicLease) bool {
-	return hasStatus(lease, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED)
+func HasFailedStatus(lease *proxygatewayv1.ProxyDynamicLease) bool {
+	return hasStatus(lease, proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED)
 }
 
-func HasSuccessfulAttemptStatus(lease *proxyruntimev1.ProxyDynamicLease) bool {
+func HasSuccessfulAttemptStatus(lease *proxygatewayv1.ProxyDynamicLease) bool {
 	return HasActiveStatus(lease) || HasExpiredStatus(lease) || HasReleasedStatus(lease)
 }
 
-func hasStatus(lease *proxyruntimev1.ProxyDynamicLease, status proxyruntimev1.ProxyDynamicLeaseStatus) bool {
+func hasStatus(lease *proxygatewayv1.ProxyDynamicLease, status proxygatewayv1.ProxyDynamicLeaseStatus) bool {
 	return lease != nil && lease.GetStatus() == status
 }
 
-func CleanupPending(lease *proxyruntimev1.ProxyDynamicLease) bool {
+func CleanupPending(lease *proxygatewayv1.ProxyDynamicLease) bool {
 	return RouteCleanupPending(lease) || ProviderCleanupPending(lease)
 }
 
-func RouteCleanupPending(lease *proxyruntimev1.ProxyDynamicLease) bool {
+func RouteCleanupPending(lease *proxygatewayv1.ProxyDynamicLease) bool {
 	return CleanupLabel(lease, RouteCleanupPendingLabel) == "true"
 }
 
-func ProviderCleanupPending(lease *proxyruntimev1.ProxyDynamicLease) bool {
+func ProviderCleanupPending(lease *proxygatewayv1.ProxyDynamicLease) bool {
 	return CleanupLabel(lease, ProviderCleanupPendingLabel) == "true"
 }
 
-func CleanupFinalStatus(lease *proxyruntimev1.ProxyDynamicLease) string {
+func CleanupFinalStatus(lease *proxygatewayv1.ProxyDynamicLease) string {
 	return CleanupLabel(lease, CleanupFinalStatusLabel)
 }
 
-func CleanupLabel(lease *proxyruntimev1.ProxyDynamicLease, key string) string {
+func CleanupLabel(lease *proxygatewayv1.ProxyDynamicLease, key string) string {
 	if lease == nil || lease.GetSession() == nil {
 		return ""
 	}

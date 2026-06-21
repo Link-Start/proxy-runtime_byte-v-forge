@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-const endpointID = "proxy-runtime-mihomo"
+const endpointID = "proxy-gateway-mihomo"
 
 type BootstrapOptions struct {
 	EndpointURL  string
@@ -39,7 +39,7 @@ const endpoint = {
   url: new URL(config.endpointURL, window.location.origin).href.replace(/\/$/, ''),
   secret: ''
 };
-window.localStorage.setItem('proxyRuntimeControlAuthRequired', config.authRequired ? 'true' : 'false');
+window.localStorage.setItem('proxyGatewayControlAuthRequired', config.authRequired ? 'true' : 'false');
 window.localStorage.setItem('endpointList', JSON.stringify([endpoint]));
 window.localStorage.setItem('selectedEndpoint', endpoint.id);
 window.location.replace(new URL(config.uiURL, window.location.origin).href);

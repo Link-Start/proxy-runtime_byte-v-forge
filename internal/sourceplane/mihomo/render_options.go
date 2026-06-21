@@ -3,9 +3,9 @@ package mihomo
 import (
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/dataplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 )
 
 type renderOptions struct {

@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
 )
 
 type ipQualityScoreProvider struct{ httpProvider }
@@ -15,8 +15,8 @@ const ipQualityScoreEndpoint = "https://www.ipqualityscore.com/api/json/ip/{key}
 
 type ipQualityScorePlugin struct{}
 
-func (ipQualityScorePlugin) Kind() proxyruntimev1.ProxyIPFraudProviderKind {
-	return proxyruntimev1.ProxyIPFraudProviderKind_PROXY_IP_FRAUD_PROVIDER_KIND_IPQUALITYSCORE
+func (ipQualityScorePlugin) Kind() proxygatewayv1.ProxyIPFraudProviderKind {
+	return proxygatewayv1.ProxyIPFraudProviderKind_PROXY_IP_FRAUD_PROVIDER_KIND_IPQUALITYSCORE
 }
 func (ipQualityScorePlugin) ProviderID() string      { return "ipqualityscore" }
 func (ipQualityScorePlugin) DisplayName() string     { return "IPQualityScore" }

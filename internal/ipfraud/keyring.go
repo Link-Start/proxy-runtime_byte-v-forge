@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
 )
 
 var errQuotaExhausted = errors.New("IP fraud provider quota exhausted")

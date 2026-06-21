@@ -9,7 +9,7 @@ import (
 	"net/url"
 	"strings"
 
-	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
+	dashboardapp "github.com/byte-v-forge/proxy-gateway/internal/app/dashboard"
 )
 
 // Selector matches mihomo connections by inbound user or proxy chain.

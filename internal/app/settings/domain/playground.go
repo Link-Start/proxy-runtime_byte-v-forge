@@ -3,10 +3,10 @@ package domain
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
 const (
@@ -15,7 +15,7 @@ const (
 	playgroundDynamicUsername  = "playground-dynamic"
 )
 
-func ensurePlaygroundInUserRules(settings *proxyruntimev1.ProxyRuntimePersistentSettings) bool {
+func ensurePlaygroundInUserRules(settings *proxygatewayv1.ProxyGatewayPersistentSettings) bool {
 	if settings == nil || !hasPlaygroundRule(settings.GetIngressRules()) || playgroundAlreadySingle(settings) {
 		return false
 	}
@@ -26,7 +26,7 @@ func ensurePlaygroundInUserRules(settings *proxyruntimev1.ProxyRuntimePersistent
 	return true
 }
 
-func playgroundAlreadySingle(settings *proxyruntimev1.ProxyRuntimePersistentSettings) bool {
+func playgroundAlreadySingle(settings *proxygatewayv1.ProxyGatewayPersistentSettings) bool {
 	found := false
 	for _, rule := range settings.GetIngressRules() {
 		if rule.GetRuleId() == kernel.PlaygroundRuleID && strings.TrimSpace(rule.GetUsername()) == kernel.PlaygroundUsername && rule.GetProfileId() == kernel.PlaygroundProfileID {
@@ -43,7 +43,7 @@ func playgroundAlreadySingle(settings *proxyruntimev1.ProxyRuntimePersistentSett
 	return playgroundProfileByID(settings, playgroundDynamicProfileID) == nil
 }
 
-func hasPlaygroundRule(rules []*proxyruntimev1.ProxyIngressRuleSettings) bool {
+func hasPlaygroundRule(rules []*proxygatewayv1.ProxyIngressRuleSettings) bool {
 	for _, rule := range rules {
 		if isPlaygroundRule(rule) {
 			return true
@@ -52,12 +52,12 @@ func hasPlaygroundRule(rules []*proxyruntimev1.ProxyIngressRuleSettings) bool {
 	return false
 }
 
-func isPlaygroundRule(rule *proxyruntimev1.ProxyIngressRuleSettings) bool {
+func isPlaygroundRule(rule *proxygatewayv1.ProxyIngressRuleSettings) bool {
 	username := strings.TrimSpace(rule.GetUsername())
 	return rule.GetRuleId() == kernel.PlaygroundRuleID || rule.GetRuleId() == playgroundDynamicRuleID || username == kernel.PlaygroundUsername || strings.HasPrefix(username, kernel.PlaygroundUsername+"-session-") || username == playgroundDynamicUsername || strings.HasPrefix(username, playgroundDynamicUsername+"-session-")
 }
 
-func playgroundSourceIngressRule(rules []*proxyruntimev1.ProxyIngressRuleSettings) *proxyruntimev1.ProxyIngressRuleSettings {
+func playgroundSourceIngressRule(rules []*proxygatewayv1.ProxyIngressRuleSettings) *proxygatewayv1.ProxyIngressRuleSettings {
 	for _, rule := range rules {
 		if rule.GetRuleId() == kernel.PlaygroundRuleID || strings.HasPrefix(strings.TrimSpace(rule.GetUsername()), kernel.PlaygroundUsername) {
 			return rule
@@ -71,8 +71,8 @@ func playgroundSourceIngressRule(rules []*proxyruntimev1.ProxyIngressRuleSetting
 	return nil
 }
 
-func playgroundSourceProfile(settings *proxyruntimev1.ProxyRuntimePersistentSettings, profileID string) *proxyruntimev1.EgressProfileSettings {
-	if profile := playgroundProfileByID(settings, playgroundDynamicProfileID); profile != nil && profile.GetExit().GetKind() == proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
+func playgroundSourceProfile(settings *proxygatewayv1.ProxyGatewayPersistentSettings, profileID string) *proxygatewayv1.EgressProfileSettings {
+	if profile := playgroundProfileByID(settings, playgroundDynamicProfileID); profile != nil && profile.GetExit().GetKind() == proxygatewayv1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
 		return profile
 	}
 	if profile := playgroundProfileByID(settings, profileID); profile != nil {
@@ -81,11 +81,11 @@ func playgroundSourceProfile(settings *proxyruntimev1.ProxyRuntimePersistentSett
 	return playgroundProfileByID(settings, kernel.PlaygroundProfileID)
 }
 
-func playgroundSingleRule(source *proxyruntimev1.ProxyIngressRuleSettings) *proxyruntimev1.ProxyIngressRuleSettings {
-	return &proxyruntimev1.ProxyIngressRuleSettings{RuleId: kernel.PlaygroundRuleID, DisplayName: "PlayGround", Enabled: true, Username: kernel.PlaygroundUsername, PasswordValue: source.GetPasswordValue(), ProfileId: kernel.PlaygroundProfileID}
+func playgroundSingleRule(source *proxygatewayv1.ProxyIngressRuleSettings) *proxygatewayv1.ProxyIngressRuleSettings {
+	return &proxygatewayv1.ProxyIngressRuleSettings{RuleId: kernel.PlaygroundRuleID, DisplayName: "PlayGround", Enabled: true, Username: kernel.PlaygroundUsername, PasswordValue: source.GetPasswordValue(), ProfileId: kernel.PlaygroundProfileID}
 }
 
-func playgroundSingleProfile(source *proxyruntimev1.EgressProfileSettings) *proxyruntimev1.EgressProfileSettings {
+func playgroundSingleProfile(source *proxygatewayv1.EgressProfileSettings) *proxygatewayv1.EgressProfileSettings {
 	if source != nil {
 		profile := cloneEgressProfile(source)
 		profile.ProfileId = kernel.PlaygroundProfileID
@@ -96,11 +96,11 @@ func playgroundSingleProfile(source *proxyruntimev1.EgressProfileSettings) *prox
 	return playgroundDirectProfile()
 }
 
-func playgroundDirectProfile() *proxyruntimev1.EgressProfileSettings {
-	return &proxyruntimev1.EgressProfileSettings{ProfileId: kernel.PlaygroundProfileID, DisplayName: "PlayGround", Enabled: true, Line: &proxyruntimev1.EgressProfileLineSettings{Kind: proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_DIRECT}, Exit: &proxyruntimev1.EgressProfileExitSettings{Kind: proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DIRECT}}
+func playgroundDirectProfile() *proxygatewayv1.EgressProfileSettings {
+	return &proxygatewayv1.EgressProfileSettings{ProfileId: kernel.PlaygroundProfileID, DisplayName: "PlayGround", Enabled: true, Line: &proxygatewayv1.EgressProfileLineSettings{Kind: proxygatewayv1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_DIRECT}, Exit: &proxygatewayv1.EgressProfileExitSettings{Kind: proxygatewayv1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DIRECT}}
 }
 
-func playgroundProfileByID(settings *proxyruntimev1.ProxyRuntimePersistentSettings, profileID string) *proxyruntimev1.EgressProfileSettings {
+func playgroundProfileByID(settings *proxygatewayv1.ProxyGatewayPersistentSettings, profileID string) *proxygatewayv1.EgressProfileSettings {
 	profileID = appcore.RuntimeSafeID(profileID)
 	for _, profile := range settings.GetEgressProfiles() {
 		if profile.GetProfileId() == profileID {
@@ -110,8 +110,8 @@ func playgroundProfileByID(settings *proxyruntimev1.ProxyRuntimePersistentSettin
 	return nil
 }
 
-func replacePlaygroundProfiles(profiles []*proxyruntimev1.EgressProfileSettings, profile *proxyruntimev1.EgressProfileSettings) []*proxyruntimev1.EgressProfileSettings {
-	out := make([]*proxyruntimev1.EgressProfileSettings, 0, len(profiles)+1)
+func replacePlaygroundProfiles(profiles []*proxygatewayv1.EgressProfileSettings, profile *proxygatewayv1.EgressProfileSettings) []*proxygatewayv1.EgressProfileSettings {
+	out := make([]*proxygatewayv1.EgressProfileSettings, 0, len(profiles)+1)
 	inserted := false
 	for _, current := range profiles {
 		if current.GetProfileId() == playgroundDynamicProfileID {
@@ -132,8 +132,8 @@ func replacePlaygroundProfiles(profiles []*proxyruntimev1.EgressProfileSettings,
 	return out
 }
 
-func replacePlaygroundRules(rules []*proxyruntimev1.ProxyIngressRuleSettings, rule *proxyruntimev1.ProxyIngressRuleSettings) []*proxyruntimev1.ProxyIngressRuleSettings {
-	out := make([]*proxyruntimev1.ProxyIngressRuleSettings, 0, len(rules)+1)
+func replacePlaygroundRules(rules []*proxygatewayv1.ProxyIngressRuleSettings, rule *proxygatewayv1.ProxyIngressRuleSettings) []*proxygatewayv1.ProxyIngressRuleSettings {
+	out := make([]*proxygatewayv1.ProxyIngressRuleSettings, 0, len(rules)+1)
 	inserted := false
 	for _, current := range rules {
 		if isPlaygroundRule(current) {

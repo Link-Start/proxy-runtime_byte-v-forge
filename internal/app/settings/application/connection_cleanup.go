@@ -4,11 +4,11 @@ import (
 	"sort"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 	"google.golang.org/protobuf/proto"
 )
 
-func ChangedInUserConnectionUsernames(before *proxyruntimev1.ProxyRuntimePersistentSettings, after *proxyruntimev1.ProxyRuntimePersistentSettings) []string {
+func ChangedInUserConnectionUsernames(before *proxygatewayv1.ProxyGatewayPersistentSettings, after *proxygatewayv1.ProxyGatewayPersistentSettings) []string {
 	beforeRules := ingressRulesByID(before.GetIngressRules())
 	afterRules := ingressRulesByID(after.GetIngressRules())
 	beforeProfiles := egressProfilesByID(before.GetEgressProfiles())
@@ -32,8 +32,8 @@ func ChangedInUserConnectionUsernames(before *proxyruntimev1.ProxyRuntimePersist
 	return sortedKeys(changed)
 }
 
-func ingressRulesByID(rules []*proxyruntimev1.ProxyIngressRuleSettings) map[string]*proxyruntimev1.ProxyIngressRuleSettings {
-	out := map[string]*proxyruntimev1.ProxyIngressRuleSettings{}
+func ingressRulesByID(rules []*proxygatewayv1.ProxyIngressRuleSettings) map[string]*proxygatewayv1.ProxyIngressRuleSettings {
+	out := map[string]*proxygatewayv1.ProxyIngressRuleSettings{}
 	for _, rule := range rules {
 		if id := strings.TrimSpace(rule.GetRuleId()); id != "" {
 			out[id] = rule
@@ -42,8 +42,8 @@ func ingressRulesByID(rules []*proxyruntimev1.ProxyIngressRuleSettings) map[stri
 	return out
 }
 
-func egressProfilesByID(profiles []*proxyruntimev1.EgressProfileSettings) map[string]*proxyruntimev1.EgressProfileSettings {
-	out := map[string]*proxyruntimev1.EgressProfileSettings{}
+func egressProfilesByID(profiles []*proxygatewayv1.EgressProfileSettings) map[string]*proxygatewayv1.EgressProfileSettings {
+	out := map[string]*proxygatewayv1.EgressProfileSettings{}
 	for _, profile := range profiles {
 		if id := strings.TrimSpace(profile.GetProfileId()); id != "" {
 			out[id] = profile
@@ -52,7 +52,7 @@ func egressProfilesByID(profiles []*proxyruntimev1.EgressProfileSettings) map[st
 	return out
 }
 
-func inUserRouteChanged(before *proxyruntimev1.ProxyIngressRuleSettings, after *proxyruntimev1.ProxyIngressRuleSettings, beforeProfiles map[string]*proxyruntimev1.EgressProfileSettings, afterProfiles map[string]*proxyruntimev1.EgressProfileSettings) bool {
+func inUserRouteChanged(before *proxygatewayv1.ProxyIngressRuleSettings, after *proxygatewayv1.ProxyIngressRuleSettings, beforeProfiles map[string]*proxygatewayv1.EgressProfileSettings, afterProfiles map[string]*proxygatewayv1.EgressProfileSettings) bool {
 	if before == nil || after == nil {
 		return true
 	}

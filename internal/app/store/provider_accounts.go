@@ -5,15 +5,15 @@ import (
 	"encoding/json"
 	"time"
 
-	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
-	"github.com/byte-v-forge/proxy-runtime/internal/random"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretbox"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+	commonv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/common/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
+	"github.com/byte-v-forge/proxy-gateway/internal/random"
+	"github.com/byte-v-forge/proxy-gateway/internal/secretbox"
+	"github.com/byte-v-forge/proxy-gateway/internal/secretref"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 type ProviderCredential struct {
@@ -65,7 +65,7 @@ func ProviderConfigFromCredentialSecret(ctx context.Context, resolver secretref.
 		cfg.Password = password
 		return cfg, nil
 	}
-	if ref := appcore.CloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password"); ref != nil {
+	if ref := appcore.CloneSecretRef(credential.PasswordSecretRef, "proxy-gateway", "dynamic_ip_provider_password"); ref != nil {
 		password, err := resolver.ResolveSecret(ctx, ref)
 		if err != nil {
 			return accountproxy.Config{}, err
@@ -75,7 +75,7 @@ func ProviderConfigFromCredentialSecret(ctx context.Context, resolver secretref.
 	return cfg, nil
 }
 
-func ProviderAccountToProto(ctx context.Context, resolver secretref.Resolver, box secretbox.Box, record *ProviderAccountRecord) (*proxyruntimev1.ProxyProviderAccount, error) {
+func ProviderAccountToProto(ctx context.Context, resolver secretref.Resolver, box secretbox.Box, record *ProviderAccountRecord) (*proxygatewayv1.ProxyProviderAccount, error) {
 	account := record.ToProto(box)
 	credential := CredentialFromSecret(box, record.CredentialSecret)
 	if password := credentialRawPassword(credential); password != "" {
@@ -85,7 +85,7 @@ func ProviderAccountToProto(ctx context.Context, resolver secretref.Resolver, bo
 	if credential == nil || !appcore.SecretRefConfigured(credential.PasswordSecretRef) {
 		return account, nil
 	}
-	ref := appcore.CloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password")
+	ref := appcore.CloneSecretRef(credential.PasswordSecretRef, "proxy-gateway", "dynamic_ip_provider_password")
 	if ref == nil {
 		return account, nil
 	}
@@ -104,17 +104,17 @@ func credentialRawPassword(credential *ProviderCredential) string {
 	return appcore.FirstNonEmpty(credential.PasswordValue, credential.Password)
 }
 
-func (r ProviderAccountRecord) ToProto(box secretbox.Box) *proxyruntimev1.ProxyProviderAccount {
-	status := proxyruntimev1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_DISABLED
+func (r ProviderAccountRecord) ToProto(box secretbox.Box) *proxygatewayv1.ProxyProviderAccount {
+	status := proxygatewayv1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_DISABLED
 	if r.Enabled {
-		status = proxyruntimev1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED
+		status = proxygatewayv1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED
 	}
 	credential := CredentialFromSecret(box, r.CredentialSecret)
 	username := ""
 	if credential != nil {
 		username = credential.Username
 	}
-	return &proxyruntimev1.ProxyProviderAccount{
+	return &proxygatewayv1.ProxyProviderAccount{
 		AccountId:            r.AccountID,
 		ProviderId:           r.ProviderID,
 		DynamicProviderId:    r.DynamicProviderID,

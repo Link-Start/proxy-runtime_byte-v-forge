@@ -1,6 +1,6 @@
 package accountproxy
 
-import proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+import proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
 func CliproxyPlugin() Plugin {
 	return NewDefinitionPlugin(Definition{
@@ -13,7 +13,7 @@ func CliproxyPlugin() Plugin {
 	})
 }
 
-func cliproxyUsername(base string, policy *proxyruntimev1.ProxySessionPolicy, sessionID string) string {
+func cliproxyUsername(base string, policy *proxygatewayv1.ProxySessionPolicy, sessionID string) string {
 	if !stickySessionPolicy(policy) {
 		return dashUsername(base, "region", policy.GetRegion(), "st", policy.GetState())
 	}

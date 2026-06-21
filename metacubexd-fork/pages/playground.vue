@@ -3,5 +3,5 @@ useHead({ title: 'PlayGround' })
 </script>
 
 <template>
-  <ProxyRuntimePlayground />
+  <ProxyGatewayPlayground />
 </template>

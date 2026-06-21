@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 const ListenerModeDynamicSessionLease = "dynamic_ip_session_lease"
@@ -54,11 +54,11 @@ func NewListener(input ListenerInput) (Listener, error) {
 
 const LabelMode = "mode"
 
-func EgressListenerProto(listener Listener, managed bool, fallbackProtocol string) *proxyruntimev1.EgressListener {
-	kind := proxyruntimev1.EgressListenerKind_EGRESS_LISTENER_KIND_PROVIDER_ROUTE
+func EgressListenerProto(listener Listener, managed bool, fallbackProtocol string) *proxygatewayv1.EgressListener {
+	kind := proxygatewayv1.EgressListenerKind_EGRESS_LISTENER_KIND_PROVIDER_ROUTE
 	routeID := "default-data-plane"
 	if ListenerRouteName(listener) == ListenerRouteDirect {
-		kind = proxyruntimev1.EgressListenerKind_EGRESS_LISTENER_KIND_DIRECT
+		kind = proxygatewayv1.EgressListenerKind_EGRESS_LISTENER_KIND_DIRECT
 		routeID = "direct"
 	}
 	labels := appcore.CloneStringMap(listener.Labels)
@@ -70,16 +70,16 @@ func EgressListenerProto(listener Listener, managed bool, fallbackProtocol strin
 		labels[LabelProxyPassword] = listener.Password
 	}
 	if labels[LabelMode] == ListenerModeDynamicSessionLease {
-		kind = proxyruntimev1.EgressListenerKind_EGRESS_LISTENER_KIND_DYNAMIC_LEASE
+		kind = proxygatewayv1.EgressListenerKind_EGRESS_LISTENER_KIND_DYNAMIC_LEASE
 		routeID = listener.ID
 	}
-	return &proxyruntimev1.EgressListener{ListenerId: listener.ID, Kind: kind, ListenAddr: listener.Addr, Protocol: listenerProtocol(listener, fallbackProtocol), RouteId: routeID, Managed: managed, Labels: labels}
+	return &proxygatewayv1.EgressListener{ListenerId: listener.ID, Kind: kind, ListenAddr: listener.Addr, Protocol: listenerProtocol(listener, fallbackProtocol), RouteId: routeID, Managed: managed, Labels: labels}
 }
 
-func ReservedListenerLeaseFacts(active []*proxyruntimev1.ProxyDynamicLease, cleanupPending []*proxyruntimev1.ProxyDynamicLease) []*proxyruntimev1.ProxyDynamicLease {
-	out := make([]*proxyruntimev1.ProxyDynamicLease, 0, len(active)+len(cleanupPending))
+func ReservedListenerLeaseFacts(active []*proxygatewayv1.ProxyDynamicLease, cleanupPending []*proxygatewayv1.ProxyDynamicLease) []*proxygatewayv1.ProxyDynamicLease {
+	out := make([]*proxygatewayv1.ProxyDynamicLease, 0, len(active)+len(cleanupPending))
 	seen := map[string]struct{}{}
-	appendReserved := func(lease *proxyruntimev1.ProxyDynamicLease) {
+	appendReserved := func(lease *proxygatewayv1.ProxyDynamicLease) {
 		if lease.GetListener() == nil {
 			return
 		}

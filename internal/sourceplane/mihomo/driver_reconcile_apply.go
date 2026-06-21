@@ -3,7 +3,7 @@ package mihomo
 import (
 	"context"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 )
 
 type configProjectionApplyInput struct {

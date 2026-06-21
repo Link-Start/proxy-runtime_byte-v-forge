@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 const dynamicIPEndpointHealthWindow = 6 * time.Hour
@@ -41,7 +41,7 @@ func ApplyEndpointHealthScores(candidates []ScoredEndpointCandidate, scores map[
 	}
 }
 
-func dynamicIPEndpointHealthScoresFromLeases(leases []*proxyruntimev1.ProxyDynamicLease) map[string]int {
+func dynamicIPEndpointHealthScoresFromLeases(leases []*proxygatewayv1.ProxyDynamicLease) map[string]int {
 	stats := map[string]dynamicIPEndpointHealth{}
 	for _, lease := range leases {
 		endpointID := leaseapp.EndpointID(lease)

@@ -3,7 +3,7 @@ package mihomo
 import (
 	"context"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 )
 
 func (d *Driver) reloadConfigDataLocked(ctx context.Context, canonicalPath string, data []byte, endpoint sourceplane.Endpoint) error {

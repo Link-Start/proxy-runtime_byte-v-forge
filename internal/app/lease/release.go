@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 type ReleaseRunner struct {
@@ -14,7 +14,7 @@ type ReleaseRunner struct {
 	Retire     ReleaseRetireAction
 }
 
-func (r ReleaseRunner) Release(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (r ReleaseRunner) Release(ctx context.Context, req *proxygatewayv1.ReleaseProxyLeaseRequest) (*proxygatewayv1.ProxyDynamicLease, error) {
 	lease, err := LookupReleaseLease(ctx, r.Store, req, r.IsNotFound)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ var (
 
 type StoreNotFoundFunc func(error) bool
 
-func LookupReleaseLease(ctx context.Context, store OrchestrationStore, req *proxyruntimev1.ReleaseProxyLeaseRequest, isNotFound StoreNotFoundFunc) (*proxyruntimev1.ProxyDynamicLease, error) {
+func LookupReleaseLease(ctx context.Context, store OrchestrationStore, req *proxygatewayv1.ReleaseProxyLeaseRequest, isNotFound StoreNotFoundFunc) (*proxygatewayv1.ProxyDynamicLease, error) {
 	if store == nil {
 		return nil, errors.New("lease store is required")
 	}
@@ -58,7 +58,7 @@ func IsReleaseLookupRequestError(err error) bool {
 		errors.Is(err, ErrActiveLeaseNotFound)
 }
 
-func releaseLeaseByID(ctx context.Context, store OrchestrationStore, lookup ReleaseLookup, isNotFound StoreNotFoundFunc) (*proxyruntimev1.ProxyDynamicLease, error) {
+func releaseLeaseByID(ctx context.Context, store OrchestrationStore, lookup ReleaseLookup, isNotFound StoreNotFoundFunc) (*proxygatewayv1.ProxyDynamicLease, error) {
 	lease, err := store.LeaseFactByID(ctx, lookup.LeaseID)
 	if err != nil {
 		if storeNotFound(isNotFound, err) {
@@ -72,7 +72,7 @@ func releaseLeaseByID(ctx context.Context, store OrchestrationStore, lookup Rele
 	return lease, nil
 }
 
-func releaseLeaseByAccount(ctx context.Context, store OrchestrationStore, lookup ReleaseLookup, isNotFound StoreNotFoundFunc) (*proxyruntimev1.ProxyDynamicLease, error) {
+func releaseLeaseByAccount(ctx context.Context, store OrchestrationStore, lookup ReleaseLookup, isNotFound StoreNotFoundFunc) (*proxygatewayv1.ProxyDynamicLease, error) {
 	lease, err := store.ActiveLeaseFactByAccount(ctx, lookup.AccountID, lookup.Purpose)
 	if err == nil {
 		return lease, nil
@@ -94,7 +94,7 @@ func storeNotFound(isNotFound StoreNotFoundFunc, err error) bool {
 	return isNotFound != nil && isNotFound(err)
 }
 
-func RefreshReleaseLease(ctx context.Context, store OrchestrationStore, lease *proxyruntimev1.ProxyDynamicLease, isNotFound StoreNotFoundFunc) (*proxyruntimev1.ProxyDynamicLease, error) {
+func RefreshReleaseLease(ctx context.Context, store OrchestrationStore, lease *proxygatewayv1.ProxyDynamicLease, isNotFound StoreNotFoundFunc) (*proxygatewayv1.ProxyDynamicLease, error) {
 	if store == nil || !HasLeaseID(lease) {
 		return lease, nil
 	}
@@ -108,6 +108,6 @@ func RefreshReleaseLease(ctx context.Context, store OrchestrationStore, lease *p
 	return current, nil
 }
 
-func ReleaseNeedsRouteRetire(lease *proxyruntimev1.ProxyDynamicLease) bool {
+func ReleaseNeedsRouteRetire(lease *proxygatewayv1.ProxyDynamicLease) bool {
 	return HasActiveStatus(lease) && !HasReleasedStatus(lease)
 }

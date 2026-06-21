@@ -3,7 +3,7 @@ package mihomo
 import (
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/dataplane"
 )
 
 func renderUsers(users []dataplane.ProxyUserRoute, sessions []dataplane.SessionRoute) []mihomoUser {

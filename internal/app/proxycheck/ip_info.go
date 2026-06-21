@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 func RequestIPInfo(ctx context.Context, client *http.Client, endpoint string, requireIP bool) (ExitGeo, error) {

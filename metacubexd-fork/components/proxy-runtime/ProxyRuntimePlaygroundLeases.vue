@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { IconRefresh, IconTrash, IconWorldBolt } from '@tabler/icons-vue'
-import type { ProxyRuntimePlaygroundLeasesState } from '~/composables/useProxyRuntimePlaygroundLeases'
-import { ProxyDynamicLeaseStatus, type ProxyDynamicLease } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import type { ProxyGatewayPlaygroundLeasesState } from '~/composables/useProxyGatewayPlaygroundLeases'
+import { ProxyDynamicLeaseStatus, type ProxyDynamicLease } from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 
-defineProps<{ dynamicExit: boolean, proxyAuthority: string, state: ProxyRuntimePlaygroundLeasesState }>()
+defineProps<{ dynamicExit: boolean, proxyAuthority: string, state: ProxyGatewayPlaygroundLeasesState }>()
 
 const expanded = ref(true)
 

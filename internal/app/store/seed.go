@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
 )
 
 func SeedStoreFromConfig(ctx context.Context, accounts ProviderAccountStore, defaultProviderID string, cfg config.Config) error {
@@ -20,7 +20,7 @@ func SeedStoreFromConfig(ctx context.Context, accounts ProviderAccountStore, def
 	if len(existing) > 0 || strings.TrimSpace(cfg.Ten24.Username) == "" || strings.TrimSpace(cfg.Ten24.Password) == "" {
 		return nil
 	}
-	_, err = accounts.UpsertProviderAccount(ctx, &proxyruntimev1.UpsertProxyProviderAccountRequest{
+	_, err = accounts.UpsertProviderAccount(ctx, &proxygatewayv1.UpsertProxyProviderAccountRequest{
 		AccountId:     "default-1024proxy",
 		ProviderId:    defaultProviderID,
 		DisplayName:   "Default 1024Proxy",

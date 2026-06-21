@@ -8,21 +8,21 @@ import (
 	"sync"
 	"time"
 
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
-	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
-	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
+	"github.com/byte-v-forge/proxy-gateway/internal/dataplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/ipfraud"
+	"github.com/byte-v-forge/proxy-gateway/internal/ipgeo"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
+	providerregistry "github.com/byte-v-forge/proxy-gateway/internal/provider/registry"
 	"golang.org/x/sync/singleflight"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/persistence"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/dynamic"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/proxycheck"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/settings/adapter/persistence"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/store"
 )
 
 type Runtime struct {
@@ -139,6 +139,7 @@ func (r *Runtime) Run(ctx context.Context) error {
 	spawn(r.leaseExpiryLoop)
 	spawn(r.restoreActiveLeasesInBackground)
 	spawn(func(ctx context.Context) { r.serveHTTP(ctx, errCh) })
+	spawn(func(ctx context.Context) { r.serveGRPC(ctx, errCh) })
 
 	var runErr error
 	select {

@@ -6,14 +6,14 @@ import (
 	"fmt"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 type AcquiredSessionRouteInput struct {
-	Session       *proxyruntimev1.ProxySession
-	Egress        *proxyruntimev1.ProxyEndpoint
+	Session       *proxygatewayv1.ProxySession
+	Egress        *proxygatewayv1.ProxyEndpoint
 	Listener      Listener
 	Nodes         []provider.Node
 	DialerProxy   string
@@ -38,16 +38,16 @@ type AcquiredRouteApplyInput struct {
 	Failure           *FailedAcquireRecorder
 	Route             SessionRoute
 	LeaseID           string
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
 	ProviderAccountID string
-	Session           *proxyruntimev1.ProxySession
-	Egress            *proxyruntimev1.ProxyEndpoint
-	Listener          *proxyruntimev1.EgressListener
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Session           *proxygatewayv1.ProxySession
+	Egress            *proxygatewayv1.ProxyEndpoint
+	Listener          *proxygatewayv1.EgressListener
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	AcquiredAt        time.Time
 }
 
-func ApplyAcquiredRoute(ctx context.Context, input AcquiredRouteApplyInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+func ApplyAcquiredRoute(ctx context.Context, input AcquiredRouteApplyInput) (*proxygatewayv1.ProxyDynamicLease, error) {
 	if err := UpsertSessionRoute(ctx, input.DataPlane, input.Route); err != nil {
 		input.Failure.AfterRoute(ctx, input.Route, ErrAcquiredRouteDataPlane.Error())
 		return nil, fmt.Errorf("%w: %w", ErrAcquiredRouteDataPlane, err)
@@ -74,16 +74,16 @@ type AcquiredRouteFlowInput struct {
 	DataPlane         DataPlaneApplier
 	Failure           *FailedAcquireRecorder
 	LeaseID           string
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
 	ProviderClient    SessionProvider
 	ProviderAccountID string
 	ConcurrencyHolder string
-	Session           *proxyruntimev1.ProxySession
+	Session           *proxygatewayv1.ProxySession
 	Nodes             []provider.Node
 	DialerProxy       string
 	LineLabels        map[string]string
 	LocalProtocol     string
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	AcquiredAt        time.Time
 	Managed           bool
 	FallbackProtocol  string
@@ -107,20 +107,20 @@ type AcquiredRouteApplier struct {
 type AcquiredRouteApplierInput struct {
 	Failure           *FailedAcquireRecorder
 	LeaseID           string
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
 	ProviderClient    SessionProvider
 	ProviderAccountID string
 	ConcurrencyHolder string
-	Session           *proxyruntimev1.ProxySession
+	Session           *proxygatewayv1.ProxySession
 	Nodes             []provider.Node
 	DialerProxy       string
 	LineLabels        map[string]string
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 }
 
-type AcquiredRouteSuccessObserver func(context.Context, *proxyruntimev1.ProxyDynamicLease)
+type AcquiredRouteSuccessObserver func(context.Context, *proxygatewayv1.ProxyDynamicLease)
 
-func (a AcquiredRouteApplier) Apply(ctx context.Context, input AcquiredRouteApplierInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (a AcquiredRouteApplier) Apply(ctx context.Context, input AcquiredRouteApplierInput) (*proxygatewayv1.ProxyDynamicLease, error) {
 	return ApplyAcquiredRouteFlow(ctx, AcquiredRouteFlowInput{
 		Store:             a.Store,
 		DataPlane:         a.DataPlane,
@@ -152,7 +152,7 @@ func (a AcquiredRouteApplier) now() time.Time {
 	return time.Now()
 }
 
-func ApplyAcquiredRouteFlow(ctx context.Context, input AcquiredRouteFlowInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+func ApplyAcquiredRouteFlow(ctx context.Context, input AcquiredRouteFlowInput) (*proxygatewayv1.ProxyDynamicLease, error) {
 	endpoint, err := MaterializeAcquiredEndpoint(ctx, AcquiredEndpointMaterializeInput{
 		Request:           input.Request,
 		LeaseID:           input.LeaseID,

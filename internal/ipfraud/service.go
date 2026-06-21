@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/runtimehttp"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -27,7 +27,7 @@ type Service struct {
 }
 
 type cacheEntry struct {
-	check     *proxyruntimev1.ProxyIPFraudCheck
+	check     *proxygatewayv1.ProxyIPFraudCheck
 	expiresAt time.Time
 }
 
@@ -79,7 +79,7 @@ func NewService(registry *Registry, cfg Config, logger *slog.Logger) *Service {
 	}
 }
 
-func (s *Service) Check(ctx context.Context, ip string) (*proxyruntimev1.ProxyIPFraudCheck, error) {
+func (s *Service) Check(ctx context.Context, ip string) (*proxygatewayv1.ProxyIPFraudCheck, error) {
 	ip = strings.TrimSpace(ip)
 	if ip == "" {
 		return nil, errors.New("ip is required")
@@ -107,7 +107,7 @@ func (s *Service) Check(ctx context.Context, ip string) (*proxyruntimev1.ProxyIP
 	return cloneCheck(check), nil
 }
 
-func (s *Service) cached(ip string, now time.Time) *proxyruntimev1.ProxyIPFraudCheck {
+func (s *Service) cached(ip string, now time.Time) *proxygatewayv1.ProxyIPFraudCheck {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	entry, ok := s.cache[ip]
@@ -121,15 +121,15 @@ func (s *Service) cached(ip string, now time.Time) *proxyruntimev1.ProxyIPFraudC
 	return cloneCheck(entry.check)
 }
 
-func (s *Service) store(ip string, check *proxyruntimev1.ProxyIPFraudCheck, expiresAt time.Time) {
+func (s *Service) store(ip string, check *proxygatewayv1.ProxyIPFraudCheck, expiresAt time.Time) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.cache[ip] = cacheEntry{check: cloneCheck(check), expiresAt: expiresAt}
 }
 
-func cloneCheck(in *proxyruntimev1.ProxyIPFraudCheck) *proxyruntimev1.ProxyIPFraudCheck {
+func cloneCheck(in *proxygatewayv1.ProxyIPFraudCheck) *proxygatewayv1.ProxyIPFraudCheck {
 	if in == nil {
 		return nil
 	}
-	return proto.Clone(in).(*proxyruntimev1.ProxyIPFraudCheck)
+	return proto.Clone(in).(*proxygatewayv1.ProxyIPFraudCheck)
 }

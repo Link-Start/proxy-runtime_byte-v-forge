@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/geox"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/geox"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
 )
 
-func (p *IPSelector) endpointRegionCodes(ctx context.Context, endpoint accountproxy.Gateway, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) []string {
+func (p *IPSelector) endpointRegionCodes(ctx context.Context, endpoint accountproxy.Gateway, policy *proxygatewayv1.ProxyDynamicIPSelectionPolicy) []string {
 	if !hasRequestedRegion(policy) {
 		return nil
 	}

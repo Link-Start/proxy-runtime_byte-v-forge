@@ -4,10 +4,10 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
-	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretbox"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
+	providerregistry "github.com/byte-v-forge/proxy-gateway/internal/provider/registry"
+	"github.com/byte-v-forge/proxy-gateway/internal/secretbox"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
 )
 
 type ProfileValidationErrorFunc func(string) error
 
-func (a Application) validateProfiles(profiles []*proxyruntimev1.EgressProfileSettings) error {
+func (a Application) validateProfiles(profiles []*proxygatewayv1.EgressProfileSettings) error {
 	referenced := referencedProfileIDs(a.proxyUsers)
 	if len(referenced) == 0 {
 		return nil
@@ -45,7 +45,7 @@ func referencedProfileIDs(users []config.ProxyUserRoute) map[string]struct{} {
 	return referenced
 }
 
-func enabledEgressProfileIDs(profiles []*proxyruntimev1.EgressProfileSettings) map[string]struct{} {
+func enabledEgressProfileIDs(profiles []*proxygatewayv1.EgressProfileSettings) map[string]struct{} {
 	out := map[string]struct{}{}
 	for _, profile := range profiles {
 		if id := safeID(profile.GetProfileId()); id != "" && profile.GetEnabled() {

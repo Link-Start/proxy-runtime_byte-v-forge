@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/runtimehttp"
 )
 
 type httpProvider struct {

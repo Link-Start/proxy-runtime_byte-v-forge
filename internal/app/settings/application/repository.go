@@ -3,15 +3,15 @@ package application
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 type Repository interface {
-	View(context.Context) (*proxyruntimev1.ProxyRuntimeSettings, error)
-	Load(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
-	Update(context.Context, *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.ProxyRuntimeSettings, error)
-	UpdateDynamicIPProviders(context.Context, []*proxyruntimev1.ProxyDynamicIPProviderSettings) (*proxyruntimev1.ProxyRuntimeSettings, error)
-	UpdateEgressProfiles(context.Context, []*proxyruntimev1.EgressProfileSettings) (*proxyruntimev1.ProxyRuntimeSettings, error)
-	UpdateIngressRules(context.Context, []*proxyruntimev1.ProxyIngressRuleSettings) (*proxyruntimev1.ProxyRuntimeSettings, error)
-	UpdateInUserRules(context.Context, []*proxyruntimev1.EgressProfileSettings, []*proxyruntimev1.ProxyIngressRuleSettings) (*proxyruntimev1.ProxyRuntimeSettings, error)
+	View(context.Context) (*proxygatewayv1.ProxyGatewaySettings, error)
+	Load(context.Context) (*proxygatewayv1.ProxyGatewayPersistentSettings, error)
+	Update(context.Context, *proxygatewayv1.UpdateProxyGatewaySettingsRequest) (*proxygatewayv1.ProxyGatewaySettings, error)
+	UpdateDynamicIPProviders(context.Context, []*proxygatewayv1.ProxyDynamicIPProviderSettings) (*proxygatewayv1.ProxyGatewaySettings, error)
+	UpdateEgressProfiles(context.Context, []*proxygatewayv1.EgressProfileSettings) (*proxygatewayv1.ProxyGatewaySettings, error)
+	UpdateIngressRules(context.Context, []*proxygatewayv1.ProxyIngressRuleSettings) (*proxygatewayv1.ProxyGatewaySettings, error)
+	UpdateInUserRules(context.Context, []*proxygatewayv1.EgressProfileSettings, []*proxygatewayv1.ProxyIngressRuleSettings) (*proxygatewayv1.ProxyGatewaySettings, error)
 }

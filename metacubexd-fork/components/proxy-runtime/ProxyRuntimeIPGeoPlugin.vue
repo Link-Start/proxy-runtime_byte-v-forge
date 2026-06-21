@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ProxyRuntimePluginsState } from '~/composables/useProxyRuntimePlugins'
+import type { ProxyGatewayPluginsState } from '~/composables/useProxyGatewayPlugins'
 import { IconMapPin, IconPlus, IconSearch } from '@tabler/icons-vue'
 
-defineProps<{ runtime: ProxyRuntimePluginsState }>()
+defineProps<{ runtime: ProxyGatewayPluginsState }>()
 const modal = ref<{ open: () => void }>()
 const manualExpanded = ref(false)
 </script>
@@ -49,7 +49,7 @@ const manualExpanded = ref(false)
     </div>
 
     <div v-else class="grid gap-3">
-      <ProxyRuntimeIPGeoProviderCard
+      <ProxyGatewayIPGeoProviderCard
         v-for="(row, index) in runtime.geoRows.value"
         :key="`${row.provider_id}-${index}`"
         :index="index"
@@ -113,6 +113,6 @@ const manualExpanded = ref(false)
       </div>
     </Collapse>
 
-    <ProxyRuntimeIPGeoProviderModal ref="modal" :runtime="runtime" />
+    <ProxyGatewayIPGeoProviderModal ref="modal" :runtime="runtime" />
   </section>
 </template>

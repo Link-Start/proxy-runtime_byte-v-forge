@@ -3,10 +3,10 @@ package app
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
 )
 
 type leaseConcurrencySlotRefreshRunnerFactory struct {
@@ -23,7 +23,7 @@ func (f leaseConcurrencySlotRefreshRunnerFactory) New() leaseapp.RefreshConcurre
 	}
 }
 
-func (f leaseConcurrencySlotRefreshRunnerFactory) limit(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, policy *proxyruntimev1.ProxySessionPolicy) (uint32, error) {
+func (f leaseConcurrencySlotRefreshRunnerFactory) limit(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease, policy *proxygatewayv1.ProxySessionPolicy) (uint32, error) {
 	settings, err := f.deps.settings.Load(ctx)
 	if err != nil {
 		return 0, err

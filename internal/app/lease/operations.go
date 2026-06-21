@@ -6,10 +6,10 @@ import (
 	"reflect"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-func (a *Application) Acquire(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.AcquireProxyLeaseResponse, error) {
+func (a *Application) Acquire(ctx context.Context, advertisedHost string, req *proxygatewayv1.AcquireProxyLeaseRequest) (*proxygatewayv1.AcquireProxyLeaseResponse, error) {
 	if a == nil || a.coordinator == nil {
 		return nil, fmt.Errorf("lease coordinator is required")
 	}
@@ -20,10 +20,10 @@ func (a *Application) Acquire(ctx context.Context, advertisedHost string, req *p
 		return nil, err
 	}
 	a.info("acquire proxy dynamic lease finished", "lease_id", lease.GetLeaseId(), "account_id", lease.GetAccountId(), "purpose", lease.GetPurpose(), "provider_account_key", lease.GetProviderAccountId(), "duration_ms", a.sinceMilliseconds(startedAt))
-	return &proxyruntimev1.AcquireProxyLeaseResponse{Lease: lease, Egress: lease.GetEgress(), SelectionPlan: lease.GetSelectionPlan()}, nil
+	return &proxygatewayv1.AcquireProxyLeaseResponse{Lease: lease, Egress: lease.GetEgress(), SelectionPlan: lease.GetSelectionPlan()}, nil
 }
 
-func (a *Application) Release(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ReleaseProxyLeaseResponse, error) {
+func (a *Application) Release(ctx context.Context, req *proxygatewayv1.ReleaseProxyLeaseRequest) (*proxygatewayv1.ReleaseProxyLeaseResponse, error) {
 	if a == nil || a.coordinator == nil {
 		return nil, fmt.Errorf("lease coordinator is required")
 	}
@@ -34,7 +34,7 @@ func (a *Application) Release(ctx context.Context, req *proxyruntimev1.ReleasePr
 		return nil, err
 	}
 	a.info("release proxy dynamic lease finished", "lease_id", lease.GetLeaseId(), "account_id", lease.GetAccountId(), "purpose", lease.GetPurpose(), "provider_account_key", lease.GetProviderAccountId(), "duration_ms", a.sinceMilliseconds(startedAt))
-	return &proxyruntimev1.ReleaseProxyLeaseResponse{Lease: lease}, nil
+	return &proxygatewayv1.ReleaseProxyLeaseResponse{Lease: lease}, nil
 }
 
 func (a *Application) now() time.Time {

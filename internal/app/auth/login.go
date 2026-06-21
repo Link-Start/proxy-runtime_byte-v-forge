@@ -7,7 +7,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 type LoginRequest struct {

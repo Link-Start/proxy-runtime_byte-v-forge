@@ -10,8 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
-	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
+	"github.com/byte-v-forge/proxy-gateway/internal/runtimehttp"
 )
 
 func (r *Runtime) checkProxyHTTPClient(ctx context.Context, listenerID string, timeout time.Duration) (*http.Client, error) {

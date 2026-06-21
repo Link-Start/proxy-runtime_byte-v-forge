@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 func proxyFromURI(name string, rawURI string) (map[string]any, error) {

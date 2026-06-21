@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/store"
+	"github.com/byte-v-forge/proxy-gateway/internal/dataplane"
 )
 
 type leaseRouteDataPlane interface {

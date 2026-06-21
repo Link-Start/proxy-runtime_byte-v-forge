@@ -4,9 +4,9 @@ import (
 	"context"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
 func (s *Store) ProviderAccountHasBlockingLease(ctx context.Context, providerAccountID string) (bool, error) {
@@ -18,25 +18,25 @@ func (s *Store) ProviderAccountHasBlockingLease(ctx context.Context, providerAcc
 	err := s.pool.QueryRow(ctx, `
 SELECT EXISTS (
 	SELECT 1
-	FROM proxy_runtime_dynamic_leases
+	FROM proxy_gateway_dynamic_leases
 	WHERE provider_account_id=$1
 		AND (
 			(status=$2 AND `+postgresLeaseActiveUntilNowPredicate+`)
 			OR (status=$3 AND `+postgresLeaseCleanupPendingPredicate+`)
 		)
 )
-`, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String()).Scan(&exists)
+`, providerAccountID, proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String()).Scan(&exists)
 	return exists, err
 }
 
-func (s *Store) BlockingLeaseFactsByProviderAccount(ctx context.Context, providerAccountID string, limit int) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) BlockingLeaseFactsByProviderAccount(ctx context.Context, providerAccountID string, limit int) ([]*proxygatewayv1.ProxyDynamicLease, error) {
 	providerAccountID = strings.TrimSpace(providerAccountID)
 	if providerAccountID == "" {
 		return nil, nil
 	}
 	rows, err := s.pool.Query(ctx, `
 SELECT lease_json::text
-FROM proxy_runtime_dynamic_leases
+FROM proxy_gateway_dynamic_leases
 WHERE provider_account_id=$1
 	AND (
 		(status=$2 AND `+postgresLeaseActiveUntilNowPredicate+`)
@@ -44,7 +44,7 @@ WHERE provider_account_id=$1
 	)
 ORDER BY acquired_at DESC NULLS LAST, updated_at DESC, lease_id
 LIMIT $4
-`, providerAccountID, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String(), kernel.NormalizeBlockingLeaseFactLimit(limit))
+`, providerAccountID, proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED.String(), kernel.NormalizeBlockingLeaseFactLimit(limit))
 	if err != nil {
 		return nil, err
 	}

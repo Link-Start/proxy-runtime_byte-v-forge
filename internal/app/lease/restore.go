@@ -5,19 +5,19 @@ import (
 	"errors"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 var ErrLeaseRouteRestorerRequired = errors.New("lease route restorer is required")
 
-type LeaseRouteRestorerResolver func(context.Context, *proxyruntimev1.ProxyDynamicLease) (LeaseRouteRestorer, error)
+type LeaseRouteRestorerResolver func(context.Context, *proxygatewayv1.ProxyDynamicLease) (LeaseRouteRestorer, error)
 
 type RestoreLeaseRouteRunner struct {
 	ResolveRestorer LeaseRouteRestorerResolver
 }
 
-func (r RestoreLeaseRouteRunner) Restore(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+func (r RestoreLeaseRouteRunner) Restore(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) error {
 	if r.ResolveRestorer == nil {
 		return ErrLeaseRouteRestorerRequired
 	}
@@ -30,7 +30,7 @@ func (r RestoreLeaseRouteRunner) Restore(ctx context.Context, lease *proxyruntim
 
 var ErrRestoreLeaseRouteRequired = errors.New("lease session or listener is missing")
 
-type RestoreLeaseLimitFunc func(*proxyruntimev1.ProxyDynamicLease) uint32
+type RestoreLeaseLimitFunc func(*proxygatewayv1.ProxyDynamicLease) uint32
 
 type LeaseRouteRestorer struct {
 	Limiter            ProviderAccountConcurrencyLimiter
@@ -51,7 +51,7 @@ type RestoreLeaseInput struct {
 	Store              OrchestrationStore
 	DataPlane          DataPlaneApplier
 	Factory            SessionProviderFactory
-	Lease              *proxyruntimev1.ProxyDynamicLease
+	Lease              *proxygatewayv1.ProxyDynamicLease
 	Limit              uint32
 	DefaultTTL         time.Duration
 	TTLBuffer          time.Duration
@@ -61,7 +61,7 @@ type RestoreLeaseInput struct {
 	ResolveLineBinding RouteLineBindingResolver
 }
 
-func (r LeaseRouteRestorer) Restore(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+func (r LeaseRouteRestorer) Restore(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) error {
 	return RestoreLease(ctx, RestoreLeaseInput{
 		Limiter:            r.Limiter,
 		Store:              r.Store,
@@ -78,14 +78,14 @@ func (r LeaseRouteRestorer) Restore(ctx context.Context, lease *proxyruntimev1.P
 	})
 }
 
-func (r LeaseRouteRestorer) limit(lease *proxyruntimev1.ProxyDynamicLease) uint32 {
+func (r LeaseRouteRestorer) limit(lease *proxygatewayv1.ProxyDynamicLease) uint32 {
 	if r.Limit == nil {
 		return 0
 	}
 	return r.Limit(lease)
 }
 
-func (r LeaseRouteRestorer) resolveGateways(lease *proxyruntimev1.ProxyDynamicLease) ProviderSessionGatewaysResolver {
+func (r LeaseRouteRestorer) resolveGateways(lease *proxygatewayv1.ProxyDynamicLease) ProviderSessionGatewaysResolver {
 	if r.ResolveGateways == nil {
 		return nil
 	}
@@ -143,7 +143,7 @@ func acquireRestoreLeaseSlot(ctx context.Context, input RestoreLeaseInput, provi
 
 type RestoreRouteInput struct {
 	DataPlane          DataPlaneApplier
-	Lease              *proxyruntimev1.ProxyDynamicLease
+	Lease              *proxygatewayv1.ProxyDynamicLease
 	Nodes              []provider.Node
 	LocalProtocol      string
 	ResolveLineBinding RouteLineBindingResolver

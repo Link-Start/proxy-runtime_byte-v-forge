@@ -4,17 +4,17 @@ import (
 	"context"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/mihomonative"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 // SettingsLoader reads the persisted mihomo native settings view.
-type SettingsLoader func(context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
+type SettingsLoader func(context.Context) (*proxygatewayv1.ProxyGatewayMihomoNativeConfig, error)
 
 // SettingsSaver persists a mihomo native settings view.
-type SettingsSaver func(context.Context, *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) error
+type SettingsSaver func(context.Context, *proxygatewayv1.ProxyGatewayMihomoNativeConfig) error
 
 // ResourceRefReplacer rewrites egress resource references after an update.
 type ResourceRefReplacer func(context.Context, map[string]mihomonative.ResourceReplacement) (bool, error)
@@ -56,7 +56,7 @@ func Project(ctx context.Context, deps ProjectionDependencies) error {
 	return mihomonative.SaveConfig(deps.ConfigDir, config)
 }
 
-func importProjection(ctx context.Context, deps ProjectionDependencies, configDir string) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+func importProjection(ctx context.Context, deps ProjectionDependencies, configDir string) (*proxygatewayv1.ProxyGatewayMihomoNativeConfig, error) {
 	config, exists, err := mihomonative.LoadProjection(configDir)
 	if err != nil || !exists {
 		return nil, err
@@ -83,7 +83,7 @@ type UpdateDependencies struct {
 // Update applies view onto the current mihomo native settings, persisting the
 // resulting plan to both the settings store and the on-disk config before
 // triggering the after-apply hook. It returns the freshly persisted view.
-func Update(ctx context.Context, deps UpdateDependencies, view *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+func Update(ctx context.Context, deps UpdateDependencies, view *proxygatewayv1.ProxyGatewayMihomoNativeConfig) (*proxygatewayv1.ProxyGatewayMihomoNativeConfig, error) {
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}

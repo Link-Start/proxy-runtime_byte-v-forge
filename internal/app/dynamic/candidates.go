@@ -5,14 +5,14 @@ import (
 	"sort"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
-func (p *IPSelector) dynamicIPEndpointCandidates(ctx context.Context, settings *proxyruntimev1.ProxyRuntimePersistentSettings, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxyruntimev1.ProxySessionPolicy) ([]ScoredEndpointCandidate, error) {
+func (p *IPSelector) dynamicIPEndpointCandidates(ctx context.Context, settings *proxygatewayv1.ProxyGatewayPersistentSettings, policy *proxygatewayv1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxygatewayv1.ProxySessionPolicy) ([]ScoredEndpointCandidate, error) {
 	if p == nil || p.store == nil {
 		return nil, appcore.InternalError("dynamic IP selection store is not configured", nil)
 	}
@@ -24,7 +24,7 @@ func (p *IPSelector) dynamicIPEndpointCandidates(ctx context.Context, settings *
 	filter := dynamicIPCandidateFilterFromPolicy(sessionPolicy)
 	out := make([]ScoredEndpointCandidate, 0)
 	for accountIndex, account := range accounts {
-		if account.GetStatus() != proxyruntimev1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED || !account.GetCredentialConfigured() {
+		if account.GetStatus() != proxygatewayv1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED || !account.GetCredentialConfigured() {
 			continue
 		}
 		if !p.providerSupported(account.GetProviderId()) {
@@ -42,7 +42,7 @@ type IPCandidateFilter struct {
 	ConcurrencyHolder string
 }
 
-func dynamicIPCandidateFilterFromPolicy(policy *proxyruntimev1.ProxySessionPolicy) IPCandidateFilter {
+func dynamicIPCandidateFilterFromPolicy(policy *proxygatewayv1.ProxySessionPolicy) IPCandidateFilter {
 	labels := policy.GetLabels()
 	return IPCandidateFilter{
 		dynamicProviderID: appcore.RuntimeSafeID(labels["dynamic_provider_id"]),
@@ -50,14 +50,14 @@ func dynamicIPCandidateFilterFromPolicy(policy *proxyruntimev1.ProxySessionPolic
 	}
 }
 
-func (p *IPSelector) providerAccountConcurrencyAvailable(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, provider ProviderInstance, policy *proxyruntimev1.ProxySessionPolicy, holder string) (bool, error) {
+func (p *IPSelector) providerAccountConcurrencyAvailable(ctx context.Context, account *proxygatewayv1.ProxyProviderAccount, provider ProviderInstance, policy *proxygatewayv1.ProxySessionPolicy, holder string) (bool, error) {
 	if p.concurrency == nil {
 		return true, nil
 	}
 	return p.concurrency.Available(ctx, account.GetAccountId(), policy, ProviderInstanceConcurrencyLimit(provider, policy), holder)
 }
 
-func (p *IPSelector) DynamicIPEndpointCandidatesForAccount(ctx context.Context, account *proxyruntimev1.ProxyProviderAccount, accountIndex int, providerInstances []ProviderInstance, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxyruntimev1.ProxySessionPolicy, filter IPCandidateFilter) []ScoredEndpointCandidate {
+func (p *IPSelector) DynamicIPEndpointCandidatesForAccount(ctx context.Context, account *proxygatewayv1.ProxyProviderAccount, accountIndex int, providerInstances []ProviderInstance, policy *proxygatewayv1.ProxyDynamicIPSelectionPolicy, sessionPolicy *proxygatewayv1.ProxySessionPolicy, filter IPCandidateFilter) []ScoredEndpointCandidate {
 	accountDynamicProviderID := appcore.RuntimeSafeID(account.GetDynamicProviderId())
 	out := []ScoredEndpointCandidate{}
 	for providerIndex, providerInstance := range providerInstances {
@@ -82,7 +82,7 @@ func (p *IPSelector) DynamicIPEndpointCandidatesForAccount(ctx context.Context, 
 				continue
 			}
 			regions := p.endpointRegionCodes(ctx, endpoint, policy)
-			candidate := &proxyruntimev1.ProxyDynamicIPEndpointCandidate{
+			candidate := &proxygatewayv1.ProxyDynamicIPEndpointCandidate{
 				ProviderAccountId: account.GetAccountId(),
 				ProviderId:        account.GetProviderId(),
 				EndpointId:        endpointID,
@@ -110,7 +110,7 @@ func (p *IPSelector) endpointProtocolForProvider(providerID string, endpoint acc
 	return accountproxy.GatewayProtocol(endpoint, "socks5")
 }
 
-func ChooseEndpointCandidate(candidates []ScoredEndpointCandidate, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, key string, attempt int) ScoredEndpointCandidate {
+func ChooseEndpointCandidate(candidates []ScoredEndpointCandidate, policy *proxygatewayv1.ProxyDynamicIPSelectionPolicy, key string, attempt int) ScoredEndpointCandidate {
 	candidates = regionScopedDynamicIPEndpointCandidates(candidates, policy)
 	groups := dynamicIPEndpointCandidateGroups(candidates, key)
 	if len(groups) == 0 {
@@ -146,7 +146,7 @@ func dynamicIPEndpointCandidateGroups(candidates []ScoredEndpointCandidate, key 
 			group = &dynamicIPEndpointCandidateGroup{
 				providerAccountID: accountID,
 				priority:          candidate.Proto.GetPriority(),
-				order:             appcore.HashModulo(appcore.FirstNonEmpty(key, "proxy-runtime")+":"+accountID, 0),
+				order:             appcore.HashModulo(appcore.FirstNonEmpty(key, "proxy-gateway")+":"+accountID, 0),
 			}
 			byAccount[accountID] = group
 		}
@@ -197,7 +197,7 @@ func chooseDynamicIPEndpointWithinAccount(candidates []ScoredEndpointCandidate, 
 	return candidates[0]
 }
 
-func regionScopedDynamicIPEndpointCandidates(candidates []ScoredEndpointCandidate, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) []ScoredEndpointCandidate {
+func regionScopedDynamicIPEndpointCandidates(candidates []ScoredEndpointCandidate, policy *proxygatewayv1.ProxyDynamicIPSelectionPolicy) []ScoredEndpointCandidate {
 	if !hasRequestedRegion(policy) {
 		return candidates
 	}
@@ -213,6 +213,6 @@ func regionScopedDynamicIPEndpointCandidates(candidates []ScoredEndpointCandidat
 	return candidates
 }
 
-func endpointScore(regions []string, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) int {
+func endpointScore(regions []string, policy *proxygatewayv1.ProxyDynamicIPSelectionPolicy) int {
 	return 1000 + regionScore(regions, policy)
 }

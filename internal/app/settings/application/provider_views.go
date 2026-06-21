@@ -3,28 +3,28 @@ package application
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-type IPFraudProviderViews func() []*proxyruntimev1.ProxyIPFraudProviderDescriptor
-type IPGeoProviderViews func() []*proxyruntimev1.ProxyIPGeoProviderDescriptor
+type IPFraudProviderViews func() []*proxygatewayv1.ProxyIPFraudProviderDescriptor
+type IPGeoProviderViews func() []*proxygatewayv1.ProxyIPGeoProviderDescriptor
 
-func (a Application) ListIPFraudProviders(context.Context) (*proxyruntimev1.ListProxyIPFraudProvidersResponse, error) {
-	return &proxyruntimev1.ListProxyIPFraudProvidersResponse{Providers: a.ipFraudProviders()}, nil
+func (a Application) ListIPFraudProviders(context.Context) (*proxygatewayv1.ListProxyIPFraudProvidersResponse, error) {
+	return &proxygatewayv1.ListProxyIPFraudProvidersResponse{Providers: a.ipFraudProviders()}, nil
 }
 
-func (a Application) ListIPGeoProviders(context.Context) (*proxyruntimev1.ListProxyIPGeoProvidersResponse, error) {
-	return &proxyruntimev1.ListProxyIPGeoProvidersResponse{Providers: a.ipGeoProviders()}, nil
+func (a Application) ListIPGeoProviders(context.Context) (*proxygatewayv1.ListProxyIPGeoProvidersResponse, error) {
+	return &proxygatewayv1.ListProxyIPGeoProvidersResponse{Providers: a.ipGeoProviders()}, nil
 }
 
-func (a Application) ipFraudProviders() []*proxyruntimev1.ProxyIPFraudProviderDescriptor {
+func (a Application) ipFraudProviders() []*proxygatewayv1.ProxyIPFraudProviderDescriptor {
 	if a.ipFraudProviderViews == nil {
 		return nil
 	}
 	return a.ipFraudProviderViews()
 }
 
-func (a Application) ipGeoProviders() []*proxyruntimev1.ProxyIPGeoProviderDescriptor {
+func (a Application) ipGeoProviders() []*proxygatewayv1.ProxyIPGeoProviderDescriptor {
 	if a.ipGeoProviderViews == nil {
 		return nil
 	}

@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 type ListMode string
@@ -26,7 +26,7 @@ type ListOptions struct {
 	Limit int
 }
 
-func (a *Application) List(ctx context.Context, options ListOptions) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (a *Application) List(ctx context.Context, options ListOptions) ([]*proxygatewayv1.ProxyDynamicLease, error) {
 	if a == nil || a.repository == nil {
 		return nil, nil
 	}
@@ -41,7 +41,7 @@ func (a *Application) List(ctx context.Context, options ListOptions) ([]*proxyru
 	return leases, nil
 }
 
-func (a *Application) list(ctx context.Context, options ListOptions) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+func (a *Application) list(ctx context.Context, options ListOptions) ([]*proxygatewayv1.ProxyDynamicLease, error) {
 	switch options.Mode {
 	case ListModeActive:
 		return a.repository.ListActiveLeaseFacts(ctx, options.Limit)

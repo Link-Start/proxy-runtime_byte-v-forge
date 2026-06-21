@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
+	"github.com/byte-v-forge/proxy-gateway/internal/dataplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 )
 
 func (r *Runtime) dataPlaneConfig(ctx context.Context) (dataplane.Config, error) {

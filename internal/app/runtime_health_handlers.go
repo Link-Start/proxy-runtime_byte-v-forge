@@ -5,7 +5,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 func (api *runtimeHTTPAPI) handleHealth(ctx *gin.Context) {
@@ -27,7 +27,7 @@ func (api *runtimeHTTPAPI) handleReady(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleRuntimeStatus(ctx *gin.Context) {
-	response, err := api.status.GetProxyRuntimeStatus(ctx.Request.Context())
+	response, err := api.status.GetProxyGatewayStatus(ctx.Request.Context())
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return

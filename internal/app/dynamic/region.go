@@ -3,8 +3,8 @@ package dynamic
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/geox"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/geox"
 )
 
 const countryRegionMatchScore = 600
@@ -13,19 +13,19 @@ const sameContinentCountryMatchScore = 450
 
 const sameContinentRegionMatchScore = 350
 
-func hasRequestedRegion(policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) bool {
+func hasRequestedRegion(policy *proxygatewayv1.ProxyDynamicIPSelectionPolicy) bool {
 	return geox.NormalizeCountryAlpha2(policy.GetCountryCode()) != "" || strings.TrimSpace(policy.GetRegion()) != ""
 }
 
-func regionScore(regions []string, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) int {
+func regionScore(regions []string, policy *proxygatewayv1.ProxyDynamicIPSelectionPolicy) int {
 	return regionScoreWithFallback(regions, policy, true)
 }
 
-func regionSpecificScore(regions []string, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) int {
+func regionSpecificScore(regions []string, policy *proxygatewayv1.ProxyDynamicIPSelectionPolicy) int {
 	return regionScoreWithFallback(regions, policy, false)
 }
 
-func regionScoreWithFallback(regions []string, policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy, includeFallback bool) int {
+func regionScoreWithFallback(regions []string, policy *proxygatewayv1.ProxyDynamicIPSelectionPolicy, includeFallback bool) int {
 	regions = cleanRegionCodes(regions)
 	if len(regions) == 0 {
 		return 0

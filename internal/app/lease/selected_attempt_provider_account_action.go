@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 var ErrSelectedAttemptProviderRunnerFactoryRequired = errors.New("selected attempt provider runner factory is required")
@@ -13,12 +13,12 @@ type SelectedAttemptProviderRunnerFactory func(SelectedAcquireAttempt) ProviderA
 
 type SelectedAttemptProviderAccountAction struct {
 	Selection DynamicIPSelection
-	Request   *proxyruntimev1.AcquireProxyLeaseRequest
+	Request   *proxygatewayv1.AcquireProxyLeaseRequest
 	NewRunner SelectedAttemptProviderRunnerFactory
 	MapError  ProviderAccountAcquireApplyErrorMapper
 }
 
-func (a SelectedAttemptProviderAccountAction) Run(ctx context.Context, attempt SelectedAcquireAttempt) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (a SelectedAttemptProviderAccountAction) Run(ctx context.Context, attempt SelectedAcquireAttempt) (*proxygatewayv1.ProxyDynamicLease, error) {
 	if a.NewRunner == nil {
 		return nil, ErrSelectedAttemptProviderRunnerFactoryRequired
 	}

@@ -12,7 +12,7 @@ import (
 func New(ctx context.Context, rawURL string) (*redis.Client, error) {
 	rawURL = strings.TrimSpace(rawURL)
 	if rawURL == "" {
-		return nil, fmt.Errorf("PROXY_RUNTIME_REDIS_URL is required")
+		return nil, fmt.Errorf("PROXY_GATEWAY_REDIS_URL is required")
 	}
 	opts, err := redis.ParseURL(rawURL)
 	if err != nil {

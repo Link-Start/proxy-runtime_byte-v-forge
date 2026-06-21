@@ -3,7 +3,7 @@ package mihomo
 import (
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 )
 
 func profileLayerGroup(name string, layer sourceplane.EgressProfileLayer, groupType string) mihomoGroup {

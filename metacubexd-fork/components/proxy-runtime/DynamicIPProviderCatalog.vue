@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { ProxyRuntimeDynamicIPProvidersState } from '~/composables/useProxyRuntimeDynamicIPProviders'
+import type { ProxyGatewayDynamicIPProvidersState } from '~/composables/useProxyGatewayDynamicIPProviders'
 import type {
   ProxyDynamicIPEndpointSettings,
   ProxyDynamicIPProviderSettings,
   ProxyProviderAccount,
-} from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+} from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 
-const props = defineProps<{ runtime: ProxyRuntimeDynamicIPProvidersState }>()
+const props = defineProps<{ runtime: ProxyGatewayDynamicIPProvidersState }>()
 const providerModal = ref<{ open: () => void; close: () => void }>()
 const endpointModal = ref<{ open: () => void; close: () => void }>()
 const accountModal = ref<{ open: () => void; close: () => void }>()

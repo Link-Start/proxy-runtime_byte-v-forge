@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 )
 
 func (d *Driver) rollbackConfigReloadLocked(ctx context.Context, canonicalPath string, endpoint sourceplane.Endpoint, cause error) error {

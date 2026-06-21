@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ProxyDynamicIPProviderSettings } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import { endpointIDFromURL } from '~/composables/proxyRuntimeDynamicProfilePolicyHelpers'
+import type { ProxyDynamicIPProviderSettings } from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
+import { endpointIDFromURL } from '~/composables/proxyGatewayDynamicProfilePolicyHelpers'
 
 const props = defineProps<{
   dynamicProviderId: string

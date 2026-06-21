@@ -4,21 +4,21 @@ import (
 	"context"
 	"net/http"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 	"github.com/gin-gonic/gin"
 )
 
 type runtimeSettingsUpdateHandler func(
 	context.Context,
-	*proxyruntimev1.UpdateProxyRuntimeSettingsRequest,
-) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error)
+	*proxygatewayv1.UpdateProxyGatewaySettingsRequest,
+) (*proxygatewayv1.UpdateProxyGatewaySettingsResponse, error)
 
 func (api *runtimeHTTPAPI) handleRuntimeSettings(ctx *gin.Context) {
 	api.handleRuntimeSettingsViewOrUpdate(ctx, api.settings.UpdateRuntimeSettings)
 }
 
 func (api *runtimeHTTPAPI) handleDynamicIPProviders(ctx *gin.Context) {
-	api.handleRuntimeSettingsViewOrUpdate(ctx, func(reqCtx context.Context, req *proxyruntimev1.UpdateProxyRuntimeSettingsRequest) (*proxyruntimev1.UpdateProxyRuntimeSettingsResponse, error) {
+	api.handleRuntimeSettingsViewOrUpdate(ctx, func(reqCtx context.Context, req *proxygatewayv1.UpdateProxyGatewaySettingsRequest) (*proxygatewayv1.UpdateProxyGatewaySettingsResponse, error) {
 		return api.settings.UpdateDynamicIPProviders(reqCtx, req.GetDynamicIpProviders())
 	})
 }
@@ -46,7 +46,7 @@ func (api *runtimeHTTPAPI) handleGetRuntimeSettings(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleUpdateRuntimeSettings(ctx *gin.Context, update runtimeSettingsUpdateHandler) {
-	var updateReq proxyruntimev1.UpdateProxyRuntimeSettingsRequest
+	var updateReq proxygatewayv1.UpdateProxyGatewaySettingsRequest
 	if !api.readProto(ctx, &updateReq) {
 		return
 	}

@@ -1,14 +1,14 @@
-# proxy-runtime Refactor Plan
+# proxy-gateway Refactor Plan
 
 ## Current Architecture
 
-`proxy-runtime` is a Mihomo-only unified egress gateway.
+`proxy-gateway` is a Mihomo-only unified egress gateway.
 
 ```text
 client -> fixed Mihomo mixed listener -> proxy username/password -> egress profile -> line -> exit
 ```
 
-Control-plane facts are owned by `proxy-runtime` storage. Mihomo config is a generated runtime projection only; it is not an editable second source of truth.
+Control-plane facts are owned by `proxy-gateway` storage. Mihomo config is a generated runtime projection only; it is not an editable second source of truth.
 
 ## Runtime Contract
 
@@ -27,7 +27,7 @@ Deploy through the remote KVM/k3s environment only:
 
 ```bash
 cd deploy
-scripts/deploy-remote.sh proxy-runtime webui
+scripts/deploy-remote.sh proxy-gateway webui
 ```
 
 Expected target:

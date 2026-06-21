@@ -1,6 +1,6 @@
 package lease
 
-import "github.com/byte-v-forge/proxy-runtime/internal/clock"
+import "github.com/byte-v-forge/proxy-gateway/internal/clock"
 
 type Dependencies struct {
 	Repository  Repository

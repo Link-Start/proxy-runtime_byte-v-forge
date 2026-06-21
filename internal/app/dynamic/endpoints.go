@@ -3,15 +3,15 @@ package dynamic
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
-func Endpoints(settings *proxyruntimev1.ProxyRuntimePersistentSettings, dynamicProviderID string, providerID string) []accountproxy.Gateway {
+func Endpoints(settings *proxygatewayv1.ProxyGatewayPersistentSettings, dynamicProviderID string, providerID string) []accountproxy.Gateway {
 	dynamicProviderID = appcore.RuntimeSafeID(dynamicProviderID)
 	providerID = strings.TrimSpace(providerID)
 	out := []accountproxy.Gateway{}
@@ -38,7 +38,7 @@ func Endpoints(settings *proxyruntimev1.ProxyRuntimePersistentSettings, dynamicP
 	return out
 }
 
-func EndpointMap(settings *proxyruntimev1.ProxyRuntimePersistentSettings) map[string][]accountproxy.Gateway {
+func EndpointMap(settings *proxygatewayv1.ProxyGatewayPersistentSettings) map[string][]accountproxy.Gateway {
 	out := map[string][]accountproxy.Gateway{}
 	seen := map[string]map[string]struct{}{}
 	for _, provider := range ProviderInstances(settings) {
@@ -72,7 +72,7 @@ type ProviderInstance struct {
 	Endpoints                []accountproxy.Gateway
 }
 
-func ProviderInstances(settings *proxyruntimev1.ProxyRuntimePersistentSettings) []ProviderInstance {
+func ProviderInstances(settings *proxygatewayv1.ProxyGatewayPersistentSettings) []ProviderInstance {
 	out := []ProviderInstance{}
 	for _, provider := range kernel.NormalizeRuntimeSettings(settings).GetDynamicIpProviders() {
 		out = append(out, ProviderInstance{
@@ -87,7 +87,7 @@ func ProviderInstances(settings *proxyruntimev1.ProxyRuntimePersistentSettings) 
 	return out
 }
 
-func accountProxyEndpoints(endpoints []*proxyruntimev1.ProxyDynamicIPEndpointSettings) []accountproxy.Gateway {
+func accountProxyEndpoints(endpoints []*proxygatewayv1.ProxyDynamicIPEndpointSettings) []accountproxy.Gateway {
 	out := make([]accountproxy.Gateway, 0, len(endpoints))
 	for _, endpoint := range endpoints {
 		endpointURL := kernel.NormalizeEndpointURL(endpoint.GetEndpointUrl())
@@ -102,8 +102,8 @@ func accountProxyEndpoints(endpoints []*proxyruntimev1.ProxyDynamicIPEndpointSet
 	return out
 }
 
-func ProviderInstanceConcurrencyLimit(provider ProviderInstance, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
-	if leaseapp.ConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
+func ProviderInstanceConcurrencyLimit(provider ProviderInstance, policy *proxygatewayv1.ProxySessionPolicy) uint32 {
+	if leaseapp.ConcurrencyMode(policy) == proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
 		return kernel.NormalizeDynamicProviderRotatingConcurrencyLimit(provider.RotatingConcurrencyLimit)
 	}
 	return kernel.NormalizeDynamicProviderStickyConcurrencyLimit(provider.StickyConcurrencyLimit)

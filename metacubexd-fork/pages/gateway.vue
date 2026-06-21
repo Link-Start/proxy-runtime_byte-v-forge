@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const runtime = useProxyRuntimeInUserRules()
+const runtime = useProxyGatewayInUserRules()
 
 useHead({ title: '接入' })
 onMounted(() => {
@@ -8,5 +8,5 @@ onMounted(() => {
 </script>
 
 <template>
-  <ProxyRuntimeInUserRules :runtime="runtime" />
+  <ProxyGatewayInUserRules :runtime="runtime" />
 </template>

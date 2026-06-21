@@ -55,9 +55,21 @@ RUN for patch in metacubexd-fork/patches/*.patch; do git apply "${patch}"; done 
 
 FROM ${GO_IMAGE} AS builder
 
-WORKDIR /app
+ARG CONTRACTS_REPO=https://github.com/byte-v-forge/contracts.git
+ARG CONTRACTS_REF=main
 
 ENV GOPROXY=https://goproxy.cn,direct
+
+RUN apk add --no-cache git \
+ && go install github.com/bufbuild/buf/cmd/buf@latest \
+ && go install google.golang.org/protobuf/cmd/protoc-gen-go@latest \
+ && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
+
+WORKDIR /workspace
+RUN git clone --depth 1 -b ${CONTRACTS_REF} ${CONTRACTS_REPO} contracts \
+ && cd contracts && buf generate
+
+WORKDIR /workspace/proxy-gateway
 
 COPY go.mod go.sum ./
 RUN go mod download
@@ -65,7 +77,7 @@ RUN go mod download
 COPY cmd ./cmd
 COPY gen ./gen
 COPY internal ./internal
-RUN go build -o proxy-runtime ./cmd/proxy-runtime
+RUN go build -o /bin/proxy-gateway ./cmd/proxy-gateway
 
 FROM ${MIHOMO_IMAGE} AS mihomo
 
@@ -84,9 +96,9 @@ FROM ${RUNTIME_IMAGE}
 WORKDIR /app
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=mihomo_extract /mihomo /usr/local/bin/mihomo
-COPY --from=builder /app/proxy-runtime /usr/local/bin/proxy-runtime
+COPY --from=builder /bin/proxy-gateway /usr/local/bin/proxy-gateway
 COPY --from=metacubexd_fork_builder /metacubexd/.output/public /app/dashboard/metacubexd
 
 EXPOSE 8080 1080
 
-CMD ["proxy-runtime"]
+CMD ["proxy-gateway"]

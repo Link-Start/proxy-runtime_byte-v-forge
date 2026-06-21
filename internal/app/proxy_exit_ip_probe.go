@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/proxycheck"
 )
 
 func (r *Runtime) probeExitIP(ctx context.Context, client *http.Client) (string, error) {

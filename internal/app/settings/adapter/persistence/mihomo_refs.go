@@ -4,15 +4,15 @@ import (
 	"context"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/mihomonative"
 )
 
 func (s *Store) ReplaceMihomoResourceRefs(ctx context.Context, replacements map[string]mihomonative.ResourceReplacement) (bool, error) {
 	if len(replacements) == 0 {
 		return false, nil
 	}
-	return s.mutateRuntimeSettingsIfChanged(ctx, func(settings *proxyruntimev1.ProxyRuntimePersistentSettings) (bool, error) {
+	return s.mutateRuntimeSettingsIfChanged(ctx, func(settings *proxygatewayv1.ProxyGatewayPersistentSettings) (bool, error) {
 		changed := false
 		for _, profile := range settings.GetEgressProfiles() {
 			if replaceMihomoNodeRef(profile.GetLine().GetMihomoNode(), replacements) {
@@ -26,7 +26,7 @@ func (s *Store) ReplaceMihomoResourceRefs(ctx context.Context, replacements map[
 	})
 }
 
-func replaceMihomoNodeRef(ref *proxyruntimev1.EgressProfileMihomoNodeRef, replacements map[string]mihomonative.ResourceReplacement) bool {
+func replaceMihomoNodeRef(ref *proxygatewayv1.EgressProfileMihomoNodeRef, replacements map[string]mihomonative.ResourceReplacement) bool {
 	if ref == nil {
 		return false
 	}

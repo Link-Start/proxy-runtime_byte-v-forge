@@ -3,12 +3,12 @@ package persistence
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
+	settingsdomain "github.com/byte-v-forge/proxy-gateway/internal/app/settings/domain"
 )
 
-func (s *Store) View(ctx context.Context) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+func (s *Store) View(ctx context.Context) (*proxygatewayv1.ProxyGatewaySettings, error) {
 	settings, err := s.Load(ctx)
 	if err != nil {
 		return nil, err

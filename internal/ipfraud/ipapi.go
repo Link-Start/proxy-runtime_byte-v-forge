@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
 )
 
 type ipapiProvider struct {
@@ -17,8 +17,8 @@ const ipapiEndpoint = "https://api.ipapi.is?q={ip}"
 
 type ipapiPlugin struct{}
 
-func (ipapiPlugin) Kind() proxyruntimev1.ProxyIPFraudProviderKind {
-	return proxyruntimev1.ProxyIPFraudProviderKind_PROXY_IP_FRAUD_PROVIDER_KIND_IPAPI
+func (ipapiPlugin) Kind() proxygatewayv1.ProxyIPFraudProviderKind {
+	return proxygatewayv1.ProxyIPFraudProviderKind_PROXY_IP_FRAUD_PROVIDER_KIND_IPAPI
 }
 func (ipapiPlugin) ProviderID() string      { return "ipapi" }
 func (ipapiPlugin) DisplayName() string     { return "ipapi.is" }

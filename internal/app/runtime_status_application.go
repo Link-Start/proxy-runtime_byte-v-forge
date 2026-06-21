@@ -3,32 +3,32 @@ package app
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/dataplane"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 type runtimeStatusApplication struct {
-	runtimeStatus func() *proxyruntimev1.ProxyRuntimeStatus
+	runtimeStatus func() *proxygatewayv1.ProxyGatewayStatus
 }
 
 type runtimeStatusApplicationDependencies struct {
-	RuntimeStatus func() *proxyruntimev1.ProxyRuntimeStatus
+	RuntimeStatus func() *proxygatewayv1.ProxyGatewayStatus
 }
 
 func newRuntimeStatusApplication(deps runtimeStatusApplicationDependencies) runtimeStatusApplication {
 	return runtimeStatusApplication{runtimeStatus: deps.RuntimeStatus}
 }
 
-func (a runtimeStatusApplication) GetProxyRuntimeStatus(context.Context) (*proxyruntimev1.GetProxyRuntimeStatusResponse, error) {
+func (a runtimeStatusApplication) GetProxyGatewayStatus(context.Context) (*proxygatewayv1.GetProxyGatewayStatusResponse, error) {
 	if a.runtimeStatus == nil {
 		return nil, appcore.InternalError("runtime status provider is not configured", nil)
 	}
-	return &proxyruntimev1.GetProxyRuntimeStatusResponse{Status: a.runtimeStatus()}, nil
+	return &proxygatewayv1.GetProxyGatewayStatusResponse{Status: a.runtimeStatus()}, nil
 }
 
-func (r *Runtime) runtimeStatus() *proxyruntimev1.ProxyRuntimeStatus {
+func (r *Runtime) runtimeStatus() *proxygatewayv1.ProxyGatewayStatus {
 	dataPlaneStatus := r.dataPlane.Status()
 	reconcile := r.currentReconcileState()
 	leaseRestore := r.currentLeaseRestoreState()
@@ -36,7 +36,7 @@ func (r *Runtime) runtimeStatus() *proxyruntimev1.ProxyRuntimeStatus {
 	settingsApply := r.currentSettingsApplyState()
 	configStale := dataPlaneConfigStale(dataPlaneStatus)
 	ready := dataPlaneStatus.Running && dataPlaneStatus.LastError == "" && !configStale
-	return &proxyruntimev1.ProxyRuntimeStatus{
+	return &proxygatewayv1.ProxyGatewayStatus{
 		Ready:                ready,
 		Status:               runtimeStatusLabel(ready, dataPlaneStatus, configStale, reconcile, leaseRestore, leaseWorker, settingsApply),
 		DataPlaneRunning:     dataPlaneStatus.Running,

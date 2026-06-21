@@ -1,8 +1,8 @@
 package store
 
 import (
-	"github.com/byte-v-forge/proxy-runtime/internal/random"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+	"github.com/byte-v-forge/proxy-gateway/internal/random"
+	"github.com/byte-v-forge/proxy-gateway/internal/secretref"
 )
 
 func GeneratedSecretID(provider string, purpose string) (string, error) {
@@ -10,5 +10,5 @@ func GeneratedSecretID(provider string, purpose string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return secretref.StableID("proxy-runtime-secret", provider, purpose, suffix), nil
+	return secretref.StableID("proxy-gateway-secret", provider, purpose, suffix), nil
 }

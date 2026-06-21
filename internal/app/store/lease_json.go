@@ -3,12 +3,12 @@ package store
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/protojsoncodec"
 )
 
-func DecodeDynamicLeaseFactJSON(raw string) (*proxyruntimev1.ProxyDynamicLease, error) {
-	lease := &proxyruntimev1.ProxyDynamicLease{}
+func DecodeDynamicLeaseFactJSON(raw string) (*proxygatewayv1.ProxyDynamicLease, error) {
+	lease := &proxygatewayv1.ProxyDynamicLease{}
 	if strings.TrimSpace(raw) == "" {
 		return lease, nil
 	}

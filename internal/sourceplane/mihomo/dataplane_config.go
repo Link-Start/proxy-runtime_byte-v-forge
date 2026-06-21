@@ -1,8 +1,8 @@
 package mihomo
 
 import (
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/dataplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 )
 
 func sourceConfigFromDataPlane(cfg dataplane.Config) sourceplane.Config {

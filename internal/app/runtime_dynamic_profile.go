@@ -9,15 +9,15 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
-	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	dashboardapp "github.com/byte-v-forge/proxy-gateway/internal/app/dashboard"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/dynamic"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
+	"github.com/byte-v-forge/proxy-gateway/internal/runtimehttp"
 )
 
 func (r *Runtime) refreshDynamicProfileSelectionMetadata(ctx context.Context) {
@@ -35,8 +35,8 @@ func (r *Runtime) refreshDynamicProfileSelectionMetadata(ctx context.Context) {
 	r.setDynamicProfilePoolSnapshot(nodes)
 }
 
-func (r *Runtime) applyDynamicProfileSelectionMetadata(ctx context.Context, nodes []provider.Node, profile *proxyruntimev1.EgressProfileSettings) {
-	if !profile.GetEnabled() || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
+func (r *Runtime) applyDynamicProfileSelectionMetadata(ctx context.Context, nodes []provider.Node, profile *proxygatewayv1.EgressProfileSettings) {
+	if !profile.GetEnabled() || profile.GetExit().GetKind() != proxygatewayv1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
 		return
 	}
 	clearDynamicProfileExitIP(nodes, profile.GetProfileId())
@@ -146,7 +146,7 @@ func compactStrings(values []string) []string {
 
 const dynamicProfileSlotReleaseTimeout = 5 * time.Second
 
-func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *http.Client, profile *proxyruntimev1.EgressProfileSettings, selection dynamicProfileEndpointSelection, selected dynamic.ScoredEndpointCandidate, concurrencyLimit uint32, concurrencyHolder string) []provider.Node {
+func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *http.Client, profile *proxygatewayv1.EgressProfileSettings, selection dynamicProfileEndpointSelection, selected dynamic.ScoredEndpointCandidate, concurrencyLimit uint32, concurrencyHolder string) []provider.Node {
 	profileID := appcore.RuntimeSafeID(profile.GetProfileId())
 	cfg := selection.config
 	cfg.Gateways = []accountproxy.Gateway{selected.Endpoint}
@@ -179,7 +179,7 @@ func (r *Runtime) dynamicProfileNodesForSelection(ctx context.Context, client *h
 	return nodes
 }
 
-func dynamicProfileLabelNode(node provider.Node, index int, profile *proxyruntimev1.EgressProfileSettings, selection dynamicProfileEndpointSelection, selected dynamic.ScoredEndpointCandidate) provider.Node {
+func dynamicProfileLabelNode(node provider.Node, index int, profile *proxygatewayv1.EgressProfileSettings, selection dynamicProfileEndpointSelection, selected dynamic.ScoredEndpointCandidate) provider.Node {
 	profileID := appcore.RuntimeSafeID(profile.GetProfileId())
 	policy := dynamicProfileSessionPolicy(profile.GetExit().GetDynamicIpPolicy(), selected.Proto.GetEndpointId())
 	node.ID = dynamicProfileNodeID(profileID, selection.accountID, node.SessionID, selected.Proto.GetEndpointId(), index)
@@ -225,7 +225,7 @@ func (r *Runtime) dynamicProfilePool(ctx context.Context, settings *runtimeSetti
 	endpointHealthScores := r.dynamicIPSelector.DynamicIPEndpointHealthScores(ctx)
 	out := []provider.Node{}
 	for _, profile := range settings.GetEgressProfiles() {
-		if !profile.GetEnabled() || appcore.RuntimeSafeID(profile.GetProfileId()) == kernel.PlaygroundProfileID || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
+		if !profile.GetEnabled() || appcore.RuntimeSafeID(profile.GetProfileId()) == kernel.PlaygroundProfileID || profile.GetExit().GetKind() != proxygatewayv1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
 			continue
 		}
 		nodes := r.dynamicProfilePoolForProfile(ctx, client, settings, accounts, instances, endpointHealthScores, profile)
@@ -235,12 +235,12 @@ func (r *Runtime) dynamicProfilePool(ctx context.Context, settings *runtimeSetti
 }
 
 type dynamicProfileEndpointSelection struct {
-	account   *proxyruntimev1.ProxyProviderAccount
+	account   *proxygatewayv1.ProxyProviderAccount
 	accountID string
 	config    accountproxy.Config
 }
 
-func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http.Client, settings *runtimeSettingsFile, accounts []*proxyruntimev1.ProxyProviderAccount, instances []dynamic.ProviderInstance, endpointHealthScores map[string]int, profile *proxyruntimev1.EgressProfileSettings) []provider.Node {
+func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http.Client, settings *runtimeSettingsFile, accounts []*proxygatewayv1.ProxyProviderAccount, instances []dynamic.ProviderInstance, endpointHealthScores map[string]int, profile *proxygatewayv1.EgressProfileSettings) []provider.Node {
 	profileID := appcore.RuntimeSafeID(profile.GetProfileId())
 	exit := profile.GetExit()
 	profileDynamicProviderID := appcore.RuntimeSafeID(exit.GetDynamicProviderId())
@@ -250,7 +250,7 @@ func (r *Runtime) dynamicProfilePoolForProfile(ctx context.Context, client *http
 	candidates := []dynamic.ScoredEndpointCandidate{}
 	selections := map[string]dynamicProfileEndpointSelection{}
 	for accountIndex, account := range accounts {
-		if account.GetStatus() != proxyruntimev1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED || !account.GetCredentialConfigured() {
+		if account.GetStatus() != proxygatewayv1.ProxyProviderAccountStatus_PROXY_PROVIDER_ACCOUNT_STATUS_ENABLED || !account.GetCredentialConfigured() {
 			continue
 		}
 		if !r.accountProviders.IsSupported(account.GetProviderId()) {
@@ -322,7 +322,7 @@ func dynamicProfileProviderInstancesForAccount(instances []dynamic.ProviderInsta
 	return out
 }
 
-func dynamicProfileEndpointID(exit *proxyruntimev1.EgressProfileExitSettings) string {
+func dynamicProfileEndpointID(exit *proxygatewayv1.EgressProfileExitSettings) string {
 	return strings.TrimSpace(exit.GetDynamicIpPolicy().GetLabels()["dynamic_ip_endpoint_id"])
 }
 
@@ -340,15 +340,15 @@ func dynamicProfileEndpointCandidates(candidates []dynamic.ScoredEndpointCandida
 	return out
 }
 
-func dynamicProfileSelectionPolicy(profileID string, policy *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxyDynamicIPSelectionPolicy {
-	return leaseapp.NormalizeDynamicIPSelectionPolicy(&proxyruntimev1.AcquireProxyLeaseRequest{
+func dynamicProfileSelectionPolicy(profileID string, policy *proxygatewayv1.ProxySessionPolicy) *proxygatewayv1.ProxyDynamicIPSelectionPolicy {
+	return leaseapp.NormalizeDynamicIPSelectionPolicy(&proxygatewayv1.AcquireProxyLeaseRequest{
 		AccountId: strings.TrimSpace(profileID),
 		Purpose:   "in-user-profile",
 		Policy:    policy,
 	})
 }
 
-func dynamicProfileSelectionKey(profileID string, accountID string, endpointID string, policy *proxyruntimev1.ProxySessionPolicy) string {
+func dynamicProfileSelectionKey(profileID string, accountID string, endpointID string, policy *proxygatewayv1.ProxySessionPolicy) string {
 	labels := policy.GetLabels()
 	return strings.Join([]string{
 		appcore.FirstNonEmpty(labels["selection_seed"], labels["proxy_selection_seed"], profileID),
@@ -366,14 +366,14 @@ func dynamicProfileConcurrencyHolder(profileID string) string {
 	return "profile:" + profileID
 }
 
-func dynamicProfileSession(profileID string, accountID string, providerID string, endpointID string, input *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxySession {
+func dynamicProfileSession(profileID string, accountID string, providerID string, endpointID string, input *proxygatewayv1.ProxySessionPolicy) *proxygatewayv1.ProxySession {
 	policy := dynamicProfileSessionPolicy(input, endpointID)
 	seed := dynamicProfileSessionSeed(profileID, accountID, providerID, endpointID, policy)
 	sessionID := dynamicProfileRequestedSessionID(policy)
 	if sessionID == "" {
 		sessionID = dynamicProfileSessionID(seed)
 	}
-	return &proxyruntimev1.ProxySession{
+	return &proxygatewayv1.ProxySession{
 		SessionId:  sessionID,
 		ProviderId: strings.TrimSpace(providerID),
 		AccountId:  strings.TrimSpace(accountID),
@@ -382,7 +382,7 @@ func dynamicProfileSession(profileID string, accountID string, providerID string
 	}
 }
 
-func dynamicProfileRequestedSessionID(policy *proxyruntimev1.ProxySessionPolicy) string {
+func dynamicProfileRequestedSessionID(policy *proxygatewayv1.ProxySessionPolicy) string {
 	labels := policy.GetLabels()
 	return appcore.RuntimeSafeID(appcore.FirstNonEmpty(
 		labels["session_id"],
@@ -393,17 +393,17 @@ func dynamicProfileRequestedSessionID(policy *proxyruntimev1.ProxySessionPolicy)
 	))
 }
 
-func dynamicProfileSessionSeed(profileID string, accountID string, providerID string, endpointID string, policy *proxyruntimev1.ProxySessionPolicy) string {
+func dynamicProfileSessionSeed(profileID string, accountID string, providerID string, endpointID string, policy *proxygatewayv1.ProxySessionPolicy) string {
 	return strings.Join([]string{profileID, accountID, providerID, endpointID, dynamicProfilePolicySignature(policy)}, ":")
 }
 
-func dynamicProfileSessionPolicy(input *proxyruntimev1.ProxySessionPolicy, endpointID string) *proxyruntimev1.ProxySessionPolicy {
+func dynamicProfileSessionPolicy(input *proxygatewayv1.ProxySessionPolicy, endpointID string) *proxygatewayv1.ProxySessionPolicy {
 	policy := kernel.NormalizeDynamicIPSessionPolicy(input)
 	policy.Labels["dynamic_ip_endpoint_id"] = strings.TrimSpace(endpointID)
 	return policy
 }
 
-func dynamicProfilePolicySignature(policy *proxyruntimev1.ProxySessionPolicy) string {
+func dynamicProfilePolicySignature(policy *proxygatewayv1.ProxySessionPolicy) string {
 	return strings.Join([]string{
 		policy.GetMode().String(),
 		policy.GetRotationMode().String(),

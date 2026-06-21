@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ProxyRuntimePluginsState } from '~/composables/useProxyRuntimePlugins'
+import type { ProxyGatewayPluginsState } from '~/composables/useProxyGatewayPlugins'
 import { IconCloudCheck, IconDeviceFloppy, IconPlayerPlay } from '@tabler/icons-vue'
 
-defineProps<{ runtime: ProxyRuntimePluginsState }>()
+defineProps<{ runtime: ProxyGatewayPluginsState }>()
 </script>
 
 <template>

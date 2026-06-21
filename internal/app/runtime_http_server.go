@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
-	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	providerapp "github.com/byte-v-forge/proxy-runtime/internal/app/provider/application"
-	checkapp "github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck/application"
-	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings/application"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	authapp "github.com/byte-v-forge/proxy-gateway/internal/app/auth"
+	httpapi "github.com/byte-v-forge/proxy-gateway/internal/app/httpapi"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	providerapp "github.com/byte-v-forge/proxy-gateway/internal/app/provider/application"
+	checkapp "github.com/byte-v-forge/proxy-gateway/internal/app/proxycheck/application"
+	settingsapp "github.com/byte-v-forge/proxy-gateway/internal/app/settings/application"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
 	"github.com/gin-gonic/gin"
 )
 
@@ -36,9 +36,9 @@ func (r *Runtime) serveHTTP(ctx context.Context, errCh chan<- error) {
 		defer cancel()
 		_ = server.Shutdown(shutdownCtx)
 	}()
-	r.logger.Info("proxy-runtime http listening", "addr", r.cfg.RuntimeAddr)
+	r.logger.Info("proxy-gateway http listening", "addr", r.cfg.RuntimeAddr)
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-		errCh <- fmt.Errorf("serve proxy-runtime http: %w", err)
+		errCh <- fmt.Errorf("serve proxy-gateway http: %w", err)
 	}
 }
 

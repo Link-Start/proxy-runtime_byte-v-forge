@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { ProxyProviderAccount } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import { ProxyProviderAccountStatus } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import type { ProxyProviderAccount } from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
+import { ProxyProviderAccountStatus } from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 import { IconPencil, IconTrash } from '@tabler/icons-vue'
 
 defineProps<{ accounts: ProxyProviderAccount[] }>()

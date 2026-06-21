@@ -6,7 +6,7 @@ import (
 )
 
 const sqliteSchemaSQL = `
-CREATE TABLE IF NOT EXISTS proxy_runtime_provider_accounts (
+CREATE TABLE IF NOT EXISTS proxy_gateway_provider_accounts (
   account_id text PRIMARY KEY,
   provider_id text NOT NULL,
   dynamic_provider_id text NOT NULL DEFAULT '',
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS proxy_runtime_provider_accounts (
   updated_at text NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS proxy_runtime_dynamic_leases (
+CREATE TABLE IF NOT EXISTS proxy_gateway_dynamic_leases (
   lease_id text PRIMARY KEY,
   account_id text NOT NULL,
   purpose text NOT NULL DEFAULT '',
@@ -30,23 +30,23 @@ CREATE TABLE IF NOT EXISTS proxy_runtime_dynamic_leases (
   updated_at text NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_account_status
-  ON proxy_runtime_dynamic_leases(account_id, status);
-CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_account_status_expires
-  ON proxy_runtime_dynamic_leases(account_id, status, expires_at);
-CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_provider_status
-  ON proxy_runtime_dynamic_leases(provider_account_id, status);
-CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_provider_status_expires
-  ON proxy_runtime_dynamic_leases(provider_account_id, status, expires_at);
-CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_status_expires
-  ON proxy_runtime_dynamic_leases(status, expires_at);
-CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_expires_at
-  ON proxy_runtime_dynamic_leases(expires_at);
-CREATE INDEX IF NOT EXISTS idx_proxy_runtime_dynamic_leases_acquired_updated
-  ON proxy_runtime_dynamic_leases(acquired_at DESC, updated_at DESC, lease_id);
+CREATE INDEX IF NOT EXISTS idx_proxy_gateway_dynamic_leases_account_status
+  ON proxy_gateway_dynamic_leases(account_id, status);
+CREATE INDEX IF NOT EXISTS idx_proxy_gateway_dynamic_leases_account_status_expires
+  ON proxy_gateway_dynamic_leases(account_id, status, expires_at);
+CREATE INDEX IF NOT EXISTS idx_proxy_gateway_dynamic_leases_provider_status
+  ON proxy_gateway_dynamic_leases(provider_account_id, status);
+CREATE INDEX IF NOT EXISTS idx_proxy_gateway_dynamic_leases_provider_status_expires
+  ON proxy_gateway_dynamic_leases(provider_account_id, status, expires_at);
+CREATE INDEX IF NOT EXISTS idx_proxy_gateway_dynamic_leases_status_expires
+  ON proxy_gateway_dynamic_leases(status, expires_at);
+CREATE INDEX IF NOT EXISTS idx_proxy_gateway_dynamic_leases_expires_at
+  ON proxy_gateway_dynamic_leases(expires_at);
+CREATE INDEX IF NOT EXISTS idx_proxy_gateway_dynamic_leases_acquired_updated
+  ON proxy_gateway_dynamic_leases(acquired_at DESC, updated_at DESC, lease_id);
 
 
-CREATE TABLE IF NOT EXISTS proxy_runtime_secrets (
+CREATE TABLE IF NOT EXISTS proxy_gateway_secrets (
   secret_id text PRIMARY KEY,
   provider text NOT NULL,
   purpose text NOT NULL,
@@ -56,10 +56,10 @@ CREATE TABLE IF NOT EXISTS proxy_runtime_secrets (
   updated_at text NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS idx_proxy_runtime_secrets_expires_at
-  ON proxy_runtime_secrets(expires_at);
+CREATE INDEX IF NOT EXISTS idx_proxy_gateway_secrets_expires_at
+  ON proxy_gateway_secrets(expires_at);
 
-CREATE TABLE IF NOT EXISTS proxy_runtime_settings (
+CREATE TABLE IF NOT EXISTS proxy_gateway_settings (
   setting_key text PRIMARY KEY,
   setting_json text NOT NULL DEFAULT '{}',
   updated_at text NOT NULL
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS proxy_runtime_settings (
 
 func (s *Store) applySchema(ctx context.Context) error {
 	if _, err := s.db.ExecContext(ctx, sqliteSchemaSQL); err != nil {
-		return fmt.Errorf("apply proxy-runtime sqlite schema: %w", err)
+		return fmt.Errorf("apply proxy-gateway sqlite schema: %w", err)
 	}
 	return nil
 }

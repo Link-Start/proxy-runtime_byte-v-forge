@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { ProxyRuntimeInUserRulesState } from '~/composables/useProxyRuntimeInUserRules'
+import type { ProxyGatewayInUserRulesState } from '~/composables/useProxyGatewayInUserRules'
 import {
   countryOptions,
   currentOnlyOptions,
   dynamicIPAsnOptions,
   stateOptions,
-} from '~/composables/proxyRuntimeDynamicIPRegionOptions'
+} from '~/composables/proxyGatewayDynamicIPRegionOptions'
 
-const props = defineProps<{ runtime: ProxyRuntimeInUserRulesState }>()
+const props = defineProps<{ runtime: ProxyGatewayInUserRulesState }>()
 
 const countries = computed(() =>
   countryOptions(props.runtime.form.exit_dynamic_region),

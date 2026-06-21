@@ -7,8 +7,8 @@ diff --git a/composables/useApi.ts b/composables/useApi.ts
  import { useMockData } from './useMockData'
 +import {
 +  isUnauthorizedStatus,
-+  redirectToProxyRuntimeSetup,
-+} from '~/composables/proxyRuntimeEndpointAuth'
++  redirectToProxyGatewaySetup,
++} from '~/composables/proxyGatewayEndpointAuth'
  
  // Mock mode support
  export function useMockMode() {
@@ -20,9 +20,9 @@ diff --git a/composables/useApi.ts b/composables/useApi.ts
 +      afterResponse: [
 +        (_request, _options, response) => {
 +          if (!isUnauthorizedStatus(response.status)) return
-+          if (endpoint.id === 'proxy-runtime-mihomo') {
++          if (endpoint.id === 'proxy-gateway-mihomo') {
 +            endpointStore.setSelectedEndpoint('')
-+            redirectToProxyRuntimeSetup(endpoint.id)
++            redirectToProxyGatewaySetup(endpoint.id)
 +          }
 +        },
 +      ],

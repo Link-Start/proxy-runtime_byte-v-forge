@@ -1,6 +1,6 @@
 # AGENTS.md
 
-本仓是 `proxy-runtime`，是可单仓构建和运行的独立统一出口代理网关应用。
+本仓是 `proxy-gateway`，是可单仓构建和运行的独立统一出口代理网关应用。
 
 - 本仓只承载统一出口网关、代理上游、代理池、动态 IP lease 控制面和 Mihomo data plane 包装能力。
 - 本仓可以提供 proxy provider adapter、代理池刷新、出口路由编排、Mihomo 数据面进程生命周期、健康检查和运行时观测接入点。
@@ -11,9 +11,9 @@
 - `route`/`hop` 表达链路拓扑；`endpoint.upstream_kind` 表达上游资源类型。不得把 chain 建模成资源类型，因为链路中的任意 hop 都可能是简单代理、动态 IP 或代理池。
 - provider 控制面访问和数据面出口分开建模；代理商 API 需要先走代理时，用 control plane route 表达，不混入业务出口链路。
 - 1024Proxy 对接只封装其动态住宅代理的 HTTP(S)/SOCKS5、用户名参数和 API 取号模式；控制台前端可按契约展示和编辑代理配置值。
-- 代理公开模型真源位于本仓 `proto/byte/v/forge/contracts/proxyruntime/v1/`；生成物位于本仓 `gen/go/` 与 `metacubexd-fork/types/`。
+- 代理公开模型真源位于本仓 `proto/byte/v/forge/contracts/proxygateway/v1/`；生成物位于本仓 `gen/go/` 与 `metacubexd-fork/types/`。
 - Mihomo 配置由本仓统一生成；不得在业务仓手写等价运行时配置结构或 provider 参数拼装逻辑。
 - 日志、指标和错误信息不得输出代理密码、API 链接 token、用户名中的可复用会话材料或完整代理 URL。
 - 后端优先使用 Go，按 Clean Code、DI 和面向抽象设计组织代码。
-- 优先使用标准库和成熟 SDK；只有确实属于 proxy-runtime 领域的适配能力才放入本仓内部 helper。
+- 优先使用标准库和成熟 SDK；只有确实属于 proxy-gateway 领域的适配能力才放入本仓内部 helper。
 - Linter 检查必须达到 0 error / 0 warning；禁止通过修改或放宽 linter 配置、降低规则级别、删除规则、添加 ignore/disable/nolint/ts-ignore/eslint-disable/biome-ignore/prettier-ignore 等方式绕过问题，只能按 linter 规则修复源码、类型、格式或依赖边界。

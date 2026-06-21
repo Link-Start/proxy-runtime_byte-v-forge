@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { ProxyRuntimeInUserRulesState } from '~/composables/useProxyRuntimeInUserRules'
-import type { ProxyIngressRuleSettings } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import type { ProxyGatewayInUserRulesState } from '~/composables/useProxyGatewayInUserRules'
+import type { ProxyIngressRuleSettings } from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 import { IconKey, IconPlus } from '@tabler/icons-vue'
 
-const props = defineProps<{ runtime: ProxyRuntimeInUserRulesState }>()
+const props = defineProps<{ runtime: ProxyGatewayInUserRulesState }>()
 const modal = ref<{ open: () => void; close: () => void }>()
 const expandedRules = reactive<Record<string, boolean>>({})
 const evenRows = computed(() =>
@@ -57,7 +57,7 @@ function editRule(rule: ProxyIngressRuleSettings) {
     </div>
     <ProxiesRenderWrapper v-else>
       <template #even>
-        <ProxyRuntimeInUserRuleCard
+        <ProxyGatewayInUserRuleCard
           v-for="(row, index) in evenRows"
           :key="row.rule.rule_id"
           :expanded="expandedRules[row.rule.rule_id] || false"
@@ -70,7 +70,7 @@ function editRule(rule: ProxyIngressRuleSettings) {
         />
       </template>
       <template #odd>
-        <ProxyRuntimeInUserRuleCard
+        <ProxyGatewayInUserRuleCard
           v-for="(row, index) in oddRows"
           :key="row.rule.rule_id"
           :expanded="expandedRules[row.rule.rule_id] || false"
@@ -83,7 +83,7 @@ function editRule(rule: ProxyIngressRuleSettings) {
         />
       </template>
       <template #default>
-        <ProxyRuntimeInUserRuleCard
+        <ProxyGatewayInUserRuleCard
           v-for="(row, index) in runtime.rows.value"
           :key="row.rule.rule_id"
           :expanded="expandedRules[row.rule.rule_id] || false"
@@ -97,6 +97,6 @@ function editRule(rule: ProxyIngressRuleSettings) {
       </template>
     </ProxiesRenderWrapper>
 
-    <ProxyRuntimeInUserRuleModal ref="modal" :runtime="runtime" />
+    <ProxyGatewayInUserRuleModal ref="modal" :runtime="runtime" />
   </section>
 </template>

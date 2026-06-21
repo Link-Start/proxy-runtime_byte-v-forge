@@ -3,7 +3,7 @@ package mihomo
 import (
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 func dynamicProfileNodes(nodes []provider.Node, profileID string, dynamicProviderID string) []provider.Node {

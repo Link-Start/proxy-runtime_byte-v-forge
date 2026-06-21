@@ -5,8 +5,8 @@ import (
 	"net"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 const (
@@ -14,7 +14,7 @@ const (
 	LabelProxyPassword = "proxy_password"
 )
 
-func NewListenerEndpoint(listener Listener, advertisedHost string, fallbackProtocol string) (*proxyruntimev1.ProxyEndpoint, error) {
+func NewListenerEndpoint(listener Listener, advertisedHost string, fallbackProtocol string) (*proxygatewayv1.ProxyEndpoint, error) {
 	hostPort, err := listenerHostPort(listener.Addr)
 	if err != nil {
 		return nil, err
@@ -38,7 +38,7 @@ func NewListenerEndpoint(listener Listener, advertisedHost string, fallbackProto
 		labels[LabelProxyUsername] = listener.Username
 		labels[LabelProxyPassword] = listener.Password
 	}
-	return &proxyruntimev1.ProxyEndpoint{Id: listener.ID, Protocol: listenerProtocol(listener, fallbackProtocol), Host: host, Port: port, Labels: labels}, nil
+	return &proxygatewayv1.ProxyEndpoint{Id: listener.ID, Protocol: listenerProtocol(listener, fallbackProtocol), Host: host, Port: port, Labels: labels}, nil
 }
 
 func listenerHostPort(addr string) (string, error) {
@@ -62,14 +62,14 @@ func listenerPort(portValue string) (uint32, error) {
 	return port, err
 }
 
-func listenerProtocol(listener Listener, fallback string) proxyruntimev1.ProxyProtocol {
+func listenerProtocol(listener Listener, fallback string) proxygatewayv1.ProxyProtocol {
 	if strings.TrimSpace(listener.Protocol) == "socks5" {
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
 	}
 	if strings.TrimSpace(fallback) == "socks5" {
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
 	}
-	return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_HTTP
+	return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_HTTP
 }
 
 func localEndpointHost(host string) bool {
@@ -168,7 +168,7 @@ type DynamicListenerInput struct {
 	LeaseID             string
 	DefaultUsername     string
 	FallbackPassword    string
-	IngressRules        []*proxyruntimev1.ProxyIngressRuleSettings
+	IngressRules        []*proxygatewayv1.ProxyIngressRuleSettings
 	PlaygroundAccountID string
 	PlaygroundRuleID    string
 	PlaygroundUsername  string

@@ -4,11 +4,11 @@ import (
 	"context"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/store"
 )
 
 type leaseWorkerProcessorFactory struct {
@@ -32,7 +32,7 @@ func (f leaseWorkerProcessorFactory) New() leaseapp.WorkerProcessor {
 			f.warn("list proxy leases for restore failed", "error_type", appcore.ErrorLogType(err))
 		},
 		ObserveExpire: f.observeExpire,
-		ObserveCleanup: func(lease *proxyruntimev1.ProxyDynamicLease, err error) {
+		ObserveCleanup: func(lease *proxygatewayv1.ProxyDynamicLease, err error) {
 			f.warn("cleanup proxy lease fact failed", leaseWorkerObserverFields(lease, err)...)
 		},
 		ObserveCleanupList: func(err error) {
@@ -41,11 +41,11 @@ func (f leaseWorkerProcessorFactory) New() leaseapp.WorkerProcessor {
 	}
 }
 
-func (f leaseWorkerProcessorFactory) observeRestore(lease *proxyruntimev1.ProxyDynamicLease, err error) {
+func (f leaseWorkerProcessorFactory) observeRestore(lease *proxygatewayv1.ProxyDynamicLease, err error) {
 	f.warn("restore proxy lease route failed", leaseWorkerObserverFields(lease, err)...)
 }
 
-func (f leaseWorkerProcessorFactory) observeExpire(lease *proxyruntimev1.ProxyDynamicLease, err error) {
+func (f leaseWorkerProcessorFactory) observeExpire(lease *proxygatewayv1.ProxyDynamicLease, err error) {
 	f.warn("expire proxy lease failed", leaseWorkerObserverFields(lease, err)...)
 }
 
@@ -55,7 +55,7 @@ func (f leaseWorkerProcessorFactory) warn(message string, args ...any) {
 	}
 }
 
-func leaseWorkerObserverFields(lease *proxyruntimev1.ProxyDynamicLease, err error) []any {
+func leaseWorkerObserverFields(lease *proxygatewayv1.ProxyDynamicLease, err error) []any {
 	if lease == nil {
 		return []any{"error_type", appcore.ErrorLogType(err)}
 	}
@@ -75,7 +75,7 @@ func (f leaseRestoreRunnerFactory) New() leaseapp.RestoreLeaseRouteRunner {
 	return leaseapp.RestoreLeaseRouteRunner{ResolveRestorer: f.resolveRestorer}
 }
 
-func (f leaseRestoreRunnerFactory) resolveRestorer(ctx context.Context, _ *proxyruntimev1.ProxyDynamicLease) (leaseapp.LeaseRouteRestorer, error) {
+func (f leaseRestoreRunnerFactory) resolveRestorer(ctx context.Context, _ *proxygatewayv1.ProxyDynamicLease) (leaseapp.LeaseRouteRestorer, error) {
 	settings, err := f.deps.settings.Load(ctx)
 	if err != nil {
 		return leaseapp.LeaseRouteRestorer{}, err
@@ -129,7 +129,7 @@ func (f leaseCleanupPendingRunnerFactory) New() leaseapp.CleanupPendingLeaseRunn
 }
 
 func warnFinalLeaseConcurrencyReleaseFailed(logger leaseapp.Logger) leaseapp.LeaseObserver {
-	return func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
+	return func(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) {
 		_ = ctx
 		if logger == nil || lease == nil {
 			return
@@ -141,7 +141,7 @@ func warnFinalLeaseConcurrencyReleaseFailed(logger leaseapp.Logger) leaseapp.Lea
 type leaseAccountLockedAcquireRunnerFactory struct {
 	deps           leaseCoordinatorDependencies
 	advertisedHost string
-	request        *proxyruntimev1.AcquireProxyLeaseRequest
+	request        *proxygatewayv1.AcquireProxyLeaseRequest
 	retire         leaseapp.LeaseRouteRetirer
 	reuse          leaseapp.RefreshConcurrencySlotRunner
 }
@@ -155,7 +155,7 @@ func (f leaseAccountLockedAcquireRunnerFactory) New(ctx context.Context, setting
 		PlaygroundUsername:  kernel.PlaygroundUsername,
 		Reuse:               f.reuse.Refresh,
 		Replace:             f.retire.Retire,
-		RunAttempt: func(int) (*proxyruntimev1.ProxyDynamicLease, error) {
+		RunAttempt: func(int) (*proxygatewayv1.ProxyDynamicLease, error) {
 			return attemptRunner.Run(ctx, f.request, f.request.GetPolicy())
 		},
 		Retry:   retryLeaseAcquireAttempt,
@@ -195,7 +195,7 @@ type leaseSelectedAcquireAttemptRunnerFactory struct {
 	deps           leaseCoordinatorDependencies
 	settings       *runtimeSettingsFile
 	advertisedHost string
-	request        *proxyruntimev1.AcquireProxyLeaseRequest
+	request        *proxygatewayv1.AcquireProxyLeaseRequest
 }
 
 func (f leaseSelectedAcquireAttemptRunnerFactory) New(selection leaseapp.DynamicIPSelection) leaseapp.SelectedAcquireAttemptRunner {
@@ -225,7 +225,7 @@ func (f leaseSelectedAcquireAttemptRunnerFactory) New(selection leaseapp.Dynamic
 	}
 }
 
-func (f leaseSelectedAcquireAttemptRunnerFactory) limit(selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, policy *proxyruntimev1.ProxySessionPolicy) uint32 {
+func (f leaseSelectedAcquireAttemptRunnerFactory) limit(selectionPlan *proxygatewayv1.ProxyDynamicIPSelectionPlan, policy *proxygatewayv1.ProxySessionPolicy) uint32 {
 	return dynamicProviderConcurrencyLimit(f.settings, leaseapp.SelectedDynamicProviderID(selectionPlan), policy)
 }
 
@@ -233,8 +233,8 @@ type leaseProviderAccountAcquireRunnerFactory struct {
 	deps           leaseCoordinatorDependencies
 	settings       *runtimeSettingsFile
 	advertisedHost string
-	request        *proxyruntimev1.AcquireProxyLeaseRequest
-	selectionPlan  *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	request        *proxygatewayv1.AcquireProxyLeaseRequest
+	selectionPlan  *proxygatewayv1.ProxyDynamicIPSelectionPlan
 }
 
 func (f leaseProviderAccountAcquireRunnerFactory) New(attempt leaseapp.SelectedAcquireAttempt) leaseapp.ProviderAccountAcquireRunner {
@@ -281,7 +281,7 @@ func (f leaseProviderAccountAcquireRunnerFactory) acquiredRouteApplier() leaseap
 		FallbackProtocol: "http",
 		ResolveListener:  endpoint.ResolveListener,
 		ResolveEgress:    endpoint.ResolveEgress,
-		AfterApply: func(ctx context.Context, _ *proxyruntimev1.ProxyDynamicLease) {
+		AfterApply: func(ctx context.Context, _ *proxygatewayv1.ProxyDynamicLease) {
 			sideEffects.afterRouteChange(ctx, f.request.GetAccountId())
 		},
 	}

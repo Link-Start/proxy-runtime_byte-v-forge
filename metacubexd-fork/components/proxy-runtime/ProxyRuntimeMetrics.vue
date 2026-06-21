@@ -1,14 +1,14 @@
 <script setup lang="ts">
-import type { ProxyRuntimeMetricsState } from '~/composables/useProxyRuntimeMetrics'
+import type { ProxyGatewayMetricsState } from '~/composables/useProxyGatewayMetrics'
 import { IconRefresh } from '@tabler/icons-vue'
 import {
-  formatProxyRuntimeMetricCount,
-  formatProxyRuntimeMetricPercent,
-  formatProxyRuntimeMetricSeconds,
-} from '~/composables/proxyRuntimeMetricsRows'
+  formatProxyGatewayMetricCount,
+  formatProxyGatewayMetricPercent,
+  formatProxyGatewayMetricSeconds,
+} from '~/composables/proxyGatewayMetricsRows'
 
-const props = defineProps<{ runtime: ProxyRuntimeMetricsState }>()
-const runtimeStatus = useProxyRuntimeStatus()
+const props = defineProps<{ runtime: ProxyGatewayMetricsState }>()
+const runtimeStatus = useProxyGatewayStatus()
 
 const stats = computed(() => {
   const overview = props.runtime.overview.value
@@ -18,26 +18,26 @@ const stats = computed(() => {
   return [
     {
       label: '运行操作',
-      value: formatProxyRuntimeMetricCount(total),
+      value: formatProxyGatewayMetricCount(total),
       note: `更新 ${props.runtime.updatedAtLabel.value}`,
       tone: 'primary' as const,
     },
     {
       label: '错误',
-      value: formatProxyRuntimeMetricCount(overview.errorCount),
-      note: formatProxyRuntimeMetricPercent(errorRatio),
+      value: formatProxyGatewayMetricCount(overview.errorCount),
+      note: formatProxyGatewayMetricPercent(errorRatio),
       tone: overview.errorCount > 0 ? ('error' as const) : ('success' as const),
     },
     {
       label: '慢路径',
-      value: formatProxyRuntimeMetricCount(overview.slowCount),
-      note: `阈值 ${props.runtime.slowThresholdLabel.value} · ${formatProxyRuntimeMetricPercent(slowRatio)}`,
+      value: formatProxyGatewayMetricCount(overview.slowCount),
+      note: `阈值 ${props.runtime.slowThresholdLabel.value} · ${formatProxyGatewayMetricPercent(slowRatio)}`,
       tone: overview.slowCount > 0 ? ('warning' as const) : ('success' as const),
     },
     {
       label: '平均耗时',
-      value: formatProxyRuntimeMetricSeconds(overview.averageSeconds),
-      note: `累计 ${formatProxyRuntimeMetricSeconds(overview.durationSeconds)}`,
+      value: formatProxyGatewayMetricSeconds(overview.averageSeconds),
+      note: `累计 ${formatProxyGatewayMetricSeconds(overview.durationSeconds)}`,
       tone: 'primary' as const,
     },
   ]
@@ -48,7 +48,7 @@ const stats = computed(() => {
   <main class="flex min-w-0 flex-col gap-4">
     <div class="animate-fade-slide-in flex shrink-0 items-center justify-between gap-2">
       <div class="flex min-w-0 items-center gap-2">
-        <ProxyRuntimeStatusBadge :state="runtimeStatus" />
+        <ProxyGatewayStatusBadge :state="runtimeStatus" />
         <span class="truncate text-xs opacity-60">
           {{ runtime.updatedAtLabel.value }}
         </span>
@@ -71,7 +71,7 @@ const stats = computed(() => {
     </p>
 
     <div class="grid shrink-0 gap-3 md:grid-cols-2 xl:grid-cols-4">
-      <ProxyRuntimeMetricStat
+      <ProxyGatewayMetricStat
         v-for="stat in stats"
         :key="stat.label"
         :label="stat.label"
@@ -81,7 +81,7 @@ const stats = computed(() => {
       />
     </div>
 
-    <ProxyRuntimeMetricsCharts
+    <ProxyGatewayMetricsCharts
       :loading="runtime.loading.value"
       :rows="runtime.rows.value"
     />
@@ -94,7 +94,7 @@ const stats = computed(() => {
         {{ runtime.loading.value ? '正在读取指标' : '暂无运行指标' }}
       </div>
 
-      <ProxyRuntimeMetricsTable
+      <ProxyGatewayMetricsTable
         v-else
         :rows="runtime.rows.value"
         :slow-threshold-label="runtime.slowThresholdLabel.value"

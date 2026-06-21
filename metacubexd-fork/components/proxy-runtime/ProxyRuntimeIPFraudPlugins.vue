@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { ProxyRuntimePluginsState } from '~/composables/useProxyRuntimePlugins'
+import type { ProxyGatewayPluginsState } from '~/composables/useProxyGatewayPlugins'
 import {
   IconPlus,
   IconShieldCheck,
 } from '@tabler/icons-vue'
 
-defineProps<{ runtime: ProxyRuntimePluginsState }>()
+defineProps<{ runtime: ProxyGatewayPluginsState }>()
 const modal = ref<{ open: () => void }>()
 </script>
 
@@ -51,7 +51,7 @@ const modal = ref<{ open: () => void }>()
     </div>
 
     <div v-else class="grid gap-3">
-      <ProxyRuntimeIPFraudProviderCard
+      <ProxyGatewayIPFraudProviderCard
         v-for="(row, index) in runtime.fraudRows.value"
         :key="`${row.provider_id}-${index}`"
         :index="index"
@@ -60,7 +60,7 @@ const modal = ref<{ open: () => void }>()
       />
     </div>
 
-    <ProxyRuntimeIPFraudCheckPanel :runtime="runtime" />
-    <ProxyRuntimeIPFraudProviderModal ref="modal" :runtime="runtime" />
+    <ProxyGatewayIPFraudCheckPanel :runtime="runtime" />
+    <ProxyGatewayIPFraudProviderModal ref="modal" :runtime="runtime" />
   </section>
 </template>

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -19,10 +19,10 @@ type FailedAcquireFactInput struct {
 	AccountID         string
 	Purpose           string
 	ProviderAccountID string
-	Session           *proxyruntimev1.ProxySession
-	Egress            *proxyruntimev1.ProxyEndpoint
-	Listener          *proxyruntimev1.EgressListener
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Session           *proxygatewayv1.ProxySession
+	Egress            *proxygatewayv1.ProxyEndpoint
+	Listener          *proxygatewayv1.EgressListener
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	Message           string
 	AcquiredAt        time.Time
 }
@@ -32,20 +32,20 @@ type ActiveFactInput struct {
 	AccountID         string
 	Purpose           string
 	ProviderAccountID string
-	Session           *proxyruntimev1.ProxySession
-	Egress            *proxyruntimev1.ProxyEndpoint
-	Listener          *proxyruntimev1.EgressListener
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Session           *proxygatewayv1.ProxySession
+	Egress            *proxygatewayv1.ProxyEndpoint
+	Listener          *proxygatewayv1.EgressListener
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	AcquiredAt        time.Time
 }
 
-func NewActiveFact(input ActiveFactInput) *proxyruntimev1.ProxyDynamicLease {
-	lease := &proxyruntimev1.ProxyDynamicLease{
+func NewActiveFact(input ActiveFactInput) *proxygatewayv1.ProxyDynamicLease {
+	lease := &proxygatewayv1.ProxyDynamicLease{
 		LeaseId:           strings.TrimSpace(input.LeaseID),
 		AccountId:         strings.TrimSpace(input.AccountID),
 		Purpose:           defaultLeasePurpose(input.Purpose),
 		ProviderAccountId: strings.TrimSpace(input.ProviderAccountID),
-		Status:            proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE,
+		Status:            proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE,
 		Session:           input.Session,
 		Egress:            input.Egress,
 		Listener:          input.Listener,
@@ -58,13 +58,13 @@ func NewActiveFact(input ActiveFactInput) *proxyruntimev1.ProxyDynamicLease {
 	return lease
 }
 
-func NewFailedAcquireFact(input FailedAcquireFactInput) *proxyruntimev1.ProxyDynamicLease {
-	lease := &proxyruntimev1.ProxyDynamicLease{
+func NewFailedAcquireFact(input FailedAcquireFactInput) *proxygatewayv1.ProxyDynamicLease {
+	lease := &proxygatewayv1.ProxyDynamicLease{
 		LeaseId:           strings.TrimSpace(input.LeaseID),
 		AccountId:         strings.TrimSpace(input.AccountID),
 		Purpose:           defaultLeasePurpose(input.Purpose),
 		ProviderAccountId: strings.TrimSpace(input.ProviderAccountID),
-		Status:            proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED,
+		Status:            proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED,
 		Session:           input.Session,
 		Egress:            input.Egress,
 		Listener:          input.Listener,
@@ -78,46 +78,46 @@ func NewFailedAcquireFact(input FailedAcquireFactInput) *proxyruntimev1.ProxyDyn
 	return lease
 }
 
-func MarkReleaseCleanupFailure(lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool, message string) {
+func MarkReleaseCleanupFailure(lease *proxygatewayv1.ProxyDynamicLease, routePending bool, providerPending bool, message string) {
 	MarkCleanupPending(lease, routePending, providerPending, CleanupFinalReleased)
 	MarkFailed(lease, message)
 }
 
-func MarkExpiredCleanupFailure(lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool, message string) {
+func MarkExpiredCleanupFailure(lease *proxygatewayv1.ProxyDynamicLease, routePending bool, providerPending bool, message string) {
 	MarkCleanupPending(lease, routePending, providerPending, CleanupFinalExpired)
 	MarkFailed(lease, message)
 }
 
-func MarkCleanupRetry(lease *proxyruntimev1.ProxyDynamicLease, message string) {
+func MarkCleanupRetry(lease *proxygatewayv1.ProxyDynamicLease, message string) {
 	if lease == nil {
 		return
 	}
 	lease.ErrorMessage = strings.TrimSpace(message)
 }
 
-func MarkFailed(lease *proxyruntimev1.ProxyDynamicLease, message string) {
+func MarkFailed(lease *proxygatewayv1.ProxyDynamicLease, message string) {
 	if lease == nil {
 		return
 	}
-	lease.Status = proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED
+	lease.Status = proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_FAILED
 	lease.ErrorMessage = strings.TrimSpace(message)
 }
 
-func MarkExpired(lease *proxyruntimev1.ProxyDynamicLease) {
+func MarkExpired(lease *proxygatewayv1.ProxyDynamicLease) {
 	if lease == nil {
 		return
 	}
 	ClearCleanupPending(lease, true, true)
-	lease.Status = proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_EXPIRED
+	lease.Status = proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_EXPIRED
 	lease.ErrorMessage = ""
 }
 
-func MarkReleased(lease *proxyruntimev1.ProxyDynamicLease) {
+func MarkReleased(lease *proxygatewayv1.ProxyDynamicLease) {
 	if lease == nil {
 		return
 	}
 	ClearCleanupPending(lease, true, true)
-	lease.Status = proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_RELEASED
+	lease.Status = proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_RELEASED
 	lease.ErrorMessage = ""
 }
 

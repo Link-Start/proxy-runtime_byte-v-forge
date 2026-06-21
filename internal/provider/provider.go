@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 var ErrUnsupportedCapability = errors.New("proxy provider does not support requested capability")
@@ -18,8 +18,8 @@ type Node struct {
 	URL          *url.URL
 	ProviderID   string
 	SessionID    string
-	UpstreamKind proxyruntimev1.ProxyUpstreamKind
-	RotationMode proxyruntimev1.ProxyRotationMode
+	UpstreamKind proxygatewayv1.ProxyUpstreamKind
+	RotationMode proxygatewayv1.ProxyRotationMode
 	Labels       map[string]string
 }
 
@@ -34,9 +34,9 @@ func (n Node) RedactedURL() string {
 	return redacted.String()
 }
 
-func (n Node) Endpoint() *proxyruntimev1.ProxyEndpoint {
+func (n Node) Endpoint() *proxygatewayv1.ProxyEndpoint {
 	host, port := splitHostPort(n.URL)
-	return &proxyruntimev1.ProxyEndpoint{
+	return &proxygatewayv1.ProxyEndpoint{
 		Id:           n.ID,
 		ProviderId:   n.ProviderID,
 		Protocol:     protocolFromURL(n.URL),
@@ -51,15 +51,15 @@ func (n Node) Endpoint() *proxyruntimev1.ProxyEndpoint {
 
 type PoolProvider interface {
 	Name() string
-	Descriptor() *proxyruntimev1.ProxyProviderDescriptor
+	Descriptor() *proxygatewayv1.ProxyProviderDescriptor
 	Fetch(ctx context.Context) ([]Node, error)
 }
 
 type SessionProvider interface {
 	Name() string
-	CreateSession(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxySession, error)
-	FetchSession(ctx context.Context, session *proxyruntimev1.ProxySession) ([]Node, error)
-	ReleaseSession(ctx context.Context, session *proxyruntimev1.ProxySession) error
+	CreateSession(ctx context.Context, req *proxygatewayv1.AcquireProxyLeaseRequest) (*proxygatewayv1.ProxySession, error)
+	FetchSession(ctx context.Context, session *proxygatewayv1.ProxySession) ([]Node, error)
+	ReleaseSession(ctx context.Context, session *proxygatewayv1.ProxySession) error
 }
 
 type Empty struct{}
@@ -70,15 +70,15 @@ func (Empty) Name() string {
 	return EmptyProviderID
 }
 
-func (Empty) Descriptor() *proxyruntimev1.ProxyProviderDescriptor {
-	return &proxyruntimev1.ProxyProviderDescriptor{
+func (Empty) Descriptor() *proxygatewayv1.ProxyProviderDescriptor {
+	return &proxygatewayv1.ProxyProviderDescriptor{
 		ProviderId:  EmptyProviderID,
 		DisplayName: "No provider",
-		Capabilities: []proxyruntimev1.ProxyCapability{
-			proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_UNIFIED_EGRESS_GATEWAY,
+		Capabilities: []proxygatewayv1.ProxyCapability{
+			proxygatewayv1.ProxyCapability_PROXY_CAPABILITY_UNIFIED_EGRESS_GATEWAY,
 		},
-		RotationModes: []proxyruntimev1.ProxyRotationMode{
-			proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_NONE,
+		RotationModes: []proxygatewayv1.ProxyRotationMode{
+			proxygatewayv1.ProxyRotationMode_PROXY_ROTATION_MODE_NONE,
 		},
 	}
 }
@@ -102,17 +102,17 @@ func splitHostPort(proxyURL *url.URL) (string, uint32) {
 	return host, uint32(port)
 }
 
-func protocolFromURL(proxyURL *url.URL) proxyruntimev1.ProxyProtocol {
+func protocolFromURL(proxyURL *url.URL) proxygatewayv1.ProxyProtocol {
 	if proxyURL == nil {
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_UNSPECIFIED
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_UNSPECIFIED
 	}
 	switch strings.ToLower(proxyURL.Scheme) {
 	case "socks5", "socks5h":
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
 	case "http", "https":
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_HTTP
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_HTTP
 	default:
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_UNSPECIFIED
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_UNSPECIFIED
 	}
 }
 

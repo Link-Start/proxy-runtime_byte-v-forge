@@ -3,8 +3,8 @@ package accountproxy
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/geox"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/geox"
 )
 
 func Ten24Plugin() Plugin {
@@ -19,7 +19,7 @@ func Ten24Plugin() Plugin {
 	})
 }
 
-func ten24Username(base string, policy *proxyruntimev1.ProxySessionPolicy, sessionID string) string {
+func ten24Username(base string, policy *proxygatewayv1.ProxySessionPolicy, sessionID string) string {
 	region := ten24CountryCode(policy.GetRegion())
 	if !stickySessionPolicy(policy) {
 		return dashUsername(base, "region", region, "st", policy.GetState(), "city", policy.GetCity(), "asn", policy.GetAsn())

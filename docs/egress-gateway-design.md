@@ -1,6 +1,6 @@
 # Mihomo-only Egress Design
 
-`proxy-runtime` is a proxy control plane. Mihomo is the data plane.
+`proxy-gateway` is a proxy control plane. Mihomo is the data plane.
 
 ## Product Shape
 
@@ -28,11 +28,11 @@ Mihomo owns:
 
 The control plane renders Mihomo config and reloads through the external controller. It never implements HTTP CONNECT/SOCKS forwarding itself.
 
-The external controller remains loopback-only. `proxy-runtime` exposes same-origin controller routes for the forked MetaCubeXD frontend, so browser clients use the service HTTP origin instead of directly reaching Mihomo.
+The external controller remains loopback-only. `proxy-gateway` exposes same-origin controller routes for the forked MetaCubeXD frontend, so browser clients use the service HTTP origin instead of directly reaching Mihomo.
 
 ## Control Plane
 
-`proxy-runtime` owns:
+`proxy-gateway` owns:
 
 - provider adapters and provider account credentials
 - dynamic provider endpoint settings
@@ -44,7 +44,7 @@ The external controller remains loopback-only. `proxy-runtime` exposes same-orig
 - project-owned MetaCubeXD fork as the main frontend
 - same-origin business APIs used by the dynamic provider tab in that fork
 
-The forked frontend keeps Mihomo-native runtime operations in upstream MetaCubeXD pages. The project overlay edits dynamic IP provider endpoints/accounts, IN-USER rules, and active leases through `proxy-runtime` APIs; reconcile renders only the proxy-runtime-owned facts into Mihomo.
+The forked frontend keeps Mihomo-native runtime operations in upstream MetaCubeXD pages. The project overlay edits dynamic IP provider endpoints/accounts, IN-USER rules, and active leases through `proxy-gateway` APIs; reconcile renders only the proxy-gateway-owned facts into Mihomo.
 
 ## Proxy User Routes
 
@@ -60,7 +60,7 @@ Mihomo renders these as:
 
 ```yaml
 listeners:
-  - name: proxy-runtime-gateway
+  - name: proxy-gateway-gateway
     type: mixed
     listen: 0.0.0.0
     port: 1080
@@ -82,11 +82,11 @@ route: direct or a Mihomo-selected node
 exit: route exit, Mihomo-selected node, or dynamic IP provider pool
 ```
 
-At render time, `proxy-runtime` projects the profile into Mihomo:
+At render time, `proxy-gateway` projects the profile into Mihomo:
 
 - a selected Mihomo node becomes a hidden route proxy group
 - `exit=direct` selects the route group, or Mihomo `DIRECT` when the route is direct
-- static IP exits are Mihomo-native nodes and require a direct route; proxy-runtime does not clone Mihomo-native proxies or proxy providers
+- static IP exits are Mihomo-native nodes and require a direct route; proxy-gateway does not clone Mihomo-native proxies or proxy providers
 - dynamic IP exits use the dynamic provider pool; when a route node is selected, pool nodes are rendered with `dialer-proxy`
 - the final exit group name is used by `IN-USER` rules for `route=profile`
 

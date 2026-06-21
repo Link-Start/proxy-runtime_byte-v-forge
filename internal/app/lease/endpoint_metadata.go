@@ -3,12 +3,12 @@ package lease
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 type DynamicEndpointMetadataInput struct {
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	ProviderID        string
 	ProviderAccountID string
 	ConcurrencyHolder string
@@ -17,16 +17,16 @@ type DynamicEndpointMetadataInput struct {
 }
 
 type AcquiredEndpointMetadataInput struct {
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	ProviderClient    SessionProvider
 	ProviderAccountID string
 	ConcurrencyHolder string
-	Session           *proxyruntimev1.ProxySession
+	Session           *proxygatewayv1.ProxySession
 	LineLabels        map[string]string
 }
 
-func ApplyAcquiredEndpointMetadata(endpoint *proxyruntimev1.ProxyEndpoint, input AcquiredEndpointMetadataInput) {
+func ApplyAcquiredEndpointMetadata(endpoint *proxygatewayv1.ProxyEndpoint, input AcquiredEndpointMetadataInput) {
 	ApplyDynamicEndpointMetadata(endpoint, DynamicEndpointMetadataInput{
 		Request:           input.Request,
 		SelectionPlan:     input.SelectionPlan,
@@ -38,7 +38,7 @@ func ApplyAcquiredEndpointMetadata(endpoint *proxyruntimev1.ProxyEndpoint, input
 	})
 }
 
-func ApplyDynamicEndpointMetadata(endpoint *proxyruntimev1.ProxyEndpoint, input DynamicEndpointMetadataInput) {
+func ApplyDynamicEndpointMetadata(endpoint *proxygatewayv1.ProxyEndpoint, input DynamicEndpointMetadataInput) {
 	if endpoint == nil {
 		return
 	}
@@ -46,7 +46,7 @@ func ApplyDynamicEndpointMetadata(endpoint *proxyruntimev1.ProxyEndpoint, input 
 		endpoint.Labels = map[string]string{}
 	}
 	endpoint.ProviderId = input.ProviderID
-	endpoint.UpstreamKind = proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP
+	endpoint.UpstreamKind = proxygatewayv1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP
 	endpoint.RotationMode = input.Request.GetPolicy().GetRotationMode()
 	endpoint.SessionId = input.SessionID
 	endpoint.Labels[LabelAccountID] = input.Request.GetAccountId()
@@ -62,7 +62,7 @@ func ApplyDynamicEndpointMetadata(endpoint *proxyruntimev1.ProxyEndpoint, input 
 	}
 }
 
-func applyDynamicEndpointLocationLabels(labels map[string]string, requestPolicy *proxyruntimev1.ProxySessionPolicy, selectedPolicy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) {
+func applyDynamicEndpointLocationLabels(labels map[string]string, requestPolicy *proxygatewayv1.ProxySessionPolicy, selectedPolicy *proxygatewayv1.ProxyDynamicIPSelectionPolicy) {
 	if countryCode := strings.TrimSpace(selectedPolicy.GetCountryCode()); countryCode != "" {
 		labels["country_code"] = countryCode
 	}
@@ -80,7 +80,7 @@ func applyDynamicEndpointLocationLabels(labels map[string]string, requestPolicy 
 	}
 }
 
-func dynamicEndpointRegion(requestPolicy *proxyruntimev1.ProxySessionPolicy, selectedPolicy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) string {
+func dynamicEndpointRegion(requestPolicy *proxygatewayv1.ProxySessionPolicy, selectedPolicy *proxygatewayv1.ProxyDynamicIPSelectionPolicy) string {
 	if region := strings.TrimSpace(requestPolicy.GetRegion()); region != "" {
 		return region
 	}

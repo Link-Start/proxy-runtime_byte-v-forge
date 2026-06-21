@@ -4,8 +4,8 @@ import (
 	"strings"
 
 	"github.com/biter777/countries"
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/geox"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/geox"
 )
 
 func B2ProxyPlugin() Plugin {
@@ -20,7 +20,7 @@ func B2ProxyPlugin() Plugin {
 	})
 }
 
-func b2proxyUsername(base string, policy *proxyruntimev1.ProxySessionPolicy, sessionID string) string {
+func b2proxyUsername(base string, policy *proxygatewayv1.ProxySessionPolicy, sessionID string) string {
 	countryCode, stateCode := b2proxyGeo(policy)
 	if !stickySessionPolicy(policy) {
 		return dashUsername(base,
@@ -39,7 +39,7 @@ func b2proxyUsername(base string, policy *proxyruntimev1.ProxySessionPolicy, ses
 	)
 }
 
-func b2proxyGeo(policy *proxyruntimev1.ProxySessionPolicy) (string, string) {
+func b2proxyGeo(policy *proxygatewayv1.ProxySessionPolicy) (string, string) {
 	if policy == nil {
 		return "", ""
 	}

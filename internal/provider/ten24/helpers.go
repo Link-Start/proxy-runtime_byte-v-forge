@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 func setQuery(query url.Values, key string, value string) {
@@ -23,11 +23,11 @@ func defaultProtocol(protocol string) string {
 	}
 }
 
-func protocolEnum(protocol string) proxyruntimev1.ProxyProtocol {
+func protocolEnum(protocol string) proxygatewayv1.ProxyProtocol {
 	switch defaultProtocol(protocol) {
 	case "socks5":
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
 	default:
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_HTTP
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_HTTP
 	}
 }

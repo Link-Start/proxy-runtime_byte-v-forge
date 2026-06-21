@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { ProxyRuntimeInUserRulesState } from '~/composables/useProxyRuntimeInUserRules'
+import type { ProxyGatewayInUserRulesState } from '~/composables/useProxyGatewayInUserRules'
 import { IconDeviceFloppy, IconKey, IconReload, IconRoute } from '@tabler/icons-vue'
 
 defineProps<{
   canSave: boolean
   regeneratePassword: () => void
-  runtime: ProxyRuntimeInUserRulesState
+  runtime: ProxyGatewayInUserRulesState
   save: () => Promise<void>
 }>()
 
@@ -63,7 +63,7 @@ const expanded = ref(true)
         </div>
       </div>
 
-      <ProxyRuntimeInUserRouteFields :runtime="runtime" dense />
+      <ProxyGatewayInUserRouteFields :runtime="runtime" dense />
     </div>
   </Collapse>
 </template>

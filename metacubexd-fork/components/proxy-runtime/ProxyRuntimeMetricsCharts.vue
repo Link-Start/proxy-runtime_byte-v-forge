@@ -1,16 +1,16 @@
 <script setup lang="ts">
-import type { ProxyRuntimeMetricRow } from '~/composables/proxyRuntimeMetricsRows'
+import type { ProxyGatewayMetricRow } from '~/composables/proxyGatewayMetricsRows'
 import {
-  proxyRuntimeAverageChartOptions,
-  proxyRuntimeCountChartOptions,
-  proxyRuntimeSlowRatioChartOptions,
-  proxyRuntimeStatusChartOptions,
-} from '~/composables/proxyRuntimeMetricsCharts'
+  proxyGatewayAverageChartOptions,
+  proxyGatewayCountChartOptions,
+  proxyGatewaySlowRatioChartOptions,
+  proxyGatewayStatusChartOptions,
+} from '~/composables/proxyGatewayMetricsCharts'
 import { getChartThemeColors } from '~/utils'
 
 const props = defineProps<{
   loading: boolean
-  rows: ProxyRuntimeMetricRow[]
+  rows: ProxyGatewayMetricRow[]
 }>()
 
 const configStore = useConfigStore()
@@ -20,10 +20,10 @@ const themeColors = computed(() => {
 })
 
 const charts = computed(() => [
-  proxyRuntimeStatusChartOptions(props.rows, themeColors.value),
-  proxyRuntimeCountChartOptions(props.rows, themeColors.value),
-  proxyRuntimeAverageChartOptions(props.rows, themeColors.value),
-  proxyRuntimeSlowRatioChartOptions(props.rows, themeColors.value),
+  proxyGatewayStatusChartOptions(props.rows, themeColors.value),
+  proxyGatewayCountChartOptions(props.rows, themeColors.value),
+  proxyGatewayAverageChartOptions(props.rows, themeColors.value),
+  proxyGatewaySlowRatioChartOptions(props.rows, themeColors.value),
 ])
 </script>
 

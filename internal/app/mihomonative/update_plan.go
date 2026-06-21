@@ -1,15 +1,15 @@
 package mihomonative
 
-import proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+import proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
 type UpdatePlan struct {
 	Config               ConfigFile
 	ResourceReplacements map[string]ResourceReplacement
 }
 
-func BuildUpdatePlan(current ConfigFile, view *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (UpdatePlan, error) {
+func BuildUpdatePlan(current ConfigFile, view *proxygatewayv1.ProxyGatewayMihomoNativeConfig) (UpdatePlan, error) {
 	if view == nil {
-		view = &proxyruntimev1.ProxyRuntimeMihomoNativeConfig{}
+		view = &proxygatewayv1.ProxyGatewayMihomoNativeConfig{}
 	}
 	plan := UpdatePlan{
 		Config: ConfigFile{

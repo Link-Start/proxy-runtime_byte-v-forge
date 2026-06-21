@@ -3,17 +3,17 @@ package secret
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/ipgeo"
+	"github.com/byte-v-forge/proxy-gateway/internal/secretref"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
 // IPGeoProviders resolves the configured ip-geo providers from settings, loading
 // API-key secrets through resolver.
-func IPGeoProviders(ctx context.Context, resolver secretref.Resolver, settings *proxyruntimev1.ProxyRuntimePersistentSettings, registry *ipgeo.Registry) ([]ipgeo.ProviderConfig, error) {
+func IPGeoProviders(ctx context.Context, resolver secretref.Resolver, settings *proxygatewayv1.ProxyGatewayPersistentSettings, registry *ipgeo.Registry) ([]ipgeo.ProviderConfig, error) {
 	items := kernel.NormalizeRuntimeSettingsWithProviders(settings, nil, registry).GetIpGeoProviders()
 	providers := make([]ipgeo.ProviderConfig, 0, len(items))
 	for _, item := range items {
@@ -34,7 +34,7 @@ func IPGeoProviders(ctx context.Context, resolver secretref.Resolver, settings *
 	return providers, nil
 }
 
-func ipGeoAuth(ctx context.Context, resolver secretref.Resolver, provider *proxyruntimev1.ProxyIPGeoProviderSettings, registry *ipgeo.Registry) (ipgeo.AuthConfig, error) {
+func ipGeoAuth(ctx context.Context, resolver secretref.Resolver, provider *proxygatewayv1.ProxyIPGeoProviderSettings, registry *ipgeo.Registry) (ipgeo.AuthConfig, error) {
 	if provider.GetAnonymous() {
 		return ipgeo.AuthConfig{Anonymous: &ipgeo.AnonymousAuthConfig{}}, nil
 	}

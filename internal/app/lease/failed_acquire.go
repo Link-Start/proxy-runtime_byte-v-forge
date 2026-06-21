@@ -4,11 +4,11 @@ import (
 	"context"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
 )
 
-func SaveFailedAcquireFact(ctx context.Context, store OrchestrationStore, ids IDGenerator, clk clock.Clock, req *proxyruntimev1.AcquireProxyLeaseRequest, providerAccountID string, session *proxyruntimev1.ProxySession, egress *proxyruntimev1.ProxyEndpoint, listener *proxyruntimev1.EgressListener, plan *proxyruntimev1.ProxyDynamicIPSelectionPlan, message string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func SaveFailedAcquireFact(ctx context.Context, store OrchestrationStore, ids IDGenerator, clk clock.Clock, req *proxygatewayv1.AcquireProxyLeaseRequest, providerAccountID string, session *proxygatewayv1.ProxySession, egress *proxygatewayv1.ProxyEndpoint, listener *proxygatewayv1.EgressListener, plan *proxygatewayv1.ProxyDynamicIPSelectionPlan, message string) (*proxygatewayv1.ProxyDynamicLease, error) {
 	if req == nil || strings.TrimSpace(req.GetAccountId()) == "" {
 		return nil, nil
 	}
@@ -37,20 +37,20 @@ func SaveFailedAcquireFact(ctx context.Context, store OrchestrationStore, ids ID
 	return lease, store.SaveLeaseFact(ctx, lease)
 }
 
-func MarkFailedAcquireBeforeRouteCleanup(ctx context.Context, providerClient SessionProvider, session *proxyruntimev1.ProxySession) error {
+func MarkFailedAcquireBeforeRouteCleanup(ctx context.Context, providerClient SessionProvider, session *proxygatewayv1.ProxySession) error {
 	providerPending, err := failedAcquireProviderCleanupPending(ctx, providerClient, session)
 	MarkFailedAcquireCleanupPending(session, false, providerPending)
 	return err
 }
 
-func MarkFailedAcquireAfterRouteCleanup(ctx context.Context, dataPlane DataPlaneApplier, route SessionRoute, providerClient SessionProvider, session *proxyruntimev1.ProxySession) error {
+func MarkFailedAcquireAfterRouteCleanup(ctx context.Context, dataPlane DataPlaneApplier, route SessionRoute, providerClient SessionProvider, session *proxygatewayv1.ProxySession) error {
 	routePending := DeleteSessionRoute(ctx, dataPlane, route) != nil
 	providerPending, err := failedAcquireProviderCleanupPending(ctx, providerClient, session)
 	MarkFailedAcquireCleanupPending(session, routePending, providerPending)
 	return err
 }
 
-func failedAcquireProviderCleanupPending(ctx context.Context, providerClient SessionProvider, session *proxyruntimev1.ProxySession) (bool, error) {
+func failedAcquireProviderCleanupPending(ctx context.Context, providerClient SessionProvider, session *proxygatewayv1.ProxySession) (bool, error) {
 	err := ReleaseProviderSession(ctx, providerClient, session)
 	return err != nil, err
 }
@@ -61,11 +61,11 @@ type FailedAcquireRecorderInput struct {
 	Clock             clock.Clock
 	DataPlane         DataPlaneApplier
 	Logger            Logger
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
 	ProviderAccountID string
 	ProviderClient    SessionProvider
-	Session           *proxyruntimev1.ProxySession
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Session           *proxygatewayv1.ProxySession
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 }
 
 type FailedAcquireRecorder struct {
@@ -74,13 +74,13 @@ type FailedAcquireRecorder struct {
 	clock             clock.Clock
 	dataPlane         DataPlaneApplier
 	logger            Logger
-	request           *proxyruntimev1.AcquireProxyLeaseRequest
+	request           *proxygatewayv1.AcquireProxyLeaseRequest
 	providerAccountID string
 	providerClient    SessionProvider
-	session           *proxyruntimev1.ProxySession
-	listener          *proxyruntimev1.EgressListener
-	egress            *proxyruntimev1.ProxyEndpoint
-	selectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	session           *proxygatewayv1.ProxySession
+	listener          *proxygatewayv1.EgressListener
+	egress            *proxygatewayv1.ProxyEndpoint
+	selectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 }
 
 func NewFailedAcquireRecorder(input FailedAcquireRecorderInput) *FailedAcquireRecorder {

@@ -3,7 +3,7 @@ package mihomo
 import (
 	"fmt"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 func renderProviderNodes(prefix string, nodes []provider.Node) ([]map[string]any, []string, error) {

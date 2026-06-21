@@ -7,17 +7,17 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-type BatchPredicate func(*proxyruntimev1.ProxyDynamicLease) bool
+type BatchPredicate func(*proxygatewayv1.ProxyDynamicLease) bool
 
-type BatchProcessor func(context.Context, *proxyruntimev1.ProxyDynamicLease) error
+type BatchProcessor func(context.Context, *proxygatewayv1.ProxyDynamicLease) error
 
-type BatchErrorObserver func(*proxyruntimev1.ProxyDynamicLease, error)
+type BatchErrorObserver func(*proxygatewayv1.ProxyDynamicLease, error)
 
 type BatchInput struct {
-	Leases      []*proxyruntimev1.ProxyDynamicLease
+	Leases      []*proxygatewayv1.ProxyDynamicLease
 	Timeout     time.Duration
 	ErrorPrefix string
 	ShouldRun   BatchPredicate
@@ -58,7 +58,7 @@ func batchAttemptContext(ctx context.Context, timeout time.Duration) (context.Co
 	return context.WithTimeout(ctx, timeout)
 }
 
-func batchLeaseError(prefix string, lease *proxyruntimev1.ProxyDynamicLease, err error) error {
+func batchLeaseError(prefix string, lease *proxygatewayv1.ProxyDynamicLease, err error) error {
 	prefix = strings.TrimSpace(prefix)
 	if prefix == "" {
 		prefix = "process lease"

@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-func parseGeo(payload map[string]any) *proxyruntimev1.ProxyExitGeo {
-	return &proxyruntimev1.ProxyExitGeo{
+func parseGeo(payload map[string]any) *proxygatewayv1.ProxyExitGeo {
+	return &proxygatewayv1.ProxyExitGeo{
 		CountryCode: stringValue(payload, "country_code", "country", "countryCode", "location.country_code"),
 		Region:      stringValue(payload, "region", "region_code", "region_name", "regionName", "state", "location.state"),
 		City:        stringValue(payload, "city", "city_name", "location.city"),

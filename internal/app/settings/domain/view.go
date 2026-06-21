@@ -1,18 +1,18 @@
 package domain
 
 import (
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
-func RuntimeSettingsView(settings *proxyruntimev1.ProxyRuntimePersistentSettings) *proxyruntimev1.ProxyRuntimeSettings {
+func RuntimeSettingsView(settings *proxygatewayv1.ProxyGatewayPersistentSettings) *proxygatewayv1.ProxyGatewaySettings {
 	settings = kernel.NormalizeRuntimeSettings(settings)
 	edge := settings.GetEdgeCanary()
-	out := &proxyruntimev1.ProxyRuntimeSettings{
-		EdgeCanary: &proxyruntimev1.ProxyEdgeCanarySettingsView{
+	out := &proxygatewayv1.ProxyGatewaySettings{
+		EdgeCanary: &proxygatewayv1.ProxyEdgeCanarySettingsView{
 			Url:             edge.GetUrl(),
 			TokenConfigured: appcore.SecretRefConfigured(edge.GetTokenSecretRef()),
 			Enabled:         EdgeCanaryEnabled(edge),
@@ -20,7 +20,7 @@ func RuntimeSettingsView(settings *proxyruntimev1.ProxyRuntimePersistentSettings
 		CheckSettings: kernel.CloneCheckSettings(settings.GetCheckSettings()),
 	}
 	for _, provider := range settings.GetIpFraudProviders() {
-		out.IpFraudProviders = append(out.IpFraudProviders, &proxyruntimev1.ProxyIPFraudProviderSettingsView{
+		out.IpFraudProviders = append(out.IpFraudProviders, &proxygatewayv1.ProxyIPFraudProviderSettingsView{
 			ProviderId:       provider.GetProviderId(),
 			Weight:           provider.GetWeight(),
 			Kind:             provider.GetKind(),
@@ -31,7 +31,7 @@ func RuntimeSettingsView(settings *proxyruntimev1.ProxyRuntimePersistentSettings
 		})
 	}
 	for _, provider := range settings.GetIpGeoProviders() {
-		out.IpGeoProviders = append(out.IpGeoProviders, &proxyruntimev1.ProxyIPGeoProviderSettingsView{
+		out.IpGeoProviders = append(out.IpGeoProviders, &proxygatewayv1.ProxyIPGeoProviderSettingsView{
 			ProviderId:       provider.GetProviderId(),
 			Weight:           provider.GetWeight(),
 			Kind:             provider.GetKind(),

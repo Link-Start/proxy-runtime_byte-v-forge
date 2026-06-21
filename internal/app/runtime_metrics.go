@@ -10,7 +10,7 @@ import (
 	"sync"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -83,39 +83,39 @@ func (m *runtimeMetrics) WritePrometheus(w io.Writer) error {
 		return nil
 	}
 	samples := m.snapshot()
-	if _, err := io.WriteString(w, "# HELP proxy_runtime_operation_total Total runtime operations by operation and status.\n"); err != nil {
+	if _, err := io.WriteString(w, "# HELP proxy_gateway_operation_total Total runtime operations by operation and status.\n"); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, "# TYPE proxy_runtime_operation_total counter\n"); err != nil {
-		return err
-	}
-	for _, item := range samples {
-		if _, err := fmt.Fprintf(w, "proxy_runtime_operation_total%s %d\n", item.labels(), item.sample.count); err != nil {
-			return err
-		}
-	}
-	if _, err := io.WriteString(w, "# HELP proxy_runtime_operation_duration_seconds Runtime operation duration summary by operation and status.\n"); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(w, "# TYPE proxy_runtime_operation_duration_seconds summary\n"); err != nil {
+	if _, err := io.WriteString(w, "# TYPE proxy_gateway_operation_total counter\n"); err != nil {
 		return err
 	}
 	for _, item := range samples {
-		if _, err := fmt.Fprintf(w, "proxy_runtime_operation_duration_seconds_sum%s %.6f\n", item.labels(), item.sample.durationSecond); err != nil {
-			return err
-		}
-		if _, err := fmt.Fprintf(w, "proxy_runtime_operation_duration_seconds_count%s %d\n", item.labels(), item.sample.count); err != nil {
+		if _, err := fmt.Fprintf(w, "proxy_gateway_operation_total%s %d\n", item.labels(), item.sample.count); err != nil {
 			return err
 		}
 	}
-	if _, err := io.WriteString(w, "# HELP proxy_runtime_operation_slow_total Total runtime operations whose duration reached the fixed slow threshold.\n"); err != nil {
+	if _, err := io.WriteString(w, "# HELP proxy_gateway_operation_duration_seconds Runtime operation duration summary by operation and status.\n"); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(w, "# TYPE proxy_runtime_operation_slow_total counter\n"); err != nil {
+	if _, err := io.WriteString(w, "# TYPE proxy_gateway_operation_duration_seconds summary\n"); err != nil {
 		return err
 	}
 	for _, item := range samples {
-		if _, err := fmt.Fprintf(w, "proxy_runtime_operation_slow_total%s %d\n", item.labels(), item.sample.slowCount); err != nil {
+		if _, err := fmt.Fprintf(w, "proxy_gateway_operation_duration_seconds_sum%s %.6f\n", item.labels(), item.sample.durationSecond); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintf(w, "proxy_gateway_operation_duration_seconds_count%s %d\n", item.labels(), item.sample.count); err != nil {
+			return err
+		}
+	}
+	if _, err := io.WriteString(w, "# HELP proxy_gateway_operation_slow_total Total runtime operations whose duration reached the fixed slow threshold.\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(w, "# TYPE proxy_gateway_operation_slow_total counter\n"); err != nil {
+		return err
+	}
+	for _, item := range samples {
+		if _, err := fmt.Fprintf(w, "proxy_gateway_operation_slow_total%s %d\n", item.labels(), item.sample.slowCount); err != nil {
 			return err
 		}
 	}
@@ -189,8 +189,8 @@ func runtimeMetricLabelValue(value string) string {
 	return string(out)
 }
 
-func (m *runtimeMetrics) Summary(now time.Time) *proxyruntimev1.ProxyRuntimeMetricsSummary {
-	summary := &proxyruntimev1.ProxyRuntimeMetricsSummary{
+func (m *runtimeMetrics) Summary(now time.Time) *proxygatewayv1.ProxyGatewayMetricsSummary {
+	summary := &proxygatewayv1.ProxyGatewayMetricsSummary{
 		UpdatedAt: timestamppb.New(now),
 	}
 	if m == nil {
@@ -198,9 +198,9 @@ func (m *runtimeMetrics) Summary(now time.Time) *proxyruntimev1.ProxyRuntimeMetr
 	}
 	summary.SlowThresholdSeconds = m.slowThreshold.Seconds()
 	snapshots := m.snapshot()
-	summary.Operations = make([]*proxyruntimev1.ProxyRuntimeOperationMetric, 0, len(snapshots))
+	summary.Operations = make([]*proxygatewayv1.ProxyGatewayOperationMetric, 0, len(snapshots))
 	for _, snapshot := range snapshots {
-		summary.Operations = append(summary.Operations, &proxyruntimev1.ProxyRuntimeOperationMetric{
+		summary.Operations = append(summary.Operations, &proxygatewayv1.ProxyGatewayOperationMetric{
 			Operation:       snapshot.key.operation,
 			Status:          snapshot.key.status,
 			Count:           snapshot.sample.count,

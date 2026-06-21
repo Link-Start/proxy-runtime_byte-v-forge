@@ -4,7 +4,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/ten24"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/ten24"
 )
 
 const (

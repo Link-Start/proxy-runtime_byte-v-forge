@@ -6,10 +6,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/proxyurl"
-	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/proxyurl"
+	"github.com/byte-v-forge/proxy-gateway/internal/runtimehttp"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { IconRefresh } from '@tabler/icons-vue'
 
-const runtimeStatus = useProxyRuntimeStatus()
+const runtimeStatus = useProxyGatewayStatus()
 const {
   canSave,
   checks,
@@ -19,13 +19,13 @@ const {
   refreshing,
   runtime,
   save,
-} = useProxyRuntimePlayground()
+} = useProxyGatewayPlayground()
 </script>
 
 <template>
   <main class="flex h-full min-h-0 flex-col gap-3">
     <div class="animate-fade-slide-in flex shrink-0 items-center justify-end gap-2">
-      <ProxyRuntimeStatusBadge :state="runtimeStatus" />
+      <ProxyGatewayStatusBadge :state="runtimeStatus" />
       <Button class="flex h-9 w-9 items-center justify-center rounded-[0.625rem] border border-base-content/10 bg-base-200/80 transition-all duration-200 hover:border-primary/30 hover:bg-primary/15 hover:text-primary disabled:cursor-not-allowed disabled:opacity-60" :disabled="refreshing" title="刷新" @click="refresh">
         <IconRefresh :size="18" :class="{ 'animate-spin': refreshing }" />
       </Button>
@@ -36,7 +36,7 @@ const {
     <div class="min-h-0 flex-1 overflow-y-auto">
       <ProxiesRenderWrapper>
         <template #even>
-          <ProxyRuntimePlaygroundUsage
+          <ProxyGatewayPlaygroundUsage
             :copied="copied"
             :copy-text="copyText"
             :credentials="credentials"
@@ -46,16 +46,16 @@ const {
             :proxy-authority="proxyAuthority"
             :username="runtime.form.username"
           />
-          <ProxyRuntimePlaygroundChecks
+          <ProxyGatewayPlaygroundChecks
             :can-run="canSave"
             :copied="copied"
             :copy-text="copyText"
             :state="checks"
           />
-          <ProxyRuntimePlaygroundLeases :dynamic-exit="dynamicExit" :proxy-authority="proxyAuthority" :state="leases" />
+          <ProxyGatewayPlaygroundLeases :dynamic-exit="dynamicExit" :proxy-authority="proxyAuthority" :state="leases" />
         </template>
         <template #odd>
-          <ProxyRuntimePlaygroundConfig
+          <ProxyGatewayPlaygroundConfig
             :can-save="canSave"
             :regenerate-password="regeneratePassword"
             :runtime="runtime"
@@ -63,7 +63,7 @@ const {
           />
         </template>
         <template #default>
-          <ProxyRuntimePlaygroundUsage
+          <ProxyGatewayPlaygroundUsage
             :copied="copied"
             :copy-text="copyText"
             :credentials="credentials"
@@ -73,19 +73,19 @@ const {
             :proxy-authority="proxyAuthority"
             :username="runtime.form.username"
           />
-          <ProxyRuntimePlaygroundConfig
+          <ProxyGatewayPlaygroundConfig
             :can-save="canSave"
             :regenerate-password="regeneratePassword"
             :runtime="runtime"
             :save="save"
           />
-          <ProxyRuntimePlaygroundChecks
+          <ProxyGatewayPlaygroundChecks
             :can-run="canSave"
             :copied="copied"
             :copy-text="copyText"
             :state="checks"
           />
-          <ProxyRuntimePlaygroundLeases :dynamic-exit="dynamicExit" :proxy-authority="proxyAuthority" :state="leases" />
+          <ProxyGatewayPlaygroundLeases :dynamic-exit="dynamicExit" :proxy-authority="proxyAuthority" :state="leases" />
         </template>
       </ProxiesRenderWrapper>
     </div>

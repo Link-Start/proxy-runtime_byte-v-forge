@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type {
   ProxyDynamicIPEndpointSettings,
-} from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+} from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 import { IconPencil, IconTrash } from '@tabler/icons-vue'
 
 defineProps<{

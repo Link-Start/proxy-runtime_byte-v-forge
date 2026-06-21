@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/random"
+	"github.com/byte-v-forge/proxy-gateway/internal/random"
 )
 
 const (
-	SessionCookieName = "proxy_runtime_session"
+	SessionCookieName = "proxy_gateway_session"
 	SessionTTL        = 12 * time.Hour
 	sessionVersion    = "v1"
 )

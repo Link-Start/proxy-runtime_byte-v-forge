@@ -5,22 +5,22 @@ import (
 	"fmt"
 	"strings"
 
-	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+	commonv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/common/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/ipfraud"
+	"github.com/byte-v-forge/proxy-gateway/internal/secretref"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
 // IPFraudProvidersFromRequest builds the persisted ip-fraud provider settings
 // from an update request, writing inline API keys as secrets and rejecting
 // duplicate providers.
-func IPFraudProvidersFromRequest(ctx context.Context, writer secretref.Writer, req []*proxyruntimev1.ProxyIPFraudProviderSettings, current *proxyruntimev1.ProxyRuntimePersistentSettings, registry *ipfraud.Registry) ([]*proxyruntimev1.ProxyIPFraudProviderSettings, error) {
+func IPFraudProvidersFromRequest(ctx context.Context, writer secretref.Writer, req []*proxygatewayv1.ProxyIPFraudProviderSettings, current *proxygatewayv1.ProxyGatewayPersistentSettings, registry *ipfraud.Registry) ([]*proxygatewayv1.ProxyIPFraudProviderSettings, error) {
 	currentProviders := ipFraudProviderSecrets(current, registry)
 	seenProviders := map[string]struct{}{}
-	out := make([]*proxyruntimev1.ProxyIPFraudProviderSettings, 0, len(req))
+	out := make([]*proxygatewayv1.ProxyIPFraudProviderSettings, 0, len(req))
 	for index, provider := range req {
 		item, err := ipFraudProviderFromRequest(ctx, writer, provider, currentProviders, index, registry)
 		if err != nil {
@@ -39,7 +39,7 @@ func IPFraudProvidersFromRequest(ctx context.Context, writer secretref.Writer, r
 	return out, nil
 }
 
-func ipFraudProviderSecrets(settings *proxyruntimev1.ProxyRuntimePersistentSettings, providers *ipfraud.Registry) map[string][]*commonv1.SecretRef {
+func ipFraudProviderSecrets(settings *proxygatewayv1.ProxyGatewayPersistentSettings, providers *ipfraud.Registry) map[string][]*commonv1.SecretRef {
 	secrets := map[string][]*commonv1.SecretRef{}
 	for _, item := range kernel.NormalizeRuntimeSettingsWithProviders(settings, providers, nil).GetIpFraudProviders() {
 		secrets[ipFraudProviderSecretKey(item.GetKind(), item.GetProviderId())] = kernel.CleanIPFraudSecretRefs(item.GetApiKeySecretRefs())
@@ -47,13 +47,13 @@ func ipFraudProviderSecrets(settings *proxyruntimev1.ProxyRuntimePersistentSetti
 	return secrets
 }
 
-func ipFraudProviderSecretKey(kind proxyruntimev1.ProxyIPFraudProviderKind, id string) string {
+func ipFraudProviderSecretKey(kind proxygatewayv1.ProxyIPFraudProviderKind, id string) string {
 	return fmt.Sprintf("%d:%s", kind, strings.TrimSpace(id))
 }
 
-func ipFraudProviderFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPFraudProviderSettings, current map[string][]*commonv1.SecretRef, index int, registry *ipfraud.Registry) (*proxyruntimev1.ProxyIPFraudProviderSettings, error) {
+func ipFraudProviderFromRequest(ctx context.Context, writer secretref.Writer, in *proxygatewayv1.ProxyIPFraudProviderSettings, current map[string][]*commonv1.SecretRef, index int, registry *ipfraud.Registry) (*proxygatewayv1.ProxyIPFraudProviderSettings, error) {
 	if in == nil {
-		return &proxyruntimev1.ProxyIPFraudProviderSettings{}, nil
+		return &proxygatewayv1.ProxyIPFraudProviderSettings{}, nil
 	}
 	id := strings.TrimSpace(in.GetProviderId())
 	if id == "" {
@@ -70,7 +70,7 @@ func ipFraudProviderFromRequest(ctx context.Context, writer secretref.Writer, in
 	if weight == 0 {
 		weight = kernel.ProviderDefaultWeight(in.GetKind(), index, registry)
 	}
-	return &proxyruntimev1.ProxyIPFraudProviderSettings{
+	return &proxygatewayv1.ProxyIPFraudProviderSettings{
 		ProviderId:       id,
 		DisplayName:      strings.TrimSpace(in.GetDisplayName()),
 		Weight:           weight,
@@ -80,7 +80,7 @@ func ipFraudProviderFromRequest(ctx context.Context, writer secretref.Writer, in
 	}, nil
 }
 
-func ipFraudSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, in *proxyruntimev1.ProxyIPFraudProviderSettings, providerID string) ([]*commonv1.SecretRef, error) {
+func ipFraudSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, in *proxygatewayv1.ProxyIPFraudProviderSettings, providerID string) ([]*commonv1.SecretRef, error) {
 	if refs := kernel.CleanIPFraudSecretRefs(in.GetApiKeySecretRefs()); len(refs) > 0 {
 		return refs, nil
 	}
@@ -90,7 +90,7 @@ func ipFraudSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, 
 	}
 	out := make([]*commonv1.SecretRef, 0, len(rawValues))
 	for index, raw := range rawValues {
-		secretID := secretref.StableID("proxy-runtime-ip-fraud-api-key", fmt.Sprintf("%d", in.GetKind()), providerID, fmt.Sprintf("%d", index))
+		secretID := secretref.StableID("proxy-gateway-ip-fraud-api-key", fmt.Sprintf("%d", in.GetKind()), providerID, fmt.Sprintf("%d", index))
 		saved, err := WriteRuntimeSecret(ctx, writer, raw, secretID, kernel.IPFraudAPIKeyPurpose)
 		if err != nil {
 			return nil, err
@@ -100,7 +100,7 @@ func ipFraudSecretRefsFromRequest(ctx context.Context, writer secretref.Writer, 
 	return kernel.CleanIPFraudSecretRefs(out), nil
 }
 
-func validateIPFraudProvider(provider *proxyruntimev1.ProxyIPFraudProviderSettings, index int, registry *ipfraud.Registry) error {
+func validateIPFraudProvider(provider *proxygatewayv1.ProxyIPFraudProviderSettings, index int, registry *ipfraud.Registry) error {
 	plugin, ok := registry.PluginForKind(provider.GetKind())
 	if !ok {
 		return fmt.Errorf("ip_fraud_providers[%d].kind is required", index)

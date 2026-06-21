@@ -416,7 +416,7 @@ const file_byte_v_forge_contracts_common_v1_common_proto_rawDesc = "" +
 	"\tretryable\x18\x03 \x01(\bR\tretryable\x12;\n" +
 	"\vretry_after\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"retryAfterB\xcd\x01\n" +
-	"\"com.bytevforge.contracts.common.v1B\vCommonProtoP\x01ZVgithub.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1;commonv1\xaa\x02\x1eByteVForge.Contracts.Common.V1\xca\x02\x1eByteVForge\\Contracts\\Common\\V1b\x06proto3"
+	"\"com.bytevforge.contracts.common.v1B\vCommonProtoP\x01ZVgithub.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/common/v1;commonv1\xaa\x02\x1eByteVForge.Contracts.Common.V1\xca\x02\x1eByteVForge\\Contracts\\Common\\V1b\x06proto3"
 
 var (
 	file_byte_v_forge_contracts_common_v1_common_proto_rawDescOnce sync.Once

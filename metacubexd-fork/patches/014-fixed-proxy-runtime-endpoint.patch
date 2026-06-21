@@ -12,9 +12,9 @@ index 5750a35..834d2e9 100644
 -import { FALLBACK_BACKEND_URL } from '~/constants'
 -import { transformEndpointURL } from '~/utils'
 +import {
-+  proxyRuntimeAuthRequired,
-+  proxyRuntimeMihomoEndpointID,
-+} from '~/composables/proxyRuntimeEndpointAuth'
++  proxyGatewayAuthRequired,
++  proxyGatewayMihomoEndpointID,
++} from '~/composables/proxyGatewayEndpointAuth'
  
  definePageMeta({
    layout: 'default',
@@ -74,7 +74,7 @@ index 5750a35..834d2e9 100644
 -  return true
 +function storedFixedEndpointSecret(url: string) {
 +  const endpoint = endpointStore.endpointList.find(
-+    (item) => item.id === proxyRuntimeMihomoEndpointID || item.url === url,
++    (item) => item.id === proxyGatewayMihomoEndpointID || item.url === url,
 +  )
 +  return endpoint?.secret || ''
  }
@@ -99,14 +99,14 @@ index 5750a35..834d2e9 100644
 -  }
 +function persistFixedEndpoint(secret: string) {
 +  endpointStore.setEndpointList([
-+    { id: proxyRuntimeMihomoEndpointID, url: fixedEndpointURL(), secret },
++    { id: proxyGatewayMihomoEndpointID, url: fixedEndpointURL(), secret },
 +  ])
 +}
  
 -  endpointError.value = null
 -  onSetupSuccess(id)
 +function onSetupSuccess() {
-+  endpointStore.setSelectedEndpoint(proxyRuntimeMihomoEndpointID)
++  endpointStore.setSelectedEndpoint(proxyGatewayMihomoEndpointID)
 +  router.replace('/overview')
  }
  
@@ -198,7 +198,7 @@ index 5750a35..834d2e9 100644
 -    formData.url = defaultBackendURL.value
 -    formData.secret = ''
 +  syncFormEndpoint()
-+  if (!proxyRuntimeAuthRequired() || formData.secret) {
++  if (!proxyGatewayAuthRequired() || formData.secret) {
      await onSubmit()
    }
  })

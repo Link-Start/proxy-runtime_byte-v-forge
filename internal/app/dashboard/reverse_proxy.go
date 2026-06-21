@@ -6,7 +6,7 @@ import (
 	"net/http/httputil"
 	"strings"
 
-	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
+	httpapi "github.com/byte-v-forge/proxy-gateway/internal/app/httpapi"
 )
 
 type ProxyErrorWriter func(http.ResponseWriter, error, int)

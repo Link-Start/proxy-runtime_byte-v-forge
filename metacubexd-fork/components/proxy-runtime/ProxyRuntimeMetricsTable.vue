@@ -1,24 +1,24 @@
 <script setup lang="ts">
-import type { ProxyRuntimeMetricRow } from '~/composables/proxyRuntimeMetricsRows'
+import type { ProxyGatewayMetricRow } from '~/composables/proxyGatewayMetricsRows'
 import {
-  formatProxyRuntimeMetricCount,
-  formatProxyRuntimeMetricPercent,
-  formatProxyRuntimeMetricSeconds,
-  proxyRuntimeMetricOperationLabel,
-  proxyRuntimeMetricStatusClass,
-  proxyRuntimeMetricStatusLabel,
-} from '~/composables/proxyRuntimeMetricsRows'
+  formatProxyGatewayMetricCount,
+  formatProxyGatewayMetricPercent,
+  formatProxyGatewayMetricSeconds,
+  proxyGatewayMetricOperationLabel,
+  proxyGatewayMetricStatusClass,
+  proxyGatewayMetricStatusLabel,
+} from '~/composables/proxyGatewayMetricsRows'
 
 defineProps<{
-  rows: ProxyRuntimeMetricRow[]
+  rows: ProxyGatewayMetricRow[]
   slowThresholdLabel: string
 }>()
 
-function slowRatio(row: ProxyRuntimeMetricRow) {
+function slowRatio(row: ProxyGatewayMetricRow) {
   return row.count > 0 ? row.slowCount / row.count : 0
 }
 
-function rowClass(row: ProxyRuntimeMetricRow) {
+function rowClass(row: ProxyGatewayMetricRow) {
   if (row.status !== 'success') return 'bg-error/8 hover:bg-error/12'
   if (row.slowCount > 0) return 'bg-warning/8 hover:bg-warning/12'
   return 'hover:bg-base-content/5'
@@ -39,7 +39,7 @@ function rowClass(row: ProxyRuntimeMetricRow) {
         </p>
       </div>
       <span class="badge badge-ghost badge-sm">
-        {{ formatProxyRuntimeMetricCount(rows.length) }} rows
+        {{ formatProxyGatewayMetricCount(rows.length) }} rows
       </span>
     </div>
 
@@ -79,31 +79,31 @@ function rowClass(row: ProxyRuntimeMetricRow) {
           >
             <td class="max-w-[20rem] px-4 py-3">
               <div class="truncate font-medium">
-                {{ proxyRuntimeMetricOperationLabel(row.operation) }}
+                {{ proxyGatewayMetricOperationLabel(row.operation) }}
               </div>
               <div class="truncate font-mono text-xs opacity-55">
                 {{ row.operation }}
               </div>
             </td>
             <td class="px-4 py-3">
-              <span class="badge badge-sm" :class="proxyRuntimeMetricStatusClass(row.status)">
-                {{ proxyRuntimeMetricStatusLabel(row.status) }}
+              <span class="badge badge-sm" :class="proxyGatewayMetricStatusClass(row.status)">
+                {{ proxyGatewayMetricStatusLabel(row.status) }}
               </span>
             </td>
             <td class="px-4 py-3 text-right font-mono">
-              {{ formatProxyRuntimeMetricCount(row.count) }}
+              {{ formatProxyGatewayMetricCount(row.count) }}
             </td>
             <td class="px-4 py-3 text-right font-mono">
-              {{ formatProxyRuntimeMetricCount(row.slowCount) }}
+              {{ formatProxyGatewayMetricCount(row.slowCount) }}
             </td>
             <td class="px-4 py-3 text-right font-mono">
-              {{ formatProxyRuntimeMetricPercent(slowRatio(row)) }}
+              {{ formatProxyGatewayMetricPercent(slowRatio(row)) }}
             </td>
             <td class="px-4 py-3 text-right font-mono">
-              {{ formatProxyRuntimeMetricSeconds(row.averageSeconds) }}
+              {{ formatProxyGatewayMetricSeconds(row.averageSeconds) }}
             </td>
             <td class="px-4 py-3 text-right font-mono">
-              {{ formatProxyRuntimeMetricSeconds(row.durationSeconds) }}
+              {{ formatProxyGatewayMetricSeconds(row.durationSeconds) }}
             </td>
           </tr>
         </tbody>

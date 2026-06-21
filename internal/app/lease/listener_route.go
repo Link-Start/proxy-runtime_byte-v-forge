@@ -5,8 +5,8 @@ import (
 	"errors"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 const (
@@ -52,13 +52,13 @@ func ListenerRouteName(listener Listener) string {
 
 var ErrSessionListenerAllocationActionRequired = errors.New("session listener allocation action is required")
 
-type SessionListenerAllocationAction func(context.Context) (*proxyruntimev1.ProxyDynamicLease, error)
+type SessionListenerAllocationAction func(context.Context) (*proxygatewayv1.ProxyDynamicLease, error)
 
-func RunSessionListenerAllocation(ctx context.Context, locks LockManager, action SessionListenerAllocationAction) (*proxyruntimev1.ProxyDynamicLease, error) {
+func RunSessionListenerAllocation(ctx context.Context, locks LockManager, action SessionListenerAllocationAction) (*proxygatewayv1.ProxyDynamicLease, error) {
 	if action == nil {
 		return nil, ErrSessionListenerAllocationActionRequired
 	}
-	var lease *proxyruntimev1.ProxyDynamicLease
+	var lease *proxygatewayv1.ProxyDynamicLease
 	err := WithSessionListenerAllocationLock(ctx, locks, func(ctx context.Context) error {
 		var err error
 		lease, err = action(ctx)

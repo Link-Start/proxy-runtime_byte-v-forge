@@ -1,6 +1,6 @@
 package mihomo
 
-import "github.com/byte-v-forge/proxy-runtime/internal/provider"
+import "github.com/byte-v-forge/proxy-gateway/internal/provider"
 
 func cloneProviderNodes(nodes []provider.Node) []provider.Node {
 	if len(nodes) == 0 {

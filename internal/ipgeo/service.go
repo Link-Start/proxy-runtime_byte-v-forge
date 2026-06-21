@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/runtimehttp"
 )
 
 type Config struct {
@@ -54,7 +54,7 @@ func NewService(registry *Registry, cfg Config, logger *slog.Logger) *Service {
 	return &Service{providers: providers, logger: logger}
 }
 
-func (s *Service) Lookup(ctx context.Context, ip string) (*proxyruntimev1.ProxyExitGeo, error) {
+func (s *Service) Lookup(ctx context.Context, ip string) (*proxygatewayv1.ProxyExitGeo, error) {
 	ip = strings.TrimSpace(ip)
 	if ip == "" {
 		return nil, errors.New("ip is required")

@@ -4,22 +4,22 @@ import (
 	"context"
 	"errors"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 var ErrReleaseRetireActionRequired = errors.New("release retire action is required")
 
-type ReleaseRetireAction func(context.Context, *proxyruntimev1.ProxyDynamicLease) error
+type ReleaseRetireAction func(context.Context, *proxygatewayv1.ProxyDynamicLease) error
 
 type ReleaseRetireInput struct {
 	Store      OrchestrationStore
 	Locks      LockManager
-	Lease      *proxyruntimev1.ProxyDynamicLease
+	Lease      *proxygatewayv1.ProxyDynamicLease
 	IsNotFound StoreNotFoundFunc
 	Retire     ReleaseRetireAction
 }
 
-func RetireReleaseLease(ctx context.Context, input ReleaseRetireInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+func RetireReleaseLease(ctx context.Context, input ReleaseRetireInput) (*proxygatewayv1.ProxyDynamicLease, error) {
 	lease := input.Lease
 	if !ReleaseNeedsRouteRetire(lease) {
 		return lease, nil
@@ -38,11 +38,11 @@ func RetireReleaseLease(ctx context.Context, input ReleaseRetireInput) (*proxyru
 	return lease, err
 }
 
-type LeaseObserver func(context.Context, *proxyruntimev1.ProxyDynamicLease)
+type LeaseObserver func(context.Context, *proxygatewayv1.ProxyDynamicLease)
 
-type LeaseErrorObserver func(context.Context, *proxyruntimev1.ProxyDynamicLease, error)
+type LeaseErrorObserver func(context.Context, *proxygatewayv1.ProxyDynamicLease, error)
 
-type ProviderSessionGatewaysResolverFactory func(*proxyruntimev1.ProxyDynamicLease) ProviderSessionGatewaysResolver
+type ProviderSessionGatewaysResolverFactory func(*proxygatewayv1.ProxyDynamicLease) ProviderSessionGatewaysResolver
 
 type LeaseRouteRetirer struct {
 	Store                             OrchestrationStore
@@ -64,14 +64,14 @@ type RetireLeaseRouteInput struct {
 	DataPlane                         DataPlaneApplier
 	Factory                           SessionProviderFactory
 	LocalProtocol                     string
-	Lease                             *proxyruntimev1.ProxyDynamicLease
+	Lease                             *proxygatewayv1.ProxyDynamicLease
 	ResolveGateways                   ProviderSessionGatewaysResolver
 	AfterRouteCleanup                 LeaseObserver
 	ObserveProviderReleaseFailure     LeaseErrorObserver
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
 }
 
-func (r LeaseRouteRetirer) Retire(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+func (r LeaseRouteRetirer) Retire(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) error {
 	return RetireLeaseRoute(ctx, RetireLeaseRouteInput{
 		Store:                             r.Store,
 		Limiter:                           r.Limiter,
@@ -87,7 +87,7 @@ func (r LeaseRouteRetirer) Retire(ctx context.Context, lease *proxyruntimev1.Pro
 	})
 }
 
-func (r LeaseRouteRetirer) resolveGateways(lease *proxyruntimev1.ProxyDynamicLease) ProviderSessionGatewaysResolver {
+func (r LeaseRouteRetirer) resolveGateways(lease *proxygatewayv1.ProxyDynamicLease) ProviderSessionGatewaysResolver {
 	if r.ResolveGatewaysForLease == nil {
 		return nil
 	}
@@ -102,7 +102,7 @@ func RetireLeaseRoute(ctx context.Context, input RetireLeaseRouteInput) error {
 		DataPlane:     input.DataPlane,
 		Lease:         input.Lease,
 		LocalProtocol: input.LocalProtocol,
-		RecordFailure: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+		RecordFailure: func(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) error {
 			return SaveReleaseCleanupFailure(ctx, input.Store, lease, true, false, "lease route cleanup failed")
 		},
 	}); err != nil {
@@ -134,13 +134,13 @@ func saveReleasedFinalState(ctx context.Context, input RetireLeaseRouteInput) er
 	return err
 }
 
-func observeLease(ctx context.Context, observe LeaseObserver, lease *proxyruntimev1.ProxyDynamicLease) {
+func observeLease(ctx context.Context, observe LeaseObserver, lease *proxygatewayv1.ProxyDynamicLease) {
 	if observe != nil {
 		observe(ctx, lease)
 	}
 }
 
-func observeLeaseErr(ctx context.Context, observe LeaseErrorObserver, lease *proxyruntimev1.ProxyDynamicLease, err error) {
+func observeLeaseErr(ctx context.Context, observe LeaseErrorObserver, lease *proxygatewayv1.ProxyDynamicLease, err error) {
 	if observe != nil {
 		observe(ctx, lease, err)
 	}

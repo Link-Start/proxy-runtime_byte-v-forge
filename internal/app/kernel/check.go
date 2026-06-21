@@ -3,15 +3,15 @@ package kernel
 import (
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
 const DefaultProxyExitIPTimeout = 5 * time.Second
 
-func NormalizeCheckSettings(settings *proxyruntimev1.ProxyRuntimeCheckSettings) *proxyruntimev1.ProxyRuntimeCheckSettings {
+func NormalizeCheckSettings(settings *proxygatewayv1.ProxyGatewayCheckSettings) *proxygatewayv1.ProxyGatewayCheckSettings {
 	if settings == nil {
-		settings = &proxyruntimev1.ProxyRuntimeCheckSettings{}
+		settings = &proxygatewayv1.ProxyGatewayCheckSettings{}
 	}
 	if settings.GetProxyExitIpTimeout().AsDuration() <= 0 {
 		settings.ProxyExitIpTimeout = durationpb.New(DefaultProxyExitIPTimeout)
@@ -19,7 +19,7 @@ func NormalizeCheckSettings(settings *proxyruntimev1.ProxyRuntimeCheckSettings) 
 	return settings
 }
 
-func ProxyExitIPTimeout(settings *proxyruntimev1.ProxyRuntimePersistentSettings) time.Duration {
+func ProxyExitIPTimeout(settings *proxygatewayv1.ProxyGatewayPersistentSettings) time.Duration {
 	if settings == nil {
 		return DefaultProxyExitIPTimeout
 	}
@@ -30,14 +30,14 @@ func ProxyExitIPTimeout(settings *proxyruntimev1.ProxyRuntimePersistentSettings)
 	return duration
 }
 
-func CheckSettingsFromRequest(req *proxyruntimev1.ProxyRuntimeCheckSettings, current *proxyruntimev1.ProxyRuntimeCheckSettings) *proxyruntimev1.ProxyRuntimeCheckSettings {
+func CheckSettingsFromRequest(req *proxygatewayv1.ProxyGatewayCheckSettings, current *proxygatewayv1.ProxyGatewayCheckSettings) *proxygatewayv1.ProxyGatewayCheckSettings {
 	if req == nil {
 		return CloneCheckSettings(current)
 	}
-	return NormalizeCheckSettings(&proxyruntimev1.ProxyRuntimeCheckSettings{ProxyExitIpTimeout: req.GetProxyExitIpTimeout()})
+	return NormalizeCheckSettings(&proxygatewayv1.ProxyGatewayCheckSettings{ProxyExitIpTimeout: req.GetProxyExitIpTimeout()})
 }
 
-func CloneCheckSettings(in *proxyruntimev1.ProxyRuntimeCheckSettings) *proxyruntimev1.ProxyRuntimeCheckSettings {
+func CloneCheckSettings(in *proxygatewayv1.ProxyGatewayCheckSettings) *proxygatewayv1.ProxyGatewayCheckSettings {
 	in = NormalizeCheckSettings(in)
-	return &proxyruntimev1.ProxyRuntimeCheckSettings{ProxyExitIpTimeout: durationpb.New(in.GetProxyExitIpTimeout().AsDuration())}
+	return &proxygatewayv1.ProxyGatewayCheckSettings{ProxyExitIpTimeout: durationpb.New(in.GetProxyExitIpTimeout().AsDuration())}
 }

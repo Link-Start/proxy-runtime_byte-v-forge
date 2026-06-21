@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/processruntime"
+	"github.com/byte-v-forge/proxy-gateway/internal/processruntime"
 )
 
 func (d *Driver) startLocked(ctx context.Context, dir string, configPath string) error {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 var ErrDataPlaneApplierRequired = errors.New("lease dataplane applier is required")
@@ -24,7 +24,7 @@ func DeleteSessionRoute(ctx context.Context, dataPlane DataPlaneApplier, route S
 	return dataPlane.DeleteSessionRoute(ctx, route)
 }
 
-func DeleteLeaseRoute(ctx context.Context, dataPlane DataPlaneApplier, lease *proxyruntimev1.ProxyDynamicLease, localProtocol string) error {
+func DeleteLeaseRoute(ctx context.Context, dataPlane DataPlaneApplier, lease *proxygatewayv1.ProxyDynamicLease, localProtocol string) error {
 	route, ok := SessionRouteFromLease(lease, nil, "", localProtocol)
 	if !ok {
 		return nil
@@ -32,11 +32,11 @@ func DeleteLeaseRoute(ctx context.Context, dataPlane DataPlaneApplier, lease *pr
 	return DeleteSessionRoute(ctx, dataPlane, route)
 }
 
-type RouteCleanupFailureRecorder func(context.Context, *proxyruntimev1.ProxyDynamicLease) error
+type RouteCleanupFailureRecorder func(context.Context, *proxygatewayv1.ProxyDynamicLease) error
 
 type RouteCleanupInput struct {
 	DataPlane     DataPlaneApplier
-	Lease         *proxyruntimev1.ProxyDynamicLease
+	Lease         *proxygatewayv1.ProxyDynamicLease
 	LocalProtocol string
 	RecordFailure RouteCleanupFailureRecorder
 }

@@ -4,23 +4,23 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
-func (p *CredentialProvider) sessionPolicy(input *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxySessionPolicy {
-	policy := &proxyruntimev1.ProxySessionPolicy{
-		Mode:         proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY,
+func (p *CredentialProvider) sessionPolicy(input *proxygatewayv1.ProxySessionPolicy) *proxygatewayv1.ProxySessionPolicy {
+	policy := &proxygatewayv1.ProxySessionPolicy{
+		Mode:         proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_STICKY,
 		StickyTtl:    stickyDuration(defaultStickyMinutes),
-		UpstreamKind: proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP,
-		RotationMode: proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION,
+		UpstreamKind: proxygatewayv1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP,
+		RotationMode: proxygatewayv1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION,
 	}
 	if input == nil {
 		return policy
 	}
-	if input.GetMode() == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
-		policy.Mode = proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING
-		policy.RotationMode = proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_PER_REQUEST
+	if input.GetMode() == proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
+		policy.Mode = proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING
+		policy.RotationMode = proxygatewayv1.ProxyRotationMode_PROXY_ROTATION_MODE_PER_REQUEST
 	}
 	policy.Region = firstNonEmpty(input.Region, policy.Region)
 	policy.State = firstNonEmpty(input.State, policy.State)
@@ -38,11 +38,11 @@ func (p *CredentialProvider) sessionPolicy(input *proxyruntimev1.ProxySessionPol
 	return policy
 }
 
-func stickySessionPolicy(policy *proxyruntimev1.ProxySessionPolicy) bool {
-	return policy == nil || policy.GetMode() != proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING
+func stickySessionPolicy(policy *proxygatewayv1.ProxySessionPolicy) bool {
+	return policy == nil || policy.GetMode() != proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING
 }
 
-func requestedSessionID(policy *proxyruntimev1.ProxySessionPolicy) string {
+func requestedSessionID(policy *proxygatewayv1.ProxySessionPolicy) string {
 	labels := policy.GetLabels()
 	return firstNonEmpty(
 		labels["session_id"],
@@ -53,11 +53,11 @@ func requestedSessionID(policy *proxyruntimev1.ProxySessionPolicy) string {
 	)
 }
 
-func policyStickyTTL(policy *proxyruntimev1.ProxySessionPolicy) time.Duration {
+func policyStickyTTL(policy *proxygatewayv1.ProxySessionPolicy) time.Duration {
 	return time.Duration(policyStickyMinutes(policy)) * time.Minute
 }
 
-func policyStickyMinutes(policy *proxyruntimev1.ProxySessionPolicy) int {
+func policyStickyMinutes(policy *proxygatewayv1.ProxySessionPolicy) int {
 	if policy == nil {
 		return defaultStickyMinutes
 	}

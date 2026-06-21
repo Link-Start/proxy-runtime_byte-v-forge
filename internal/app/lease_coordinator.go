@@ -3,13 +3,13 @@ package app
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/dynamic"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/proxycheck"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
 )
 
 type leaseCoordinator struct {
@@ -38,7 +38,7 @@ type leaseCoordinatorSettings interface {
 }
 
 type leaseListenerFunc func(context.Context, *runtimeSettingsFile, string, string) (leaseapp.Listener, error)
-type leaseEndpointFunc func(leaseapp.Listener, string) (*proxyruntimev1.ProxyEndpoint, error)
+type leaseEndpointFunc func(leaseapp.Listener, string) (*proxygatewayv1.ProxyEndpoint, error)
 type leaseAdvertisedHostFunc func(string, leaseapp.Listener) string
 type leaseDialerProxyFunc func(context.Context, *runtimeSettingsFile, string) (string, map[string]string, error)
 type leaseConnectionCleanupFunc func(context.Context, []string)
@@ -63,7 +63,7 @@ type leaseCoordinatorDependencies struct {
 	closeInUserConnections  leaseConnectionCleanupFunc
 }
 
-func (c leaseCoordinator) Acquire(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (c leaseCoordinator) Acquire(ctx context.Context, advertisedHost string, req *proxygatewayv1.AcquireProxyLeaseRequest) (*proxygatewayv1.ProxyDynamicLease, error) {
 	runner := c.preparedAcquireRunner(advertisedHost, req)
 	lease, err := runner.Run(ctx, leaseapp.PreparedAcquireRunnerInput{
 		Request: req,
@@ -74,7 +74,7 @@ func (c leaseCoordinator) Acquire(ctx context.Context, advertisedHost string, re
 	return lease, err
 }
 
-func (c leaseCoordinator) Release(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (c leaseCoordinator) Release(ctx context.Context, req *proxygatewayv1.ReleaseProxyLeaseRequest) (*proxygatewayv1.ProxyDynamicLease, error) {
 	lease, err := c.releaseRunner().Release(ctx, req)
 	if err != nil && leaseapp.IsReleaseLookupRequestError(err) {
 		return nil, appcore.InvalidArgument(err.Error(), err)

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
 )
 
 type ExpireLeaseRunner struct {
@@ -23,7 +23,7 @@ type ExpireLeaseRunner struct {
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
 }
 
-func (r ExpireLeaseRunner) Expire(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+func (r ExpireLeaseRunner) Expire(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) error {
 	return ExpireLease(ctx, ExpireLeaseInput{
 		Store:                             r.Store,
 		Limiter:                           r.Limiter,
@@ -40,7 +40,7 @@ func (r ExpireLeaseRunner) Expire(ctx context.Context, lease *proxyruntimev1.Pro
 	})
 }
 
-func (r ExpireLeaseRunner) resolveGateways(lease *proxyruntimev1.ProxyDynamicLease) ProviderSessionGatewaysResolver {
+func (r ExpireLeaseRunner) resolveGateways(lease *proxygatewayv1.ProxyDynamicLease) ProviderSessionGatewaysResolver {
 	if r.ResolveGatewaysForLease == nil {
 		return nil
 	}
@@ -61,7 +61,7 @@ type ExpireLeaseInput struct {
 	DataPlane                         DataPlaneApplier
 	Factory                           SessionProviderFactory
 	LocalProtocol                     string
-	Lease                             *proxyruntimev1.ProxyDynamicLease
+	Lease                             *proxygatewayv1.ProxyDynamicLease
 	IsNotFound                        StoreNotFoundFunc
 	Now                               time.Time
 	ResolveGateways                   ProviderSessionGatewaysResolver
@@ -75,13 +75,13 @@ func ExpireLease(ctx context.Context, input ExpireLeaseInput) error {
 		Locks:      input.Locks,
 		Lease:      input.Lease,
 		IsNotFound: input.IsNotFound,
-		Action: func(ctx context.Context, current *proxyruntimev1.ProxyDynamicLease) error {
+		Action: func(ctx context.Context, current *proxygatewayv1.ProxyDynamicLease) error {
 			return expireCurrentLease(ctx, input, current)
 		},
 	})
 }
 
-func expireCurrentLease(ctx context.Context, input ExpireLeaseInput, lease *proxyruntimev1.ProxyDynamicLease) error {
+func expireCurrentLease(ctx context.Context, input ExpireLeaseInput, lease *proxygatewayv1.ProxyDynamicLease) error {
 	if !NeedsExpiryCleanup(lease, input.Now) {
 		return nil
 	}
@@ -94,24 +94,24 @@ func expireCurrentLease(ctx context.Context, input ExpireLeaseInput, lease *prox
 	return saveExpiredFinalState(ctx, input, lease)
 }
 
-func expireLeaseRoute(ctx context.Context, input ExpireLeaseInput, lease *proxyruntimev1.ProxyDynamicLease) error {
+func expireLeaseRoute(ctx context.Context, input ExpireLeaseInput, lease *proxygatewayv1.ProxyDynamicLease) error {
 	return CleanupLeaseRoute(ctx, RouteCleanupInput{
 		DataPlane:     input.DataPlane,
 		Lease:         lease,
 		LocalProtocol: input.LocalProtocol,
-		RecordFailure: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+		RecordFailure: func(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) error {
 			return SaveExpiredCleanupFailure(ctx, input.Store, lease, true, false, "expired lease route cleanup failed")
 		},
 	})
 }
 
-func expireLeaseProviderSession(ctx context.Context, input ExpireLeaseInput, lease *proxyruntimev1.ProxyDynamicLease) error {
+func expireLeaseProviderSession(ctx context.Context, input ExpireLeaseInput, lease *proxygatewayv1.ProxyDynamicLease) error {
 	err := ReleaseLeaseProviderSessionWithLock(ctx, input.Locks, ProviderSessionReleaseInput{
 		Store:           input.Store,
 		Factory:         input.Factory,
 		Lease:           lease,
 		ResolveGateways: input.ResolveGateways,
-		RecordFailure: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, err error) error {
+		RecordFailure: func(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease, err error) error {
 			observeLeaseErr(ctx, input.ObserveProviderReleaseFailure, lease, err)
 			return SaveExpiredCleanupFailure(ctx, input.Store, lease, false, true, "expired provider session cleanup failed")
 		},
@@ -123,7 +123,7 @@ func expireLeaseProviderSession(ctx context.Context, input ExpireLeaseInput, lea
 	return nil
 }
 
-func saveExpiredFinalState(ctx context.Context, input ExpireLeaseInput, lease *proxyruntimev1.ProxyDynamicLease) error {
+func saveExpiredFinalState(ctx context.Context, input ExpireLeaseInput, lease *proxygatewayv1.ProxyDynamicLease) error {
 	err := SaveExpiredFinalLeaseState(ctx, input.Store, input.Limiter, lease)
 	if errors.Is(err, ErrFinalLeaseConcurrencyRelease) {
 		observeLease(ctx, input.ObserveFinalConcurrencyReleaseErr, lease)

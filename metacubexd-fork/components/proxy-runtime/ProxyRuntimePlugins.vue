@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ProxyRuntimePluginsState } from '~/composables/useProxyRuntimePlugins'
+import type { ProxyGatewayPluginsState } from '~/composables/useProxyGatewayPlugins'
 import { IconReload } from '@tabler/icons-vue'
 
-defineProps<{ runtime: ProxyRuntimePluginsState }>()
+defineProps<{ runtime: ProxyGatewayPluginsState }>()
 
 type PluginTab = 'ip-fraud' | 'cf-canary' | 'ip-geo'
 
@@ -55,9 +55,9 @@ const tabs = [
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto">
-      <ProxyRuntimeIPFraudPlugins v-if="activeTab === 'ip-fraud'" :runtime="runtime" />
-      <ProxyRuntimeEdgeCanaryPlugin v-else-if="activeTab === 'cf-canary'" :runtime="runtime" />
-      <ProxyRuntimeIPGeoPlugin v-else :runtime="runtime" />
+      <ProxyGatewayIPFraudPlugins v-if="activeTab === 'ip-fraud'" :runtime="runtime" />
+      <ProxyGatewayEdgeCanaryPlugin v-else-if="activeTab === 'cf-canary'" :runtime="runtime" />
+      <ProxyGatewayIPGeoPlugin v-else :runtime="runtime" />
     </div>
   </main>
 </template>

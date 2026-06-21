@@ -6,13 +6,13 @@ import (
 	"net/http"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
-	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
-	"github.com/byte-v-forge/proxy-runtime/internal/random"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
+	providerregistry "github.com/byte-v-forge/proxy-gateway/internal/provider/registry"
+	"github.com/byte-v-forge/proxy-gateway/internal/random"
 )
 
 const leaseIDByteLength = 12
@@ -63,21 +63,21 @@ func (p metricLeaseSessionProvider) Name() string {
 	return p.delegate.Name()
 }
 
-func (p metricLeaseSessionProvider) CreateSession(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxySession, error) {
+func (p metricLeaseSessionProvider) CreateSession(ctx context.Context, req *proxygatewayv1.AcquireProxyLeaseRequest) (*proxygatewayv1.ProxySession, error) {
 	startedAt := time.Now()
 	session, err := p.delegate.CreateSession(ctx, req)
 	p.observe(runtimeMetricProviderSessionCreate, startedAt, err)
 	return session, err
 }
 
-func (p metricLeaseSessionProvider) FetchSession(ctx context.Context, session *proxyruntimev1.ProxySession) ([]provider.Node, error) {
+func (p metricLeaseSessionProvider) FetchSession(ctx context.Context, session *proxygatewayv1.ProxySession) ([]provider.Node, error) {
 	startedAt := time.Now()
 	nodes, err := p.delegate.FetchSession(ctx, session)
 	p.observe(runtimeMetricProviderSessionFetch, startedAt, err)
 	return nodes, err
 }
 
-func (p metricLeaseSessionProvider) ReleaseSession(ctx context.Context, session *proxyruntimev1.ProxySession) error {
+func (p metricLeaseSessionProvider) ReleaseSession(ctx context.Context, session *proxygatewayv1.ProxySession) error {
 	startedAt := time.Now()
 	err := p.delegate.ReleaseSession(ctx, session)
 	p.observe(runtimeMetricProviderSessionRelease, startedAt, err)

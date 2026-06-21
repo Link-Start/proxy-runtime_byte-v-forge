@@ -1,8 +1,8 @@
 package mihomonative
 
-import proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+import proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-func appendMihomoNativeFixedProxyConfig(config *ConfigFile, items []*proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy) error {
+func appendMihomoNativeFixedProxyConfig(config *ConfigFile, items []*proxygatewayv1.ProxyGatewayMihomoNativeFixedProxy) error {
 	for _, item := range items {
 		proxy := FixedProxyFromProto(item)
 		rendered, err := proxyFromURI(proxy.Name, proxy.URI)
@@ -16,7 +16,7 @@ func appendMihomoNativeFixedProxyConfig(config *ConfigFile, items []*proxyruntim
 	return nil
 }
 
-func appendMihomoNativeSubscriptionConfig(config *ConfigFile, items []*proxyruntimev1.ProxyRuntimeMihomoNativeSubscription) error {
+func appendMihomoNativeSubscriptionConfig(config *ConfigFile, items []*proxygatewayv1.ProxyGatewayMihomoNativeSubscription) error {
 	for _, item := range items {
 		provider, subscription, err := SubscriptionProvider(SubscriptionFromProto(item))
 		if err != nil {

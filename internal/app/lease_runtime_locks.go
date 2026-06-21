@@ -7,16 +7,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/redisclient"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/redisclient"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
 	"github.com/go-redsync/redsync/v4"
 	"github.com/go-redsync/redsync/v4/redis/goredis/v9"
 	"github.com/redis/go-redis/v9"
 )
 
 const (
-	leaseRuntimeLockPrefix = "proxy-runtime:lease-locks"
+	leaseRuntimeLockPrefix = "proxy-gateway:lease-locks"
 	leaseRuntimeLockTTL    = 2 * time.Minute
 	leaseRuntimeLockRetry  = 100 * time.Millisecond
 	leaseRuntimeUnlockWait = 5 * time.Second

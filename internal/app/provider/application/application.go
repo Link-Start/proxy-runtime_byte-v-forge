@@ -6,38 +6,38 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/dynamic"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/store"
 )
 
 const providerAccountDeleteTimeout = 2 * time.Minute
 
 type Repository interface {
-	ListProviderAccounts(context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error)
-	UpsertProviderAccount(context.Context, *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.ProxyProviderAccount, error)
+	ListProviderAccounts(context.Context) ([]*proxygatewayv1.ProxyProviderAccount, error)
+	UpsertProviderAccount(context.Context, *proxygatewayv1.UpsertProxyProviderAccountRequest) (*proxygatewayv1.ProxyProviderAccount, error)
 	DeleteProviderAccount(context.Context, string) error
-	ProviderAccount(context.Context, string) (*proxyruntimev1.ProxyProviderAccount, error)
+	ProviderAccount(context.Context, string) (*proxygatewayv1.ProxyProviderAccount, error)
 	ProviderAccountHasBlockingLease(context.Context, string) (bool, error)
-	BlockingLeaseFactsByProviderAccount(context.Context, string, int) ([]*proxyruntimev1.ProxyDynamicLease, error)
+	BlockingLeaseFactsByProviderAccount(context.Context, string, int) ([]*proxygatewayv1.ProxyDynamicLease, error)
 	ProviderAccountMutationState(context.Context, string) (store.ProviderAccountMutationState, error)
 }
 
 type LeaseOperations interface {
-	CleanupPendingLeaseFact(context.Context, *proxyruntimev1.ProxyDynamicLease) error
-	ReleaseProxyLease(context.Context, *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ReleaseProxyLeaseResponse, error)
+	CleanupPendingLeaseFact(context.Context, *proxygatewayv1.ProxyDynamicLease) error
+	ReleaseProxyLease(context.Context, *proxygatewayv1.ReleaseProxyLeaseRequest) (*proxygatewayv1.ReleaseProxyLeaseResponse, error)
 }
 
-type DescriptorsFunc func(map[string][]accountproxy.Gateway) []*proxyruntimev1.ProxyProviderDescriptor
+type DescriptorsFunc func(map[string][]accountproxy.Gateway) []*proxygatewayv1.ProxyProviderDescriptor
 
 type Dependencies struct {
 	Store               Repository
-	LoadSettings        func(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
+	LoadSettings        func(context.Context) (*proxygatewayv1.ProxyGatewayPersistentSettings, error)
 	ProviderDescriptors DescriptorsFunc
 	Locks               leaseapp.LockManager
 	LeaseOperations     func() LeaseOperations
@@ -46,7 +46,7 @@ type Dependencies struct {
 
 type Service struct {
 	store               Repository
-	loadSettings        func(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
+	loadSettings        func(context.Context) (*proxygatewayv1.ProxyGatewayPersistentSettings, error)
 	providerDescriptors DescriptorsFunc
 	locks               leaseapp.LockManager
 	leases              func() LeaseOperations
@@ -64,7 +64,7 @@ func New(deps Dependencies) Service {
 	}
 }
 
-func (a Service) ListProxyProviders(ctx context.Context) (*proxyruntimev1.ListProxyProvidersResponse, error) {
+func (a Service) ListProxyProviders(ctx context.Context) (*proxygatewayv1.ListProxyProvidersResponse, error) {
 	loadSettings, err := a.requireSettings()
 	if err != nil {
 		return nil, err
@@ -77,10 +77,10 @@ func (a Service) ListProxyProviders(ctx context.Context) (*proxyruntimev1.ListPr
 	if err != nil {
 		return nil, err
 	}
-	return &proxyruntimev1.ListProxyProvidersResponse{Providers: descriptors(dynamic.EndpointMap(settings))}, nil
+	return &proxygatewayv1.ListProxyProvidersResponse{Providers: descriptors(dynamic.EndpointMap(settings))}, nil
 }
 
-func (a Service) ListProxyProviderAccounts(ctx context.Context) (*proxyruntimev1.ListProxyProviderAccountsResponse, error) {
+func (a Service) ListProxyProviderAccounts(ctx context.Context) (*proxygatewayv1.ListProxyProviderAccountsResponse, error) {
 	repo, err := a.requireStore()
 	if err != nil {
 		return nil, err
@@ -89,10 +89,10 @@ func (a Service) ListProxyProviderAccounts(ctx context.Context) (*proxyruntimev1
 	if err != nil {
 		return nil, err
 	}
-	return &proxyruntimev1.ListProxyProviderAccountsResponse{Accounts: accounts}, nil
+	return &proxygatewayv1.ListProxyProviderAccountsResponse{Accounts: accounts}, nil
 }
 
-func (a Service) UpsertProxyProviderAccount(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.UpsertProxyProviderAccountResponse, error) {
+func (a Service) UpsertProxyProviderAccount(ctx context.Context, req *proxygatewayv1.UpsertProxyProviderAccountRequest) (*proxygatewayv1.UpsertProxyProviderAccountResponse, error) {
 	repo, err := a.requireStore()
 	if err != nil {
 		return nil, err
@@ -107,10 +107,10 @@ func (a Service) UpsertProxyProviderAccount(ctx context.Context, req *proxyrunti
 	if err != nil {
 		return nil, appcore.InvalidArgument("", err)
 	}
-	return &proxyruntimev1.UpsertProxyProviderAccountResponse{Account: account}, nil
+	return &proxygatewayv1.UpsertProxyProviderAccountResponse{Account: account}, nil
 }
 
-func (a Service) normalizeProviderAccountDynamicProvider(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) error {
+func (a Service) normalizeProviderAccountDynamicProvider(ctx context.Context, req *proxygatewayv1.UpsertProxyProviderAccountRequest) error {
 	dynamicProviderID := appcore.RuntimeSafeID(req.GetDynamicProviderId())
 	if dynamicProviderID == "" {
 		return nil
@@ -137,7 +137,7 @@ func (a Service) normalizeProviderAccountDynamicProvider(ctx context.Context, re
 	return fmt.Errorf("dynamic provider %q is not enabled", dynamicProviderID)
 }
 
-func (a Service) DeleteProxyProviderAccount(ctx context.Context, req *proxyruntimev1.DeleteProxyProviderAccountRequest) (*proxyruntimev1.DeleteProxyProviderAccountResponse, error) {
+func (a Service) DeleteProxyProviderAccount(ctx context.Context, req *proxygatewayv1.DeleteProxyProviderAccountRequest) (*proxygatewayv1.DeleteProxyProviderAccountResponse, error) {
 	providerAccountID := strings.TrimSpace(req.GetAccountId())
 	if providerAccountID == "" {
 		return nil, appcore.InvalidArgument("provider account_id is required", nil)
@@ -150,10 +150,10 @@ func (a Service) DeleteProxyProviderAccount(ctx context.Context, req *proxyrunti
 		return nil, appcore.InvalidArgument("provider account is not configured", err)
 	}
 	a.deleteProviderAccountInBackground(providerAccountID)
-	return &proxyruntimev1.DeleteProxyProviderAccountResponse{}, nil
+	return &proxygatewayv1.DeleteProxyProviderAccountResponse{}, nil
 }
 
-func (a Service) rejectActiveProviderAccountRuntimeMutation(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) error {
+func (a Service) rejectActiveProviderAccountRuntimeMutation(ctx context.Context, req *proxygatewayv1.UpsertProxyProviderAccountRequest) error {
 	repo, err := a.requireStore()
 	if err != nil {
 		return err
@@ -208,7 +208,7 @@ func (a Service) deleteProviderAccount(ctx context.Context, providerAccountID st
 		if err := ctx.Err(); err != nil {
 			return err
 		}
-		var leases []*proxyruntimev1.ProxyDynamicLease
+		var leases []*proxygatewayv1.ProxyDynamicLease
 		deleted := false
 		err := a.withProviderAccountLock(ctx, providerAccountID, func(ctx context.Context) error {
 			var err error
@@ -232,7 +232,7 @@ func (a Service) deleteProviderAccount(ctx context.Context, providerAccountID st
 				}
 				continue
 			}
-			if _, err := leaseOperations.ReleaseProxyLease(ctx, &proxyruntimev1.ReleaseProxyLeaseRequest{LeaseId: lease.GetLeaseId(), AccountId: lease.GetAccountId(), Purpose: lease.GetPurpose()}); err != nil {
+			if _, err := leaseOperations.ReleaseProxyLease(ctx, &proxygatewayv1.ReleaseProxyLeaseRequest{LeaseId: lease.GetLeaseId(), AccountId: lease.GetAccountId(), Purpose: lease.GetPurpose()}); err != nil {
 				return fmt.Errorf("release blocking proxy lease %q for provider account %q: %w", lease.GetLeaseId(), providerAccountID, err)
 			}
 		}
@@ -246,7 +246,7 @@ func (a Service) requireStore() (Repository, error) {
 	return a.store, nil
 }
 
-func (a Service) requireSettings() (func(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error), error) {
+func (a Service) requireSettings() (func(context.Context) (*proxygatewayv1.ProxyGatewayPersistentSettings, error), error) {
 	if a.loadSettings == nil {
 		return nil, appcore.InternalError("provider settings repository is not configured", nil)
 	}

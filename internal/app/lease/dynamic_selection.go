@@ -1,11 +1,11 @@
 package lease
 
 import (
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
 )
 
 type DynamicIPSelection struct {
-	Plan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Plan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	Endpoint accountproxy.Gateway
 }

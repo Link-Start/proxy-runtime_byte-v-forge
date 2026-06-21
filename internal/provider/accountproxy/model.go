@@ -4,13 +4,13 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
-func descriptor(definition Definition, gateways []Gateway) *proxyruntimev1.ProxyProviderDescriptor {
+func descriptor(definition Definition, gateways []Gateway) *proxygatewayv1.ProxyProviderDescriptor {
 	definition.Gateways = gateways
-	return &proxyruntimev1.ProxyProviderDescriptor{
+	return &proxygatewayv1.ProxyProviderDescriptor{
 		ProviderId:    definition.ProviderID,
 		DisplayName:   definition.DisplayName,
 		Capabilities:  capabilities(definition),
@@ -22,46 +22,46 @@ func descriptor(definition Definition, gateways []Gateway) *proxyruntimev1.Proxy
 	}
 }
 
-func capabilities(definition Definition) []proxyruntimev1.ProxyCapability {
-	out := []proxyruntimev1.ProxyCapability{}
+func capabilities(definition Definition) []proxygatewayv1.ProxyCapability {
+	out := []proxygatewayv1.ProxyCapability{}
 	if len(definition.Gateways) == 0 {
 		return out
 	}
-	out = append(out, proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_STICKY_SESSION, proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_UNIFIED_EGRESS_GATEWAY, proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_DYNAMIC_LEASE)
+	out = append(out, proxygatewayv1.ProxyCapability_PROXY_CAPABILITY_STICKY_SESSION, proxygatewayv1.ProxyCapability_PROXY_CAPABILITY_UNIFIED_EGRESS_GATEWAY, proxygatewayv1.ProxyCapability_PROXY_CAPABILITY_DYNAMIC_LEASE)
 	if definition.UsernameParameterSession {
-		out = append(out, proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_ACTIVE_SESSION_ROTATION, proxyruntimev1.ProxyCapability_PROXY_CAPABILITY_USERNAME_PARAMETER_SESSION)
+		out = append(out, proxygatewayv1.ProxyCapability_PROXY_CAPABILITY_ACTIVE_SESSION_ROTATION, proxygatewayv1.ProxyCapability_PROXY_CAPABILITY_USERNAME_PARAMETER_SESSION)
 	}
 	return out
 }
 
-func upstreamKinds(definition Definition) []proxyruntimev1.ProxyUpstreamKind {
+func upstreamKinds(definition Definition) []proxygatewayv1.ProxyUpstreamKind {
 	if len(definition.Gateways) == 0 {
 		return nil
 	}
-	return []proxyruntimev1.ProxyUpstreamKind{proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP}
+	return []proxygatewayv1.ProxyUpstreamKind{proxygatewayv1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_DYNAMIC_IP}
 }
 
-func rotationModes(definition Definition) []proxyruntimev1.ProxyRotationMode {
+func rotationModes(definition Definition) []proxygatewayv1.ProxyRotationMode {
 	if len(definition.Gateways) == 0 {
 		return nil
 	}
-	out := []proxyruntimev1.ProxyRotationMode{proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION}
+	out := []proxygatewayv1.ProxyRotationMode{proxygatewayv1.ProxyRotationMode_PROXY_ROTATION_MODE_STICKY_SESSION}
 	if definition.UsernameParameterSession {
-		out = append(out, proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_PER_REQUEST)
+		out = append(out, proxygatewayv1.ProxyRotationMode_PROXY_ROTATION_MODE_PER_REQUEST)
 	}
 	return out
 }
 
-func protocols(definition Definition) []proxyruntimev1.ProxyProtocol {
+func protocols(definition Definition) []proxygatewayv1.ProxyProtocol {
 	values := definition.Protocols
 	if len(values) == 0 {
 		values = []string{definition.DefaultProtocol}
 	}
-	out := make([]proxyruntimev1.ProxyProtocol, 0, len(values))
-	seen := map[proxyruntimev1.ProxyProtocol]struct{}{}
+	out := make([]proxygatewayv1.ProxyProtocol, 0, len(values))
+	seen := map[proxygatewayv1.ProxyProtocol]struct{}{}
 	for _, value := range values {
 		protocol := protocolEnumWithDefault(value, definition.DefaultProtocol)
-		if protocol == proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_UNSPECIFIED {
+		if protocol == proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_UNSPECIFIED {
 			continue
 		}
 		if _, exists := seen[protocol]; exists {

@@ -4,10 +4,10 @@ import (
 	"errors"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
 var (
@@ -16,7 +16,7 @@ var (
 	ErrRequestRequiresStickyDynamicIP = errors.New("lease request must use sticky dynamic IP")
 )
 
-func ApplyProfileDynamicIPPolicy(profiles []*proxyruntimev1.EgressProfileSettings, req *proxyruntimev1.AcquireProxyLeaseRequest) error {
+func ApplyProfileDynamicIPPolicy(profiles []*proxygatewayv1.EgressProfileSettings, req *proxygatewayv1.AcquireProxyLeaseRequest) error {
 	profile := EgressProfileByID(profiles, req.GetAccountId())
 	if profile == nil {
 		if req.GetPurpose() == "in-user-profile" {
@@ -24,20 +24,20 @@ func ApplyProfileDynamicIPPolicy(profiles []*proxyruntimev1.EgressProfileSetting
 		}
 		return nil
 	}
-	if !profile.GetEnabled() || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
+	if !profile.GetEnabled() || profile.GetExit().GetKind() != proxygatewayv1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
 		return ErrProfileDynamicIPNotConfigured
 	}
-	if profile.GetExit().GetDynamicIpPolicy().GetMode() != proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY {
+	if profile.GetExit().GetDynamicIpPolicy().GetMode() != proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_STICKY {
 		return ErrProfileLeaseRequiresSticky
 	}
-	if req.GetPolicy().GetMode() != proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY {
+	if req.GetPolicy().GetMode() != proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_STICKY {
 		return ErrRequestRequiresStickyDynamicIP
 	}
 	req.Policy = ProfileDynamicIPLeasePolicy(profile.GetExit().GetDynamicIpPolicy(), req.GetPolicy())
 	return nil
 }
 
-func ResolveAcquireRequestAccountID(profiles []*proxyruntimev1.EgressProfileSettings, rules []*proxyruntimev1.ProxyIngressRuleSettings, req *proxyruntimev1.AcquireProxyLeaseRequest) {
+func ResolveAcquireRequestAccountID(profiles []*proxygatewayv1.EgressProfileSettings, rules []*proxygatewayv1.ProxyIngressRuleSettings, req *proxygatewayv1.AcquireProxyLeaseRequest) {
 	if req == nil {
 		return
 	}
@@ -52,7 +52,7 @@ func ResolveAcquireRequestAccountID(profiles []*proxyruntimev1.EgressProfileSett
 	req.AccountId = strings.TrimSpace(rule.GetProfileId())
 }
 
-func ProfileDynamicIPLeasePolicy(profilePolicy *proxyruntimev1.ProxySessionPolicy, requestPolicy *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxySessionPolicy {
+func ProfileDynamicIPLeasePolicy(profilePolicy *proxygatewayv1.ProxySessionPolicy, requestPolicy *proxygatewayv1.ProxySessionPolicy) *proxygatewayv1.ProxySessionPolicy {
 	policy := kernel.NormalizeDynamicIPSessionPolicy(profilePolicy)
 	request := kernel.NormalizeDynamicIPSessionPolicy(requestPolicy)
 	policy.StickyTtl = appcore.CloneDuration(request.GetStickyTtl())
@@ -66,7 +66,7 @@ func ProfileDynamicIPLeasePolicy(profilePolicy *proxyruntimev1.ProxySessionPolic
 	return policy
 }
 
-func EgressProfileByID(profiles []*proxyruntimev1.EgressProfileSettings, profileID string) *proxyruntimev1.EgressProfileSettings {
+func EgressProfileByID(profiles []*proxygatewayv1.EgressProfileSettings, profileID string) *proxygatewayv1.EgressProfileSettings {
 	profileID = strings.TrimSpace(profileID)
 	if profileID == "" {
 		return nil

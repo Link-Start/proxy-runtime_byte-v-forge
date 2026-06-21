@@ -5,14 +5,14 @@ import (
 	"net/http"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/lookup"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/lookup"
 )
 
 type ProviderConfig struct {
 	ID     string
-	Kind   proxyruntimev1.ProxyIPFraudProviderKind
+	Kind   proxygatewayv1.ProxyIPFraudProviderKind
 	Weight int
 	Auth   AuthConfig
 }
@@ -39,7 +39,7 @@ type Config struct {
 }
 
 type Plugin interface {
-	lookup.PluginMeta[proxyruntimev1.ProxyIPFraudProviderKind]
+	lookup.PluginMeta[proxygatewayv1.ProxyIPFraudProviderKind]
 	Auth(apiKeys []string, anonymous bool) AuthConfig
 	New(client *http.Client, cfg ProviderConfig, cooldown time.Duration, clk clock.Clock) provider
 }
@@ -47,11 +47,11 @@ type Plugin interface {
 type report struct {
 	providerID     string
 	providerName   string
-	networkKind    proxyruntimev1.ProxyIPNetworkKind
-	anonymizerKind proxyruntimev1.ProxyIPAnonymizerKind
-	riskLevel      proxyruntimev1.ProxyIPFraudRiskLevel
+	networkKind    proxygatewayv1.ProxyIPNetworkKind
+	anonymizerKind proxygatewayv1.ProxyIPAnonymizerKind
+	riskLevel      proxygatewayv1.ProxyIPFraudRiskLevel
 	riskScore      float64
-	signals        []proxyruntimev1.ProxyIPFraudSignal
+	signals        []proxygatewayv1.ProxyIPFraudSignal
 	countryCode    string
 	region         string
 	city           string

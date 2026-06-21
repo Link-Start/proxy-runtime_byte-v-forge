@@ -6,12 +6,12 @@ import (
 	"sort"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/ten24"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/ten24"
 )
 
 type BuildContext struct {
@@ -147,11 +147,11 @@ func (r *Registry) DefaultProviderID() string {
 	return r.defaultAccountID
 }
 
-func (r *Registry) Descriptors(gateways map[string][]accountproxy.Gateway) []*proxyruntimev1.ProxyProviderDescriptor {
+func (r *Registry) Descriptors(gateways map[string][]accountproxy.Gateway) []*proxygatewayv1.ProxyProviderDescriptor {
 	if r == nil {
 		return nil
 	}
-	out := make([]*proxyruntimev1.ProxyProviderDescriptor, 0, len(r.accountIDs))
+	out := make([]*proxygatewayv1.ProxyProviderDescriptor, 0, len(r.accountIDs))
 	for _, id := range r.accountIDs {
 		out = append(out, r.accountPlugins[id].Descriptor(gateways[id]))
 	}

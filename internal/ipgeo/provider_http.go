@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 type httpProvider struct {
@@ -23,7 +23,7 @@ func newHTTPProvider(client *http.Client, template string, auth AuthConfig) http
 	return httpProvider{client: client, template: template, auth: auth}
 }
 
-func (p httpProvider) Lookup(ctx context.Context, ip string) (*proxyruntimev1.ProxyExitGeo, error) {
+func (p httpProvider) Lookup(ctx context.Context, ip string) (*proxygatewayv1.ProxyExitGeo, error) {
 	payload, err := p.lookupJSON(ctx, ip)
 	if err != nil {
 		return nil, err

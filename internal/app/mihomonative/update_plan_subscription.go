@@ -3,10 +3,10 @@ package mihomonative
 import (
 	"fmt"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-func (p *UpdatePlan) addSubscriptions(current ConfigFile, subscriptions []*proxyruntimev1.ProxyRuntimeMihomoNativeSubscription) error {
+func (p *UpdatePlan) addSubscriptions(current ConfigFile, subscriptions []*proxygatewayv1.ProxyGatewayMihomoNativeSubscription) error {
 	currentByID, currentByName := CurrentSubscriptionIndexes(current)
 	seenIDs := map[string]struct{}{}
 	seenNames := map[string]struct{}{}

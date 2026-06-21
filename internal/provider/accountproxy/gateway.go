@@ -4,10 +4,10 @@ import (
 	"net/url"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-func gatewayForPolicy(definition Definition, _ *proxyruntimev1.ProxySessionPolicy) (Gateway, bool) {
+func gatewayForPolicy(definition Definition, _ *proxygatewayv1.ProxySessionPolicy) (Gateway, bool) {
 	return defaultGateway(definition)
 }
 

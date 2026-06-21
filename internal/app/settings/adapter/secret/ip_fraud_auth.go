@@ -3,17 +3,17 @@ package secret
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/ipfraud"
+	"github.com/byte-v-forge/proxy-gateway/internal/secretref"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
 // IPFraudProviders resolves the configured ip-fraud providers from settings,
 // loading API-key secrets through resolver.
-func IPFraudProviders(ctx context.Context, resolver secretref.Resolver, settings *proxyruntimev1.ProxyRuntimePersistentSettings, registry *ipfraud.Registry) ([]ipfraud.ProviderConfig, error) {
+func IPFraudProviders(ctx context.Context, resolver secretref.Resolver, settings *proxygatewayv1.ProxyGatewayPersistentSettings, registry *ipfraud.Registry) ([]ipfraud.ProviderConfig, error) {
 	items := kernel.NormalizeRuntimeSettingsWithProviders(settings, registry, nil).GetIpFraudProviders()
 	providers := make([]ipfraud.ProviderConfig, 0, len(items))
 	for _, item := range items {
@@ -34,7 +34,7 @@ func IPFraudProviders(ctx context.Context, resolver secretref.Resolver, settings
 	return providers, nil
 }
 
-func ipFraudAuth(ctx context.Context, resolver secretref.Resolver, provider *proxyruntimev1.ProxyIPFraudProviderSettings, registry *ipfraud.Registry) (ipfraud.AuthConfig, error) {
+func ipFraudAuth(ctx context.Context, resolver secretref.Resolver, provider *proxygatewayv1.ProxyIPFraudProviderSettings, registry *ipfraud.Registry) (ipfraud.AuthConfig, error) {
 	if provider.GetAnonymous() {
 		return ipfraud.AuthConfig{Anonymous: &ipfraud.AnonymousAuthConfig{}}, nil
 	}

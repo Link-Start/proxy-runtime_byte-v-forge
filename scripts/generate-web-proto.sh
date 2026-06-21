@@ -25,4 +25,4 @@ protoc -I "${PROTO_DIR}" \
   --ts_proto_out="${OUT_DIR}" \
   --ts_proto_opt=onlyTypes=true,outputServices=none,esModuleInterop=true,useJsonWireFormat=true,snakeToCamel=false \
   "${PROTO_DIR}/byte/v/forge/contracts/common/v1/common.proto" \
-  "${PROTO_DIR}/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime.proto"
+  "${PROTO_DIR}/byte/v/forge/contracts/proxygateway/v1/proxy_gateway.proto"

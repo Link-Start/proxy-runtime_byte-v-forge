@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/random"
+	"github.com/byte-v-forge/proxy-gateway/internal/random"
 )
 
 func PathInPrefix(requestPath string, prefix string) bool {

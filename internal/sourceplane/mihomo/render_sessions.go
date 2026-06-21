@@ -3,7 +3,7 @@ package mihomo
 import (
 	"fmt"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/dataplane"
 )
 
 func renderSessionRoutes(sessions []dataplane.SessionRoute) ([]map[string]any, error) {

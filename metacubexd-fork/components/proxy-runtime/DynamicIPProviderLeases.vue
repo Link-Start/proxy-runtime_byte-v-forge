@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { IconTrash } from '@tabler/icons-vue'
-import type { ProxyRuntimeDynamicLeasesState } from '~/composables/useProxyRuntimeDynamicLeases'
-import type { ProxyDynamicLease } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
-import { ProxyDynamicLeaseStatus } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import type { ProxyGatewayDynamicLeasesState } from '~/composables/useProxyGatewayDynamicLeases'
+import type { ProxyDynamicLease } from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
+import { ProxyDynamicLeaseStatus } from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 
-defineProps<{ runtime: ProxyRuntimeDynamicLeasesState }>()
+defineProps<{ runtime: ProxyGatewayDynamicLeasesState }>()
 
 function leaseTitle(lease: ProxyDynamicLease) {
   return (

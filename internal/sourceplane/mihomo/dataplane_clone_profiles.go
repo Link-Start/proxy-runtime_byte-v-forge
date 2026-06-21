@@ -1,6 +1,6 @@
 package mihomo
 
-import "github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+import "github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 
 func cloneEgressProfiles(profiles []sourceplane.EgressProfile) []sourceplane.EgressProfile {
 	if len(profiles) == 0 {

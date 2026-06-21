@@ -1,9 +1,9 @@
 package mihomonative
 
-import proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+import proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-func SettingsFromConfig(config ConfigFile) *proxyruntimev1.ProxyRuntimeMihomoNativeConfig {
-	view := &proxyruntimev1.ProxyRuntimeMihomoNativeConfig{
+func SettingsFromConfig(config ConfigFile) *proxygatewayv1.ProxyGatewayMihomoNativeConfig {
+	view := &proxygatewayv1.ProxyGatewayMihomoNativeConfig{
 		FixedProxies:  FixedProxySettingsFromConfig(config),
 		Subscriptions: SubscriptionSettingsFromConfig(config),
 	}

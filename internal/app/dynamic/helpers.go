@@ -3,25 +3,25 @@ package dynamic
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
-func protocolEnum(value string) proxyruntimev1.ProxyProtocol {
+func protocolEnum(value string) proxygatewayv1.ProxyProtocol {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "http", "https":
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_HTTP
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_HTTP
 	case "socks5", "socks5h":
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
 	default:
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_UNSPECIFIED
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_UNSPECIFIED
 	}
 }
 
-func EndpointsForDynamicIPSelection(settings *proxyruntimev1.ProxyRuntimePersistentSettings, plan *proxyruntimev1.ProxyDynamicIPSelectionPlan, providerID string) []accountproxy.Gateway {
+func EndpointsForDynamicIPSelection(settings *proxygatewayv1.ProxyGatewayPersistentSettings, plan *proxygatewayv1.ProxyDynamicIPSelectionPlan, providerID string) []accountproxy.Gateway {
 	selected := plan.GetSelectedEndpoint()
 	endpoints := Endpoints(settings, selected.GetDynamicProviderId(), providerID)
 	endpointID := strings.TrimSpace(plan.GetSelectedEndpoint().GetEndpointId())

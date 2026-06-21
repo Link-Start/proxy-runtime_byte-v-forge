@@ -4,12 +4,12 @@ import (
 	"strconv"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/geox"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/geox"
 )
 
-func EndpointID(lease *proxyruntimev1.ProxyDynamicLease) string {
+func EndpointID(lease *proxygatewayv1.ProxyDynamicLease) string {
 	if lease == nil {
 		return ""
 	}
@@ -20,19 +20,19 @@ func EndpointID(lease *proxyruntimev1.ProxyDynamicLease) string {
 	))
 }
 
-func SelectedProviderAccountID(plan *proxyruntimev1.ProxyDynamicIPSelectionPlan) string {
+func SelectedProviderAccountID(plan *proxygatewayv1.ProxyDynamicIPSelectionPlan) string {
 	return strings.TrimSpace(plan.GetSelectedEndpoint().GetProviderAccountId())
 }
 
-func SelectedDynamicProviderID(plan *proxyruntimev1.ProxyDynamicIPSelectionPlan) string {
+func SelectedDynamicProviderID(plan *proxygatewayv1.ProxyDynamicIPSelectionPlan) string {
 	return strings.TrimSpace(plan.GetSelectedEndpoint().GetDynamicProviderId())
 }
 
 const maxDynamicIPSelectionAttempts = 20
 
-func NormalizeDynamicIPSelectionPolicy(req *proxyruntimev1.AcquireProxyLeaseRequest) *proxyruntimev1.ProxyDynamicIPSelectionPolicy {
+func NormalizeDynamicIPSelectionPolicy(req *proxygatewayv1.AcquireProxyLeaseRequest) *proxygatewayv1.ProxyDynamicIPSelectionPolicy {
 	in := req.GetSelectionPolicy()
-	policy := &proxyruntimev1.ProxyDynamicIPSelectionPolicy{}
+	policy := &proxygatewayv1.ProxyDynamicIPSelectionPolicy{}
 	if in != nil {
 		policy.CountryCode = strings.TrimSpace(in.GetCountryCode())
 		policy.Region = strings.TrimSpace(in.GetRegion())
@@ -59,7 +59,7 @@ func NormalizeDynamicIPSelectionPolicy(req *proxyruntimev1.AcquireProxyLeaseRequ
 	return policy
 }
 
-func DynamicIPSelectionAttempt(req *proxyruntimev1.AcquireProxyLeaseRequest) int {
+func DynamicIPSelectionAttempt(req *proxygatewayv1.AcquireProxyLeaseRequest) int {
 	if req == nil || req.GetPolicy() == nil {
 		return 1
 	}
@@ -74,7 +74,7 @@ func DynamicIPSelectionAttempt(req *proxyruntimev1.AcquireProxyLeaseRequest) int
 	return attempt
 }
 
-func DynamicIPSelectionMaxAttempts(policy *proxyruntimev1.ProxyDynamicIPSelectionPolicy) int {
+func DynamicIPSelectionMaxAttempts(policy *proxygatewayv1.ProxyDynamicIPSelectionPolicy) int {
 	attempts := int(policy.GetMaxAttempts())
 	if attempts < 1 {
 		return 1
@@ -85,7 +85,7 @@ func DynamicIPSelectionMaxAttempts(policy *proxyruntimev1.ProxyDynamicIPSelectio
 	return attempts
 }
 
-func DynamicIPSelectionKey(req *proxyruntimev1.AcquireProxyLeaseRequest) string {
+func DynamicIPSelectionKey(req *proxygatewayv1.AcquireProxyLeaseRequest) string {
 	if req == nil {
 		return ""
 	}

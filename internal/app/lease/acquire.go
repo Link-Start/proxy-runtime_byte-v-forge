@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
 )
 
 type PreparedAcquireRunner struct {
@@ -15,10 +15,10 @@ type PreparedAcquireRunner struct {
 }
 
 type PreparedAcquireRunnerInput struct {
-	Request *proxyruntimev1.AcquireProxyLeaseRequest
+	Request *proxygatewayv1.AcquireProxyLeaseRequest
 }
 
-func (r PreparedAcquireRunner) Run(ctx context.Context, input PreparedAcquireRunnerInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (r PreparedAcquireRunner) Run(ctx context.Context, input PreparedAcquireRunnerInput) (*proxygatewayv1.ProxyDynamicLease, error) {
 	if err := PrepareAcquireRequest(input.Request); err != nil {
 		return nil, err
 	}
@@ -43,11 +43,11 @@ type AccountLockedAcquireRunner struct {
 }
 
 type AccountLockedAcquireRunnerInput struct {
-	Request        *proxyruntimev1.AcquireProxyLeaseRequest
-	EgressProfiles []*proxyruntimev1.EgressProfileSettings
+	Request        *proxygatewayv1.AcquireProxyLeaseRequest
+	EgressProfiles []*proxygatewayv1.EgressProfileSettings
 }
 
-func (r AccountLockedAcquireRunner) Run(ctx context.Context, input AccountLockedAcquireRunnerInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (r AccountLockedAcquireRunner) Run(ctx context.Context, input AccountLockedAcquireRunnerInput) (*proxygatewayv1.ProxyDynamicLease, error) {
 	selectionPolicy, err := ApplyAcquireRequestPolicies(input.Request, input.EgressProfiles)
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ var (
 	ErrSelectedAcquireAttemptRunnerFactoryNil = errors.New("selected acquire attempt runner factory is required")
 )
 
-type DynamicIPSelectorFunc func(context.Context, *proxyruntimev1.AcquireProxyLeaseRequest) (DynamicIPSelection, error)
+type DynamicIPSelectorFunc func(context.Context, *proxygatewayv1.AcquireProxyLeaseRequest) (DynamicIPSelection, error)
 
 type SelectedAcquireAttemptRunnerFactory func(DynamicIPSelection) SelectedAcquireAttemptRunner
 
@@ -101,7 +101,7 @@ type DynamicAcquireAttemptRunner struct {
 	MapAttemptError   AcquireAttemptErrorMapper
 }
 
-func (r DynamicAcquireAttemptRunner) Run(ctx context.Context, req *proxyruntimev1.AcquireProxyLeaseRequest, policy *proxyruntimev1.ProxySessionPolicy) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (r DynamicAcquireAttemptRunner) Run(ctx context.Context, req *proxygatewayv1.AcquireProxyLeaseRequest, policy *proxygatewayv1.ProxySessionPolicy) (*proxygatewayv1.ProxyDynamicLease, error) {
 	if r.Select == nil {
 		return nil, ErrDynamicIPSelectorRequired
 	}
@@ -132,8 +132,8 @@ func mapAcquireAttemptError(mapper AcquireAttemptErrorMapper, err error) error {
 
 var ErrAccountLockedAcquireRunnerFactoryRequired = errors.New("account locked acquire runner factory is required")
 
-type SettingsEgressProfilesFunc[T any] func(T) []*proxyruntimev1.EgressProfileSettings
-type SettingsIngressRulesFunc[T any] func(T) []*proxyruntimev1.ProxyIngressRuleSettings
+type SettingsEgressProfilesFunc[T any] func(T) []*proxygatewayv1.EgressProfileSettings
+type SettingsIngressRulesFunc[T any] func(T) []*proxygatewayv1.ProxyIngressRuleSettings
 
 type AccountLockedAcquireRunnerFactory[T any] func(context.Context, T) AccountLockedAcquireRunner
 
@@ -141,14 +141,14 @@ type AcquirePolicyErrorMapper func(error) error
 
 type SettingsPreparedAcquireAction[T any] struct {
 	Load           SettingsLoader[T]
-	Request        *proxyruntimev1.AcquireProxyLeaseRequest
+	Request        *proxygatewayv1.AcquireProxyLeaseRequest
 	EgressProfiles SettingsEgressProfilesFunc[T]
 	IngressRules   SettingsIngressRulesFunc[T]
 	NewRunner      AccountLockedAcquireRunnerFactory[T]
 	MapPolicyError AcquirePolicyErrorMapper
 }
 
-func (a SettingsPreparedAcquireAction[T]) Run(ctx context.Context) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (a SettingsPreparedAcquireAction[T]) Run(ctx context.Context) (*proxygatewayv1.ProxyDynamicLease, error) {
 	if a.Load == nil {
 		return nil, ErrSettingsLoaderRequired
 	}
@@ -173,14 +173,14 @@ func (a SettingsPreparedAcquireAction[T]) Run(ctx context.Context) (*proxyruntim
 	return lease, err
 }
 
-func (a SettingsPreparedAcquireAction[T]) egressProfiles(settings T) []*proxyruntimev1.EgressProfileSettings {
+func (a SettingsPreparedAcquireAction[T]) egressProfiles(settings T) []*proxygatewayv1.EgressProfileSettings {
 	if a.EgressProfiles == nil {
 		return nil
 	}
 	return a.EgressProfiles(settings)
 }
 
-func (a SettingsPreparedAcquireAction[T]) ingressRules(settings T) []*proxyruntimev1.ProxyIngressRuleSettings {
+func (a SettingsPreparedAcquireAction[T]) ingressRules(settings T) []*proxygatewayv1.ProxyIngressRuleSettings {
 	if a.IngressRules == nil {
 		return nil
 	}

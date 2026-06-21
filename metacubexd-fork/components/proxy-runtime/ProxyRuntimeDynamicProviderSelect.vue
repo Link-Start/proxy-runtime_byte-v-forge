@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { ProxyDynamicIPProviderSettings } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import type { ProxyDynamicIPProviderSettings } from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 
 defineProps<{
   modelValue: string

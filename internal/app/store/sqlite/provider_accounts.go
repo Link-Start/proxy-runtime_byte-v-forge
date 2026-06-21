@@ -8,21 +8,21 @@ import (
 	"fmt"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
+	"github.com/byte-v-forge/proxy-gateway/internal/secretref"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/store"
 )
 
-func (s *Store) ListProviderAccounts(ctx context.Context) ([]*proxyruntimev1.ProxyProviderAccount, error) {
-	rows, err := s.db.QueryContext(ctx, `SELECT account_id, provider_id, dynamic_provider_id, display_name, enabled, credential_secret, created_at, updated_at FROM proxy_runtime_provider_accounts ORDER BY account_id`)
+func (s *Store) ListProviderAccounts(ctx context.Context) ([]*proxygatewayv1.ProxyProviderAccount, error) {
+	rows, err := s.db.QueryContext(ctx, `SELECT account_id, provider_id, dynamic_provider_id, display_name, enabled, credential_secret, created_at, updated_at FROM proxy_gateway_provider_accounts ORDER BY account_id`)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	out := []*proxyruntimev1.ProxyProviderAccount{}
+	out := []*proxygatewayv1.ProxyProviderAccount{}
 	for rows.Next() {
 		record, err := scanSQLiteProviderAccount(rows)
 		if err != nil {
@@ -37,7 +37,7 @@ func (s *Store) ListProviderAccounts(ctx context.Context) ([]*proxyruntimev1.Pro
 	return out, rows.Err()
 }
 
-func (s *Store) UpsertProviderAccount(ctx context.Context, req *proxyruntimev1.UpsertProxyProviderAccountRequest) (*proxyruntimev1.ProxyProviderAccount, error) {
+func (s *Store) UpsertProviderAccount(ctx context.Context, req *proxygatewayv1.UpsertProxyProviderAccountRequest) (*proxygatewayv1.ProxyProviderAccount, error) {
 	accountID := store.NormalizeID(req.GetAccountId())
 	if accountID == "" {
 		generated, err := store.GeneratedID("dynacct")
@@ -69,11 +69,11 @@ func (s *Store) UpsertProviderAccount(ctx context.Context, req *proxyruntimev1.U
 	if username := strings.TrimSpace(req.GetUsername()); username != "" {
 		credential.Username = username
 	}
-	if ref := appcore.CloneSecretRef(req.GetPasswordSecretRef(), "proxy-runtime", "dynamic_ip_provider_password"); ref != nil {
+	if ref := appcore.CloneSecretRef(req.GetPasswordSecretRef(), "proxy-gateway", "dynamic_ip_provider_password"); ref != nil {
 		credential.PasswordSecretRef = ref
 	}
 	if rawPassword := strings.TrimSpace(req.GetPasswordValue()); rawPassword != "" {
-		ref, err := s.WriteSecret(ctx, secretref.WriteRequest{SecretID: secretref.StableID("proxy-runtime-provider-account-password", accountID), Provider: "proxy-runtime", Purpose: "dynamic_ip_provider_password", Value: rawPassword})
+		ref, err := s.WriteSecret(ctx, secretref.WriteRequest{SecretID: secretref.StableID("proxy-gateway-provider-account-password", accountID), Provider: "proxy-gateway", Purpose: "dynamic_ip_provider_password", Value: rawPassword})
 		if err != nil {
 			return nil, err
 		}
@@ -108,7 +108,7 @@ func (s *Store) UpsertProviderAccount(ctx context.Context, req *proxyruntimev1.U
 		createdAt = existing.CreatedAt
 	}
 	_, err = s.db.ExecContext(ctx, `
-INSERT INTO proxy_runtime_provider_accounts (account_id, provider_id, dynamic_provider_id, display_name, enabled, credential_secret, created_at, updated_at)
+INSERT INTO proxy_gateway_provider_accounts (account_id, provider_id, dynamic_provider_id, display_name, enabled, credential_secret, created_at, updated_at)
 VALUES (?,?,?,?,?,?,?,?)
 ON CONFLICT(account_id) DO UPDATE SET provider_id=excluded.provider_id, dynamic_provider_id=excluded.dynamic_provider_id, display_name=excluded.display_name, enabled=excluded.enabled, credential_secret=excluded.credential_secret, updated_at=excluded.updated_at
 `, accountID, providerID, dynamicProviderID, displayName, sqliteBool(enabled), secret, sqliteTime(createdAt), sqliteTime(now))
@@ -123,11 +123,11 @@ ON CONFLICT(account_id) DO UPDATE SET provider_id=excluded.provider_id, dynamic_
 }
 
 func (s *Store) DeleteProviderAccount(ctx context.Context, accountID string) error {
-	_, err := s.db.ExecContext(ctx, `DELETE FROM proxy_runtime_provider_accounts WHERE account_id=?`, store.NormalizeID(accountID))
+	_, err := s.db.ExecContext(ctx, `DELETE FROM proxy_gateway_provider_accounts WHERE account_id=?`, store.NormalizeID(accountID))
 	return err
 }
 
-func (s *Store) ProviderAccount(ctx context.Context, accountID string) (*proxyruntimev1.ProxyProviderAccount, error) {
+func (s *Store) ProviderAccount(ctx context.Context, accountID string) (*proxygatewayv1.ProxyProviderAccount, error) {
 	record, err := s.providerAccountRecord(ctx, accountID)
 	if err != nil {
 		return nil, err
@@ -144,7 +144,7 @@ func (s *Store) ProviderAccountMutationState(ctx context.Context, accountID stri
 	state := store.ProviderAccountMutationState{ProviderID: record.ProviderID, DynamicProviderID: record.DynamicProviderID, PasswordConfigured: record.CredentialSecret != ""}
 	if credential != nil {
 		state.Username = credential.Username
-		state.PasswordSecretRef = appcore.CloneSecretRef(credential.PasswordSecretRef, "proxy-runtime", "dynamic_ip_provider_password")
+		state.PasswordSecretRef = appcore.CloneSecretRef(credential.PasswordSecretRef, "proxy-gateway", "dynamic_ip_provider_password")
 	}
 	return state, nil
 }
@@ -166,7 +166,7 @@ func (s *Store) ProviderConfig(ctx context.Context, accountID string) (accountpr
 
 func (s *Store) DefaultProviderAccountID(ctx context.Context) (string, error) {
 	var id string
-	err := s.db.QueryRowContext(ctx, `SELECT account_id FROM proxy_runtime_provider_accounts WHERE enabled=1 ORDER BY updated_at DESC, account_id LIMIT 1`).Scan(&id)
+	err := s.db.QueryRowContext(ctx, `SELECT account_id FROM proxy_gateway_provider_accounts WHERE enabled=1 ORDER BY updated_at DESC, account_id LIMIT 1`).Scan(&id)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", sql.ErrNoRows
 	}
@@ -174,7 +174,7 @@ func (s *Store) DefaultProviderAccountID(ctx context.Context) (string, error) {
 }
 
 func (s *Store) providerAccountRecord(ctx context.Context, accountID string) (*store.ProviderAccountRecord, error) {
-	row := s.db.QueryRowContext(ctx, `SELECT account_id, provider_id, dynamic_provider_id, display_name, enabled, credential_secret, created_at, updated_at FROM proxy_runtime_provider_accounts WHERE account_id=?`, store.NormalizeID(accountID))
+	row := s.db.QueryRowContext(ctx, `SELECT account_id, provider_id, dynamic_provider_id, display_name, enabled, credential_secret, created_at, updated_at FROM proxy_gateway_provider_accounts WHERE account_id=?`, store.NormalizeID(accountID))
 	return scanSQLiteProviderAccount(row)
 }
 

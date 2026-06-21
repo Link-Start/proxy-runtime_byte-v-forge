@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
-	"github.com/byte-v-forge/proxy-runtime/internal/processruntime"
-	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/dataplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/processruntime"
+	"github.com/byte-v-forge/proxy-gateway/internal/runtimehttp"
+	"github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 )
 
 const (

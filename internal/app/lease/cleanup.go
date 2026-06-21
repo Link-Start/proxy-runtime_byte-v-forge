@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 type CleanupPendingLeaseRunner struct {
@@ -21,7 +21,7 @@ type CleanupPendingLeaseRunner struct {
 	ObserveFinalConcurrencyReleaseErr LeaseObserver
 }
 
-func (r CleanupPendingLeaseRunner) Cleanup(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+func (r CleanupPendingLeaseRunner) Cleanup(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) error {
 	return CleanupPendingLease(ctx, CleanupPendingLeaseInput{
 		Store:                             r.Store,
 		Limiter:                           r.Limiter,
@@ -37,20 +37,20 @@ func (r CleanupPendingLeaseRunner) Cleanup(ctx context.Context, lease *proxyrunt
 	})
 }
 
-func (r CleanupPendingLeaseRunner) resolveGateways(lease *proxyruntimev1.ProxyDynamicLease) ProviderSessionGatewaysResolver {
+func (r CleanupPendingLeaseRunner) resolveGateways(lease *proxygatewayv1.ProxyDynamicLease) ProviderSessionGatewaysResolver {
 	if r.ResolveGatewaysForLease == nil {
 		return nil
 	}
 	return r.ResolveGatewaysForLease(lease)
 }
 
-func MarkCleanupPending(lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool, finalStatus string) {
+func MarkCleanupPending(lease *proxygatewayv1.ProxyDynamicLease, routePending bool, providerPending bool, finalStatus string) {
 	if lease == nil {
 		return
 	}
 	session := lease.GetSession()
 	if session == nil {
-		session = &proxyruntimev1.ProxySession{}
+		session = &proxygatewayv1.ProxySession{}
 		lease.Session = session
 	}
 	if session.Labels == nil {
@@ -67,7 +67,7 @@ func MarkCleanupPending(lease *proxyruntimev1.ProxyDynamicLease, routePending bo
 	}
 }
 
-func ClearCleanupPending(lease *proxyruntimev1.ProxyDynamicLease, routePending bool, providerPending bool) {
+func ClearCleanupPending(lease *proxygatewayv1.ProxyDynamicLease, routePending bool, providerPending bool) {
 	if lease == nil || lease.GetSession() == nil || lease.GetSession().Labels == nil {
 		return
 	}
@@ -79,8 +79,8 @@ func ClearCleanupPending(lease *proxyruntimev1.ProxyDynamicLease, routePending b
 	}
 }
 
-func MarkFailedAcquireCleanupPending(session *proxyruntimev1.ProxySession, routePending bool, providerPending bool) {
-	lease := &proxyruntimev1.ProxyDynamicLease{Session: session}
+func MarkFailedAcquireCleanupPending(session *proxygatewayv1.ProxySession, routePending bool, providerPending bool) {
+	lease := &proxygatewayv1.ProxyDynamicLease{Session: session}
 	MarkCleanupPending(lease, routePending, providerPending, CleanupFinalFailed)
 }
 
@@ -91,7 +91,7 @@ type CleanupPendingLeaseInput struct {
 	DataPlane                         DataPlaneApplier
 	Factory                           SessionProviderFactory
 	LocalProtocol                     string
-	Lease                             *proxyruntimev1.ProxyDynamicLease
+	Lease                             *proxygatewayv1.ProxyDynamicLease
 	IsNotFound                        StoreNotFoundFunc
 	ResolveGateways                   ProviderSessionGatewaysResolver
 	ObserveProviderReleaseFailure     LeaseErrorObserver
@@ -104,13 +104,13 @@ func CleanupPendingLease(ctx context.Context, input CleanupPendingLeaseInput) er
 		Locks:      input.Locks,
 		Lease:      input.Lease,
 		IsNotFound: input.IsNotFound,
-		Action: func(ctx context.Context, current *proxyruntimev1.ProxyDynamicLease) error {
+		Action: func(ctx context.Context, current *proxygatewayv1.ProxyDynamicLease) error {
 			return cleanupCurrentPendingLease(ctx, input, current)
 		},
 	})
 }
 
-func cleanupCurrentPendingLease(ctx context.Context, input CleanupPendingLeaseInput, lease *proxyruntimev1.ProxyDynamicLease) error {
+func cleanupCurrentPendingLease(ctx context.Context, input CleanupPendingLeaseInput, lease *proxygatewayv1.ProxyDynamicLease) error {
 	if !CleanupPending(lease) {
 		return nil
 	}
@@ -129,24 +129,24 @@ func cleanupCurrentPendingLease(ctx context.Context, input CleanupPendingLeaseIn
 	return saveCleanupProgressState(ctx, input, lease)
 }
 
-func cleanupPendingLeaseRoute(ctx context.Context, input CleanupPendingLeaseInput, lease *proxyruntimev1.ProxyDynamicLease) error {
+func cleanupPendingLeaseRoute(ctx context.Context, input CleanupPendingLeaseInput, lease *proxygatewayv1.ProxyDynamicLease) error {
 	return CleanupLeaseRoute(ctx, RouteCleanupInput{
 		DataPlane:     input.DataPlane,
 		Lease:         lease,
 		LocalProtocol: input.LocalProtocol,
-		RecordFailure: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+		RecordFailure: func(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) error {
 			return SaveCleanupRetry(ctx, input.Store, lease, "lease route cleanup failed")
 		},
 	})
 }
 
-func cleanupPendingProviderSession(ctx context.Context, input CleanupPendingLeaseInput, lease *proxyruntimev1.ProxyDynamicLease) error {
+func cleanupPendingProviderSession(ctx context.Context, input CleanupPendingLeaseInput, lease *proxygatewayv1.ProxyDynamicLease) error {
 	err := ReleaseLeaseProviderSessionWithLock(ctx, input.Locks, ProviderSessionReleaseInput{
 		Store:           input.Store,
 		Factory:         input.Factory,
 		Lease:           lease,
 		ResolveGateways: input.ResolveGateways,
-		RecordFailure: func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, err error) error {
+		RecordFailure: func(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease, err error) error {
 			observeLeaseErr(ctx, input.ObserveProviderReleaseFailure, lease, err)
 			return SaveCleanupRetry(ctx, input.Store, lease, "provider session cleanup failed")
 		},
@@ -157,7 +157,7 @@ func cleanupPendingProviderSession(ctx context.Context, input CleanupPendingLeas
 	return nil
 }
 
-func saveCleanupProgressState(ctx context.Context, input CleanupPendingLeaseInput, lease *proxyruntimev1.ProxyDynamicLease) error {
+func saveCleanupProgressState(ctx context.Context, input CleanupPendingLeaseInput, lease *proxygatewayv1.ProxyDynamicLease) error {
 	err := SaveCleanupProgress(ctx, input.Store, input.Limiter, lease)
 	if errors.Is(err, ErrFinalLeaseConcurrencyRelease) {
 		observeLease(ctx, input.ObserveFinalConcurrencyReleaseErr, lease)

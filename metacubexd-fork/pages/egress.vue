@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { IconPlus, IconReload } from '@tabler/icons-vue'
 
-const nativeRuntime = useProxyRuntimeMihomoNativeConfig()
-const dynamicRuntime = useProxyRuntimeDynamicIPProviders()
+const nativeRuntime = useProxyGatewayMihomoNativeConfig()
+const dynamicRuntime = useProxyGatewayDynamicIPProviders()
 const activeTab = ref<'mihomo' | 'dynamic-ip'>('mihomo')
 const nativePanel = ref<{ openCreate: () => void }>()
 const dynamicPanel = ref<{ openCreate: () => void }>()
@@ -101,12 +101,12 @@ onMounted(() => {
     </div>
 
     <div class="min-h-0 flex-1 overflow-y-auto">
-      <ProxyRuntimeMihomoNative
+      <ProxyGatewayMihomoNative
         v-if="activeTab === 'mihomo'"
         ref="nativePanel"
         :runtime="nativeRuntime"
       />
-      <ProxyRuntimeDynamicIPProviders
+      <ProxyGatewayDynamicIPProviders
         v-else
         ref="dynamicPanel"
         :runtime="dynamicRuntime"

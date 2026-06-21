@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { ProxyRuntimeNativeRow } from '~/composables/proxyRuntimeNativeRows'
-import { writeProxyRuntimeClipboard } from '~/composables/proxyRuntimeClipboard'
+import type { ProxyGatewayNativeRow } from '~/composables/proxyGatewayNativeRows'
+import { writeProxyGatewayClipboard } from '~/composables/proxyGatewayClipboard'
 import { IconClipboard, IconPencil, IconTrash } from '@tabler/icons-vue'
 
 defineProps<{
   expanded: boolean
   index: number
-  row: ProxyRuntimeNativeRow
+  row: ProxyGatewayNativeRow
   saving: boolean
 }>()
 defineEmits<{
@@ -18,7 +18,7 @@ defineEmits<{
 const copied = ref(false)
 
 async function copyValue(value: string) {
-  await writeProxyRuntimeClipboard(value)
+  await writeProxyGatewayClipboard(value)
   copied.value = true
   window.setTimeout(() => {
     copied.value = false

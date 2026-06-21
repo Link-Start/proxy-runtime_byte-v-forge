@@ -3,17 +3,17 @@ package domain
 import (
 	"fmt"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
-func cloneIngressRule(in *proxyruntimev1.ProxyIngressRuleSettings) *proxyruntimev1.ProxyIngressRuleSettings {
+func cloneIngressRule(in *proxygatewayv1.ProxyIngressRuleSettings) *proxygatewayv1.ProxyIngressRuleSettings {
 	return kernel.IngressRuleFromProto(in, 0)
 }
 
-func IngressRulesFromRequest(in []*proxyruntimev1.ProxyIngressRuleSettings, profiles []*proxyruntimev1.EgressProfileSettings) ([]*proxyruntimev1.ProxyIngressRuleSettings, error) {
-	out := make([]*proxyruntimev1.ProxyIngressRuleSettings, 0, len(in))
+func IngressRulesFromRequest(in []*proxygatewayv1.ProxyIngressRuleSettings, profiles []*proxygatewayv1.EgressProfileSettings) ([]*proxygatewayv1.ProxyIngressRuleSettings, error) {
+	out := make([]*proxygatewayv1.ProxyIngressRuleSettings, 0, len(in))
 	seenIDs := map[string]struct{}{}
 	seenUsers := map[string]struct{}{}
 	enabledProfiles := enabledEgressProfileIDsFromProfiles(profiles)
@@ -37,7 +37,7 @@ func IngressRulesFromRequest(in []*proxyruntimev1.ProxyIngressRuleSettings, prof
 	return out, nil
 }
 
-func validateIngressRule(rule *proxyruntimev1.ProxyIngressRuleSettings, index int, enabledProfiles map[string]struct{}) error {
+func validateIngressRule(rule *proxygatewayv1.ProxyIngressRuleSettings, index int, enabledProfiles map[string]struct{}) error {
 	if rule.GetRuleId() == "" {
 		return fmt.Errorf("ingress_rules[%d].rule_id is required", index)
 	}

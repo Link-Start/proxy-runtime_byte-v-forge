@@ -10,13 +10,13 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
-	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretbox"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
+	providerregistry "github.com/byte-v-forge/proxy-gateway/internal/provider/registry"
+	"github.com/byte-v-forge/proxy-gateway/internal/secretbox"
 	_ "modernc.org/sqlite"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/store"
 )
 
 type Store struct {
@@ -56,12 +56,12 @@ func New(ctx context.Context, cfg config.Config, accountProviders *providerregis
 func sqliteDSN(dataDir string) (string, error) {
 	dataDir = strings.TrimSpace(dataDir)
 	if dataDir == "" {
-		return "", fmt.Errorf("PROXY_RUNTIME_DATA_DIR is required")
+		return "", fmt.Errorf("PROXY_GATEWAY_DATA_DIR is required")
 	}
 	if err := os.MkdirAll(dataDir, 0o700); err != nil {
 		return "", err
 	}
-	path := filepath.Join(dataDir, "proxy-runtime.sqlite")
+	path := filepath.Join(dataDir, "proxy-gateway.sqlite")
 	uri := &url.URL{Scheme: "file", Path: path}
 	query := uri.Query()
 	query.Add("_pragma", "busy_timeout(5000)")

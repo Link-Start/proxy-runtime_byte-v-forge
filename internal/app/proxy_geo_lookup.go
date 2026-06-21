@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
+	"github.com/byte-v-forge/proxy-gateway/internal/ipgeo"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
-	settingssecret "github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/secret"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/proxycheck"
+	settingssecret "github.com/byte-v-forge/proxy-gateway/internal/app/settings/adapter/secret"
 )
 
 func (r *Runtime) lookupIPGeo(ctx context.Context, ip string) (proxycheck.ExitGeo, error) {

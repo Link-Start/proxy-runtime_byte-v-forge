@@ -3,12 +3,12 @@ package app
 import (
 	"net/http"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 	"github.com/gin-gonic/gin"
 )
 
 func (api *runtimeHTTPAPI) handleGetProxyExitIP(ctx *gin.Context) {
-	var checkReq proxyruntimev1.GetProxyExitIPRequest
+	var checkReq proxygatewayv1.GetProxyExitIPRequest
 	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
@@ -21,7 +21,7 @@ func (api *runtimeHTTPAPI) handleGetProxyExitIP(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleGetProxyExitGeo(ctx *gin.Context) {
-	var checkReq proxyruntimev1.GetProxyExitGeoRequest
+	var checkReq proxygatewayv1.GetProxyExitGeoRequest
 	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
@@ -34,7 +34,7 @@ func (api *runtimeHTTPAPI) handleGetProxyExitGeo(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleCheckIPFraud(ctx *gin.Context) {
-	var checkReq proxyruntimev1.CheckProxyIPFraudRequest
+	var checkReq proxygatewayv1.CheckProxyIPFraudRequest
 	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
@@ -47,7 +47,7 @@ func (api *runtimeHTTPAPI) handleCheckIPFraud(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleCheckEdgeAccessRisk(ctx *gin.Context) {
-	var checkReq proxyruntimev1.CheckProxyEdgeAccessRequest
+	var checkReq proxygatewayv1.CheckProxyEdgeAccessRequest
 	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
@@ -60,7 +60,7 @@ func (api *runtimeHTTPAPI) handleCheckEdgeAccessRisk(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleCheckTargetConnectivity(ctx *gin.Context) {
-	var checkReq proxyruntimev1.CheckProxyTargetConnectivityRequest
+	var checkReq proxygatewayv1.CheckProxyTargetConnectivityRequest
 	if !api.readOptionalProto(ctx, &checkReq) {
 		return
 	}
@@ -73,7 +73,7 @@ func (api *runtimeHTTPAPI) handleCheckTargetConnectivity(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleGetProxyExitCheckSnapshot(ctx *gin.Context) {
-	var checkReq proxyruntimev1.GetProxyExitCheckSnapshotRequest
+	var checkReq proxygatewayv1.GetProxyExitCheckSnapshotRequest
 	switch ctx.Request.Method {
 	case http.MethodGet:
 		checkReq.ListenerId = ctx.Query("listener_id")

@@ -4,12 +4,12 @@ import (
 	"context"
 	"sync"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/ipfraud"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
-	settingssecret "github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/secret"
-	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
+	settingssecret "github.com/byte-v-forge/proxy-gateway/internal/app/settings/adapter/secret"
+	settingsdomain "github.com/byte-v-forge/proxy-gateway/internal/app/settings/domain"
 )
 
 type ipFraudCheckerCache struct {
@@ -18,7 +18,7 @@ type ipFraudCheckerCache struct {
 	checker   ipFraudChecker
 }
 
-func (r *Runtime) checkIPFraud(ctx context.Context, ip string, settings *runtimeSettingsFile) (*proxyruntimev1.ProxyIPFraudCheck, error) {
+func (r *Runtime) checkIPFraud(ctx context.Context, ip string, settings *runtimeSettingsFile) (*proxygatewayv1.ProxyIPFraudCheck, error) {
 	providers, err := settingssecret.IPFraudProviders(ctx, r.store, settings, r.ipFraudProviders)
 	if err != nil {
 		return unsupportedIPFraudCheck(ip), nil
@@ -59,12 +59,12 @@ func (c *ipFraudCheckerCache) reset() {
 	c.signature = ""
 }
 
-func unsupportedIPFraudCheck(ip string) *proxyruntimev1.ProxyIPFraudCheck {
-	return &proxyruntimev1.ProxyIPFraudCheck{
+func unsupportedIPFraudCheck(ip string) *proxygatewayv1.ProxyIPFraudCheck {
+	return &proxygatewayv1.ProxyIPFraudCheck{
 		Ip:        ip,
-		RiskLevel: proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNSUPPORTED,
-		RiskSignals: []proxyruntimev1.ProxyIPFraudSignal{
-			proxyruntimev1.ProxyIPFraudSignal_PROXY_IP_FRAUD_SIGNAL_FRAUD_CHECK_UNSUPPORTED,
+		RiskLevel: proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNSUPPORTED,
+		RiskSignals: []proxygatewayv1.ProxyIPFraudSignal{
+			proxygatewayv1.ProxyIPFraudSignal_PROXY_IP_FRAUD_SIGNAL_FRAUD_CHECK_UNSUPPORTED,
 		},
 		CheckedAt:    timestamppb.Now(),
 		ErrorMessage: "IP fraud check is not configured",

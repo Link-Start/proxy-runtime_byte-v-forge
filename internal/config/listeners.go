@@ -12,7 +12,7 @@ func validateProxyUsers(users []ProxyUserRoute) error {
 	for index, user := range users {
 		username := strings.TrimSpace(user.Username)
 		if username == "" {
-			return fmt.Errorf("PROXY_RUNTIME_PROXY_USERS_JSON[%d].username is required", index)
+			return fmt.Errorf("PROXY_GATEWAY_PROXY_USERS_JSON[%d].username is required", index)
 		}
 		if _, ok := seen[username]; ok {
 			return fmt.Errorf("duplicate proxy user username %q", username)
@@ -24,7 +24,7 @@ func validateProxyUsers(users []ProxyUserRoute) error {
 			return fmt.Errorf("unsupported proxy user route %q", user.Route)
 		}
 		if normalizeConfigToken(user.Route) == ListenerRouteProfile && strings.TrimSpace(user.ProfileID) == "" {
-			return fmt.Errorf("PROXY_RUNTIME_PROXY_USERS_JSON[%d].profile_id is required for profile route", index)
+			return fmt.Errorf("PROXY_GATEWAY_PROXY_USERS_JSON[%d].profile_id is required for profile route", index)
 		}
 	}
 	return nil

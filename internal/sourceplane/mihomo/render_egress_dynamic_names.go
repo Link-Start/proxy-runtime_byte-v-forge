@@ -3,7 +3,7 @@ package mihomo
 import (
 	"fmt"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 func profileDynamicProxyName(profileID string, index int, node provider.Node) string {

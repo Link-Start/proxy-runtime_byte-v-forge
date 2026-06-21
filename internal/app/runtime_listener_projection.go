@@ -3,17 +3,17 @@ package app
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
 )
 
 func defaultListenerConfigs(localAddr string, localProtocol string) []config.EgressListener {
 	return []config.EgressListener{{ID: "dynamic-egress", Addr: localAddr, Protocol: localProtocol, Route: config.ListenerRouteProvider}}
 }
 
-func protoListeners(configs []config.EgressListener, leases []*proxyruntimev1.ProxyDynamicLease) []*proxyruntimev1.EgressListener {
-	out := make([]*proxyruntimev1.EgressListener, 0, len(configs)+len(leases))
+func protoListeners(configs []config.EgressListener, leases []*proxygatewayv1.ProxyDynamicLease) []*proxygatewayv1.EgressListener {
+	out := make([]*proxygatewayv1.EgressListener, 0, len(configs)+len(leases))
 	for _, listener := range configs {
 		out = append(out, protoListener(listener, true))
 	}
@@ -25,12 +25,12 @@ func protoListeners(configs []config.EgressListener, leases []*proxyruntimev1.Pr
 	return out
 }
 
-func protoListener(listener config.EgressListener, managed bool) *proxyruntimev1.EgressListener {
+func protoListener(listener config.EgressListener, managed bool) *proxygatewayv1.EgressListener {
 	route := listenerRoute(listener)
-	kind := proxyruntimev1.EgressListenerKind_EGRESS_LISTENER_KIND_PROVIDER_ROUTE
+	kind := proxygatewayv1.EgressListenerKind_EGRESS_LISTENER_KIND_PROVIDER_ROUTE
 	routeID := "default-data-plane"
 	if route == config.ListenerRouteDirect {
-		kind = proxyruntimev1.EgressListenerKind_EGRESS_LISTENER_KIND_DIRECT
+		kind = proxygatewayv1.EgressListenerKind_EGRESS_LISTENER_KIND_DIRECT
 		routeID = "direct"
 	}
 	labels := cloneLabels(listener.Labels)
@@ -42,17 +42,17 @@ func protoListener(listener config.EgressListener, managed bool) *proxyruntimev1
 		labels[leaseapp.LabelProxyPassword] = listener.Password
 	}
 	if labels["mode"] == leaseapp.ListenerModeDynamicSessionLease {
-		kind = proxyruntimev1.EgressListenerKind_EGRESS_LISTENER_KIND_DYNAMIC_LEASE
+		kind = proxygatewayv1.EgressListenerKind_EGRESS_LISTENER_KIND_DYNAMIC_LEASE
 		routeID = listener.ID
 	}
-	return &proxyruntimev1.EgressListener{ListenerId: listener.ID, Kind: kind, ListenAddr: listener.Addr, Protocol: protocolFromName(listenerProtocol(listener, "http")), RouteId: routeID, Managed: managed, Labels: labels}
+	return &proxygatewayv1.EgressListener{ListenerId: listener.ID, Kind: kind, ListenAddr: listener.Addr, Protocol: protocolFromName(listenerProtocol(listener, "http")), RouteId: routeID, Managed: managed, Labels: labels}
 }
 
 func localServiceFromListener(listener config.EgressListener, fallback string) leaseapp.LocalService {
 	return leaseapp.LocalService{Name: listener.ID, Addr: listener.Addr, Protocol: listenerProtocol(listener, fallback), Username: listener.Username, Password: listener.Password, Route: listenerRoute(listener)}
 }
 
-func listenerFromProto(listener *proxyruntimev1.EgressListener) config.EgressListener {
+func listenerFromProto(listener *proxygatewayv1.EgressListener) config.EgressListener {
 	if listener == nil {
 		return config.EgressListener{}
 	}

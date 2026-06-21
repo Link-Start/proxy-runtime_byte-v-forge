@@ -1,9 +1,9 @@
 package proxycheck
 
 import (
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 type ExitGeo struct {
@@ -13,7 +13,7 @@ type ExitGeo struct {
 	City        string
 }
 
-func ExitGeoFromProto(ip string, geo *proxyruntimev1.ProxyExitGeo) ExitGeo {
+func ExitGeoFromProto(ip string, geo *proxygatewayv1.ProxyExitGeo) ExitGeo {
 	return ExitGeo{
 		IP:          appcore.FirstNonEmpty(geo.GetIp(), ip),
 		CountryCode: geo.GetCountryCode(),

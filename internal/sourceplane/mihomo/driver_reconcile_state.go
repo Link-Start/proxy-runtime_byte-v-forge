@@ -1,6 +1,6 @@
 package mihomo
 
-import "github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+import "github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 
 func (d *Driver) recordAppliedConfigProjection(configPath string, endpoint sourceplane.Endpoint, baseConfig renderedMihomoConfig, finalConfig renderedMihomoConfig) {
 	d.signature = finalConfig.signature

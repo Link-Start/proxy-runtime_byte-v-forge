@@ -3,18 +3,18 @@ package mihomonative
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-func FixedProxySettingsFromConfig(config ConfigFile) []*proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy {
+func FixedProxySettingsFromConfig(config ConfigFile) []*proxygatewayv1.ProxyGatewayMihomoNativeFixedProxy {
 	if len(config.FixedProxies) > 0 {
 		return FixedProxySettingsFromExplicitConfig(config.FixedProxies)
 	}
 	return FixedProxySettingsFromNativeProxies(config.Proxies)
 }
 
-func FixedProxySettingsFromExplicitConfig(proxies []FixedProxy) []*proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy {
-	out := make([]*proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy, 0, len(proxies))
+func FixedProxySettingsFromExplicitConfig(proxies []FixedProxy) []*proxygatewayv1.ProxyGatewayMihomoNativeFixedProxy {
+	out := make([]*proxygatewayv1.ProxyGatewayMihomoNativeFixedProxy, 0, len(proxies))
 	for _, proxy := range proxies {
 		item := NormalizeFixedProxy(proxy, nil)
 		if item.Name == "" || item.URI == "" {
@@ -25,8 +25,8 @@ func FixedProxySettingsFromExplicitConfig(proxies []FixedProxy) []*proxyruntimev
 	return out
 }
 
-func FixedProxySettingsFromNativeProxies(proxies []map[string]any) []*proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy {
-	out := make([]*proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy, 0, len(proxies))
+func FixedProxySettingsFromNativeProxies(proxies []map[string]any) []*proxygatewayv1.ProxyGatewayMihomoNativeFixedProxy {
+	out := make([]*proxygatewayv1.ProxyGatewayMihomoNativeFixedProxy, 0, len(proxies))
 	for _, proxy := range proxies {
 		name := jsonStringValue(proxy["name"])
 		proxyType := jsonStringValue(proxy["type"])
@@ -42,15 +42,15 @@ func FixedProxySettingsFromNativeProxies(proxies []map[string]any) []*proxyrunti
 	return out
 }
 
-func SubscriptionSettingsFromConfig(config ConfigFile) []*proxyruntimev1.ProxyRuntimeMihomoNativeSubscription {
+func SubscriptionSettingsFromConfig(config ConfigFile) []*proxygatewayv1.ProxyGatewayMihomoNativeSubscription {
 	if len(config.Subscriptions) > 0 {
 		return SubscriptionSettingsFromExplicitConfig(config.Subscriptions)
 	}
 	return SubscriptionSettingsFromProviders(config.ProxyProviders)
 }
 
-func SubscriptionSettingsFromExplicitConfig(subscriptions []Subscription) []*proxyruntimev1.ProxyRuntimeMihomoNativeSubscription {
-	out := make([]*proxyruntimev1.ProxyRuntimeMihomoNativeSubscription, 0, len(subscriptions))
+func SubscriptionSettingsFromExplicitConfig(subscriptions []Subscription) []*proxygatewayv1.ProxyGatewayMihomoNativeSubscription {
+	out := make([]*proxygatewayv1.ProxyGatewayMihomoNativeSubscription, 0, len(subscriptions))
 	for _, subscription := range subscriptions {
 		item := NormalizeSubscription(subscription, nil)
 		if item.Name == "" || item.URL == "" {
@@ -61,8 +61,8 @@ func SubscriptionSettingsFromExplicitConfig(subscriptions []Subscription) []*pro
 	return out
 }
 
-func SubscriptionSettingsFromProviders(providers map[string]Provider) []*proxyruntimev1.ProxyRuntimeMihomoNativeSubscription {
-	out := make([]*proxyruntimev1.ProxyRuntimeMihomoNativeSubscription, 0, len(providers))
+func SubscriptionSettingsFromProviders(providers map[string]Provider) []*proxygatewayv1.ProxyGatewayMihomoNativeSubscription {
+	out := make([]*proxygatewayv1.ProxyGatewayMihomoNativeSubscription, 0, len(providers))
 	for name, provider := range providers {
 		if strings.TrimSpace(provider.URL) == "" {
 			continue

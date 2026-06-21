@@ -5,11 +5,11 @@ import (
 	"errors"
 	"net/http"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	mihomoapp "github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative/application"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
-	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings/application"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	mihomoapp "github.com/byte-v-forge/proxy-gateway/internal/app/mihomonative/application"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/proxycheck"
+	settingsapp "github.com/byte-v-forge/proxy-gateway/internal/app/settings/application"
 	"github.com/gin-gonic/gin"
 )
 
@@ -52,7 +52,7 @@ func (api *runtimeHTTPAPI) handleMihomoNativeConfig(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleGetMihomoNativeConfig(ctx *gin.Context) {
-	response, err := api.settings.GetMihomoNative(ctx.Request.Context(), &proxyruntimev1.GetProxyRuntimeMihomoNativeConfigRequest{})
+	response, err := api.settings.GetMihomoNative(ctx.Request.Context(), &proxygatewayv1.GetProxyGatewayMihomoNativeConfigRequest{})
 	if err != nil {
 		writeSettingsLoadHTTPError(ctx, appcore.InternalError("load mihomo native config", err))
 		return
@@ -61,7 +61,7 @@ func (api *runtimeHTTPAPI) handleGetMihomoNativeConfig(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleUpdateMihomoNativeConfig(ctx *gin.Context) {
-	var req proxyruntimev1.UpdateProxyRuntimeMihomoNativeConfigRequest
+	var req proxygatewayv1.UpdateProxyGatewayMihomoNativeConfigRequest
 	if !api.readProto(ctx, &req) {
 		return
 	}

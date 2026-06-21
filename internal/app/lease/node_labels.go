@@ -1,8 +1,8 @@
 package lease
 
 import (
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 func ApplyNodeLabels(nodes []provider.Node, labels map[string]string) []provider.Node {

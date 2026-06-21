@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
 )
 
 type workerOperation func(context.Context) error
@@ -29,7 +29,7 @@ func (a *Application) CleanupPending(ctx context.Context) error {
 	})
 }
 
-func (a *Application) Cleanup(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+func (a *Application) Cleanup(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) error {
 	return a.runWorkerOperation(ctx, "cleanup_one", func(ctx context.Context) error {
 		return a.worker.Cleanup(ctx, lease)
 	}, leaseWorkerLogFields(lease)...)
@@ -50,7 +50,7 @@ func (a *Application) runWorkerOperation(ctx context.Context, operation string, 
 	return nil
 }
 
-func leaseWorkerLogFields(lease *proxyruntimev1.ProxyDynamicLease) []any {
+func leaseWorkerLogFields(lease *proxygatewayv1.ProxyDynamicLease) []any {
 	if lease == nil {
 		return nil
 	}
@@ -74,25 +74,25 @@ type WorkerBatchInput struct {
 }
 
 func ProcessCleanupPendingFacts(ctx context.Context, input WorkerBatchInput) error {
-	return processWorkerBatch(ctx, input, func(ctx context.Context, store OrchestrationStore) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+	return processWorkerBatch(ctx, input, func(ctx context.Context, store OrchestrationStore) ([]*proxygatewayv1.ProxyDynamicLease, error) {
 		return store.CleanupPendingLeaseFacts(ctx)
 	}, "cleanup lease fact")
 }
 
 func ProcessExpiredActiveFacts(ctx context.Context, input WorkerBatchInput) error {
-	return processWorkerBatch(ctx, input, func(ctx context.Context, store OrchestrationStore) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+	return processWorkerBatch(ctx, input, func(ctx context.Context, store OrchestrationStore) ([]*proxygatewayv1.ProxyDynamicLease, error) {
 		return store.ExpiredActiveLeaseFacts(ctx)
 	}, "expire lease fact")
 }
 
 func ProcessRestorableActiveFacts(ctx context.Context, input WorkerBatchInput, now time.Time) error {
 	input.ShouldRun = activeLeasePredicate(now)
-	return processWorkerBatch(ctx, input, func(ctx context.Context, store OrchestrationStore) ([]*proxyruntimev1.ProxyDynamicLease, error) {
+	return processWorkerBatch(ctx, input, func(ctx context.Context, store OrchestrationStore) ([]*proxygatewayv1.ProxyDynamicLease, error) {
 		return store.ListRestorableLeaseFacts(ctx)
 	}, "restore lease route")
 }
 
-func processWorkerBatch(ctx context.Context, input WorkerBatchInput, list func(context.Context, OrchestrationStore) ([]*proxyruntimev1.ProxyDynamicLease, error), errorPrefix string) error {
+func processWorkerBatch(ctx context.Context, input WorkerBatchInput, list func(context.Context, OrchestrationStore) ([]*proxygatewayv1.ProxyDynamicLease, error), errorPrefix string) error {
 	if input.Store == nil || list == nil {
 		return nil
 	}
@@ -114,7 +114,7 @@ func processWorkerBatch(ctx context.Context, input WorkerBatchInput, list func(c
 }
 
 func activeLeasePredicate(now time.Time) BatchPredicate {
-	return func(lease *proxyruntimev1.ProxyDynamicLease) bool {
+	return func(lease *proxygatewayv1.ProxyDynamicLease) bool {
 		return ActiveAt(lease, now)
 	}
 }
@@ -163,7 +163,7 @@ func (w WorkerProcessor) CleanupPending(ctx context.Context) error {
 	})
 }
 
-func (w WorkerProcessor) Cleanup(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+func (w WorkerProcessor) Cleanup(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) error {
 	if w.CleanupPendingOne == nil {
 		return nil
 	}

@@ -5,28 +5,28 @@ import (
 	"database/sql"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-func (s *Store) LeaseFactByID(ctx context.Context, leaseID string) (*proxyruntimev1.ProxyDynamicLease, error) {
-	row := s.db.QueryRowContext(ctx, `SELECT lease_json FROM proxy_runtime_dynamic_leases WHERE lease_id=?`, strings.TrimSpace(leaseID))
+func (s *Store) LeaseFactByID(ctx context.Context, leaseID string) (*proxygatewayv1.ProxyDynamicLease, error) {
+	row := s.db.QueryRowContext(ctx, `SELECT lease_json FROM proxy_gateway_dynamic_leases WHERE lease_id=?`, strings.TrimSpace(leaseID))
 	return scanSQLiteLeaseFact(row)
 }
 
-func (s *Store) ActiveLeaseFact(ctx context.Context, accountID string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ActiveLeaseFact(ctx context.Context, accountID string) (*proxygatewayv1.ProxyDynamicLease, error) {
 	return s.leaseFactByAccount(ctx, accountID, "", true)
 }
 
-func (s *Store) ActiveLeaseFactBySession(ctx context.Context, accountID string, purpose string, sessionID string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ActiveLeaseFactBySession(ctx context.Context, accountID string, purpose string, sessionID string) (*proxygatewayv1.ProxyDynamicLease, error) {
 	sessionID = strings.TrimSpace(sessionID)
 	if sessionID == "" {
 		return nil, sql.ErrNoRows
 	}
 	query := `
 SELECT lease_json
-FROM proxy_runtime_dynamic_leases
+FROM proxy_gateway_dynamic_leases
 WHERE account_id=? AND status=? AND ` + sqliteLeaseActiveUntilPredicate + ` AND json_extract(lease_json, '$.session.sessionId')=?`
-	args := []any{strings.TrimSpace(accountID), proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(s.clock.Now().UTC()), sessionID}
+	args := []any{strings.TrimSpace(accountID), proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(s.clock.Now().UTC()), sessionID}
 	if purpose = strings.TrimSpace(purpose); purpose != "" {
 		query += ` AND purpose=?`
 		args = append(args, purpose)
@@ -36,20 +36,20 @@ WHERE account_id=? AND status=? AND ` + sqliteLeaseActiveUntilPredicate + ` AND 
 	return scanSQLiteLeaseFact(row)
 }
 
-func (s *Store) ActiveLeaseFactByAccount(ctx context.Context, accountID string, purpose string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) ActiveLeaseFactByAccount(ctx context.Context, accountID string, purpose string) (*proxygatewayv1.ProxyDynamicLease, error) {
 	return s.leaseFactByAccount(ctx, accountID, purpose, true)
 }
 
-func (s *Store) LatestLeaseFactByAccount(ctx context.Context, accountID string, purpose string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) LatestLeaseFactByAccount(ctx context.Context, accountID string, purpose string) (*proxygatewayv1.ProxyDynamicLease, error) {
 	return s.leaseFactByAccount(ctx, accountID, purpose, false)
 }
 
-func (s *Store) leaseFactByAccount(ctx context.Context, accountID string, purpose string, activeOnly bool) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (s *Store) leaseFactByAccount(ctx context.Context, accountID string, purpose string, activeOnly bool) (*proxygatewayv1.ProxyDynamicLease, error) {
 	accountID = strings.TrimSpace(accountID)
 	purpose = strings.TrimSpace(purpose)
 	query := `
 SELECT lease_json
-FROM proxy_runtime_dynamic_leases
+FROM proxy_gateway_dynamic_leases
 WHERE account_id=?`
 	args := []any{accountID}
 	if purpose != "" {
@@ -58,7 +58,7 @@ WHERE account_id=?`
 	}
 	if activeOnly {
 		query += ` AND status=? AND ` + sqliteLeaseActiveUntilPredicate
-		args = append(args, proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(s.clock.Now().UTC()))
+		args = append(args, proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE.String(), sqliteTime(s.clock.Now().UTC()))
 	}
 	query += ` ORDER BY acquired_at DESC, updated_at DESC, lease_id LIMIT 1`
 	row := s.db.QueryRowContext(ctx, query, args...)

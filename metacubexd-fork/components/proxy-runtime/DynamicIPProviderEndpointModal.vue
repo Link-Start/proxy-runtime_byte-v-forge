@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ProxyRuntimeDynamicIPProvidersState } from '~/composables/useProxyRuntimeDynamicIPProviders'
+import type { ProxyGatewayDynamicIPProvidersState } from '~/composables/useProxyGatewayDynamicIPProviders'
 import { IconCloud, IconDeviceFloppy, IconX } from '@tabler/icons-vue'
 
-const props = defineProps<{ runtime: ProxyRuntimeDynamicIPProvidersState }>()
+const props = defineProps<{ runtime: ProxyGatewayDynamicIPProvidersState }>()
 
 const modalRef = ref<{ open: () => void; close: () => void }>()
 

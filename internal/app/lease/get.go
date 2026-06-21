@@ -5,12 +5,12 @@ import (
 	"errors"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 var ErrLeaseIDRequired = errors.New("lease_id is required")
 
-func (a *Application) Get(ctx context.Context, leaseID string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (a *Application) Get(ctx context.Context, leaseID string) (*proxygatewayv1.ProxyDynamicLease, error) {
 	leaseID = strings.TrimSpace(leaseID)
 	if leaseID == "" {
 		return nil, ErrLeaseIDRequired

@@ -7,7 +7,7 @@ index 7ad6cf7..9508624 100644
  const proxiesStore = useProxiesStore()
  
 +const overviewTab = ref<'overview' | 'observability'>('overview')
-+const proxyRuntimeMetrics = useProxyRuntimeMetrics()
++const proxyGatewayMetrics = useProxyGatewayMetrics()
  const formatBytes = (bytes: number) => byteSize(bytes).toString()
  
  // Ensure proxy data is available for isProxyGroup filtering in top proxies chart
@@ -48,7 +48,7 @@ index 7ad6cf7..9508624 100644
      </div>
 +    </template>
 +
-+    <ProxyRuntimeMetrics v-else :runtime="proxyRuntimeMetrics" />
++    <ProxyGatewayMetrics v-else :runtime="proxyGatewayMetrics" />
    </div>
  </template>
  

@@ -3,29 +3,29 @@ package lease
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
 )
 
 type OrchestrationStore interface {
-	ActiveLeaseFactBySession(context.Context, string, string, string) (*proxyruntimev1.ProxyDynamicLease, error)
-	ActiveLeaseFactByAccount(context.Context, string, string) (*proxyruntimev1.ProxyDynamicLease, error)
-	LatestLeaseFactByAccount(context.Context, string, string) (*proxyruntimev1.ProxyDynamicLease, error)
-	LeaseFactByID(context.Context, string) (*proxyruntimev1.ProxyDynamicLease, error)
-	SaveLeaseFact(context.Context, *proxyruntimev1.ProxyDynamicLease) error
-	CleanupPendingLeaseFacts(context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error)
-	ExpiredActiveLeaseFacts(context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error)
-	ListRestorableLeaseFacts(context.Context) ([]*proxyruntimev1.ProxyDynamicLease, error)
-	ProviderAccount(context.Context, string) (*proxyruntimev1.ProxyProviderAccount, error)
+	ActiveLeaseFactBySession(context.Context, string, string, string) (*proxygatewayv1.ProxyDynamicLease, error)
+	ActiveLeaseFactByAccount(context.Context, string, string) (*proxygatewayv1.ProxyDynamicLease, error)
+	LatestLeaseFactByAccount(context.Context, string, string) (*proxygatewayv1.ProxyDynamicLease, error)
+	LeaseFactByID(context.Context, string) (*proxygatewayv1.ProxyDynamicLease, error)
+	SaveLeaseFact(context.Context, *proxygatewayv1.ProxyDynamicLease) error
+	CleanupPendingLeaseFacts(context.Context) ([]*proxygatewayv1.ProxyDynamicLease, error)
+	ExpiredActiveLeaseFacts(context.Context) ([]*proxygatewayv1.ProxyDynamicLease, error)
+	ListRestorableLeaseFacts(context.Context) ([]*proxygatewayv1.ProxyDynamicLease, error)
+	ProviderAccount(context.Context, string) (*proxygatewayv1.ProxyProviderAccount, error)
 	ProviderConfig(context.Context, string) (accountproxy.Config, string, error)
 }
 
 type SessionProvider interface {
 	Name() string
-	CreateSession(context.Context, *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.ProxySession, error)
-	FetchSession(context.Context, *proxyruntimev1.ProxySession) ([]provider.Node, error)
-	ReleaseSession(context.Context, *proxyruntimev1.ProxySession) error
+	CreateSession(context.Context, *proxygatewayv1.AcquireProxyLeaseRequest) (*proxygatewayv1.ProxySession, error)
+	FetchSession(context.Context, *proxygatewayv1.ProxySession) ([]provider.Node, error)
+	ReleaseSession(context.Context, *proxygatewayv1.ProxySession) error
 }
 
 type SessionProviderFactory interface {

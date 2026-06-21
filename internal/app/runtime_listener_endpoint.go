@@ -8,11 +8,11 @@ import (
 	"net/http"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 func (r *Runtime) checkIPListener(ctx context.Context, listenerID string) (config.EgressListener, error) {
@@ -76,7 +76,7 @@ func (r *Runtime) inUserCheckListener(ctx context.Context, username string) (con
 	return config.EgressListener{}, fmt.Errorf("in-user %q is not configured", username)
 }
 
-func (r *Runtime) localListenerEndpoint(listener leaseapp.Listener, advertisedHost string) (*proxyruntimev1.ProxyEndpoint, error) {
+func (r *Runtime) localListenerEndpoint(listener leaseapp.Listener, advertisedHost string) (*proxygatewayv1.ProxyEndpoint, error) {
 	return leaseapp.NewListenerEndpoint(listener, advertisedHost, r.cfg.LocalProtocol)
 }
 

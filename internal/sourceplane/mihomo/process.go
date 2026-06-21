@@ -1,6 +1,6 @@
 package mihomo
 
-import "github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+import "github.com/byte-v-forge/proxy-gateway/internal/dataplane"
 
 func (d *Driver) Stop() {
 	d.mu.Lock()

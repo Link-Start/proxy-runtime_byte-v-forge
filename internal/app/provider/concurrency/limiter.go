@@ -8,16 +8,16 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/redisclient"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/redisclient"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
 	"github.com/redis/go-redis/v9"
 )
 
 const (
-	providerAccountConcurrencyKeyPrefix      = "proxy-runtime:provider-account-concurrency"
+	providerAccountConcurrencyKeyPrefix      = "proxy-gateway:provider-account-concurrency"
 	defaultProviderAccountConcurrencySlotTTL = 15 * time.Minute
 )
 
@@ -34,7 +34,7 @@ type Limiter interface {
 type redisProviderAccountConcurrencySlot struct {
 	limiter   *redisProviderAccountConcurrencyLimiter
 	accountID string
-	policy    *proxyruntimev1.ProxySessionPolicy
+	policy    *proxygatewayv1.ProxySessionPolicy
 	holder    string
 }
 
@@ -53,7 +53,7 @@ func (l *redisProviderAccountConcurrencyLimiter) Close() error {
 	return l.client.Close()
 }
 
-func (l *redisProviderAccountConcurrencyLimiter) Available(ctx context.Context, accountID string, policy *proxyruntimev1.ProxySessionPolicy, limit uint32, holder string) (bool, error) {
+func (l *redisProviderAccountConcurrencyLimiter) Available(ctx context.Context, accountID string, policy *proxygatewayv1.ProxySessionPolicy, limit uint32, holder string) (bool, error) {
 	redisKey, cleanHolder, err := l.key(accountID, policy, holder)
 	if err != nil {
 		return false, err
@@ -65,7 +65,7 @@ func (l *redisProviderAccountConcurrencyLimiter) Available(ctx context.Context, 
 	return result == 1, nil
 }
 
-func (l *redisProviderAccountConcurrencyLimiter) Acquire(ctx context.Context, accountID string, policy *proxyruntimev1.ProxySessionPolicy, limit uint32, holder string, ttl time.Duration) (leaseapp.ProviderAccountConcurrencySlot, error) {
+func (l *redisProviderAccountConcurrencyLimiter) Acquire(ctx context.Context, accountID string, policy *proxygatewayv1.ProxySessionPolicy, limit uint32, holder string, ttl time.Duration) (leaseapp.ProviderAccountConcurrencySlot, error) {
 	redisKey, cleanHolder, err := l.key(accountID, policy, holder)
 	if err != nil {
 		return nil, err
@@ -81,7 +81,7 @@ func (l *redisProviderAccountConcurrencyLimiter) Acquire(ctx context.Context, ac
 	return &redisProviderAccountConcurrencySlot{limiter: l, accountID: strings.TrimSpace(accountID), policy: cloneConcurrencyPolicy(policy), holder: cleanHolder}, nil
 }
 
-func (l *redisProviderAccountConcurrencyLimiter) Release(ctx context.Context, accountID string, policy *proxyruntimev1.ProxySessionPolicy, holder string) error {
+func (l *redisProviderAccountConcurrencyLimiter) Release(ctx context.Context, accountID string, policy *proxygatewayv1.ProxySessionPolicy, holder string) error {
 	redisKey, cleanHolder, err := l.key(accountID, policy, holder)
 	if err != nil {
 		return err
@@ -96,7 +96,7 @@ func (s *redisProviderAccountConcurrencySlot) Release(ctx context.Context) error
 	return s.limiter.Release(ctx, s.accountID, s.policy, s.holder)
 }
 
-func (l *redisProviderAccountConcurrencyLimiter) key(accountID string, policy *proxyruntimev1.ProxySessionPolicy, holder string) (string, string, error) {
+func (l *redisProviderAccountConcurrencyLimiter) key(accountID string, policy *proxygatewayv1.ProxySessionPolicy, holder string) (string, string, error) {
 	if l == nil || l.client == nil {
 		return "", "", errors.New("provider account concurrency cache is not configured")
 	}
@@ -125,11 +125,11 @@ func effectiveProviderAccountConcurrencySlotTTL(ttl time.Duration) time.Duration
 	return ttl
 }
 
-func cloneConcurrencyPolicy(policy *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxySessionPolicy {
+func cloneConcurrencyPolicy(policy *proxygatewayv1.ProxySessionPolicy) *proxygatewayv1.ProxySessionPolicy {
 	if policy == nil {
 		return nil
 	}
-	return &proxyruntimev1.ProxySessionPolicy{
+	return &proxygatewayv1.ProxySessionPolicy{
 		Mode:         policy.GetMode(),
 		RotationMode: policy.GetRotationMode(),
 	}

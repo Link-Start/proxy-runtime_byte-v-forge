@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/proxyurl"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/proxyurl"
 )
 
 func (p *Provider) parseAPIResponse(body []byte) ([]provider.Node, error) {
@@ -49,8 +49,8 @@ func (p *Provider) parseRawValues(rawValues []string) ([]provider.Node, error) {
 			ID:           fmt.Sprintf("1024proxy-api-%d", len(nodes)),
 			URL:          proxyURL,
 			ProviderID:   p.Name(),
-			UpstreamKind: proxyruntimev1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_PROXY_POOL,
-			RotationMode: proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_PER_REQUEST,
+			UpstreamKind: proxygatewayv1.ProxyUpstreamKind_PROXY_UPSTREAM_KIND_PROXY_POOL,
+			RotationMode: proxygatewayv1.ProxyRotationMode_PROXY_ROTATION_MODE_PER_REQUEST,
 			Labels: map[string]string{
 				"mode": "api",
 			},

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ProxyRuntimePluginsState } from '~/composables/useProxyRuntimePlugins'
+import type { ProxyGatewayPluginsState } from '~/composables/useProxyGatewayPlugins'
 import { IconPlus, IconShieldCheck, IconX } from '@tabler/icons-vue'
 
-const props = defineProps<{ runtime: ProxyRuntimePluginsState }>()
+const props = defineProps<{ runtime: ProxyGatewayPluginsState }>()
 const modalRef = ref<{ open: () => void; close: () => void }>()
 const providerID = ref('')
 

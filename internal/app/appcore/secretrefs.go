@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+	commonv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/common/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/secretref"
 )
 
 // CleanSecretRefs normalizes, de-duplicates and re-stamps secret refs with the
@@ -46,7 +46,7 @@ func SecretRefConfigured(value *commonv1.SecretRef) bool {
 // ResolveRuntimeSecretRefs resolves the given refs to their plaintext values,
 // dropping empties. It returns an error when a resolver is required but absent.
 func ResolveRuntimeSecretRefs(ctx context.Context, resolver secretref.Resolver, refs []*commonv1.SecretRef, purpose string) ([]string, error) {
-	refs = CleanSecretRefs(refs, "proxy-runtime", purpose)
+	refs = CleanSecretRefs(refs, "proxy-gateway", purpose)
 	if len(refs) == 0 {
 		return nil, nil
 	}

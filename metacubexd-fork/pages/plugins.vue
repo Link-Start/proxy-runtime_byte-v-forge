@@ -1,10 +1,10 @@
 <script setup lang="ts">
-const runtime = useProxyRuntimePlugins()
+const runtime = useProxyGatewayPlugins()
 
 useHead({ title: '插件' })
 onMounted(runtime.load)
 </script>
 
 <template>
-  <ProxyRuntimePlugins :runtime="runtime" />
+  <ProxyGatewayPlugins :runtime="runtime" />
 </template>

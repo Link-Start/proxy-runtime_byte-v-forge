@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
+	"github.com/byte-v-forge/proxy-gateway/internal/protojsoncodec"
 	"google.golang.org/protobuf/proto"
 )
 

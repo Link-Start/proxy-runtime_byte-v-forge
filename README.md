@@ -1,6 +1,6 @@
-# proxy-runtime
+# proxy-gateway
 
-`proxy-runtime` 是统一出口代理网关，为业务服务提供稳定入口地址，并把代理商账号、动态 IP 租约、出口策略和 Mihomo 数据面配置集中在本服务内管理。
+`proxy-gateway` 是统一出口代理网关，为业务服务提供稳定入口地址，并把代理商账号、动态 IP 租约、出口策略和 Mihomo 数据面配置集中在本服务内管理。
 
 ## 核心能力
 
@@ -16,12 +16,12 @@
 
 ## 控制面鉴权
 
-设置 `PROXY_RUNTIME_CONTROL_AUTH_TOKEN` 后，控制面、MetaCubeXD 静态 UI 与 `/mihomo/controller/*` 需要先通过 `/login` 登录。登录成功后服务端下发 `HttpOnly` session cookie；浏览器不保存 Mihomo controller secret，proxy-runtime 在反向代理到 Mihomo 时内部注入 controller 鉴权。服务间调用可为 lease 与出口检测类 API 配置 `PROXY_RUNTIME_SERVICE_AUTH_TOKEN`，调用方通过 `Authorization: Bearer ...` 访问。
+设置 `PROXY_GATEWAY_CONTROL_AUTH_TOKEN` 后，控制面、MetaCubeXD 静态 UI 与 `/mihomo/controller/*` 需要先通过 `/login` 登录。登录成功后服务端下发 `HttpOnly` session cookie；浏览器不保存 Mihomo controller secret，proxy-gateway 在反向代理到 Mihomo 时内部注入 controller 鉴权。服务间调用可为 lease 与出口检测类 API 配置 `PROXY_GATEWAY_SERVICE_AUTH_TOKEN`，调用方通过 `Authorization: Bearer ...` 访问。
 
 ## 入口
 
-- 服务入口：`cmd/proxy-runtime`
-- 契约真源：`proto/byte/v/forge/contracts/proxyruntime/v1/`
+- 服务入口：`cmd/proxy-gateway`
+- 契约真源：`proto/byte/v/forge/contracts/proxygateway/v1/`
 - 控制面实现：`internal/app/`
 - Mihomo 数据面适配：`internal/dataplane/`、`internal/sourceplane/`
 - Dashboard fork：`metacubexd-fork/`

@@ -3,10 +3,10 @@ package application
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-func (a Application) Get(ctx context.Context) (*proxyruntimev1.GetProxyRuntimeSettingsResponse, error) {
+func (a Application) Get(ctx context.Context) (*proxygatewayv1.GetProxyGatewaySettingsResponse, error) {
 	repository, err := a.repositoryOrError()
 	if err != nil {
 		return nil, err
@@ -15,5 +15,5 @@ func (a Application) Get(ctx context.Context) (*proxyruntimev1.GetProxyRuntimeSe
 	if err != nil {
 		return nil, err
 	}
-	return &proxyruntimev1.GetProxyRuntimeSettingsResponse{Settings: settings}, nil
+	return &proxygatewayv1.GetProxyGatewaySettingsResponse{Settings: settings}, nil
 }

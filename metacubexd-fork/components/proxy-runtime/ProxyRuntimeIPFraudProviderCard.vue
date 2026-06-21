@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { ProxyRuntimePluginsState } from '~/composables/useProxyRuntimePlugins'
+import type { ProxyGatewayPluginsState } from '~/composables/useProxyGatewayPlugins'
 import { IconDeviceFloppy, IconKey, IconShieldCheck, IconTrash } from '@tabler/icons-vue'
 
 const props = defineProps<{
   index: number
-  row: ProxyRuntimePluginsState['fraudRows']['value'][number]
-  runtime: ProxyRuntimePluginsState
+  row: ProxyGatewayPluginsState['fraudRows']['value'][number]
+  runtime: ProxyGatewayPluginsState
 }>()
 
 const expanded = ref(false)

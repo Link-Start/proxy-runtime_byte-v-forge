@@ -3,12 +3,12 @@ package kernel
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
-func NormalizeEgressProfile(profile *proxyruntimev1.EgressProfileSettings) {
+func NormalizeEgressProfile(profile *proxygatewayv1.EgressProfileSettings) {
 	if profile == nil {
 		return
 	}
@@ -18,11 +18,11 @@ func NormalizeEgressProfile(profile *proxyruntimev1.EgressProfileSettings) {
 	profile.Exit = EgressProfileExitFromProto(profile.GetExit())
 }
 
-func EgressProfileLineFromProto(in *proxyruntimev1.EgressProfileLineSettings) *proxyruntimev1.EgressProfileLineSettings {
+func EgressProfileLineFromProto(in *proxygatewayv1.EgressProfileLineSettings) *proxygatewayv1.EgressProfileLineSettings {
 	if in == nil {
-		in = &proxyruntimev1.EgressProfileLineSettings{}
+		in = &proxygatewayv1.EgressProfileLineSettings{}
 	}
-	out := &proxyruntimev1.EgressProfileLineSettings{
+	out := &proxygatewayv1.EgressProfileLineSettings{
 		Kind:           in.GetKind(),
 		MihomoNode:     EgressProfileMihomoNodeRefFromProto(in.GetMihomoNode()),
 		HealthCheckUrl: strings.TrimSpace(in.GetHealthCheckUrl()),
@@ -30,17 +30,17 @@ func EgressProfileLineFromProto(in *proxyruntimev1.EgressProfileLineSettings) *p
 		HealthTimeout:  appcore.CloneDuration(in.GetHealthTimeout()),
 		ExpectedStatus: in.GetExpectedStatus(),
 	}
-	if out.GetKind() == proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_UNSPECIFIED {
-		out.Kind = proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_DIRECT
+	if out.GetKind() == proxygatewayv1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_UNSPECIFIED {
+		out.Kind = proxygatewayv1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_DIRECT
 	}
 	return out
 }
 
-func EgressProfileExitFromProto(in *proxyruntimev1.EgressProfileExitSettings) *proxyruntimev1.EgressProfileExitSettings {
+func EgressProfileExitFromProto(in *proxygatewayv1.EgressProfileExitSettings) *proxygatewayv1.EgressProfileExitSettings {
 	if in == nil {
-		in = &proxyruntimev1.EgressProfileExitSettings{}
+		in = &proxygatewayv1.EgressProfileExitSettings{}
 	}
-	out := &proxyruntimev1.EgressProfileExitSettings{
+	out := &proxygatewayv1.EgressProfileExitSettings{
 		Kind:              in.GetKind(),
 		MihomoNode:        EgressProfileMihomoNodeRefFromProto(in.GetMihomoNode()),
 		HealthCheckUrl:    strings.TrimSpace(in.GetHealthCheckUrl()),
@@ -53,18 +53,18 @@ func EgressProfileExitFromProto(in *proxyruntimev1.EgressProfileExitSettings) *p
 	return out
 }
 
-func EgressProfileDynamicIPPolicyFromProto(in *proxyruntimev1.ProxySessionPolicy) *proxyruntimev1.ProxySessionPolicy {
+func EgressProfileDynamicIPPolicyFromProto(in *proxygatewayv1.ProxySessionPolicy) *proxygatewayv1.ProxySessionPolicy {
 	if in == nil {
 		return nil
 	}
 	return NormalizeDynamicIPSessionPolicy(in)
 }
 
-func EgressProfileMihomoNodeRefFromProto(in *proxyruntimev1.EgressProfileMihomoNodeRef) *proxyruntimev1.EgressProfileMihomoNodeRef {
+func EgressProfileMihomoNodeRefFromProto(in *proxygatewayv1.EgressProfileMihomoNodeRef) *proxygatewayv1.EgressProfileMihomoNodeRef {
 	if in == nil {
-		return &proxyruntimev1.EgressProfileMihomoNodeRef{}
+		return &proxygatewayv1.EgressProfileMihomoNodeRef{}
 	}
-	return &proxyruntimev1.EgressProfileMihomoNodeRef{
+	return &proxygatewayv1.EgressProfileMihomoNodeRef{
 		ResourceId: strings.TrimSpace(in.GetResourceId()),
 		NodeId:     strings.TrimSpace(in.GetNodeId()),
 	}

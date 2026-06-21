@@ -3,7 +3,7 @@ package ten24
 import (
 	"context"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 func (p *Provider) Fetch(ctx context.Context) ([]provider.Node, error) {

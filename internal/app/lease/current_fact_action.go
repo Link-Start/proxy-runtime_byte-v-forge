@@ -4,17 +4,17 @@ import (
 	"context"
 	"errors"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 var ErrCurrentLeaseActionRequired = errors.New("current lease action is required")
 
-type CurrentLeaseAction func(context.Context, *proxyruntimev1.ProxyDynamicLease) error
+type CurrentLeaseAction func(context.Context, *proxygatewayv1.ProxyDynamicLease) error
 
 type CurrentLeaseActionInput struct {
 	Store      OrchestrationStore
 	Locks      LockManager
-	Lease      *proxyruntimev1.ProxyDynamicLease
+	Lease      *proxygatewayv1.ProxyDynamicLease
 	IsNotFound StoreNotFoundFunc
 	Action     CurrentLeaseAction
 }

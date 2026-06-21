@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 func validateConfig(cfg Config, definition Definition) error {
@@ -50,9 +50,9 @@ func defaultProtocol(protocol string, fallback string) string {
 	return "socks5"
 }
 
-func protocolEnumWithDefault(protocol string, fallback string) proxyruntimev1.ProxyProtocol {
+func protocolEnumWithDefault(protocol string, fallback string) proxygatewayv1.ProxyProtocol {
 	if defaultProtocol(protocol, fallback) == "http" {
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_HTTP
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_HTTP
 	}
-	return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
+	return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
 }

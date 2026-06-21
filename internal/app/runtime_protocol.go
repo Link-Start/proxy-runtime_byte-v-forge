@@ -4,28 +4,28 @@ import (
 	"fmt"
 	"net/url"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-func protocolFromName(protocol string) proxyruntimev1.ProxyProtocol {
+func protocolFromName(protocol string) proxygatewayv1.ProxyProtocol {
 	if protocol == "socks5" {
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
 	}
-	return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_HTTP
+	return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_HTTP
 }
 
-func protocolName(protocol proxyruntimev1.ProxyProtocol) string {
-	if protocol == proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5 {
+func protocolName(protocol proxygatewayv1.ProxyProtocol) string {
+	if protocol == proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5 {
 		return "socks5"
 	}
 	return "http"
 }
 
-func protocolFromURL(proxyURL *url.URL) proxyruntimev1.ProxyProtocol {
+func protocolFromURL(proxyURL *url.URL) proxygatewayv1.ProxyProtocol {
 	if proxyURL != nil && proxyURL.Scheme == "socks5" {
-		return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
+		return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5
 	}
-	return proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_HTTP
+	return proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_HTTP
 }
 
 func portFromURL(proxyURL *url.URL) uint32 {

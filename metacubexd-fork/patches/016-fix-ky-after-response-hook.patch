@@ -9,5 +9,5 @@ index 992f4d7..11e1236 100644
 -        (_request, _options, response) => {
 +        ({ response }) => {
            if (!isUnauthorizedStatus(response.status)) return
-           if (endpoint.id === 'proxy-runtime-mihomo') {
+           if (endpoint.id === 'proxy-gateway-mihomo') {
              endpointStore.setSelectedEndpoint('')

@@ -4,15 +4,15 @@ import (
 	"context"
 	"sync"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	settingsdomain "github.com/byte-v-forge/proxy-runtime/internal/app/settings/domain"
+	settingsdomain "github.com/byte-v-forge/proxy-gateway/internal/app/settings/domain"
 )
 
-type runtimeSettingsMutation func(*proxyruntimev1.ProxyRuntimePersistentSettings) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
-type runtimeSettingsChangeMutation func(*proxyruntimev1.ProxyRuntimePersistentSettings) (bool, error)
-type runtimeSettingsLoadFunc func(context.Context) (*proxyruntimev1.ProxyRuntimePersistentSettings, error)
-type runtimeSettingsSaveFunc func(context.Context, *proxyruntimev1.ProxyRuntimePersistentSettings) error
+type runtimeSettingsMutation func(*proxygatewayv1.ProxyGatewayPersistentSettings) (*proxygatewayv1.ProxyGatewayPersistentSettings, error)
+type runtimeSettingsChangeMutation func(*proxygatewayv1.ProxyGatewayPersistentSettings) (bool, error)
+type runtimeSettingsLoadFunc func(context.Context) (*proxygatewayv1.ProxyGatewayPersistentSettings, error)
+type runtimeSettingsSaveFunc func(context.Context, *proxygatewayv1.ProxyGatewayPersistentSettings) error
 
 type runtimeSettingsMutationExecutor struct {
 	mu   *sync.Mutex
@@ -20,7 +20,7 @@ type runtimeSettingsMutationExecutor struct {
 	save runtimeSettingsSaveFunc
 }
 
-func (s *Store) mutateRuntimeSettings(ctx context.Context, mutation runtimeSettingsMutation) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+func (s *Store) mutateRuntimeSettings(ctx context.Context, mutation runtimeSettingsMutation) (*proxygatewayv1.ProxyGatewaySettings, error) {
 	return s.mutationExecutor().mutate(ctx, mutation)
 }
 
@@ -32,7 +32,7 @@ func (s *Store) mutationExecutor() runtimeSettingsMutationExecutor {
 	return runtimeSettingsMutationExecutor{mu: &s.mu, load: s.loadLocked, save: s.saveLocked}
 }
 
-func (e runtimeSettingsMutationExecutor) mutate(ctx context.Context, mutation runtimeSettingsMutation) (*proxyruntimev1.ProxyRuntimeSettings, error) {
+func (e runtimeSettingsMutationExecutor) mutate(ctx context.Context, mutation runtimeSettingsMutation) (*proxygatewayv1.ProxyGatewaySettings, error) {
 	e.mu.Lock()
 	defer e.mu.Unlock()
 	settings, err := e.load(ctx)

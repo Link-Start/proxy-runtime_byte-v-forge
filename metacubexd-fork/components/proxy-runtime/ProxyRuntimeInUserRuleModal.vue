@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import type { ProxyRuntimeInUserRulesState } from '~/composables/useProxyRuntimeInUserRules'
+import type { ProxyGatewayInUserRulesState } from '~/composables/useProxyGatewayInUserRules'
 import {
   EgressProfileExitKind,
   EgressProfileLineKind,
-} from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+} from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 import { IconDeviceFloppy, IconKey, IconX } from '@tabler/icons-vue'
 
-const props = defineProps<{ runtime: ProxyRuntimeInUserRulesState }>()
+const props = defineProps<{ runtime: ProxyGatewayInUserRulesState }>()
 const modalRef = ref<{ open: () => void; close: () => void }>()
 
 const canSave = computed(() => {
@@ -74,7 +74,7 @@ defineExpose({ open, close })
         />
       </div>
 
-      <ProxyRuntimeInUserRouteFields :runtime="runtime" />
+      <ProxyGatewayInUserRouteFields :runtime="runtime" />
     </form>
 
     <template #actions>

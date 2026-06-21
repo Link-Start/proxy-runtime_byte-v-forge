@@ -4,14 +4,14 @@ import (
 	"context"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
-	mihomoapp "github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative/application"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/persistence"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/mihomonative"
+	mihomoapp "github.com/byte-v-forge/proxy-gateway/internal/app/mihomonative/application"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/settings/adapter/persistence"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
+	"github.com/byte-v-forge/proxy-gateway/internal/dataplane"
 )
 
 func sourcePlaneProxyUserRoutes(settings *runtimeSettingsFile) []dataplane.ProxyUserRoute {
@@ -49,14 +49,14 @@ func newRuntimeSettingsMihomoNativeAdapter(runtime *Runtime) runtimeSettingsMiho
 	}
 }
 
-func (a runtimeSettingsMihomoNativeAdapter) Load(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+func (a runtimeSettingsMihomoNativeAdapter) Load(ctx context.Context) (*proxygatewayv1.ProxyGatewayMihomoNativeConfig, error) {
 	if a.repository == nil {
 		return mihomonative.NormalizeSettings(nil), nil
 	}
 	return a.repository.LoadMihomoNative(ctx)
 }
 
-func (a runtimeSettingsMihomoNativeAdapter) Update(ctx context.Context, config *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+func (a runtimeSettingsMihomoNativeAdapter) Update(ctx context.Context, config *proxygatewayv1.ProxyGatewayMihomoNativeConfig) (*proxygatewayv1.ProxyGatewayMihomoNativeConfig, error) {
 	if a.repository == nil {
 		return nil, appcore.InternalError("mihomo native settings repository is required", nil)
 	}

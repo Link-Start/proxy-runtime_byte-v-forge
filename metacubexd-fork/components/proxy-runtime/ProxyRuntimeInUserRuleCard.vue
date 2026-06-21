@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { ProxyRuntimeInUserRulesState } from '~/composables/useProxyRuntimeInUserRules'
+import type { ProxyGatewayInUserRulesState } from '~/composables/useProxyGatewayInUserRules'
 import type {
   EgressProfileSettings,
   ProxyIngressRuleSettings,
-} from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+} from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 import { IconKey, IconPencil, IconRoute, IconTrash } from '@tabler/icons-vue'
 
 defineProps<{
@@ -11,7 +11,7 @@ defineProps<{
   index: number
   profile?: EgressProfileSettings
   rule: ProxyIngressRuleSettings
-  runtime: ProxyRuntimeInUserRulesState
+  runtime: ProxyGatewayInUserRulesState
 }>()
 
 defineEmits<{

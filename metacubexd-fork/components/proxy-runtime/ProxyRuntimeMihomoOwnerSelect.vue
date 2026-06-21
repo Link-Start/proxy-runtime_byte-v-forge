@@ -2,7 +2,7 @@
 import {
   mihomoOwnerLabel,
   type MihomoEgressOwner,
-} from '~/composables/proxyRuntimeMihomoOwnerHelpers'
+} from '~/composables/proxyGatewayMihomoOwnerHelpers'
 
 defineProps<{
   modelValue: string

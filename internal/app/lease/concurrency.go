@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 const (
@@ -22,24 +22,24 @@ const (
 	LabelAttempt                          = "attempt"
 )
 
-func ConcurrencyMode(policy *proxyruntimev1.ProxySessionPolicy) proxyruntimev1.ProxySessionMode {
+func ConcurrencyMode(policy *proxygatewayv1.ProxySessionPolicy) proxygatewayv1.ProxySessionMode {
 	if policy == nil {
-		return proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY
+		return proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_STICKY
 	}
-	if policy.GetMode() == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING || policy.GetRotationMode() == proxyruntimev1.ProxyRotationMode_PROXY_ROTATION_MODE_PER_REQUEST {
-		return proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING
+	if policy.GetMode() == proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING || policy.GetRotationMode() == proxygatewayv1.ProxyRotationMode_PROXY_ROTATION_MODE_PER_REQUEST {
+		return proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING
 	}
-	return proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY
+	return proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_STICKY
 }
 
-func ConcurrencyModeText(policy *proxyruntimev1.ProxySessionPolicy) string {
-	if ConcurrencyMode(policy) == proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
+func ConcurrencyModeText(policy *proxygatewayv1.ProxySessionPolicy) string {
+	if ConcurrencyMode(policy) == proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_ROTATING {
 		return "rotating"
 	}
 	return "sticky"
 }
 
-func ConcurrencySlotTTL(policy *proxyruntimev1.ProxySessionPolicy, defaultTTL time.Duration, buffer time.Duration) time.Duration {
+func ConcurrencySlotTTL(policy *proxygatewayv1.ProxySessionPolicy, defaultTTL time.Duration, buffer time.Duration) time.Duration {
 	ttl := defaultTTL
 	if policy != nil && policy.GetStickyTtl() != nil && policy.GetStickyTtl().AsDuration() > 0 {
 		ttl = policy.GetStickyTtl().AsDuration()
@@ -47,17 +47,17 @@ func ConcurrencySlotTTL(policy *proxyruntimev1.ProxySessionPolicy, defaultTTL ti
 	return ttl + buffer
 }
 
-func ConcurrencyPolicy(lease *proxyruntimev1.ProxyDynamicLease) *proxyruntimev1.ProxySessionPolicy {
+func ConcurrencyPolicy(lease *proxygatewayv1.ProxyDynamicLease) *proxygatewayv1.ProxySessionPolicy {
 	if lease == nil {
 		return nil
 	}
 	if policy := lease.GetSession().GetPolicy(); policy != nil {
 		return policy
 	}
-	return &proxyruntimev1.ProxySessionPolicy{RotationMode: lease.GetEgress().GetRotationMode()}
+	return &proxygatewayv1.ProxySessionPolicy{RotationMode: lease.GetEgress().GetRotationMode()}
 }
 
-func ConcurrencyHolder(lease *proxyruntimev1.ProxyDynamicLease) string {
+func ConcurrencyHolder(lease *proxygatewayv1.ProxyDynamicLease) string {
 	if lease == nil {
 		return ""
 	}
@@ -77,7 +77,7 @@ func HolderForLeaseID(leaseID string) string {
 	return ""
 }
 
-func DynamicProviderID(lease *proxyruntimev1.ProxyDynamicLease) string {
+func DynamicProviderID(lease *proxygatewayv1.ProxyDynamicLease) string {
 	if lease == nil {
 		return ""
 	}
@@ -96,13 +96,13 @@ func DynamicProviderID(lease *proxyruntimev1.ProxyDynamicLease) string {
 type RefreshConcurrencySlotInput struct {
 	Store      OrchestrationStore
 	Limiter    ProviderAccountConcurrencyLimiter
-	Lease      *proxyruntimev1.ProxyDynamicLease
+	Lease      *proxygatewayv1.ProxyDynamicLease
 	Limit      uint32
 	DefaultTTL time.Duration
 	TTLBuffer  time.Duration
 }
 
-type RefreshConcurrencySlotLimitFunc func(context.Context, *proxyruntimev1.ProxyDynamicLease, *proxyruntimev1.ProxySessionPolicy) (uint32, error)
+type RefreshConcurrencySlotLimitFunc func(context.Context, *proxygatewayv1.ProxyDynamicLease, *proxygatewayv1.ProxySessionPolicy) (uint32, error)
 
 type RefreshConcurrencySlotRunner struct {
 	Store      OrchestrationStore
@@ -112,7 +112,7 @@ type RefreshConcurrencySlotRunner struct {
 	Limit      RefreshConcurrencySlotLimitFunc
 }
 
-func (r RefreshConcurrencySlotRunner) Refresh(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+func (r RefreshConcurrencySlotRunner) Refresh(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) error {
 	if !NeedsConcurrencySlotRefresh(lease, r.Limiter) {
 		return nil
 	}
@@ -131,7 +131,7 @@ func (r RefreshConcurrencySlotRunner) Refresh(ctx context.Context, lease *proxyr
 	})
 }
 
-func (r RefreshConcurrencySlotRunner) limit(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, policy *proxyruntimev1.ProxySessionPolicy) (uint32, error) {
+func (r RefreshConcurrencySlotRunner) limit(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease, policy *proxygatewayv1.ProxySessionPolicy) (uint32, error) {
 	if r.Limit == nil {
 		return 0, nil
 	}
@@ -161,7 +161,7 @@ func RefreshConcurrencySlot(ctx context.Context, input RefreshConcurrencySlotInp
 	return err
 }
 
-func NeedsConcurrencySlotRefresh(lease *proxyruntimev1.ProxyDynamicLease, limiter ProviderAccountConcurrencyLimiter) bool {
+func NeedsConcurrencySlotRefresh(lease *proxygatewayv1.ProxyDynamicLease, limiter ProviderAccountConcurrencyLimiter) bool {
 	return lease != nil &&
 		limiter != nil &&
 		strings.TrimSpace(lease.GetProviderAccountId()) != "" &&

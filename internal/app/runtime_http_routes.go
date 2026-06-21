@@ -3,7 +3,7 @@ package app
 import (
 	"net/http"
 
-	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
+	httpapi "github.com/byte-v-forge/proxy-gateway/internal/app/httpapi"
 	"github.com/gin-gonic/gin"
 )
 

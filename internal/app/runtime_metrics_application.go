@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,8 +29,8 @@ func newRuntimeMetricsApplication(deps runtimeMetricsApplicationDependencies) ru
 	return runtimeMetricsApplication{metrics: deps.Metrics, now: now}
 }
 
-func (a runtimeMetricsApplication) GetProxyRuntimeMetricsSummary(context.Context) (*proxyruntimev1.GetProxyRuntimeMetricsSummaryResponse, error) {
-	return &proxyruntimev1.GetProxyRuntimeMetricsSummaryResponse{
+func (a runtimeMetricsApplication) GetProxyGatewayMetricsSummary(context.Context) (*proxygatewayv1.GetProxyGatewayMetricsSummaryResponse, error) {
+	return &proxygatewayv1.GetProxyGatewayMetricsSummaryResponse{
 		Summary: a.metrics.Summary(a.now()),
 	}, nil
 }
@@ -55,7 +55,7 @@ func (api *runtimeHTTPAPI) handleMetrics(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleRuntimeMetricsSummary(ctx *gin.Context) {
-	response, err := api.metricsUI.GetProxyRuntimeMetricsSummary(ctx.Request.Context())
+	response, err := api.metricsUI.GetProxyGatewayMetricsSummary(ctx.Request.Context())
 	if err != nil {
 		writeHTTPError(ctx.Writer, err, http.StatusInternalServerError)
 		return

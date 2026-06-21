@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
 )
 
 type abuseIPDBProvider struct{ httpProvider }
@@ -16,8 +16,8 @@ const abuseIPDBEndpoint = "https://api.abuseipdb.com/api/v2/check?ipAddress={ip}
 
 type abuseIPDBPlugin struct{}
 
-func (abuseIPDBPlugin) Kind() proxyruntimev1.ProxyIPFraudProviderKind {
-	return proxyruntimev1.ProxyIPFraudProviderKind_PROXY_IP_FRAUD_PROVIDER_KIND_ABUSEIPDB
+func (abuseIPDBPlugin) Kind() proxygatewayv1.ProxyIPFraudProviderKind {
+	return proxygatewayv1.ProxyIPFraudProviderKind_PROXY_IP_FRAUD_PROVIDER_KIND_ABUSEIPDB
 }
 func (abuseIPDBPlugin) ProviderID() string      { return "abuseipdb" }
 func (abuseIPDBPlugin) DisplayName() string     { return "AbuseIPDB" }

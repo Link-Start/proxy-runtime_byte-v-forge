@@ -3,17 +3,17 @@ package domain
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
-func egressProfileFromProto(in *proxyruntimev1.EgressProfileSettings) *proxyruntimev1.EgressProfileSettings {
+func egressProfileFromProto(in *proxygatewayv1.EgressProfileSettings) *proxygatewayv1.EgressProfileSettings {
 	if in == nil {
-		return &proxyruntimev1.EgressProfileSettings{}
+		return &proxygatewayv1.EgressProfileSettings{}
 	}
-	out := &proxyruntimev1.EgressProfileSettings{
+	out := &proxygatewayv1.EgressProfileSettings{
 		ProfileId:   appcore.RuntimeSafeID(in.GetProfileId()),
 		DisplayName: strings.TrimSpace(in.GetDisplayName()),
 		Enabled:     in.GetEnabled(),

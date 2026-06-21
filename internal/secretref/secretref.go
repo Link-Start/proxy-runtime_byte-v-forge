@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
+	commonv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/common/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

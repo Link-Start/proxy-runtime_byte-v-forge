@@ -1,11 +1,11 @@
 package app
 
 import (
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/dynamic"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/dynamic"
 )
 
-func dynamicIPPolicyDurationText(policy *proxyruntimev1.ProxySessionPolicy) string {
+func dynamicIPPolicyDurationText(policy *proxygatewayv1.ProxySessionPolicy) string {
 	if policy == nil || policy.GetStickyTtl() == nil || policy.GetStickyTtl().AsDuration() <= 0 {
 		return ""
 	}

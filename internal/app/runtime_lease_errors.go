@@ -3,8 +3,8 @@ package app
 import (
 	"errors"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
 )
 
 func acquireAttemptSlotError(err error) error {

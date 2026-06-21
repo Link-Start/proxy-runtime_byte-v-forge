@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import type { ProxyRuntimePluginsState } from '~/composables/useProxyRuntimePlugins'
-import type { ProxyIPFraudCheck } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import type { ProxyGatewayPluginsState } from '~/composables/useProxyGatewayPlugins'
+import type { ProxyIPFraudCheck } from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 import { IconShieldCheck } from '@tabler/icons-vue'
 
-const props = defineProps<{ runtime: ProxyRuntimePluginsState }>()
+const props = defineProps<{ runtime: ProxyGatewayPluginsState }>()
 const expanded = ref(false)
 
 function descriptorName(providerID: string) {

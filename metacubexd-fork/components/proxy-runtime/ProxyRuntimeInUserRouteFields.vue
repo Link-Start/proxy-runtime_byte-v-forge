@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ProxyRuntimeInUserRulesState } from '~/composables/useProxyRuntimeInUserRules'
-import { EgressProfileExitKind, EgressProfileLineKind, ProxySessionMode } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import type { ProxyGatewayInUserRulesState } from '~/composables/useProxyGatewayInUserRules'
+import { EgressProfileExitKind, EgressProfileLineKind, ProxySessionMode } from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 
-const props = defineProps<{ dense?: boolean, runtime: ProxyRuntimeInUserRulesState }>()
+const props = defineProps<{ dense?: boolean, runtime: ProxyGatewayInUserRulesState }>()
 
 const lineKinds = [
   [EgressProfileLineKind.EGRESS_PROFILE_LINE_KIND_DIRECT, '直连'],
@@ -102,14 +102,14 @@ watch(
             {{ label }}
           </option>
         </select>
-        <ProxyRuntimeMihomoOwnerSelect
+        <ProxyGatewayMihomoOwnerSelect
           v-if="lineUsesMihomoNode"
           v-model="runtime.form.line_resource_id"
           placeholder="线路节点组"
           :owners="runtime.lineSources.value"
           @update:model-value="runtime.form.line_node_id = ''"
         />
-        <ProxyRuntimeMihomoNodeSelect
+        <ProxyGatewayMihomoNodeSelect
           v-if="lineUsesMihomoNode"
           v-model="runtime.form.line_node_id"
           placeholder="线路节点"
@@ -127,21 +127,21 @@ watch(
             {{ label }}
           </option>
         </select>
-        <ProxyRuntimeMihomoOwnerSelect
+        <ProxyGatewayMihomoOwnerSelect
           v-if="exitUsesMihomoNode"
           v-model="runtime.form.exit_resource_id"
           placeholder="静态出口节点组"
           :owners="runtime.staticExitSources.value"
           @update:model-value="runtime.form.exit_node_id = ''"
         />
-        <ProxyRuntimeMihomoNodeSelect
+        <ProxyGatewayMihomoNodeSelect
           v-if="exitUsesMihomoNode"
           v-model="runtime.form.exit_node_id"
           placeholder="静态出口节点"
           :runtime="runtime"
           :owner-id="runtime.form.exit_resource_id"
         />
-        <ProxyRuntimeDynamicProviderSelect
+        <ProxyGatewayDynamicProviderSelect
           v-if="exitUsesDynamicProvider"
           v-model="runtime.form.exit_dynamic_provider_id"
           :providers="runtime.dynamicProviderOptions.value"
@@ -159,13 +159,13 @@ watch(
             {{ label }}
           </option>
         </select>
-        <ProxyRuntimeDynamicIPEndpointSelect
+        <ProxyGatewayDynamicIPEndpointSelect
           v-if="exitUsesDynamicProvider"
           v-model="runtime.form.exit_dynamic_endpoint_id"
           :dynamic-provider-id="runtime.form.exit_dynamic_provider_id"
           :providers="runtime.dynamicProviderOptions.value"
         />
-        <ProxyRuntimeDynamicIPGeoSelects
+        <ProxyGatewayDynamicIPGeoSelects
           v-if="exitUsesDynamicProvider"
           :runtime="runtime"
         />

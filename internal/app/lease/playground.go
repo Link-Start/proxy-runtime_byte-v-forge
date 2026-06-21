@@ -3,10 +3,10 @@ package lease
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-func PlaygroundLeaseNeedsReplacement(req *proxyruntimev1.AcquireProxyLeaseRequest, lease *proxyruntimev1.ProxyDynamicLease, accountID string, username string) bool {
+func PlaygroundLeaseNeedsReplacement(req *proxygatewayv1.AcquireProxyLeaseRequest, lease *proxygatewayv1.ProxyDynamicLease, accountID string, username string) bool {
 	if req.GetAccountId() != strings.TrimSpace(accountID) {
 		return false
 	}

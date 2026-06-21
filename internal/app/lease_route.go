@@ -3,12 +3,12 @@ package app
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/proxycheck"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/store"
 )
 
 type leaseRouteRetirerFactory struct {
@@ -33,7 +33,7 @@ func (f leaseRouteRetirerFactory) New() leaseapp.LeaseRouteRetirer {
 	}
 }
 
-func (f leaseRouteRetirerFactory) afterRouteCleanup(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) {
+func (f leaseRouteRetirerFactory) afterRouteCleanup(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) {
 	f.sideEffects.afterRouteChange(ctx, lease.GetAccountId())
 }
 
@@ -80,16 +80,16 @@ func (f leaseRouteRestorerFactory) New() leaseapp.LeaseRouteRestorer {
 	}
 }
 
-func (f leaseRouteRestorerFactory) limit(lease *proxyruntimev1.ProxyDynamicLease) uint32 {
+func (f leaseRouteRestorerFactory) limit(lease *proxygatewayv1.ProxyDynamicLease) uint32 {
 	return dynamicProviderConcurrencyLimit(f.settings, leaseapp.DynamicProviderID(lease), leaseapp.ConcurrencyPolicy(lease))
 }
 
-func (f leaseRouteRestorerFactory) resolveGateways(lease *proxyruntimev1.ProxyDynamicLease) leaseapp.ProviderSessionGatewaysResolver {
+func (f leaseRouteRestorerFactory) resolveGateways(lease *proxygatewayv1.ProxyDynamicLease) leaseapp.ProviderSessionGatewaysResolver {
 	return f.adapter.ProviderGatewaysResolverForSettings(f.settings, lease)
 }
 
 func warnLeaseProviderSessionReleaseFailed(logger leaseapp.Logger) leaseapp.LeaseErrorObserver {
-	return func(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease, err error) {
+	return func(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease, err error) {
 		_ = ctx
 		if logger == nil || lease == nil {
 			return

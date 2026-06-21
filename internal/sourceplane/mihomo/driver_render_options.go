@@ -1,6 +1,6 @@
 package mihomo
 
-import "github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+import "github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 
 func (d *Driver) renderConfigProjectionLocked(cfg sourceplane.Config, endpoint sourceplane.Endpoint, dir string) (renderOptions, renderedMihomoConfig, error) {
 	options, err := d.configRenderOptionsLocked(cfg, endpoint, dir)

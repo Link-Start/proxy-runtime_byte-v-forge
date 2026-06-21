@@ -3,7 +3,7 @@ package app
 import (
 	"net/http"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,7 +28,7 @@ func (api *runtimeHTTPAPI) handleListProviderAccounts(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleUpsertProviderAccount(ctx *gin.Context) {
-	var body proxyruntimev1.UpsertProxyProviderAccountRequest
+	var body proxygatewayv1.UpsertProxyProviderAccountRequest
 	if !api.readProto(ctx, &body) {
 		return
 	}
@@ -41,7 +41,7 @@ func (api *runtimeHTTPAPI) handleUpsertProviderAccount(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleDeleteProviderAccount(ctx *gin.Context) {
-	var body proxyruntimev1.DeleteProxyProviderAccountRequest
+	var body proxygatewayv1.DeleteProxyProviderAccountRequest
 	if !api.readProto(ctx, &body) {
 		return
 	}

@@ -3,8 +3,8 @@ package mihomo
 import (
 	"context"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/dataplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 func (d *Driver) ApplyDesiredConfig(ctx context.Context, cfg dataplane.Config) ([]provider.Node, error) {

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 var (
@@ -16,13 +16,13 @@ var (
 
 type AcquiredEndpointInput struct {
 	Listener          Listener
-	Egress            *proxyruntimev1.ProxyEndpoint
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Egress            *proxygatewayv1.ProxyEndpoint
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	ProviderClient    SessionProvider
 	ProviderAccountID string
 	ConcurrencyHolder string
-	Session           *proxyruntimev1.ProxySession
+	Session           *proxygatewayv1.ProxySession
 	LineLabels        map[string]string
 	Managed           bool
 	FallbackProtocol  string
@@ -30,21 +30,21 @@ type AcquiredEndpointInput struct {
 
 type AcquiredEndpoint struct {
 	Listener      Listener
-	ListenerProto *proxyruntimev1.EgressListener
-	Egress        *proxyruntimev1.ProxyEndpoint
+	ListenerProto *proxygatewayv1.EgressListener
+	Egress        *proxygatewayv1.ProxyEndpoint
 }
 
 type AcquiredEndpointListenerResolver func(context.Context, string, string) (Listener, error)
-type AcquiredEndpointEgressResolver func(context.Context, Listener) (*proxyruntimev1.ProxyEndpoint, error)
+type AcquiredEndpointEgressResolver func(context.Context, Listener) (*proxygatewayv1.ProxyEndpoint, error)
 
 type AcquiredEndpointMaterializeInput struct {
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
 	LeaseID           string
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	ProviderClient    SessionProvider
 	ProviderAccountID string
 	ConcurrencyHolder string
-	Session           *proxyruntimev1.ProxySession
+	Session           *proxygatewayv1.ProxySession
 	LineLabels        map[string]string
 	Failure           *FailedAcquireRecorder
 	Managed           bool
@@ -106,20 +106,20 @@ type AcquiredEndpointRouteApplyInput struct {
 	DataPlane         DataPlaneApplier
 	Failure           *FailedAcquireRecorder
 	LeaseID           string
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
 	ProviderAccountID string
-	Session           *proxyruntimev1.ProxySession
-	Egress            *proxyruntimev1.ProxyEndpoint
+	Session           *proxygatewayv1.ProxySession
+	Egress            *proxygatewayv1.ProxyEndpoint
 	Listener          Listener
-	ListenerProto     *proxyruntimev1.EgressListener
+	ListenerProto     *proxygatewayv1.EgressListener
 	Nodes             []provider.Node
 	DialerProxy       string
 	LocalProtocol     string
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	AcquiredAt        time.Time
 }
 
-func ApplyAcquiredEndpointRoute(ctx context.Context, input AcquiredEndpointRouteApplyInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+func ApplyAcquiredEndpointRoute(ctx context.Context, input AcquiredEndpointRouteApplyInput) (*proxygatewayv1.ProxyDynamicLease, error) {
 	route := NewAcquiredSessionRoute(AcquiredSessionRouteInput{
 		Session:       input.Session,
 		Egress:        input.Egress,

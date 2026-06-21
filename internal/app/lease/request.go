@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 var (
@@ -25,7 +25,7 @@ type ReleaseLookup struct {
 	Purpose   string
 }
 
-func PrepareAcquireRequest(req *proxyruntimev1.AcquireProxyLeaseRequest) error {
+func PrepareAcquireRequest(req *proxygatewayv1.AcquireProxyLeaseRequest) error {
 	if req == nil {
 		return ErrAcquireRequestRequired
 	}
@@ -37,7 +37,7 @@ func PrepareAcquireRequest(req *proxyruntimev1.AcquireProxyLeaseRequest) error {
 	return nil
 }
 
-func ParseReleaseRequest(req *proxyruntimev1.ReleaseProxyLeaseRequest) (ReleaseLookup, error) {
+func ParseReleaseRequest(req *proxygatewayv1.ReleaseProxyLeaseRequest) (ReleaseLookup, error) {
 	if req == nil {
 		return ReleaseLookup{}, ErrReleaseRequestRequired
 	}
@@ -52,7 +52,7 @@ func ParseReleaseRequest(req *proxyruntimev1.ReleaseProxyLeaseRequest) (ReleaseL
 	return lookup, nil
 }
 
-func ValidateReleaseLeaseMatch(lookup ReleaseLookup, lease *proxyruntimev1.ProxyDynamicLease) error {
+func ValidateReleaseLeaseMatch(lookup ReleaseLookup, lease *proxygatewayv1.ProxyDynamicLease) error {
 	if lease == nil {
 		return nil
 	}
@@ -65,7 +65,7 @@ func ValidateReleaseLeaseMatch(lookup ReleaseLookup, lease *proxyruntimev1.Proxy
 	return nil
 }
 
-func RequestedSessionID(req *proxyruntimev1.AcquireProxyLeaseRequest) string {
+func RequestedSessionID(req *proxygatewayv1.AcquireProxyLeaseRequest) string {
 	labels := req.GetPolicy().GetLabels()
 	return appcore.FirstNonEmpty(
 		labels["session_id"],
@@ -76,12 +76,12 @@ func RequestedSessionID(req *proxyruntimev1.AcquireProxyLeaseRequest) string {
 	)
 }
 
-func ApplyRequestLabels(req *proxyruntimev1.AcquireProxyLeaseRequest) {
+func ApplyRequestLabels(req *proxygatewayv1.AcquireProxyLeaseRequest) {
 	if req == nil {
 		return
 	}
 	if req.Policy == nil {
-		req.Policy = &proxyruntimev1.ProxySessionPolicy{}
+		req.Policy = &proxygatewayv1.ProxySessionPolicy{}
 	}
 	if req.Policy.Labels == nil {
 		req.Policy.Labels = map[string]string{}
@@ -90,7 +90,7 @@ func ApplyRequestLabels(req *proxyruntimev1.AcquireProxyLeaseRequest) {
 	req.Policy.Labels[LabelPurpose] = req.GetPurpose()
 }
 
-func SetAttemptLabel(req *proxyruntimev1.AcquireProxyLeaseRequest, attempt int) {
+func SetAttemptLabel(req *proxygatewayv1.AcquireProxyLeaseRequest, attempt int) {
 	if req == nil {
 		return
 	}
@@ -98,7 +98,7 @@ func SetAttemptLabel(req *proxyruntimev1.AcquireProxyLeaseRequest, attempt int) 
 	req.Policy.Labels[LabelAttempt] = strconv.Itoa(attempt)
 }
 
-func ApplyProviderSessionRequestLabels(req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, concurrencyHolder string) {
+func ApplyProviderSessionRequestLabels(req *proxygatewayv1.AcquireProxyLeaseRequest, selectionPlan *proxygatewayv1.ProxyDynamicIPSelectionPlan, concurrencyHolder string) {
 	if req == nil {
 		return
 	}

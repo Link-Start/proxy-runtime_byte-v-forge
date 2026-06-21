@@ -4,11 +4,11 @@ import (
 	"strconv"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/random"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/random"
 )
 
-func passthroughUsername(base string, _ *proxyruntimev1.ProxySessionPolicy, _ string) string {
+func passthroughUsername(base string, _ *proxygatewayv1.ProxySessionPolicy, _ string) string {
 	return strings.TrimSpace(base)
 }
 
@@ -24,7 +24,7 @@ func dashUsername(base string, pairs ...string) string {
 	return strings.Join(parts, "-")
 }
 
-func stickyMinutesString(policy *proxyruntimev1.ProxySessionPolicy) string {
+func stickyMinutesString(policy *proxygatewayv1.ProxySessionPolicy) string {
 	return strconv.Itoa(policyStickyMinutes(policy))
 }
 

@@ -4,11 +4,11 @@ import (
 	"context"
 	"errors"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
 )
 
-func ProviderConfigForLease(ctx context.Context, store OrchestrationStore, lease *proxyruntimev1.ProxyDynamicLease) (accountproxy.Config, string, error) {
+func ProviderConfigForLease(ctx context.Context, store OrchestrationStore, lease *proxygatewayv1.ProxyDynamicLease) (accountproxy.Config, string, error) {
 	if store == nil {
 		return accountproxy.Config{}, "", errors.New("lease store is required")
 	}

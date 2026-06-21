@@ -3,10 +3,10 @@ package mihomonative
 import (
 	"fmt"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
-func (p *UpdatePlan) addFixedProxies(current ConfigFile, fixedProxies []*proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy) error {
+func (p *UpdatePlan) addFixedProxies(current ConfigFile, fixedProxies []*proxygatewayv1.ProxyGatewayMihomoNativeFixedProxy) error {
 	currentByID, currentByName := CurrentFixedProxyIndexes(current)
 	seenIDs := map[string]struct{}{}
 	seenNames := map[string]struct{}{}

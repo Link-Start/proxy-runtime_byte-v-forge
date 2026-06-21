@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 func (p *Provider) fetchAPI(ctx context.Context) ([]provider.Node, error) {

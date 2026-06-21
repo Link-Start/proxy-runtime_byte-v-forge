@@ -1,11 +1,11 @@
 package lease
 
 import (
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
-func SessionRouteFromLease(lease *proxyruntimev1.ProxyDynamicLease, nodes []provider.Node, dialerProxy string, fallbackProtocol string) (SessionRoute, bool) {
+func SessionRouteFromLease(lease *proxygatewayv1.ProxyDynamicLease, nodes []provider.Node, dialerProxy string, fallbackProtocol string) (SessionRoute, bool) {
 	if lease == nil || lease.GetSession() == nil || lease.GetListener() == nil {
 		return SessionRoute{}, false
 	}
@@ -17,7 +17,7 @@ func SessionRouteFromLease(lease *proxyruntimev1.ProxyDynamicLease, nodes []prov
 	}, true
 }
 
-func ListenerFromProto(listener *proxyruntimev1.EgressListener) Listener {
+func ListenerFromProto(listener *proxygatewayv1.EgressListener) Listener {
 	if listener == nil {
 		return Listener{}
 	}
@@ -33,8 +33,8 @@ func ListenerFromProto(listener *proxyruntimev1.EgressListener) Listener {
 	}
 }
 
-func protocolName(protocol proxyruntimev1.ProxyProtocol) string {
-	if protocol == proxyruntimev1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5 {
+func protocolName(protocol proxygatewayv1.ProxyProtocol) string {
+	if protocol == proxygatewayv1.ProxyProtocol_PROXY_PROTOCOL_SOCKS5 {
 		return "socks5"
 	}
 	return "http"

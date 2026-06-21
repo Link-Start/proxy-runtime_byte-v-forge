@@ -35,7 +35,7 @@ func Middleware(opts MiddlewareOptions) gin.HandlerFunc {
 				}
 				ctx.Abort()
 				logger.Error(
-					"proxy-runtime http panic",
+					"proxy-gateway http panic",
 					"request_id", requestID,
 					"method", ctx.Request.Method,
 					"path", ctx.Request.URL.Path,
@@ -43,7 +43,7 @@ func Middleware(opts MiddlewareOptions) gin.HandlerFunc {
 				)
 			}
 			logger.Info(
-				"proxy-runtime http request",
+				"proxy-gateway http request",
 				"request_id", requestID,
 				"method", ctx.Request.Method,
 				"path", ctx.Request.URL.Path,

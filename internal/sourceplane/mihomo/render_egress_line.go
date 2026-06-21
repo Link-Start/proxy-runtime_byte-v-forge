@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 )
 
 func renderEgressProfileLine(opts renderOptions, profileID string, line sourceplane.EgressProfileLine) (renderedProfileLayer, error) {

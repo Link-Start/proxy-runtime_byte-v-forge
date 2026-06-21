@@ -3,13 +3,13 @@ package domain
 import (
 	"fmt"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	providerregistry "github.com/byte-v-forge/proxy-gateway/internal/provider/registry"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
-func validateDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderSettings, index int, accountProviders *providerregistry.Registry) error {
+func validateDynamicIPProvider(provider *proxygatewayv1.ProxyDynamicIPProviderSettings, index int, accountProviders *providerregistry.Registry) error {
 	if kernel.DynamicIPProviderID(provider) == "" {
 		return fmt.Errorf("dynamic_ip_providers[%d].dynamic_provider_id is required", index)
 	}

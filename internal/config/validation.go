@@ -5,21 +5,21 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/proxyurl"
+	"github.com/byte-v-forge/proxy-gateway/internal/proxyurl"
 )
 
 func (c Config) validate() error {
 	if c.RuntimeAddr == "" {
-		return errors.New("PROXY_RUNTIME_ADDR is required")
+		return errors.New("PROXY_GATEWAY_ADDR is required")
 	}
 	if strings.TrimSpace(c.PostgresDSN) == "" && strings.TrimSpace(c.DataDir) == "" {
-		return errors.New("PROXY_RUNTIME_DATA_DIR is required when PostgreSQL is not configured")
+		return errors.New("PROXY_GATEWAY_DATA_DIR is required when PostgreSQL is not configured")
 	}
 	if strings.TrimSpace(c.RedisURL) == "" {
-		return errors.New("PROXY_RUNTIME_REDIS_URL is required")
+		return errors.New("PROXY_GATEWAY_REDIS_URL is required")
 	}
 	if strings.TrimSpace(c.EncryptionKey) == "" {
-		return errors.New("PROXY_RUNTIME_ENCRYPTION_KEY is required")
+		return errors.New("PROXY_GATEWAY_ENCRYPTION_KEY is required")
 	}
 	if err := c.Mihomo.validate(); err != nil {
 		return err
@@ -29,7 +29,7 @@ func (c Config) validate() error {
 	}
 	if strings.TrimSpace(c.ProviderHTTPProxy) != "" {
 		if _, err := proxyurl.Parse(c.ProviderHTTPProxy, "http"); err != nil {
-			return errors.New("PROXY_RUNTIME_PROVIDER_HTTP_PROXY is invalid")
+			return errors.New("PROXY_GATEWAY_PROVIDER_HTTP_PROXY is invalid")
 		}
 	}
 	if err := validateProxyUsers(c.ProxyUsers); err != nil {
@@ -44,16 +44,16 @@ func (c Config) validate() error {
 		}
 	}
 	if c.RefreshInterval < 0 {
-		return errors.New("PROXY_RUNTIME_REFRESH_SECONDS must be >= 0")
+		return errors.New("PROXY_GATEWAY_REFRESH_SECONDS must be >= 0")
 	}
 	if c.RequestTimeout <= 0 {
-		return errors.New("PROXY_RUNTIME_REQUEST_TIMEOUT_SECONDS must be > 0")
+		return errors.New("PROXY_GATEWAY_REQUEST_TIMEOUT_SECONDS must be > 0")
 	}
 	if len(c.ProxyExitGeoURLs) == 0 {
-		return errors.New("PROXY_RUNTIME_PROXY_EXIT_GEO_URLS must not be empty")
+		return errors.New("PROXY_GATEWAY_PROXY_EXIT_GEO_URLS must not be empty")
 	}
 	if c.EdgeCanaryTimeout <= 0 {
-		return errors.New("PROXY_RUNTIME_EDGE_CANARY_TIMEOUT_SECONDS must be > 0")
+		return errors.New("PROXY_GATEWAY_EDGE_CANARY_TIMEOUT_SECONDS must be > 0")
 	}
 	if err := c.IPFraud.validate(); err != nil {
 		return err

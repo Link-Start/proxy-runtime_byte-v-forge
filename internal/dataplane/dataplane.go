@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 )
 
 type Driver interface {

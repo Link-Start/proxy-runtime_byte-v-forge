@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ProxyRuntimeNativeRow } from '~/composables/proxyRuntimeNativeRows'
-import type { ProxyRuntimeMihomoNativeState } from '~/composables/useProxyRuntimeMihomoNativeConfig'
+import type { ProxyGatewayNativeRow } from '~/composables/proxyGatewayNativeRows'
+import type { ProxyGatewayMihomoNativeState } from '~/composables/useProxyGatewayMihomoNativeConfig'
 
-const props = defineProps<{ runtime: ProxyRuntimeMihomoNativeState }>()
+const props = defineProps<{ runtime: ProxyGatewayMihomoNativeState }>()
 const modal = ref<{ open: () => void; close: () => void }>()
 const expanded = reactive<Record<string, boolean>>({})
 
@@ -18,7 +18,7 @@ function addItem() {
   modal.value?.open()
 }
 
-function editItem(row: ProxyRuntimeNativeRow) {
+function editItem(row: ProxyGatewayNativeRow) {
   props.runtime.editRow(row)
   modal.value?.open()
 }
@@ -38,7 +38,7 @@ defineExpose({ openCreate: addItem })
 
     <ProxiesRenderWrapper v-else>
       <template #even>
-        <ProxyRuntimeNativeRowCard
+        <ProxyGatewayNativeRowCard
           v-for="(row, index) in evenRows"
           :key="row.id"
           :expanded="expanded[row.id] || false"
@@ -51,7 +51,7 @@ defineExpose({ openCreate: addItem })
         />
       </template>
       <template #odd>
-        <ProxyRuntimeNativeRowCard
+        <ProxyGatewayNativeRowCard
           v-for="(row, index) in oddRows"
           :key="row.id"
           :expanded="expanded[row.id] || false"
@@ -64,7 +64,7 @@ defineExpose({ openCreate: addItem })
         />
       </template>
       <template #default>
-        <ProxyRuntimeNativeRowCard
+        <ProxyGatewayNativeRowCard
           v-for="(row, index) in runtime.rows.value"
           :key="row.id"
           :expanded="expanded[row.id] || false"
@@ -78,6 +78,6 @@ defineExpose({ openCreate: addItem })
       </template>
     </ProxiesRenderWrapper>
 
-    <ProxyRuntimeNativeItemModal ref="modal" :runtime="runtime" />
+    <ProxyGatewayNativeItemModal ref="modal" :runtime="runtime" />
   </section>
 </template>

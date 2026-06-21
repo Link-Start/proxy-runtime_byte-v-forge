@@ -84,7 +84,7 @@ index 84ba83d..bbbe07e 100644
  useHead({ title: computed(() => t('connections')) })
  const connectionsStore = useConnectionsStore()
  const configStore = useConfigStore()
-+const dynamicLeases = useProxyRuntimeDynamicLeases()
++const dynamicLeases = useProxyGatewayDynamicLeases()
  
  // Modals
  const settingsModal = ref<{ open: () => void; close: () => void }>()

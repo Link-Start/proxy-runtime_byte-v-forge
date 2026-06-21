@@ -11,7 +11,7 @@ func (d *Driver) ensureConfigDir() (string, error) {
 	}
 	dir := strings.TrimSpace(d.cfg.ConfigDir)
 	if dir == "" {
-		created, err := os.MkdirTemp("", "proxy-runtime-mihomo-")
+		created, err := os.MkdirTemp("", "proxy-gateway-mihomo-")
 		if err != nil {
 			return "", err
 		}

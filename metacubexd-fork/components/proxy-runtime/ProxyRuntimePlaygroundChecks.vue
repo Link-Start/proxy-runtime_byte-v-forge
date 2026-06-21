@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import type { ProxyRuntimePlaygroundChecksState } from '~/composables/useProxyRuntimePlaygroundChecks'
-import type { ProxyIPFraudCheck } from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+import type { ProxyGatewayPlaygroundChecksState } from '~/composables/useProxyGatewayPlaygroundChecks'
+import type { ProxyIPFraudCheck } from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 import { IconClipboard, IconMapPin, IconSearch, IconShieldCheck } from '@tabler/icons-vue'
 
 defineProps<{
   canRun: boolean
   copied: string
   copyText: (key: string, value: string) => Promise<void>
-  state: ProxyRuntimePlaygroundChecksState
+  state: ProxyGatewayPlaygroundChecksState
 }>()
 
 const expanded = ref(false)

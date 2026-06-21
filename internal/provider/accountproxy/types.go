@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 const (
@@ -35,13 +35,13 @@ type Plugin interface {
 	ID() string
 	DisplayName() string
 	Default() bool
-	Descriptor(gateways []Gateway) *proxyruntimev1.ProxyProviderDescriptor
+	Descriptor(gateways []Gateway) *proxygatewayv1.ProxyProviderDescriptor
 	GatewayProtocol(gateway Gateway) string
 	NewSessionProvider(cfg Config, client *http.Client, clk clock.Clock) (provider.SessionProvider, error)
 	Validate(cfg Config) error
 }
 
-type UsernameBuilder func(base string, policy *proxyruntimev1.ProxySessionPolicy, sessionID string) string
+type UsernameBuilder func(base string, policy *proxygatewayv1.ProxySessionPolicy, sessionID string) string
 type SessionIDGenerator func() (string, error)
 
 type Definition struct {

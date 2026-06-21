@@ -1,23 +1,23 @@
 package mihomonative
 
-import proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+import proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-func protoFixedProxy(item FixedProxy) *proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy {
-	return &proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy{Id: item.ID, Name: item.Name, Type: item.Type, Uri: item.URI}
+func protoFixedProxy(item FixedProxy) *proxygatewayv1.ProxyGatewayMihomoNativeFixedProxy {
+	return &proxygatewayv1.ProxyGatewayMihomoNativeFixedProxy{Id: item.ID, Name: item.Name, Type: item.Type, Uri: item.URI}
 }
 
-func protoSubscription(item Subscription) *proxyruntimev1.ProxyRuntimeMihomoNativeSubscription {
-	return &proxyruntimev1.ProxyRuntimeMihomoNativeSubscription{Id: item.ID, Name: item.Name, Url: item.URL}
+func protoSubscription(item Subscription) *proxygatewayv1.ProxyGatewayMihomoNativeSubscription {
+	return &proxygatewayv1.ProxyGatewayMihomoNativeSubscription{Id: item.ID, Name: item.Name, Url: item.URL}
 }
 
-func FixedProxyFromProto(item *proxyruntimev1.ProxyRuntimeMihomoNativeFixedProxy) FixedProxy {
+func FixedProxyFromProto(item *proxygatewayv1.ProxyGatewayMihomoNativeFixedProxy) FixedProxy {
 	if item == nil {
 		return FixedProxy{}
 	}
 	return FixedProxy{ID: item.GetId(), Name: item.GetName(), Type: item.GetType(), URI: item.GetUri()}
 }
 
-func SubscriptionFromProto(item *proxyruntimev1.ProxyRuntimeMihomoNativeSubscription) Subscription {
+func SubscriptionFromProto(item *proxygatewayv1.ProxyGatewayMihomoNativeSubscription) Subscription {
 	if item == nil {
 		return Subscription{}
 	}

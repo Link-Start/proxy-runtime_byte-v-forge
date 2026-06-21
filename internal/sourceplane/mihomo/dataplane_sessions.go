@@ -4,7 +4,7 @@ import (
 	"context"
 	"sort"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/dataplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/dataplane"
 )
 
 func (d *Driver) UpsertSessionRoute(ctx context.Context, route dataplane.SessionRoute) error {

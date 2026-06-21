@@ -3,15 +3,15 @@ package ipgeo
 import (
 	"net/http"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 )
 
 type ipinfoPlugin struct{}
 type ip2LocationPlugin struct{}
 type ipAPIComPlugin struct{}
 
-func (ipinfoPlugin) Kind() proxyruntimev1.ProxyIPGeoProviderKind {
-	return proxyruntimev1.ProxyIPGeoProviderKind_PROXY_IP_GEO_PROVIDER_KIND_IPINFO
+func (ipinfoPlugin) Kind() proxygatewayv1.ProxyIPGeoProviderKind {
+	return proxygatewayv1.ProxyIPGeoProviderKind_PROXY_IP_GEO_PROVIDER_KIND_IPINFO
 }
 func (ipinfoPlugin) ProviderID() string      { return "ipinfo" }
 func (ipinfoPlugin) DisplayName() string     { return "IPinfo" }
@@ -25,8 +25,8 @@ func (ipinfoPlugin) New(client *http.Client, cfg ProviderConfig) provider {
 	return newHTTPProvider(client, "https://ipinfo.io/{ip}/json", cfg.Auth)
 }
 
-func (ip2LocationPlugin) Kind() proxyruntimev1.ProxyIPGeoProviderKind {
-	return proxyruntimev1.ProxyIPGeoProviderKind_PROXY_IP_GEO_PROVIDER_KIND_IP2LOCATION
+func (ip2LocationPlugin) Kind() proxygatewayv1.ProxyIPGeoProviderKind {
+	return proxygatewayv1.ProxyIPGeoProviderKind_PROXY_IP_GEO_PROVIDER_KIND_IP2LOCATION
 }
 func (ip2LocationPlugin) ProviderID() string      { return "ip2location" }
 func (ip2LocationPlugin) DisplayName() string     { return "IP2Location.io" }
@@ -43,8 +43,8 @@ func (ip2LocationPlugin) New(client *http.Client, cfg ProviderConfig) provider {
 	return newHTTPProvider(client, "https://api.ip2location.io/?ip={ip}", cfg.Auth)
 }
 
-func (ipAPIComPlugin) Kind() proxyruntimev1.ProxyIPGeoProviderKind {
-	return proxyruntimev1.ProxyIPGeoProviderKind_PROXY_IP_GEO_PROVIDER_KIND_IP_API_COM
+func (ipAPIComPlugin) Kind() proxygatewayv1.ProxyIPGeoProviderKind {
+	return proxygatewayv1.ProxyIPGeoProviderKind_PROXY_IP_GEO_PROVIDER_KIND_IP_API_COM
 }
 func (ipAPIComPlugin) ProviderID() string      { return "ip-api-com" }
 func (ipAPIComPlugin) DisplayName() string     { return "IP-API.com" }

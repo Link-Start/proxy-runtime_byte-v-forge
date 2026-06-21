@@ -3,9 +3,9 @@ package postgres
 import (
 	"context"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/store"
 )
 
 func (s *Store) seedFromConfig(ctx context.Context, cfg config.Config) error {

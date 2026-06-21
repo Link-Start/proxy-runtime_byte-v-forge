@@ -4,8 +4,8 @@ import (
 	"errors"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/protojsoncodec"
 )
 
 type DynamicLeaseFactSave struct {
@@ -13,11 +13,11 @@ type DynamicLeaseFactSave struct {
 	AccountID         string
 	Purpose           string
 	ProviderAccountID string
-	Status            proxyruntimev1.ProxyDynamicLeaseStatus
+	Status            proxygatewayv1.ProxyDynamicLeaseStatus
 	JSON              string
 }
 
-func PrepareDynamicLeaseFactSave(lease *proxyruntimev1.ProxyDynamicLease) (DynamicLeaseFactSave, error) {
+func PrepareDynamicLeaseFactSave(lease *proxygatewayv1.ProxyDynamicLease) (DynamicLeaseFactSave, error) {
 	if lease == nil || strings.TrimSpace(lease.GetLeaseId()) == "" {
 		return DynamicLeaseFactSave{}, errors.New("lease_id is required")
 	}
@@ -25,8 +25,8 @@ func PrepareDynamicLeaseFactSave(lease *proxyruntimev1.ProxyDynamicLease) (Dynam
 		return DynamicLeaseFactSave{}, errors.New("lease account_id is required")
 	}
 	status := lease.GetStatus()
-	if status == proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_UNSPECIFIED {
-		status = proxyruntimev1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE
+	if status == proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_UNSPECIFIED {
+		status = proxygatewayv1.ProxyDynamicLeaseStatus_PROXY_DYNAMIC_LEASE_STATUS_ACTIVE
 		lease.Status = status
 	}
 	data, err := protojsoncodec.Marshal(lease)

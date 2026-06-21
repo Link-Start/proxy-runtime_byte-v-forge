@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider/accountproxy"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider/accountproxy"
 )
 
 var (
@@ -25,7 +25,7 @@ func WrapProviderSessionFactoryFailure(err error) error {
 	return fmt.Errorf("%w: %w", ErrProviderSessionFactory, err)
 }
 
-func WrapProviderSessionCreateFetchFailure(session *proxyruntimev1.ProxySession, err error) error {
+func WrapProviderSessionCreateFetchFailure(session *proxygatewayv1.ProxySession, err error) error {
 	if err == nil {
 		return nil
 	}
@@ -35,7 +35,7 @@ func WrapProviderSessionCreateFetchFailure(session *proxyruntimev1.ProxySession,
 	return fmt.Errorf("%w: %w", ErrProviderSessionFetch, err)
 }
 
-func CreateAndFetchProviderSession(ctx context.Context, providerClient SessionProvider, req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, concurrencyHolder string) (*proxyruntimev1.ProxySession, []provider.Node, error) {
+func CreateAndFetchProviderSession(ctx context.Context, providerClient SessionProvider, req *proxygatewayv1.AcquireProxyLeaseRequest, selectionPlan *proxygatewayv1.ProxyDynamicIPSelectionPlan, concurrencyHolder string) (*proxygatewayv1.ProxySession, []provider.Node, error) {
 	session, err := CreateProviderSession(ctx, providerClient, req, selectionPlan, concurrencyHolder)
 	if err != nil {
 		return nil, nil, err
@@ -47,7 +47,7 @@ func CreateAndFetchProviderSession(ctx context.Context, providerClient SessionPr
 	return session, nodes, nil
 }
 
-func CreateProviderSession(ctx context.Context, providerClient SessionProvider, req *proxyruntimev1.AcquireProxyLeaseRequest, selectionPlan *proxyruntimev1.ProxyDynamicIPSelectionPlan, concurrencyHolder string) (*proxyruntimev1.ProxySession, error) {
+func CreateProviderSession(ctx context.Context, providerClient SessionProvider, req *proxygatewayv1.AcquireProxyLeaseRequest, selectionPlan *proxygatewayv1.ProxyDynamicIPSelectionPlan, concurrencyHolder string) (*proxygatewayv1.ProxySession, error) {
 	if providerClient == nil {
 		return nil, ErrSessionProviderRequired
 	}
@@ -55,14 +55,14 @@ func CreateProviderSession(ctx context.Context, providerClient SessionProvider, 
 	return providerClient.CreateSession(ctx, req)
 }
 
-func FetchProviderSession(ctx context.Context, providerClient SessionProvider, session *proxyruntimev1.ProxySession) ([]provider.Node, error) {
+func FetchProviderSession(ctx context.Context, providerClient SessionProvider, session *proxygatewayv1.ProxySession) ([]provider.Node, error) {
 	if providerClient == nil {
 		return nil, ErrSessionProviderRequired
 	}
 	return providerClient.FetchSession(ctx, session)
 }
 
-func ReleaseProviderSession(ctx context.Context, providerClient SessionProvider, session *proxyruntimev1.ProxySession) error {
+func ReleaseProviderSession(ctx context.Context, providerClient SessionProvider, session *proxygatewayv1.ProxySession) error {
 	if providerClient == nil || session == nil || strings.TrimSpace(session.GetSessionId()) == "" {
 		return nil
 	}
@@ -76,7 +76,7 @@ func ProviderName(providerClient SessionProvider) string {
 	return providerClient.Name()
 }
 
-func StatelessProviderSession(session *proxyruntimev1.ProxySession) bool {
+func StatelessProviderSession(session *proxygatewayv1.ProxySession) bool {
 	switch strings.TrimSpace(session.GetLabels()["session_mode"]) {
 	case "username_parameter", "provider_configured":
 		return true
@@ -92,15 +92,15 @@ type ProviderSessionAcquireInput struct {
 	Factory           SessionProviderFactory
 	ProviderAccountID string
 	Gateway           accountproxy.Gateway
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	ConcurrencyHolder string
 }
 
 type ProviderSessionAcquireResult struct {
 	ProviderAccountID string
 	ProviderClient    SessionProvider
-	Session           *proxyruntimev1.ProxySession
+	Session           *proxygatewayv1.ProxySession
 	Nodes             []provider.Node
 }
 
@@ -129,7 +129,7 @@ func NewSessionProvider(factory SessionProviderFactory, providerCfg accountproxy
 
 type ProviderSessionFetchInput struct {
 	Factory         SessionProviderFactory
-	Lease           *proxyruntimev1.ProxyDynamicLease
+	Lease           *proxygatewayv1.ProxyDynamicLease
 	ProviderConfig  accountproxy.Config
 	ResolveGateways ProviderSessionGatewaysResolver
 }
@@ -155,12 +155,12 @@ type ProviderSessionGatewaysResolver func(context.Context, string) ([]accountpro
 type ProviderSessionReleaseInput struct {
 	Store           OrchestrationStore
 	Factory         SessionProviderFactory
-	Lease           *proxyruntimev1.ProxyDynamicLease
+	Lease           *proxygatewayv1.ProxyDynamicLease
 	ResolveGateways ProviderSessionGatewaysResolver
 	RecordFailure   ProviderSessionReleaseFailureRecorder
 }
 
-type ProviderSessionReleaseFailureRecorder func(context.Context, *proxyruntimev1.ProxyDynamicLease, error) error
+type ProviderSessionReleaseFailureRecorder func(context.Context, *proxygatewayv1.ProxyDynamicLease, error) error
 
 func ReleaseLeaseProviderSession(ctx context.Context, input ProviderSessionReleaseInput) error {
 	if !NeedsProviderSessionRelease(input.Lease) {
@@ -184,7 +184,7 @@ func ReleaseLeaseProviderSession(ctx context.Context, input ProviderSessionRelea
 	return ReleaseProviderSession(ctx, providerClient, input.Lease.GetSession())
 }
 
-func NeedsProviderSessionRelease(lease *proxyruntimev1.ProxyDynamicLease) bool {
+func NeedsProviderSessionRelease(lease *proxygatewayv1.ProxyDynamicLease) bool {
 	if lease == nil || lease.GetSession() == nil || strings.TrimSpace(lease.GetProviderAccountId()) == "" {
 		return false
 	}

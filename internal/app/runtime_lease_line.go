@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/mihomonative"
 )
 
 func (r *Runtime) dynamicLeaseDialerProxy(ctx context.Context, settings *runtimeSettingsFile, profileID string) (string, map[string]string, error) {
@@ -37,7 +37,7 @@ func (r *Runtime) dynamicLeaseDialerProxy(ctx context.Context, settings *runtime
 	return "", nil, nil
 }
 
-func dynamicLeaseProfileDialerProxy(profile *proxyruntimev1.EgressProfileSettings, nativeConfig mihomonative.ConfigFile) (string, map[string]string, error) {
+func dynamicLeaseProfileDialerProxy(profile *proxygatewayv1.EgressProfileSettings, nativeConfig mihomonative.ConfigFile) (string, map[string]string, error) {
 	node := profile.GetLine().GetMihomoNode()
 	dialer := dynamicLeaseLineDialerProxy(profile.GetProfileId(), nativeConfig, node.GetResourceId(), node.GetNodeId())
 	if dialer == "" {
@@ -127,7 +127,7 @@ func dynamicLeaseNativeDialerProxy(profileID string, nativeConfig mihomonative.C
 	return ""
 }
 
-func dynamicLeaseLineProfiles(settings *runtimeSettingsFile, profileID string) []*proxyruntimev1.EgressProfileSettings {
+func dynamicLeaseLineProfiles(settings *runtimeSettingsFile, profileID string) []*proxygatewayv1.EgressProfileSettings {
 	profileID = appcore.RuntimeSafeID(profileID)
 	if profileID == "" {
 		return nil
@@ -139,14 +139,14 @@ func dynamicLeaseLineProfiles(settings *runtimeSettingsFile, profileID string) [
 		if appcore.RuntimeSafeID(profile.GetProfileId()) != profileID {
 			continue
 		}
-		if profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
+		if profile.GetExit().GetKind() != proxygatewayv1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
 			continue
 		}
 		line := profile.GetLine()
-		if line.GetKind() != proxyruntimev1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_MIHOMO_NODE {
+		if line.GetKind() != proxygatewayv1.EgressProfileLineKind_EGRESS_PROFILE_LINE_KIND_MIHOMO_NODE {
 			continue
 		}
-		return []*proxyruntimev1.EgressProfileSettings{profile}
+		return []*proxygatewayv1.EgressProfileSettings{profile}
 	}
 	return nil
 }

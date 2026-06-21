@@ -5,11 +5,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	dashboardapp "github.com/byte-v-forge/proxy-runtime/internal/app/dashboard"
-	httpapi "github.com/byte-v-forge/proxy-runtime/internal/app/httpapi"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative/connection"
-	"github.com/byte-v-forge/proxy-runtime/internal/runtimehttp"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	dashboardapp "github.com/byte-v-forge/proxy-gateway/internal/app/dashboard"
+	httpapi "github.com/byte-v-forge/proxy-gateway/internal/app/httpapi"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/mihomonative/connection"
+	"github.com/byte-v-forge/proxy-gateway/internal/runtimehttp"
 	"github.com/gin-gonic/gin"
 )
 

@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	commonv1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/common/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+	commonv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/common/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/secretref"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/store"
 )
 
 func (s *Store) WriteSecret(ctx context.Context, req secretref.WriteRequest) (*commonv1.SecretRef, error) {
@@ -23,7 +23,7 @@ func (s *Store) WriteSecret(ctx context.Context, req secretref.WriteRequest) (*c
 	if strings.TrimSpace(req.Value) == "" {
 		return nil, errors.New("secret value is required")
 	}
-	provider := appcore.FirstNonEmpty(req.Provider, "proxy-runtime")
+	provider := appcore.FirstNonEmpty(req.Provider, "proxy-gateway")
 	purpose := strings.TrimSpace(req.Purpose)
 	if purpose == "" {
 		return nil, errors.New("secret purpose is required")
@@ -45,7 +45,7 @@ func (s *Store) WriteSecret(ctx context.Context, req secretref.WriteRequest) (*c
 		expiresAt = &req.ExpiresAt
 	}
 	_, err = s.pool.Exec(ctx, `
-INSERT INTO proxy_runtime_secrets (secret_id, provider, purpose, secret_payload, expires_at)
+INSERT INTO proxy_gateway_secrets (secret_id, provider, purpose, secret_payload, expires_at)
 VALUES ($1,$2,$3,$4,$5)
 ON CONFLICT (secret_id) DO UPDATE SET provider=EXCLUDED.provider, purpose=EXCLUDED.purpose, secret_payload=EXCLUDED.secret_payload, expires_at=EXCLUDED.expires_at, updated_at=now()
 `, secretID, provider, purpose, payload, expiresAt)
@@ -66,7 +66,7 @@ func (s *Store) ResolveSecret(ctx context.Context, ref *commonv1.SecretRef) (str
 	var expiresAt pgtype.Timestamptz
 	err := s.pool.QueryRow(ctx, `
 SELECT provider, purpose, secret_payload, expires_at
-FROM proxy_runtime_secrets
+FROM proxy_gateway_secrets
 WHERE secret_id=$1
 `, strings.TrimSpace(ref.GetSecretId())).Scan(&provider, &purpose, &payload, &expiresAt)
 	if errors.Is(err, pgx.ErrNoRows) {

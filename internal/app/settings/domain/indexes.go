@@ -1,13 +1,13 @@
 package domain
 
 import (
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
-func enabledEgressProfileIDsFromProfiles(profiles []*proxyruntimev1.EgressProfileSettings) map[string]struct{} {
+func enabledEgressProfileIDsFromProfiles(profiles []*proxygatewayv1.EgressProfileSettings) map[string]struct{} {
 	out := map[string]struct{}{}
 	for _, profile := range profiles {
 		if id := appcore.RuntimeSafeID(profile.GetProfileId()); id != "" && profile.GetEnabled() {
@@ -17,7 +17,7 @@ func enabledEgressProfileIDsFromProfiles(profiles []*proxyruntimev1.EgressProfil
 	return out
 }
 
-func EnabledDynamicProviderEndpointIDs(settings *proxyruntimev1.ProxyRuntimePersistentSettings) map[string]map[string]struct{} {
+func EnabledDynamicProviderEndpointIDs(settings *proxygatewayv1.ProxyGatewayPersistentSettings) map[string]map[string]struct{} {
 	out := map[string]map[string]struct{}{}
 	for _, provider := range kernel.NormalizeRuntimeSettings(settings).GetDynamicIpProviders() {
 		dynamicProviderID := kernel.DynamicIPProviderID(provider)

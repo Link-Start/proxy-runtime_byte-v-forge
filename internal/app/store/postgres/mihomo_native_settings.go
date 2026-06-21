@@ -3,14 +3,14 @@ package postgres
 import (
 	"context"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
-	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/mihomonative"
+	"github.com/byte-v-forge/proxy-gateway/internal/protojsoncodec"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/store"
 )
 
-func (s *Store) LoadMihomoNativeSettings(ctx context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error) {
+func (s *Store) LoadMihomoNativeSettings(ctx context.Context) (*proxygatewayv1.ProxyGatewayMihomoNativeConfig, error) {
 	raw, found, err := s.loadRuntimeSettingJSON(ctx, store.MihomoNativeSettingsKey)
 	if err != nil {
 		return nil, err
@@ -21,7 +21,7 @@ func (s *Store) LoadMihomoNativeSettings(ctx context.Context) (*proxyruntimev1.P
 	return mihomonative.DecodeMihomoNativeSettings(raw)
 }
 
-func (s *Store) SaveMihomoNativeSettings(ctx context.Context, settings *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) error {
+func (s *Store) SaveMihomoNativeSettings(ctx context.Context, settings *proxygatewayv1.ProxyGatewayMihomoNativeConfig) error {
 	data, err := protojsoncodec.Marshal(mihomonative.NormalizeSettings(settings))
 	if err != nil {
 		return err

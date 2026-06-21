@@ -4,16 +4,16 @@ import (
 	"fmt"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
-	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
-	"github.com/byte-v-forge/proxy-runtime/internal/protojsoncodec"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/ipfraud"
+	"github.com/byte-v-forge/proxy-gateway/internal/ipgeo"
+	"github.com/byte-v-forge/proxy-gateway/internal/protojsoncodec"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
-func DecodeRuntimeSettings(raw string) (*proxyruntimev1.ProxyRuntimePersistentSettings, error) {
-	settings := &proxyruntimev1.ProxyRuntimePersistentSettings{}
+func DecodeRuntimeSettings(raw string) (*proxygatewayv1.ProxyGatewayPersistentSettings, error) {
+	settings := &proxygatewayv1.ProxyGatewayPersistentSettings{}
 	if raw != "" {
 		if err := protojsoncodec.Unmarshal([]byte(raw), settings); err != nil {
 			return nil, fmt.Errorf("decode runtime settings: %w", err)
@@ -22,13 +22,13 @@ func DecodeRuntimeSettings(raw string) (*proxyruntimev1.ProxyRuntimePersistentSe
 	return NormalizeRuntimeSettings(settings), nil
 }
 
-func NormalizeRuntimeSettings(settings *proxyruntimev1.ProxyRuntimePersistentSettings) *proxyruntimev1.ProxyRuntimePersistentSettings {
+func NormalizeRuntimeSettings(settings *proxygatewayv1.ProxyGatewayPersistentSettings) *proxygatewayv1.ProxyGatewayPersistentSettings {
 	if settings == nil {
-		settings = &proxyruntimev1.ProxyRuntimePersistentSettings{}
+		settings = &proxygatewayv1.ProxyGatewayPersistentSettings{}
 	}
 	if settings.EdgeCanary != nil {
 		settings.EdgeCanary.Url = strings.TrimSpace(settings.EdgeCanary.GetUrl())
-		settings.EdgeCanary.TokenSecretRef = appcore.CloneSecretRef(settings.EdgeCanary.GetTokenSecretRef(), "proxy-runtime", "edge_canary_token")
+		settings.EdgeCanary.TokenSecretRef = appcore.CloneSecretRef(settings.EdgeCanary.GetTokenSecretRef(), "proxy-gateway", "edge_canary_token")
 	}
 	for _, provider := range settings.IpFraudProviders {
 		if provider == nil {
@@ -59,7 +59,7 @@ func NormalizeRuntimeSettings(settings *proxyruntimev1.ProxyRuntimePersistentSet
 	return settings
 }
 
-func NormalizeRuntimeSettingsWithProviders(settings *proxyruntimev1.ProxyRuntimePersistentSettings, fraud *ipfraud.Registry, geo *ipgeo.Registry) *proxyruntimev1.ProxyRuntimePersistentSettings {
+func NormalizeRuntimeSettingsWithProviders(settings *proxygatewayv1.ProxyGatewayPersistentSettings, fraud *ipfraud.Registry, geo *ipgeo.Registry) *proxygatewayv1.ProxyGatewayPersistentSettings {
 	settings = NormalizeRuntimeSettings(settings)
 	if fraud != nil {
 		for index := range settings.IpFraudProviders {

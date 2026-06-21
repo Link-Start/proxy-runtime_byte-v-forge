@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ProxyRuntimeDynamicIPProvidersState } from '~/composables/useProxyRuntimeDynamicIPProviders'
+import type { ProxyGatewayDynamicIPProvidersState } from '~/composables/useProxyGatewayDynamicIPProviders'
 
-defineProps<{ runtime: ProxyRuntimeDynamicIPProvidersState }>()
+defineProps<{ runtime: ProxyGatewayDynamicIPProvidersState }>()
 const catalog = ref<{ openCreate: () => void }>()
 
 function openCreate() {

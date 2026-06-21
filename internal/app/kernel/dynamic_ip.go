@@ -3,9 +3,9 @@ package kernel
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
 const (
@@ -13,7 +13,7 @@ const (
 	DefaultDynamicProviderStickyConcurrencyLimit   uint32 = 2
 )
 
-func NormalizeDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderSettings) {
+func NormalizeDynamicIPProvider(provider *proxygatewayv1.ProxyDynamicIPProviderSettings) {
 	if provider == nil {
 		return
 	}
@@ -33,7 +33,7 @@ func NormalizeDynamicIPProvider(provider *proxyruntimev1.ProxyDynamicIPProviderS
 	}
 }
 
-func NormalizeDynamicIPEndpoint(endpoint *proxyruntimev1.ProxyDynamicIPEndpointSettings) {
+func NormalizeDynamicIPEndpoint(endpoint *proxygatewayv1.ProxyDynamicIPEndpointSettings) {
 	if endpoint == nil {
 		return
 	}
@@ -66,6 +66,6 @@ func NormalizeDynamicProviderStickyConcurrencyLimit(value uint32) uint32 {
 	return value
 }
 
-func DynamicIPProviderID(provider *proxyruntimev1.ProxyDynamicIPProviderSettings) string {
+func DynamicIPProviderID(provider *proxygatewayv1.ProxyDynamicIPProviderSettings) string {
 	return appcore.RuntimeSafeID(provider.GetDynamicProviderId())
 }

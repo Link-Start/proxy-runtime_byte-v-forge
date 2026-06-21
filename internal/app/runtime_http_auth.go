@@ -4,7 +4,7 @@ import (
 	"errors"
 	"net/http"
 
-	authapp "github.com/byte-v-forge/proxy-runtime/internal/app/auth"
+	authapp "github.com/byte-v-forge/proxy-gateway/internal/app/auth"
 	"github.com/gin-gonic/gin"
 )
 

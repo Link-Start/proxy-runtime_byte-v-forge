@@ -4,13 +4,13 @@ import (
 	"sort"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
-func ApplyInUserSessionLabels(profiles []*proxyruntimev1.EgressProfileSettings, rules []*proxyruntimev1.ProxyIngressRuleSettings) {
-	profilesByID := map[string]*proxyruntimev1.EgressProfileSettings{}
+func ApplyInUserSessionLabels(profiles []*proxygatewayv1.EgressProfileSettings, rules []*proxygatewayv1.ProxyIngressRuleSettings) {
+	profilesByID := map[string]*proxygatewayv1.EgressProfileSettings{}
 	for _, profile := range profiles {
 		profilesByID[appcore.RuntimeSafeID(profile.GetProfileId())] = profile
 	}
@@ -20,11 +20,11 @@ func ApplyInUserSessionLabels(profiles []*proxyruntimev1.EgressProfileSettings, 
 			continue
 		}
 		profile := profilesByID[appcore.RuntimeSafeID(rule.GetProfileId())]
-		if profile == nil || profile.GetExit().GetKind() != proxyruntimev1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
+		if profile == nil || profile.GetExit().GetKind() != proxygatewayv1.EgressProfileExitKind_EGRESS_PROFILE_EXIT_KIND_DYNAMIC_IP {
 			continue
 		}
 		policy := profile.GetExit().GetDynamicIpPolicy()
-		if policy.GetMode() != proxyruntimev1.ProxySessionMode_PROXY_SESSION_MODE_STICKY {
+		if policy.GetMode() != proxygatewayv1.ProxySessionMode_PROXY_SESSION_MODE_STICKY {
 			continue
 		}
 		if policy.Labels == nil {
@@ -34,7 +34,7 @@ func ApplyInUserSessionLabels(profiles []*proxyruntimev1.EgressProfileSettings, 
 	}
 }
 
-func RejectOmittedIngressRules(current []*proxyruntimev1.ProxyIngressRuleSettings, next []*proxyruntimev1.ProxyIngressRuleSettings) error {
+func RejectOmittedIngressRules(current []*proxygatewayv1.ProxyIngressRuleSettings, next []*proxygatewayv1.ProxyIngressRuleSettings) error {
 	missing := existingIngressRuleIDs(current)
 	for _, rule := range next {
 		delete(missing, appcore.RuntimeSafeID(rule.GetRuleId()))
@@ -50,7 +50,7 @@ func RejectOmittedIngressRules(current []*proxyruntimev1.ProxyIngressRuleSetting
 	return appcore.FailedPrecondition("in-user update omitted existing ingress rules: "+strings.Join(ids, ", "), nil)
 }
 
-func existingIngressRuleIDs(rules []*proxyruntimev1.ProxyIngressRuleSettings) map[string]struct{} {
+func existingIngressRuleIDs(rules []*proxygatewayv1.ProxyIngressRuleSettings) map[string]struct{} {
 	out := map[string]struct{}{}
 	for _, rule := range rules {
 		if id := appcore.RuntimeSafeID(rule.GetRuleId()); id != "" {

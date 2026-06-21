@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { IconAlertTriangle, IconCircleCheck, IconLoader2 } from '@tabler/icons-vue'
-import type { ProxyRuntimeStatusState } from '~/composables/useProxyRuntimeStatus'
+import type { ProxyGatewayStatusState } from '~/composables/useProxyGatewayStatus'
 
-const props = defineProps<{ state: ProxyRuntimeStatusState }>()
+const props = defineProps<{ state: ProxyGatewayStatusState }>()
 
 const status = computed(() => props.state.status.value)
 const applying = computed(

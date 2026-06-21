@@ -3,12 +3,12 @@ package persistence
 import (
 	"sync"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/ipfraud"
-	"github.com/byte-v-forge/proxy-runtime/internal/ipgeo"
-	providerregistry "github.com/byte-v-forge/proxy-runtime/internal/provider/registry"
-	"github.com/byte-v-forge/proxy-runtime/internal/secretref"
+	"github.com/byte-v-forge/proxy-gateway/internal/ipfraud"
+	"github.com/byte-v-forge/proxy-gateway/internal/ipgeo"
+	providerregistry "github.com/byte-v-forge/proxy-gateway/internal/provider/registry"
+	"github.com/byte-v-forge/proxy-gateway/internal/secretref"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/store"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/store"
 )
 
 // Store is the runtime-settings persistence adapter: it implements the

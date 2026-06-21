@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/sourceplane"
+	"github.com/byte-v-forge/proxy-gateway/internal/sourceplane"
 )
 
 func renderMihomoNativeProfileTarget(opts renderOptions, profileID string, layer sourceplane.EgressProfileLayer) (renderedProfileLayer, error) {
@@ -30,7 +30,7 @@ func renderMihomoNativeProfileLayer(opts renderOptions, groupName string, layer 
 		return renderedProfileLayer{}, err
 	}
 	if strings.TrimSpace(dialerProxy) != "" {
-		return renderedProfileLayer{}, fmt.Errorf("mihomo-native node %q cannot be cloned with dialer-proxy by proxy-runtime", target.NodeName)
+		return renderedProfileLayer{}, fmt.Errorf("mihomo-native node %q cannot be cloned with dialer-proxy by proxy-gateway", target.NodeName)
 	}
 	group := profileLayerGroup(groupName, layer, "select")
 	if mihomoProxyAvailable(opts.AvailableProxies, target.NodeName) {

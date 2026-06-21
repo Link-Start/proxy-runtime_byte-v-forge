@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/clock"
-	"github.com/byte-v-forge/proxy-runtime/internal/provider"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/clock"
+	"github.com/byte-v-forge/proxy-gateway/internal/provider"
 )
 
 type definitionPlugin struct{ definition Definition }
@@ -24,7 +24,7 @@ func (p definitionPlugin) DisplayName() string { return p.definition.DisplayName
 
 func (p definitionPlugin) Default() bool { return p.definition.Default }
 
-func (p definitionPlugin) Descriptor(gateways []Gateway) *proxyruntimev1.ProxyProviderDescriptor {
+func (p definitionPlugin) Descriptor(gateways []Gateway) *proxygatewayv1.ProxyProviderDescriptor {
 	return descriptor(p.definition, gateways)
 }
 

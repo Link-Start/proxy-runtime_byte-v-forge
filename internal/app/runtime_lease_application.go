@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	leaseapp "github.com/byte-v-forge/proxy-runtime/internal/app/lease"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	leaseapp "github.com/byte-v-forge/proxy-gateway/internal/app/lease"
 	"github.com/gin-gonic/gin"
 )
 
@@ -33,23 +33,23 @@ func runtimeLeaseDependencies(runtime *Runtime) leaseapp.Dependencies {
 	}
 }
 
-func (a runtimeLeaseApplication) GetProxyDynamicLeaseFact(ctx context.Context, leaseID string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func (a runtimeLeaseApplication) GetProxyDynamicLeaseFact(ctx context.Context, leaseID string) (*proxygatewayv1.ProxyDynamicLease, error) {
 	return a.leases.Get(ctx, leaseID)
 }
 
-func (a runtimeLeaseApplication) ListProxyDynamicLeaseFacts(ctx context.Context, options leaseapp.ListOptions) (*proxyruntimev1.ListProxyDynamicLeasesResponse, error) {
+func (a runtimeLeaseApplication) ListProxyDynamicLeaseFacts(ctx context.Context, options leaseapp.ListOptions) (*proxygatewayv1.ListProxyDynamicLeasesResponse, error) {
 	leases, err := a.leases.List(ctx, options)
 	if err != nil {
 		return nil, err
 	}
-	return &proxyruntimev1.ListProxyDynamicLeasesResponse{Leases: leases}, nil
+	return &proxygatewayv1.ListProxyDynamicLeasesResponse{Leases: leases}, nil
 }
 
-func (a runtimeLeaseApplication) AcquireProxyLease(ctx context.Context, advertisedHost string, req *proxyruntimev1.AcquireProxyLeaseRequest) (*proxyruntimev1.AcquireProxyLeaseResponse, error) {
+func (a runtimeLeaseApplication) AcquireProxyLease(ctx context.Context, advertisedHost string, req *proxygatewayv1.AcquireProxyLeaseRequest) (*proxygatewayv1.AcquireProxyLeaseResponse, error) {
 	return a.leases.Acquire(ctx, advertisedHost, req)
 }
 
-func (a runtimeLeaseApplication) ReleaseProxyLease(ctx context.Context, req *proxyruntimev1.ReleaseProxyLeaseRequest) (*proxyruntimev1.ReleaseProxyLeaseResponse, error) {
+func (a runtimeLeaseApplication) ReleaseProxyLease(ctx context.Context, req *proxygatewayv1.ReleaseProxyLeaseRequest) (*proxygatewayv1.ReleaseProxyLeaseResponse, error) {
 	return a.leases.Release(ctx, req)
 }
 
@@ -65,7 +65,7 @@ func (a runtimeLeaseApplication) CleanupPendingLeaseFacts(ctx context.Context) e
 	return a.leases.CleanupPending(ctx)
 }
 
-func (a runtimeLeaseApplication) CleanupPendingLeaseFact(ctx context.Context, lease *proxyruntimev1.ProxyDynamicLease) error {
+func (a runtimeLeaseApplication) CleanupPendingLeaseFact(ctx context.Context, lease *proxygatewayv1.ProxyDynamicLease) error {
 	return a.leases.Cleanup(ctx, lease)
 }
 
@@ -128,7 +128,7 @@ func (api *runtimeHTTPAPI) handleLease(ctx *gin.Context) {
 }
 
 func (api *runtimeHTTPAPI) handleAcquireLease(ctx *gin.Context) {
-	var body proxyruntimev1.AcquireProxyLeaseRequest
+	var body proxygatewayv1.AcquireProxyLeaseRequest
 	if !api.readProto(ctx, &body) {
 		return
 	}
@@ -151,7 +151,7 @@ func parseLeaseListOptions(ctx *gin.Context) (leaseapp.ListOptions, error) {
 }
 
 func (api *runtimeHTTPAPI) handleReleaseLease(ctx *gin.Context) {
-	var body proxyruntimev1.ReleaseProxyLeaseRequest
+	var body proxygatewayv1.ReleaseProxyLeaseRequest
 	if !api.readProto(ctx, &body) {
 		return
 	}

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/kernel"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/kernel"
 )
 
 type ExistingActiveLeaseDecision int
@@ -17,11 +17,11 @@ const (
 	ExistingActiveLeaseReplace
 )
 
-type ExistingActiveLeaseAction func(context.Context, *proxyruntimev1.ProxyDynamicLease) error
+type ExistingActiveLeaseAction func(context.Context, *proxygatewayv1.ProxyDynamicLease) error
 
 type ExistingActiveLeaseInput struct {
 	Store               OrchestrationStore
-	Request             *proxyruntimev1.AcquireProxyLeaseRequest
+	Request             *proxygatewayv1.AcquireProxyLeaseRequest
 	Now                 time.Time
 	PlaygroundAccountID string
 	PlaygroundUsername  string
@@ -29,7 +29,7 @@ type ExistingActiveLeaseInput struct {
 	Replace             ExistingActiveLeaseAction
 }
 
-func HandleExistingActiveLease(ctx context.Context, input ExistingActiveLeaseInput) (*proxyruntimev1.ProxyDynamicLease, bool, error) {
+func HandleExistingActiveLease(ctx context.Context, input ExistingActiveLeaseInput) (*proxygatewayv1.ProxyDynamicLease, bool, error) {
 	existing, err := ActiveLeaseByRequest(ctx, input.Store, input.Request, RequestedSessionID(input.Request))
 	if err != nil {
 		return nil, false, nil
@@ -44,7 +44,7 @@ func HandleExistingActiveLease(ctx context.Context, input ExistingActiveLeaseInp
 	}
 }
 
-func DecideExistingActiveLease(req *proxyruntimev1.AcquireProxyLeaseRequest, lease *proxyruntimev1.ProxyDynamicLease, now time.Time, playgroundAccountID string, playgroundUsername string) ExistingActiveLeaseDecision {
+func DecideExistingActiveLease(req *proxygatewayv1.AcquireProxyLeaseRequest, lease *proxygatewayv1.ProxyDynamicLease, now time.Time, playgroundAccountID string, playgroundUsername string) ExistingActiveLeaseDecision {
 	if !ActiveAt(lease, now) {
 		return ExistingActiveLeaseIgnore
 	}
@@ -54,14 +54,14 @@ func DecideExistingActiveLease(req *proxyruntimev1.AcquireProxyLeaseRequest, lea
 	return ExistingActiveLeaseReplace
 }
 
-func runExistingActiveLeaseAction(ctx context.Context, action ExistingActiveLeaseAction, lease *proxyruntimev1.ProxyDynamicLease) error {
+func runExistingActiveLeaseAction(ctx context.Context, action ExistingActiveLeaseAction, lease *proxygatewayv1.ProxyDynamicLease) error {
 	if action == nil {
 		return nil
 	}
 	return action(ctx, lease)
 }
 
-func ActiveLeaseByRequest(ctx context.Context, store OrchestrationStore, req *proxyruntimev1.AcquireProxyLeaseRequest, sessionID string) (*proxyruntimev1.ProxyDynamicLease, error) {
+func ActiveLeaseByRequest(ctx context.Context, store OrchestrationStore, req *proxygatewayv1.AcquireProxyLeaseRequest, sessionID string) (*proxygatewayv1.ProxyDynamicLease, error) {
 	if store == nil {
 		return nil, errors.New("lease store is required")
 	}
@@ -73,16 +73,16 @@ func ActiveLeaseByRequest(ctx context.Context, store OrchestrationStore, req *pr
 
 type AcquiredActiveFactInput struct {
 	LeaseID           string
-	Request           *proxyruntimev1.AcquireProxyLeaseRequest
+	Request           *proxygatewayv1.AcquireProxyLeaseRequest
 	ProviderAccountID string
-	Session           *proxyruntimev1.ProxySession
-	Egress            *proxyruntimev1.ProxyEndpoint
-	Listener          *proxyruntimev1.EgressListener
-	SelectionPlan     *proxyruntimev1.ProxyDynamicIPSelectionPlan
+	Session           *proxygatewayv1.ProxySession
+	Egress            *proxygatewayv1.ProxyEndpoint
+	Listener          *proxygatewayv1.EgressListener
+	SelectionPlan     *proxygatewayv1.ProxyDynamicIPSelectionPlan
 	AcquiredAt        time.Time
 }
 
-func SaveAcquiredActiveFact(ctx context.Context, store OrchestrationStore, input AcquiredActiveFactInput) (*proxyruntimev1.ProxyDynamicLease, error) {
+func SaveAcquiredActiveFact(ctx context.Context, store OrchestrationStore, input AcquiredActiveFactInput) (*proxygatewayv1.ProxyDynamicLease, error) {
 	return SaveActiveFact(ctx, store, ActiveFactInput{
 		LeaseID:           input.LeaseID,
 		AccountID:         input.Request.GetAccountId(),
@@ -96,7 +96,7 @@ func SaveAcquiredActiveFact(ctx context.Context, store OrchestrationStore, input
 	})
 }
 
-func ApplyAcquireRequestPolicies(req *proxyruntimev1.AcquireProxyLeaseRequest, profiles []*proxyruntimev1.EgressProfileSettings) (*proxyruntimev1.ProxyDynamicIPSelectionPolicy, error) {
+func ApplyAcquireRequestPolicies(req *proxygatewayv1.AcquireProxyLeaseRequest, profiles []*proxygatewayv1.EgressProfileSettings) (*proxygatewayv1.ProxyDynamicIPSelectionPolicy, error) {
 	req.Policy = kernel.NormalizeDynamicIPSessionPolicy(req.GetPolicy())
 	ApplyRequestLabels(req)
 	if err := ApplyProfileDynamicIPPolicy(profiles, req); err != nil {

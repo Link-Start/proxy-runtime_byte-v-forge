@@ -4,23 +4,23 @@ import (
 	"sort"
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-func mergeReports(ip string, reports []report, errorMessage string) *proxyruntimev1.ProxyIPFraudCheck {
-	check := &proxyruntimev1.ProxyIPFraudCheck{
+func mergeReports(ip string, reports []report, errorMessage string) *proxygatewayv1.ProxyIPFraudCheck {
+	check := &proxygatewayv1.ProxyIPFraudCheck{
 		Ip:             ip,
-		NetworkKind:    proxyruntimev1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_UNKNOWN,
-		AnonymizerKind: proxyruntimev1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_UNKNOWN,
-		RiskLevel:      proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNKNOWN,
+		NetworkKind:    proxygatewayv1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_UNKNOWN,
+		AnonymizerKind: proxygatewayv1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_UNKNOWN,
+		RiskLevel:      proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNKNOWN,
 		CheckedAt:      timestamppb.Now(),
 		ErrorMessage:   errorMessage,
 	}
 	if len(reports) == 0 {
 		return check
 	}
-	signals := map[proxyruntimev1.ProxyIPFraudSignal]struct{}{}
+	signals := map[proxygatewayv1.ProxyIPFraudSignal]struct{}{}
 	for _, item := range reports {
 		check.NetworkKind = chooseNetworkKind(check.GetNetworkKind(), item.networkKind)
 		check.AnonymizerKind = chooseAnonymizerKind(check.GetAnonymizerKind(), item.anonymizerKind)
@@ -36,7 +36,7 @@ func mergeReports(ip string, reports []report, errorMessage string) *proxyruntim
 			check.ProviderDisplayName = item.providerName
 		}
 		for _, signal := range item.signals {
-			if signal != proxyruntimev1.ProxyIPFraudSignal_PROXY_IP_FRAUD_SIGNAL_UNSPECIFIED {
+			if signal != proxygatewayv1.ProxyIPFraudSignal_PROXY_IP_FRAUD_SIGNAL_UNSPECIFIED {
 				signals[signal] = struct{}{}
 			}
 		}
@@ -57,11 +57,11 @@ func mergeReports(ip string, reports []report, errorMessage string) *proxyruntim
 		}
 	}
 	check.RiskSignals = sortedSignals(signals)
-	if check.GetAnonymizerKind() == proxyruntimev1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_UNKNOWN && len(check.GetRiskSignals()) == 0 {
-		check.AnonymizerKind = proxyruntimev1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_NONE
+	if check.GetAnonymizerKind() == proxygatewayv1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_UNKNOWN && len(check.GetRiskSignals()) == 0 {
+		check.AnonymizerKind = proxygatewayv1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_NONE
 	}
-	if check.GetRiskLevel() == proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNKNOWN && check.GetRiskScore() == 0 {
-		check.RiskLevel = proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_LOW
+	if check.GetRiskLevel() == proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNKNOWN && check.GetRiskScore() == 0 {
+		check.RiskLevel = proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_LOW
 	}
 	return check
 }
@@ -72,8 +72,8 @@ func assignFirst(target *string, value string) {
 	}
 }
 
-func sortedSignals(values map[proxyruntimev1.ProxyIPFraudSignal]struct{}) []proxyruntimev1.ProxyIPFraudSignal {
-	signals := make([]proxyruntimev1.ProxyIPFraudSignal, 0, len(values))
+func sortedSignals(values map[proxygatewayv1.ProxyIPFraudSignal]struct{}) []proxygatewayv1.ProxyIPFraudSignal {
+	signals := make([]proxygatewayv1.ProxyIPFraudSignal, 0, len(values))
 	for signal := range values {
 		signals = append(signals, signal)
 	}
@@ -81,105 +81,105 @@ func sortedSignals(values map[proxyruntimev1.ProxyIPFraudSignal]struct{}) []prox
 	return signals
 }
 
-func chooseNetworkKind(current, next proxyruntimev1.ProxyIPNetworkKind) proxyruntimev1.ProxyIPNetworkKind {
+func chooseNetworkKind(current, next proxygatewayv1.ProxyIPNetworkKind) proxygatewayv1.ProxyIPNetworkKind {
 	if networkRank(next) > networkRank(current) {
 		return next
 	}
 	return current
 }
 
-func networkRank(value proxyruntimev1.ProxyIPNetworkKind) int {
+func networkRank(value proxygatewayv1.ProxyIPNetworkKind) int {
 	switch value {
-	case proxyruntimev1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_DATACENTER:
+	case proxygatewayv1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_DATACENTER:
 		return 80
-	case proxyruntimev1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_BROADCAST:
+	case proxygatewayv1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_BROADCAST:
 		return 70
-	case proxyruntimev1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_ANYCAST:
+	case proxygatewayv1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_ANYCAST:
 		return 65
-	case proxyruntimev1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_SATELLITE:
+	case proxygatewayv1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_SATELLITE:
 		return 60
-	case proxyruntimev1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_MOBILE:
+	case proxygatewayv1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_MOBILE:
 		return 50
-	case proxyruntimev1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_BUSINESS:
+	case proxygatewayv1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_BUSINESS:
 		return 40
-	case proxyruntimev1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_ISP:
+	case proxygatewayv1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_ISP:
 		return 35
-	case proxyruntimev1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_RESIDENTIAL:
+	case proxygatewayv1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_RESIDENTIAL:
 		return 30
-	case proxyruntimev1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_UNKNOWN:
+	case proxygatewayv1.ProxyIPNetworkKind_PROXY_IP_NETWORK_KIND_UNKNOWN:
 		return 10
 	default:
 		return 0
 	}
 }
 
-func chooseAnonymizerKind(current, next proxyruntimev1.ProxyIPAnonymizerKind) proxyruntimev1.ProxyIPAnonymizerKind {
+func chooseAnonymizerKind(current, next proxygatewayv1.ProxyIPAnonymizerKind) proxygatewayv1.ProxyIPAnonymizerKind {
 	if anonymizerRank(next) > anonymizerRank(current) {
 		return next
 	}
 	return current
 }
 
-func anonymizerRank(value proxyruntimev1.ProxyIPAnonymizerKind) int {
+func anonymizerRank(value proxygatewayv1.ProxyIPAnonymizerKind) int {
 	switch value {
-	case proxyruntimev1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_TOR:
+	case proxygatewayv1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_TOR:
 		return 80
-	case proxyruntimev1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_VPN:
+	case proxygatewayv1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_VPN:
 		return 70
-	case proxyruntimev1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_PROXY:
+	case proxygatewayv1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_PROXY:
 		return 60
-	case proxyruntimev1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_CRAWLER:
+	case proxygatewayv1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_CRAWLER:
 		return 50
-	case proxyruntimev1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_NONE:
+	case proxygatewayv1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_NONE:
 		return 20
-	case proxyruntimev1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_UNKNOWN:
+	case proxygatewayv1.ProxyIPAnonymizerKind_PROXY_IP_ANONYMIZER_KIND_UNKNOWN:
 		return 10
 	default:
 		return 0
 	}
 }
 
-func chooseRiskLevel(current, next proxyruntimev1.ProxyIPFraudRiskLevel) proxyruntimev1.ProxyIPFraudRiskLevel {
+func chooseRiskLevel(current, next proxygatewayv1.ProxyIPFraudRiskLevel) proxygatewayv1.ProxyIPFraudRiskLevel {
 	if riskRank(next) > riskRank(current) {
 		return next
 	}
 	return current
 }
 
-func normalizeRiskLevel(level proxyruntimev1.ProxyIPFraudRiskLevel, score float64) proxyruntimev1.ProxyIPFraudRiskLevel {
-	if level != proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNSPECIFIED &&
-		level != proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNKNOWN {
+func normalizeRiskLevel(level proxygatewayv1.ProxyIPFraudRiskLevel, score float64) proxygatewayv1.ProxyIPFraudRiskLevel {
+	if level != proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNSPECIFIED &&
+		level != proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNKNOWN {
 		return level
 	}
 	return riskLevelFromScore(score)
 }
 
-func riskLevelFromScore(score float64) proxyruntimev1.ProxyIPFraudRiskLevel {
+func riskLevelFromScore(score float64) proxygatewayv1.ProxyIPFraudRiskLevel {
 	switch {
 	case score >= 90:
-		return proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_CRITICAL
+		return proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_CRITICAL
 	case score >= 70:
-		return proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_HIGH
+		return proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_HIGH
 	case score >= 40:
-		return proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_MEDIUM
+		return proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_MEDIUM
 	default:
-		return proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_LOW
+		return proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_LOW
 	}
 }
 
-func riskRank(value proxyruntimev1.ProxyIPFraudRiskLevel) int {
+func riskRank(value proxygatewayv1.ProxyIPFraudRiskLevel) int {
 	switch value {
-	case proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_CRITICAL:
+	case proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_CRITICAL:
 		return 50
-	case proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_HIGH:
+	case proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_HIGH:
 		return 40
-	case proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_MEDIUM:
+	case proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_MEDIUM:
 		return 30
-	case proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_LOW:
+	case proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_LOW:
 		return 20
-	case proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNKNOWN:
+	case proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNKNOWN:
 		return 10
-	case proxyruntimev1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNSUPPORTED:
+	case proxygatewayv1.ProxyIPFraudRiskLevel_PROXY_IP_FRAUD_RISK_LEVEL_UNSUPPORTED:
 		return 5
 	default:
 		return 0

@@ -3,7 +3,7 @@ import type {
   ProxyDynamicIPEndpointSettings,
   ProxyDynamicIPProviderSettings,
   ProxyProviderAccount,
-} from '~/types/byte/v/forge/contracts/proxyruntime/v1/proxy_runtime'
+} from '~/types/byte/v/forge/contracts/proxygateway/v1/proxy_gateway'
 import {
   IconCloud,
   IconKey,

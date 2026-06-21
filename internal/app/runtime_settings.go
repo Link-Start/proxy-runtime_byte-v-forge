@@ -5,28 +5,28 @@ import (
 	"log/slog"
 	"time"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/mihomonative"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/proxycheck"
-	"github.com/byte-v-forge/proxy-runtime/internal/app/settings/adapter/persistence"
-	settingsapp "github.com/byte-v-forge/proxy-runtime/internal/app/settings/application"
-	"github.com/byte-v-forge/proxy-runtime/internal/config"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/mihomonative"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/proxycheck"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/settings/adapter/persistence"
+	settingsapp "github.com/byte-v-forge/proxy-gateway/internal/app/settings/application"
+	"github.com/byte-v-forge/proxy-gateway/internal/config"
 )
 
 // runtimeSettingsFile aliases the persisted runtime-settings proto for the many
 // composition-root sites that pass it around; the settings persistence adapter
 // lives in internal/app/settings/adapter/persistence.
-type runtimeSettingsFile = proxyruntimev1.ProxyRuntimePersistentSettings
+type runtimeSettingsFile = proxygatewayv1.ProxyGatewayPersistentSettings
 
 type runtimeSettingsApplicationDependencies struct {
 	Logger                     *slog.Logger
 	Settings                   *persistence.Store
 	ProxyUsers                 []config.ProxyUserRoute
-	IPFraudProviderViews       func() []*proxyruntimev1.ProxyIPFraudProviderDescriptor
-	IPGeoProviderViews         func() []*proxyruntimev1.ProxyIPGeoProviderDescriptor
-	LoadMihomoNativeSettings   func(context.Context) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
-	UpdateMihomoNativeSettings func(context.Context, *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) (*proxyruntimev1.ProxyRuntimeMihomoNativeConfig, error)
+	IPFraudProviderViews       func() []*proxygatewayv1.ProxyIPFraudProviderDescriptor
+	IPGeoProviderViews         func() []*proxygatewayv1.ProxyIPGeoProviderDescriptor
+	LoadMihomoNativeSettings   func(context.Context) (*proxygatewayv1.ProxyGatewayMihomoNativeConfig, error)
+	UpdateMihomoNativeSettings func(context.Context, *proxygatewayv1.ProxyGatewayMihomoNativeConfig) (*proxygatewayv1.ProxyGatewayMihomoNativeConfig, error)
 	ScheduleApply              func([]string)
 }
 
@@ -41,7 +41,7 @@ func newRuntimeSettingsApplication(deps runtimeSettingsApplicationDependencies) 
 		IPGeoProviderViews:          deps.IPGeoProviderViews,
 		LoadMihomoNativeSettings:    deps.LoadMihomoNativeSettings,
 		UpdateMihomoNativeSettings:  deps.UpdateMihomoNativeSettings,
-		DefaultMihomoNativeSettings: func() *proxyruntimev1.ProxyRuntimeMihomoNativeConfig { return mihomonative.NormalizeSettings(nil) },
+		DefaultMihomoNativeSettings: func() *proxygatewayv1.ProxyGatewayMihomoNativeConfig { return mihomonative.NormalizeSettings(nil) },
 	})
 }
 

@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { ProxyRuntimeMihomoNativeState } from '~/composables/useProxyRuntimeMihomoNativeConfig'
+import type { ProxyGatewayMihomoNativeState } from '~/composables/useProxyGatewayMihomoNativeConfig'
 import { IconDeviceFloppy, IconServer, IconX } from '@tabler/icons-vue'
 
-const props = defineProps<{ runtime: ProxyRuntimeMihomoNativeState }>()
+const props = defineProps<{ runtime: ProxyGatewayMihomoNativeState }>()
 const modalRef = ref<{ open: () => void; close: () => void }>()
 const typeOptions = [
   ['fixed_proxy', '固定代理'],

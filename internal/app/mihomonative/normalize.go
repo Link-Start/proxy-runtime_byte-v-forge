@@ -3,16 +3,16 @@ package mihomonative
 import (
 	"strings"
 
-	proxyruntimev1 "github.com/byte-v-forge/proxy-runtime/gen/go/byte/v/forge/contracts/proxyruntime/v1"
+	proxygatewayv1 "github.com/byte-v-forge/proxy-gateway/gen/go/byte/v/forge/contracts/proxygateway/v1"
 
-	"github.com/byte-v-forge/proxy-runtime/internal/app/appcore"
+	"github.com/byte-v-forge/proxy-gateway/internal/app/appcore"
 )
 
-func NormalizeSettings(view *proxyruntimev1.ProxyRuntimeMihomoNativeConfig) *proxyruntimev1.ProxyRuntimeMihomoNativeConfig {
+func NormalizeSettings(view *proxygatewayv1.ProxyGatewayMihomoNativeConfig) *proxygatewayv1.ProxyGatewayMihomoNativeConfig {
 	if view == nil {
-		view = &proxyruntimev1.ProxyRuntimeMihomoNativeConfig{}
+		view = &proxygatewayv1.ProxyGatewayMihomoNativeConfig{}
 	}
-	return &proxyruntimev1.ProxyRuntimeMihomoNativeConfig{
+	return &proxygatewayv1.ProxyGatewayMihomoNativeConfig{
 		FixedProxies:  normalizeFixedProxySettings(view.GetFixedProxies()),
 		Subscriptions: normalizeSubscriptionSettings(view.GetSubscriptions()),
 	}
